@@ -189,6 +189,12 @@ PG/
 
 # Card/Fate images copied for the UI lab (owner material, local only)
 prototypes/ui-lab/img/
+
+# Reference screenshots of the original game's interface for docs/ui/UI_SPEC.md: local only.
+docs/ui/mockup/
+
+# Art the table screen loads when present (src/ui/table/assets.ts): local only, never committed.
+assets/ui/
 data/*.local.md
 
 # Online deploy (docs/online-access.md)
