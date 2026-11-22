@@ -66,6 +66,22 @@
     </form>
     <p class="muted">Da 2 a 4 giocatori, tu compreso; devono essere tutti invitati. L'ordine dei posti segue l'elenco.</p>
     <p id="game-msg" class="muted" role="status"></p>
+    <h2>Su questo computer (hotseat)</h2>
+    <p id="hotseat-resume"></p>
+    <form id="hotseat-game">
+      <select id="hotseat-players" aria-label="Giocatori">
+        <option value="2">2 giocatori</option>
+        <option value="3" selected>3 giocatori</option>
+        <option value="4">4 giocatori</option>
+      </select>
+      <select id="hotseat-variant" aria-label="Variante">
+        <option value="base">base</option>
+        <option value="leaders">personaggi e lore</option>
+      </select>
+      <button class="primary" type="submit">Inizia</button>
+    </form>
+    <p class="muted">Tutti i posti si giocano a turno su questo computer: tra un giocatore e l'altro lo schermo si copre finché il successivo non è pronto. La partita resta salvata solo in questo browser.</p>
+    <p id="hotseat-msg" class="muted" role="status"></p>
   </section>
 
   <section id="content-admin" class="card" hidden>

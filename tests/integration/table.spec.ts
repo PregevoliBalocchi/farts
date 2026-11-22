@@ -60,3 +60,19 @@ test('the court picker opens and closes with Escape', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
+
+test('hotseat covers the screen between players until the next one is ready', async ({ page }) => {
+  const errors = await open(page, '&hotseat=1');
+  // The first player is asked to take the computer before seeing their hand.
+  await expect(page.locator('.hs-curtain')).toBeVisible();
+  await page.locator('[data-act="hs-ready"]').click();
+  await expect(page.locator('.hs-curtain')).toHaveCount(0);
+  const first = await page.evaluate(() => (window.game!.state as { phase: { type: string } }).phase.type);
+  expect(first).toBe('lead');
+  await page.locator('.hand-card:not(.unplayable)').first().click();
+  await page.getByRole('button', { name: 'Lead', exact: true }).click();
+  await page.getByRole('button', { name: 'End turn' }).click();
+  // Play passes to the next seat: the screen is covered again.
+  await expect(page.locator('.hs-curtain')).toBeVisible();
+  expect(errors).toEqual([]);
+});

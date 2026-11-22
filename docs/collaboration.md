@@ -53,8 +53,11 @@ never copy its texts into the repo. Site numbering matches our ids
 ## 3. Project decisions to keep
 
 - **Play mode:** multiplayer, each player on their own computer, remote.
-  No hot seat. The UI shows one player's view (own hand visible, rivals'
-  hidden) and talks to an authoritative server running the rules engine.
+  Also, at the owner's request (2026-11-22), a hotseat option to try the
+  game on one computer: every seat played in turn, a hand-over screen
+  between players, the game saved only in that browser (`src/web/hotseat.ts`).
+  Online, the UI shows one player's view (own hand visible, rivals' hidden)
+  and talks to an authoritative server running the rules engine.
 - **Campaign:** the goal includes the campaign; the base game comes first.
   Campaign rules are summarised in `design/campaign-notes.md`.
 - **Rules engine:** pure and deterministic (`src/game/engine/`): every
