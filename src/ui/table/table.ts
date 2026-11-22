@@ -5,7 +5,7 @@
 // exists the game runs locally and the view can follow the active seat.
 
 import './table.css';
-import { activePlayer, AMBITIONS, dispatch, indexContent, newGame } from '../../game/engine';
+import { activePlayer, AMBITIONS, dispatch, effectOf, indexContent, newGame } from '../../game/engine';
 import type { ActionKind, ActionPayload, AmbitionId, Command, GameContent, GameState, PlayerCount, PlayerId, RaidTake, Resource } from '../../game/engine';
 import { BASE_EFFECTS } from '../../game/cards/base';
 import { LANGS, pickLang, translator } from '../../i18n';
@@ -14,7 +14,8 @@ import { loadContent } from '../content';
 import { assetUrl, icon } from './assets';
 import { defaultAllocation } from './battle';
 import { createBoard3D } from './board3d';
-import { decisionOptions } from './decide';
+import { cardPowers, decisionOptions } from './decide';
+import type { PowerOption } from './decide';
 import type { DecisionOption, DecisionPart } from './decide';
 import { detailHtml } from './details';
 import type { DetailTarget } from './details';
@@ -23,7 +24,7 @@ import type { Intent } from './intent';
 import { place, REGIONS, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  ambitionsPanel, button, cardLabel, playedText, cardPicker, courtPanel, esc, handPanel, header, largeCard, localPanel, ownedPanel, PICKER_PAGE, playerName, promptBar, rivalPanel,
+  ambitionsPanel, button, cardLabel, playedText, cardPicker, courtFace, courtPanel, esc, handPanel, header, largeCard, localPanel, ownedPanel, PICKER_PAGE, playerName, promptBar, rivalPanel,
 } from './render';
 import type { PickerGroup, PickerState } from './render';
 import { legal, othersTurn, tableView } from './view';
@@ -36,7 +37,8 @@ type Modal =
   | { type: 'log' }
   | { type: 'settings' }
   | { type: 'detail'; target: DetailTarget }
-  | { type: 'decide'; args: string; options: DecisionOption[] };
+  | { type: 'decide'; args: string; options: DecisionOption[] }
+  | { type: 'powers'; options: PowerOption[] };
 
 /** Handle returned to main.ts (and window.game for automated checks). */
 export interface TableHandle {
@@ -218,6 +220,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   }
 
   /** A part of a Decision answer as text. */
+  /** Whether the local player holds a card with a power usable in the current phase (the list itself is built on click). */
+  function hasPowers(v: TableView): boolean {
+    if (v.phase !== 'actions' && v.phase !== 'allocate') return false;
+    const pl = state.players[local()];
+    return [...pl.court, ...pl.lore, ...(pl.leader ? [pl.leader] : [])].some((c) => {
+      const e = effectOf(ix, c);
+      return v.phase === 'actions' ? !!(e?.prelude || e?.actions) : !!e?.reroll;
+    });
+  }
+
   function partText(p: DecisionPart): string {
     const label = t(`decide.key.${p.key}`);
     const v = p.value;
@@ -230,6 +242,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       : p.kind === 'index' ? `#${(v as number) + 1}`
       : p.kind === 'ships' ? (v as { from: string; ships: number }[]).map((m) => t('decide.shipsFrom', { n: m.ships, from: m.from })).join(', ')
       : p.kind === 'flag' ? ''
+      : p.kind === 'slot' ? `#${(v as number) + 1}`
+      : p.kind === 'resources' ? (v as string[]).map((r) => t(`resource.${r}`)).join(', ')
+      : p.kind === 'dice' ? t('powers.dice', { n: (v as number[]).length })
       : String(v);
     return value ? `${label}: ${value}` : label;
   }
@@ -559,6 +574,30 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         </div>
         <div class="modal-foot">${button('close-modal', t('btn.back'))}${declinable ? button('decline', t('decide.decline')) : ''}</div>`;
     }
+    if (modal.type === 'powers') {
+      const groups = new Map<string, { i: number; o: PowerOption }[]>();
+      modal.options.forEach((o, i) => groups.set(o.card, [...(groups.get(o.card) ?? []), { i, o }]));
+      const rows = [...groups.entries()]
+        .map(([card, list]) => {
+          const d = ix.courtCards.get(card);
+          const face = courtFace({ card, kind: d?.kind ?? null, resource: d?.resource ?? null, keys: d?.keys ?? 0 }, t);
+          const byAbility = new Map<string, { i: number; o: PowerOption }[]>();
+          for (const x of list) byAbility.set(x.o.ability, [...(byAbility.get(x.o.ability) ?? []), x]);
+          const abilities = [...byAbility.entries()]
+            .map(([ability, xs]) => {
+              const kind = xs[0].o.kind;
+              const name = t(`power.${ability}`) === `power.${ability}` ? ability : t(`power.${ability}`);
+              const btns = xs.map(({ i, o }) => button('power-pick', o.parts.length ? o.parts.map(partText).join(' · ') : t('powers.use'), { args: { i }, cls: 'decide-opt' })).join('');
+              return `<div class="power-ab"><div class="power-name"><span class="tag">${esc(t(`powers.kind.${kind}`))}</span> ${esc(name)}</div><div class="decide-list">${btns}</div></div>`;
+            })
+            .join('');
+          return `<div class="power-card"><span class="court-face" data-zoom="${esc(card)}">${face}</span><div class="power-abs"><b>${esc(card)}</b>${abilities}</div></div>`;
+        })
+        .join('');
+      inner = `<h2 id="modal-title">${esc(t('powers.title'))}</h2><div></div>
+        <div class="modal-body"><p class="hint">${esc(t('powers.hint'))}</p>${rows || `<p class="hint">${esc(t('powers.none'))}</p>`}</div>
+        <div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`;
+    }
     const box = modal.type === 'detail'
       ? `left:${REGIONS.detail.x}px;top:${REGIONS.detail.y}px;width:${REGIONS.detail.w}px;max-height:${REGIONS.detail.h}px`
       : place(REGIONS.modal);
@@ -633,7 +672,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
     const rivals = v.rivals.map((r) => rivalPanel(ix, v, v.players[r], t)).join('');
     const canEnd = myTurn() && v.phase === 'actions' && intent.step === 'idle' && can({ type: 'endTurn', player: me });
-    const confirmRow = `<div class="confirm-row">
+    const powersBtn = myTurn() && hasPowers(v) ? button('powers-open', t('powers.open'), { cls: 'powers-btn', title: t('powers.title') }) : '';
+    const confirmRow = `<div class="confirm-row">${powersBtn}
         ${button('undo', '', { cls: 'icon', title: t('btn.undo'), html: icon('undo'), disabled: history.length === 0 })}
         ${button('end-turn', t('play.endTurn'), { cls: 'primary end', title: t('play.endTurn'), html: `${icon('confirm')}<span>${esc(t('play.endTurn'))}</span>`, disabled: !canEnd })}
       </div>`;
@@ -826,6 +866,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         {
           const al = allocation();
           if (al) send({ type: 'allocate', player: me, allocation: al });
+        }
+        return;
+      case 'powers-open':
+        modal = { type: 'powers', options: cardPowers(ix, state, me) };
+        break;
+      case 'power-pick':
+        if (modal?.type === 'powers') {
+          const o = modal.options[Number(d.i)];
+          modal = null;
+          if (o) send(o.cmd);
         }
         return;
       case 'decide-open':

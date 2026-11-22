@@ -181,7 +181,13 @@ dist-single/
 
 # Owner's personal content transcribed from their physical copy: kept local, never committed.
 data/content.json
-assets/cards/
+# Card pictures: the ones the table shows (court, court-campaign, lore, leaders) are committed,
+# owner's decision 2026-11 (docs/ui-assets.md); the rest of assets/cards/ stays local.
+assets/cards/*
+!assets/cards/court/
+!assets/cards/court-campaign/
+!assets/cards/lore/
+!assets/cards/leaders/
 assets/map/
 
 # Owner transcriptions of campaign Fate cards (images and texts): local only.

@@ -7,8 +7,10 @@ and glyphs.
 
 Owner's decision (2026-11): the repository is private and the site is an
 invite-only beta, so the publisher's development kit pictures and the board
-picture are kept in the repository. Card images and card texts are not: they
-stay local or in Firestore, as before.
+picture are kept in the repository, and so are the card pictures the table
+shows as card faces: `assets/cards/court/`, `court-campaign/`, `lore/` and
+`leaders/` (key `card.<card id>`; an image in `assets/ui/card/` wins over them).
+Card texts are not copied into code, tests or docs.
 
 ## 1. The development kit
 
