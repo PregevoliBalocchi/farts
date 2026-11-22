@@ -27,6 +27,34 @@ describe('tableView', () => {
     expect(JSON.stringify(v.players)).not.toContain(s.players[0].hand[0]);
   });
 
+  it('lists every city of the board with the slots it covers and its power bonus', () => {
+    // Arrange
+    const s = game(ix, 3, 7, 0);
+    const b = ix.content.playerBoard;
+    // Act
+    const p = tableView(ix, s, 0).players[0];
+    // Assert: one entry per city, in build order, built ones first
+    expect(p.cities.map((c) => c.slots)).toEqual(b.cityUnlocks.map((x) => [...x]));
+    expect(p.cities.map((c) => c.bonus)).toEqual(b.cityBonusPower);
+    const built = ix.content.citiesPerPlayer - s.players[0].supply.cities;
+    expect(p.cities.map((c) => c.built)).toEqual(p.cities.map((_, i) => i < built));
+    // A slot is locked exactly when an unbuilt city covers it and no base slot or built city opens it.
+    for (const slot of p.slots) {
+      const coveredOnly = !b.baseSlots.includes(slot.index) && !p.cities.some((c) => c.built && c.slots.includes(slot.index));
+      expect(slot.locked).toBe(coveredOnly);
+    }
+  });
+
+  it('counts the resource tokens a seat holds by type, zero types included', () => {
+    // Arrange
+    const s = game(ix, 3, 7, 0);
+    // Act
+    const p = tableView(ix, s, 0).players[0];
+    // Assert
+    expect(p.held.map((h) => h.resource)).toEqual([...RESOURCES]);
+    for (const h of p.held) expect(h.count).toBe(s.players[0].resources.filter((r) => r === h.resource).length);
+  });
+
   it('mirrors the general supply for every resource', () => {
     const s = game(ix, 3, 7, 0);
     const v = tableView(ix, s, 0);

@@ -52,7 +52,7 @@ function resIcon(r: Resource, t: Translate, cls = ''): string {
  * The top strip: chapter, the Court row (`courtHtml`), the round's lead and
  * seize, deck counts, general supply, the latest move, who you are, menu buttons.
  */
-export function header(v: TableView, t: Translate, exampleContent: boolean, courtHtml: string): string {
+export function header(v: TableView, t: Translate, exampleContent: boolean, courtHtml: string, ambitionsHtml: string, undoHtml: string): string {
   const supply = v.supply.map((s) => `<span title="${esc(t(`resource.${s.resource}`))}">${resIcon(s.resource, t)}<b class="num">${s.count}</b></span>`).join('');
   const declared = v.ambitions.filter((a) => a.markers.length).map((a) => t(`ambition.${a.id}`));
   const lead = v.lead
@@ -66,6 +66,7 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, cour
   const last = v.recent[0] ?? t('empty');
   return `<div class="glass hd chapter-badge">${esc(t('chapter', { n: '' }).trim())}<span class="num">${v.chapter}</span></div>
     <div class="glass hd court-strip" data-region="court">${courtHtml}</div>
+    <div class="glass hd amb-strip" data-region="ambitions">${ambitionsHtml}</div>
     <div class="glass hd round-strip"><div class="glass-title">${esc(t('round.title'))}</div><div class="chips">${chips}</div>
       <button type="button" class="supply" data-act="supply-detail" aria-label="${esc(t('supply'))}">${supply}</button></div>
     <div class="glass hd tools">
@@ -73,6 +74,7 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, cour
       ${exampleContent ? `<span class="content-note">${esc(t('content.example'))}</span>` : ''}
       <span class="you s-${v.local % 4}"><span class="seat-c">${icon(seatIcon(v.local))}</span>${esc(t('header.you', { name: playerName(t, v.local) }))}</span>
       <div class="top-buttons">
+        ${undoHtml}
         ${button('court-view', '', { cls: 'icon', title: t('btn.court'), html: icon('court') })}
         ${button('log', '', { cls: 'icon', title: t('btn.log'), html: icon('log') })}
         ${button('settings', '', { cls: 'icon', title: t('btn.settings'), html: icon('settings') })}
@@ -80,38 +82,84 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, cour
     </div>`;
 }
 
-/** The prompt line: what to do now, and an explanation under it. `mine` lights it up when it is the local player's turn. */
-export function promptBar(main: string, sub: string, mine: boolean): string {
-  return `<div class="prompt${mine ? ' mine' : ''}" role="status" aria-live="polite"><div class="prompt-main">${esc(main)}</div><div class="prompt-sub">${esc(sub)}</div></div>`;
+
+/** A game piece of a seat as a small picture (the kit's piece image), else its glyph in the seat colour. */
+function pieceIcon(kind: 'ship' | 'agent' | 'city' | 'starport', seat: number, label?: string): string {
+  const url = assetUrl(`piece.${kind}-${seat % 4}`);
+  const alt = label ? `alt="${esc(label)}"` : 'alt="" aria-hidden="true"';
+  return url ? `<img class="ic pc pc-${kind}" src="${esc(url)}" ${alt}>` : `<span class="seat-c">${icon(kind, '', label)}</span>`;
 }
 
-function stats(p: PlayerView, t: Translate): string {
-  const items: [IconName, number, string][] = [
-    ['cards', p.handCount, 'stat.hand'],
-    ['ship', p.stats.ships, 'stat.ships'],
-    ['agent', p.stats.agents, 'stat.agents'],
-    ['city', p.stats.cities, 'stat.cities'],
-    ['starport', p.stats.starports, 'stat.starports'],
-    ['trophy', p.stats.trophies, 'stat.trophies'],
-    ['captive', p.stats.captives, 'stat.captives'],
-  ];
-  return `<div class="stats">${items.map(([ic, n, k]) => `<span title="${esc(t(k))}">${icon(ic, '', t(k))}<b class="num">${n}</b></span>`).join('')}</div>`;
+/**
+ * The supply row of a seat board: cards in hand and the pieces still to place.
+ * `cities`: also the unbuilt cities (rivals; the local board shows them on its slots).
+ */
+function stats(p: PlayerView, t: Translate, cities: boolean): string {
+  const cell = (pic: string, n: number, key: string) => `<span class="st" title="${esc(t(key))}">${pic}<b class="num">${n}</b></span>`;
+  return `<div class="stats">${[
+    cell(icon('cards', '', t('stat.hand')), p.handCount, 'stat.hand'),
+    cell(pieceIcon('agent', p.id, t('stat.agents')), p.stats.agents, 'stat.agents'),
+    cell(pieceIcon('ship', p.id, t('stat.ships')), p.stats.ships, 'stat.ships'),
+    cell(pieceIcon('starport', p.id, t('stat.starports')), p.stats.starports, 'stat.starports'),
+    cities ? cell(pieceIcon('city', p.id, t('stat.cities')), p.stats.cities, 'stat.cities') : '',
+  ].join('')}</div>`;
 }
 
+/** Captives and trophies, one under the other. */
+function spoils(p: PlayerView, t: Translate): string {
+  return `<div class="spoils"><span class="st" title="${esc(t('stat.captives'))}">${icon('ambCaptives', '', t('stat.captives'))}<b class="num">${p.stats.captives}</b></span><span class="st" title="${esc(t('stat.trophies'))}">${icon('ambTrophies', '', t('stat.trophies'))}<b class="num">${p.stats.trophies}</b></span></div>`;
+}
+
+/** The name bar under a seat board: seat shape, name, initiative, and power in a laurel ring. */
+function nameBar(p: PlayerView, t: Translate): string {
+  const token = assetUrl('token.initiative');
+  const mark = token ? `<img class="ic init-img" src="${esc(token)}" alt="${esc(t('initiative'))}">` : icon('power', '', t('initiative'));
+  const init = p.hasInitiative ? `<span class="init-mark" title="${esc(t('initiative'))}">${mark}</span>` : '';
+  return `<div class="name-bar"><span class="seat-c">${icon(seatIcon(p.id))}</span><span class="nm">${esc(playerName(t, p.id))}</span>${init}<span class="pow num" title="${esc(t('stat.power'))}">${p.power}</span></div>`;
+}
+
+/**
+ * The resource slots of a board with the cities on it: each unbuilt city sits
+ * on the slots it covers (the slot shows under it, locked), and the cities
+ * that cover no slot sit after them with the power they add once built.
+ */
 function slotsHtml(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null): string {
-  return `<div class="slots">${p.slots
+  const coverOf = (i: number) => p.cities.find((c) => !c.built && c.slots.includes(i));
+  const slots = p.slots
     .map((s) => {
-      const keys = `<span class="keys">${s.keys}${icon('key')}</span>`;
-      if (s.locked) return `<div class="slot locked" title="${esc(t('slot.locked'))}">${icon('lock')}${keys}</div>`;
-      if (!s.resource) return `<div class="slot" title="${esc(t('slot.empty'))}">${keys}</div>`;
+      const keys = `<span class="keys">${Array.from({ length: s.keys }, () => icon('key')).join('')}</span>`;
+      const city = coverOf(s.index);
+      if (s.locked) {
+        const on = city ? `<span class="on-city">${pieceIcon('city', p.id)}</span>` : icon('lock');
+        return `<div class="slot locked" title="${esc(t('slot.locked'))}">${keys}<span class="well">${on}</span></div>`;
+      }
+      if (!s.resource) return `<div class="slot" title="${esc(t('slot.empty'))}">${keys}<span class="well"></span></div>`;
       const out = p.outraged.includes(s.resource) ? ' outraged' : '';
       const label = t(`resource.${s.resource}`);
       if (spendable.has(s.index)) {
-        return `<button type="button" class="slot spend${out}${chosen === s.index ? ' chosen' : ''}" data-act="spend" data-slot="${s.index}" title="${esc(label)}">${resIcon(s.resource, t)}${keys}</button>`;
+        return `<button type="button" class="slot spend${out}${chosen === s.index ? ' chosen' : ''}" data-act="spend" data-slot="${s.index}" title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></button>`;
       }
-      return `<div class="slot${out}" title="${esc(label)}">${resIcon(s.resource, t)}${keys}</div>`;
+      return `<div class="slot${out}" title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></div>`;
     })
+    .join('');
+  const bonus = p.cities
+    .filter((c) => !c.slots.length)
+    .map((c) => `<div class="slot bonus${c.built ? ' built' : ''}" title="${esc(t('slot.bonus', { n: c.bonus }))}"><span class="keys plus num">+${c.bonus}</span><span class="well">${c.built ? '' : `<span class="on-city">${pieceIcon('city', p.id)}</span>`}</span></div>`)
+    .join('');
+  return `<div class="slots">${slots}${bonus ? `<span class="slot-sep"></span>${bonus}` : ''}</div>`;
+}
+
+/** Resource tokens held, as counts by type (rival boards). Outraged types are marked. */
+function heldCounts(p: PlayerView, t: Translate): string {
+  return `<div class="held">${p.held
+    .map((h) => `<span class="st${p.outraged.includes(h.resource) ? ' outraged' : ''}${h.count ? '' : ' zero'}" title="${esc(t(`resource.${h.resource}`))}">${resIcon(h.resource, t)}<b class="num">${h.count}</b></span>`)
     .join('')}</div>`;
+}
+
+/** Outraged resource types, as crossed tokens (empty when none). */
+function outrage(p: PlayerView, t: Translate): string {
+  if (!p.outraged.length) return '';
+  return `<div class="outrage" title="${esc(t('outraged', { list: p.outraged.map((r) => t(`resource.${r}`)).join(', ') }))}">${p.outraged.map((r) => `<span class="out">${resIcon(r, t)}</span>`).join('')}</div>`;
 }
 
 function miniCards(cards: string[], max: number): string {
@@ -123,16 +171,6 @@ function miniCards(cards: string[], max: number): string {
     })
     .join('');
   return `<div class="mini-cards">${shown}${cards.length > max ? `<div class="mini-card more">+${cards.length - max}</div>` : ''}</div>`;
-}
-
-function seatHead(p: PlayerView, t: Translate): string {
-  const tags = [
-    p.hasInitiative ? `<span class="tag init">${esc(t('initiative'))}</span>` : '',
-    p.outraged.length ? `<span class="tag" title="${esc(t('outraged', { list: p.outraged.map((r) => t(`resource.${r}`)).join(', ') }))}">⚠ ${p.outraged.length}</span>` : '',
-  ].join('');
-  return `<div class="seat-head">${portrait(p.id)}
-    <div><div class="seat-name"><span class="seat-c">${icon(seatIcon(p.id))}</span>${esc(playerName(t, p.id))}</div><div class="seat-tags">${tags}</div></div>
-    <div class="power" title="${esc(t('stat.power'))}">${p.power}<small>${esc(t('stat.power'))}</small></div></div>`;
 }
 
 /** What a seat played this round, as text ("Surpass Aggression 5", or face down). */
@@ -154,22 +192,32 @@ export function playedCard(ix: ContentIndex, v: TableView, t: Translate, player:
   return `<div class="play${pl.mode === 'lead' ? ' lead' : ''}">${face}<span class="how">${esc(t(`played.${pl.mode}`))}${pl.seized ? ' ↺' : ''}</span></div>`;
 }
 
-/** One rival's box (click opens their cards) with the card they played beside it. */
+/**
+ * One rival's board (click opens their details), drawn like the local one but
+ * smaller: portrait and resources held by type; captives, trophies and Court
+ * cards; pieces in supply; name and power. The card they played sits beside it.
+ */
 export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Translate): string {
-  return `<div class="rival-wrap"><button type="button" class="glass seat-panel rival s-${p.id % 4}${p.isActive ? ' active' : ''}" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">
-    ${seatHead(p, t)}
-    <div class="rival-row">${slotsHtml(p, t, new Set(), null)}${miniCards(p.court, 3)}</div>
-    ${stats(p, t)}
+  return `<div class="rival-wrap"><button type="button" class="board rival s-${p.id % 4}${p.isActive ? ' active' : ''}" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">
+    <div class="b-top">${portrait(p.id)}${heldCounts(p, t)}</div>
+    <div class="b-mid">${spoils(p, t)}${miniCards(p.court, 5)}</div>
+    ${stats(p, t, true)}
+    ${nameBar(p, t)}
   </button>${playedCard(ix, v, t, p.id)}</div>`;
 }
 
-/** The local seat's board: resources (clickable when they can be spent) and stats. */
+/**
+ * The local seat's board: portrait and resource slots with the unbuilt cities
+ * on them (a slot is clickable when its token can be spent); captives,
+ * trophies and outrage; pieces in supply; name and power. Its Court cards
+ * have their own box (ownedPanel).
+ */
 export function localPanel(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null): string {
-  return `<div class="glass seat-panel local s-${p.id % 4}${p.isActive ? ' active' : ''}">
-    <button type="button" class="seat-head-btn" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">${seatHead(p, t)}</button>
-    <div class="glass-title">${esc(t('local.resources'))}</div>
-    <div class="local-body">${slotsHtml(p, t, spendable, chosen)}</div>
-    ${stats(p, t)}
+  return `<div class="board local s-${p.id % 4}${p.isActive ? ' active' : ''}">
+    <div class="b-top"><button type="button" class="portrait-btn" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">${portrait(p.id)}</button>${slotsHtml(p, t, spendable, chosen)}</div>
+    <div class="b-mid">${spoils(p, t)}${outrage(p, t)}</div>
+    ${stats(p, t, false)}
+    ${nameBar(p, t)}
   </div>`;
 }
 
@@ -191,8 +239,10 @@ export function declareGlyphs(ix: ContentIndex, number: number): IconName[] {
   if (!amb) return [];
   if (amb === 'any') return ['anyAmbition'];
   const metric = ix.content.ambitionMetrics[amb];
-  if (metric?.kind === 'resources') return metric.resources as IconName[];
-  return [amb === 'captives' ? 'captive' : 'trophy'];
+  const byResource: Record<string, IconName> = { fuel: 'ambFuel', material: 'ambMaterial', relic: 'ambRelic', psionic: 'ambPsionic' };
+  // Tycoon draws the barrel before the crate, as on the ambition board.
+  if (metric?.kind === 'resources') return [...(metric.resources ?? [])].sort((a, b) => (a === 'fuel' ? -1 : b === 'fuel' ? 1 : 0)).map((r) => byResource[r] ?? (r as IconName));
+  return [metric?.kind === 'captives' || amb === 'captives' ? 'ambCaptives' : 'ambTrophies'];
 }
 
 /**
@@ -203,7 +253,8 @@ export function declareGlyphs(ix: ContentIndex, number: number): IconName[] {
  */
 export function actionCard(ix: ContentIndex, c: ActionCardView, t: Translate, extra = '', label = ''): string {
   const pips = Array.from({ length: c.pips }, () => icon('pip')).join('');
-  const kinds = c.kinds.map((k) => icon(k as IconName, '', t(`action.${k}`))).join('');
+  // The printed cards name their actions in words (no action icons exist): so do we.
+  const kinds = c.kinds.map((k) => `<span class="kw">${esc(t(`action.${k}`))}</span>`).join('');
   const declares = c.number > 0 ? declareGlyphs(ix, c.number) : [];
   const ambName = t(`ambition.${ix.content.declareByNumber[String(c.number)]}`);
   const amb = declares.length ? `<span class="amb" title="${esc(t('card.declares', { amb: ambName }))}">${declares.map((g) => icon(g)).join('')}</span>` : '<span class="amb"></span>';
@@ -213,25 +264,37 @@ export function actionCard(ix: ContentIndex, c: ActionCardView, t: Translate, ex
   return `<div class="acard ${known ? suitClass(ix, c.suit) : 'su-x'} ${extra}" title="${esc(title)}">${top}<span class="pips">${pips}</span><span class="kinds">${kinds}</span>${amb}</div>`;
 }
 
-/** Ambition rows: name, declared markers, every seat's count. */
-export function ambitionsPanel(v: TableView, t: Translate): string {
-  const rows = v.ambitions
+/** An ambition marker: a small hexagon with its first-place value over its second-place one. */
+function hexMarker(m: { id: string; first: number; second: number }, t: Translate): string {
+  return `<span class="hexm" title="${esc(t('amb.marker', { first: m.first, second: m.second }))}"><b class="num">${m.first}</b><i class="num">${m.second}</i></span>`;
+}
+
+/**
+ * The ambitions as one horizontal strip, a column per ambition in card-number
+ * order (2 to 6): its number and glyphs, the markers declared on it, and every
+ * seat's count highest first, the places it would score now lit. The markers
+ * still to declare sit by the title. Almost no text: names are in the tooltips.
+ */
+export function ambitionsStrip(ix: ContentIndex, v: TableView, t: Translate): string {
+  const numberOf = (a: string) => Number(Object.entries(ix.content.declareByNumber).find(([, x]) => x === a)?.[0] ?? 0);
+  const cols = [...v.ambitions]
+    .sort((x, y) => numberOf(x.id) - numberOf(y.id))
     .map((a) => {
-      const markers = a.markers.map((m) => `<span class="marker" title="${esc(m.id)}"><span>${m.first}</span><span>${m.second}</span></span>`).join('');
-      const place = (p: number) => (a.first.includes(p) ? 'first' : a.second.includes(p) ? 'second' : '');
+      const n = numberOf(a.id);
+      const glyphs = n ? declareGlyphs(ix, n).map((g) => icon(g)).join('') : '';
+      const place = (p: number) => (a.first.includes(p) ? ' first' : a.second.includes(p) ? ' second' : '');
       const tallies = a.tallies
-        .map((x) => {
-          const pl = place(x.player);
-          const tag = pl ? `<sup>${esc(t(pl === 'first' ? 'amb.first' : 'amb.second'))}</sup>` : '';
-          return `<span class="s-${x.player % 4}${x.value ? '' : ' zero'}${pl ? ` ${pl}` : ''}" title="${esc(playerName(t, x.player))}"><span class="seat-c">${icon(seatIcon(x.player))}</span><b class="num">${x.value}</b>${tag}</span>`;
-        })
+        .map((x) => `<span class="tl s-${x.player % 4}${x.value ? '' : ' zero'}${place(x.player)}" title="${esc(`${playerName(t, x.player)}: ${x.value}`)}"><span class="seat-c">${icon(seatIcon(x.player))}</span><b class="num">${x.value}</b></span>`)
         .join('');
-      const box = a.box ? `<span>▣<b class="num">${a.box}</b></span>` : '';
-      return `<button type="button" class="amb-row${a.markers.length ? ' declared' : ''}" data-act="amb-detail" data-id="${a.id}"><span class="amb-name">${esc(t(`ambition.${a.id}`))}</span><span>${markers}</span><span class="tallies">${tallies}${box}</span></button>`;
+      const box = a.box ? `<span class="box num" title="${esc(t('amb.box'))}">▣${a.box}</span>` : '';
+      const name = t(`ambition.${a.id}`);
+      return `<button type="button" class="amb-col${a.markers.length ? ' declared' : ''}" data-act="amb-detail" data-id="${a.id}" title="${esc(name)}" aria-label="${esc(name)}">
+        <span class="amb-head">${n ? `<span class="amb-n num">${n}</span>` : ''}<span class="amb-g">${glyphs}</span><span class="amb-m">${a.markers.map((m) => hexMarker(m, t)).join('')}${box}</span></span>
+        <span class="amb-t">${tallies}</span></button>`;
     })
     .join('');
-  const left = v.markersLeft.map((m) => `<span class="marker"><span>${m.first}</span><span>${m.second}</span></span>`).join('');
-  return `<div class="glass-title">${esc(t('amb.ifNow'))}</div><div class="amb-rows">${rows}</div><div class="markers-left">${esc(t('ambitions.available'))} ${left || esc(t('empty'))}</div>`;
+  const left = v.markersLeft.map((m) => hexMarker(m, t)).join('');
+  return `<div class="amb-top"><span class="amb-title">${esc(t('ambitions'))}</span><span class="amb-left" title="${esc(t('ambitions.available'))}">${left}</span></div><div class="amb-cols">${cols}</div>`;
 }
 
 /** Small portrait face of a Court card: its image when present, else a drawn placeholder with its data. */
@@ -255,7 +318,7 @@ export function courtPanel(v: TableView, t: Translate, pickable: ReadonlySet<num
 }
 
 /** The local hand with its caption; `selected` is raised. */
-export function handPanel(ix: ContentIndex, v: TableView, t: Translate, selected: string | null, mine: boolean, seizeWith: string | null = null): string {
+export function handPanel(ix: ContentIndex, v: TableView, t: Translate, selected: string | null, mine: boolean, seizeWith: string | null = null, tools = ''): string {
   const cards = v.hand
     .map((h) => {
       const cls = `hand-card${h.playable ? '' : ' unplayable'}${selected === h.card ? ' selected' : ''}${seizeWith === h.card ? ' seize-mark' : ''}`;
@@ -263,7 +326,7 @@ export function handPanel(ix: ContentIndex, v: TableView, t: Translate, selected
     })
     .join('');
   const played = v.plays.some((x) => x.player === v.local) ? `<div class="own-play">${playedCard(ix, v, t, v.local)}</div>` : '';
-  return `<div class="glass-title">${esc(t(mine ? 'hand.title' : 'hand.waiting'))}</div><div class="hand-cards">${played}${cards || `<div class="hand-empty">${esc(t('empty'))}</div>`}</div>`;
+  return `<div class="hand-top"><span class="glass-title">${esc(t(mine ? 'hand.title' : 'hand.waiting'))}</span>${tools}</div><div class="hand-cards">${played}${cards || `<div class="hand-empty">${esc(t('empty'))}</div>`}</div>`;
 }
 
 /** A Court card as shown in the picker (the large variant). */
