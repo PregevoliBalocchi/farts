@@ -1,0 +1,78 @@
+{
+  "pieces": {
+    "ship": {
+      "size": 0.5,
+      "hover": 0.16,
+      "rotateZ": 0
+    },
+    "flagship": {
+      "size": 0.74,
+      "hover": 0.2,
+      "rotateZ": 90
+    },
+    "agent": {
+      "size": 0.3,
+      "hover": 0,
+      "rotateZ": 0
+    },
+    "city": {
+      "size": 0.42,
+      "hover": 0.05,
+      "rotateZ": 0
+    },
+    "starport": {
+      "size": 0.4,
+      "hover": 0.05,
+      "rotateZ": 0
+    }
+  },
+  "tint": {
+    "strength": 0.92,
+    "damagedShade": 0.55
+  },
+  "float": {
+    "amplitude": 0.025,
+    "period": 3.2,
+    "roll": 0.05
+  },
+  "damagedTilt": 0.5,
+  "damagedHover": 0.07,
+  "engine": {
+    "color": "#8fdcff",
+    "size": 0.16
+  },
+  "windows": {
+    "count": 22,
+    "color": "#ffcf73",
+    "size": 0.055
+  },
+  "landing": {
+    "count": 12,
+    "colors": [
+      "#ffffff",
+      "#7dff9a",
+      "#ff6a4d"
+    ],
+    "size": 0.075
+  },
+  "fire": {
+    "sources": 2,
+    "perSource": 4,
+    "color": "#ff8a2a",
+    "size": 0.11
+  },
+  "smoke": {
+    "perSource": 6,
+    "color": "#8d867c",
+    "size": 0.2
+  },
+  "move": {
+    "duration": 0.9,
+    "arc": 0.5
+  },
+  "base": {
+    "side": 0.62,
+    "height": 0.05,
+    "bevel": 0.012
+  }
+}

@@ -18,6 +18,10 @@ import defaultCalibration from './board.default.json';
 import { BOARD_DEPTH, boardWidth, buildingSpots, headingJitter, isCalibration, MAX_SHOWN, shipGroups, shipSpot, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
 import type { BoardCalibration, Spot } from './board3d-layout';
 import { loadKitPieces, piece } from './kitpieces';
+import { arcHeight, easeInOut, planMoves } from './model-fx';
+import type { ShipGroupAt } from './model-fx';
+import modelConfig from './models.json';
+import { fxTime, fxViewHeight, hasModels, loadModels } from './models3d';
 import { boardImageSvg } from './mapview';
 import type { TableView } from './view';
 
@@ -87,6 +91,10 @@ export class Board3D {
   private last: TableView | null = null;
   private dirty = true;
   private pulsing = false;
+  /** Ship groups as last drawn, to fly the ones that moved when the map changes. */
+  private shipsAt: ShipGroupAt[] = [];
+  /** Ship groups flying from one system to another: start time set on the first frame. */
+  private flights: { o: THREE.Object3D; from: { x: number; z: number }; to: { x: number; z: number }; heading: number; t0: number | null }[] = [];
   private framed = false;
   /** Distance at which the board just covers the window: from here outwards the camera looks straight down. */
   private coverDist = 1;
@@ -160,11 +168,18 @@ export class Board3D {
     this.canvas.addEventListener('dblclick', () => this.resetView());
 
     renderer.setAnimationLoop((t) => this.frame(t));
+    void loadModels().then((any) => {
+      // The owner's models replace every other piece once loaded.
+      if (!any) return;
+      this.piecesKey = '';
+      if (this.last) this.buildPieces(this.last, false);
+      this.dirty = true;
+    });
     void loadKitPieces().then((any) => {
       // The kit's shapes replace our own once their pictures are cut.
       if (!any) return;
       this.piecesKey = '';
-      if (this.last) this.buildPieces(this.last);
+      if (this.last) this.buildPieces(this.last, false);
       this.dirty = true;
     });
   }
@@ -233,6 +248,7 @@ export class Board3D {
     this.focus = focus;
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    fxViewHeight.value = h * this.renderer.getPixelRatio();
     if (this.boardKey) this.resetView();
     this.dirty = true;
   }
@@ -314,11 +330,19 @@ export class Board3D {
     }
   }
 
-  private buildPieces(v: TableView): void {
+  /**
+   * Draws every piece of the view. With `fly`, ship groups that arrived from
+   * another system since the last drawing fly in from there (motion on only).
+   */
+  private buildPieces(v: TableView, fly = true): void {
     this.pieces.traverse((x) => {
       if ((x as THREE.Sprite).isSprite) (x as THREE.Sprite).material.map?.dispose();
+      if ((x as THREE.Points).isPoints) (x as THREE.Points).geometry.dispose();
     });
     this.pieces.clear();
+    this.flights = [];
+    const shipsAt: ShipGroupAt[] = [];
+    const groupObjects = new Map<string, THREE.Object3D>();
     for (const s of v.systems) {
       const p = this.spots[s.id];
       if (!p) continue;
@@ -339,9 +363,11 @@ export class Board3D {
             o.position.set(w.x, 0, w.z);
             // Three-quarters to the viewer, each group turned its own way.
             o.rotation.y = SHIP_HEADING + headingJitter(`${s.id}:${st.player}:${g.lying ? 'd' : 'f'}`);
-            o.scale.setScalar((o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE) * ZONE_SHIP_SCALE);
+            if (!o.userData.model) o.scale.setScalar((o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE) * ZONE_SHIP_SCALE);
             this.pieces.add(o);
-            if (g.count > 1) this.pieces.add(countTag(g.count, w.x, w.z, 'small'));
+            shipsAt.push({ player: st.player, damaged: g.lying, system: s.id, count: g.count, x: w.x, z: w.z });
+            groupObjects.set(`${s.id}:${st.player}:${g.lying ? 1 : 0}`, o);
+            if (g.count > 1) this.pieces.add(countTag(g.count, w.x, w.z, 'small', o.userData.model ? 0.5 : 0.3));
           }
           return;
         }
@@ -351,7 +377,7 @@ export class Board3D {
           o.position.set(w.x, 0, w.z);
           // Turned three-quarters to the viewer, so the profile of a standing ship shows.
           o.rotation.y = SHIP_HEADING;
-          o.scale.setScalar(o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE);
+          if (!o.userData.model) o.scale.setScalar(o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE);
           this.pieces.add(o);
         }
         if (st.fresh + st.damaged > MAX_SHOWN) this.pieces.add(countTag(st.fresh + st.damaged, p.x + c.x, p.z + c.z));
@@ -363,12 +389,26 @@ export class Board3D {
         const at = slots?.[i];
         if (at) o.position.set(at.x, 0, at.z);
         else o.position.set(p.x + arc[i].x, 0, p.z + arc[i].z);
-        if (!o.userData.kit) {
+        if (!o.userData.kit && !o.userData.model) {
           o.rotation.y = -0.4;
           o.scale.setScalar(OWN_SCALE);
         }
         this.pieces.add(o);
       });
+    }
+    this.planFlights(shipsAt, groupObjects, fly);
+  }
+
+  /** Sets the ship groups that arrived from another system flying in from there. */
+  private planFlights(shipsAt: ShipGroupAt[], groupObjects: Map<string, THREE.Object3D>, fly: boolean): void {
+    const prev = this.shipsAt;
+    this.shipsAt = shipsAt;
+    if (!fly || !this.opts.motion || !prev.length) return;
+    for (const m of planMoves(prev, shipsAt)) {
+      const o = groupObjects.get(`${m.system}:${m.player}:${m.damaged ? 1 : 0}`);
+      if (!o) continue;
+      this.flights.push({ o, from: m.from, to: { x: o.position.x, z: o.position.z }, heading: o.rotation.y, t0: null });
+      o.position.set(m.from.x, 0, m.from.z);
     }
   }
 
@@ -398,6 +438,10 @@ export class Board3D {
   }
 
   private frame(t: number): void {
+    if (hasModels() && this.opts.motion && this.pieces.children.length) {
+      this.animatePieces(t / 1000);
+      this.dirty = true;
+    }
     if (this.pulsing && this.opts.motion) {
       const a = 0.55 + 0.4 * Math.sin(t / 260);
       for (const r of this.rings.children) if (r.userData.pulse) ((r as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = a;
@@ -406,6 +450,39 @@ export class Board3D {
     if (!this.dirty) return;
     this.dirty = false;
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /**
+   * One step of the pieces' life at `sec` seconds: the effects clock, ships
+   * bobbing and rolling a little in space, and ship groups flying to their
+   * new system along an arc, nose first, then turning back to rest.
+   */
+  private animatePieces(sec: number): void {
+    fxTime.value = sec;
+    const f = modelConfig.float;
+    for (const o of this.pieces.children) {
+      const fl = o.userData.float as { phase: number; base: number } | undefined;
+      const body = o.userData.body as THREE.Object3D | undefined;
+      if (!fl || !body) continue;
+      const w = (sec / f.period) * Math.PI * 2 + fl.phase;
+      body.position.y = fl.base + f.amplitude * Math.sin(w);
+      body.rotation.z = f.roll * Math.sin(w * 0.7 + 1.3);
+    }
+    const dur = modelConfig.move.duration;
+    this.flights = this.flights.filter((fl) => {
+      fl.t0 ??= sec;
+      const p = Math.min(1, (sec - fl.t0) / dur);
+      const e = easeInOut(p);
+      fl.o.position.set(fl.from.x + (fl.to.x - fl.from.x) * e, arcHeight(e, modelConfig.move.arc), fl.from.z + (fl.to.z - fl.from.z) * e);
+      // The models' nose is −X: face the way of travel, and settle back to the resting heading on arrival.
+      const travel = Math.atan2(fl.to.z - fl.from.z, -(fl.to.x - fl.from.x));
+      const settle = easeInOut((p - 0.75) / 0.25);
+      fl.o.rotation.y = travel + (fl.heading - travel) * settle;
+      if (p < 1) return true;
+      fl.o.position.set(fl.to.x, 0, fl.to.z);
+      fl.o.rotation.y = fl.heading;
+      return false;
+    });
   }
 
   private pointer(e: PointerEvent): THREE.Vector2 {
@@ -446,7 +523,7 @@ export class Board3D {
  * A "×n" label floating over a stack with more pieces than drawn; `small` is
  * the plain number beside one ship group in a ship zone.
  */
-function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'large'): THREE.Sprite {
+function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'large', height = 0.3): THREE.Sprite {
   const small = size === 'small';
   const cv = document.createElement('canvas');
   cv.width = small ? 64 : 128;
@@ -472,7 +549,7 @@ function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'la
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
   if (small) {
     sprite.scale.set(0.15, 0.15, 1);
-    sprite.position.set(x + 0.08, 0.3, z);
+    sprite.position.set(x + 0.08, height, z);
   } else {
     sprite.scale.set(0.5, 0.25, 1);
     sprite.position.set(x, 0.6, z);
