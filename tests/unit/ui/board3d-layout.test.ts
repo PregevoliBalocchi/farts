@@ -2,7 +2,7 @@
 // mapping, schematic fallback, and how ship stacks are laid out.
 import { describe, expect, it } from 'vitest';
 import {
-  BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pictureToWorld, pileSpots, shipSpot, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
+  BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pictureToWorld, PILE_SHOWN, pileSpots, shipSpot, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
 } from '../../../src/ui/table/board3d-layout';
 
 const PICTURE = { width: 4000, height: 2000 };
@@ -111,18 +111,21 @@ describe('ship zones', () => {
   });
 
   it('keeps a pile within a ship-and-a-half of its point, fresh standing behind damaged', () => {
-    const pile = pileSpots(3, 2);
-    expect(pile).toHaveLength(5);
+    const pile = pileSpots(2, 1);
+    expect(pile).toHaveLength(3);
     for (const s of pile) expect(Math.hypot(s.dx, s.dz)).toBeLessThan(0.3);
     const standing = pile.filter((s) => !s.lying);
     const lying = pile.filter((s) => s.lying);
-    expect(standing).toHaveLength(3);
+    expect(standing).toHaveLength(2);
     expect(Math.max(...standing.map((s) => s.dz))).toBeLessThan(Math.min(...lying.map((s) => s.dz)));
   });
 
-  it('shows at most MAX_SHOWN ships in a pile, fresh first', () => {
-    const pile = pileSpots(MAX_SHOWN + 2, 3);
-    expect(pile).toHaveLength(MAX_SHOWN);
-    expect(pile.every((s) => !s.lying)).toBe(true);
+  it('draws at most PILE_SHOWN ships, keeping one place for a damaged ship', () => {
+    const pile = pileSpots(5, 3);
+    expect(pile).toHaveLength(PILE_SHOWN);
+    expect(pile.filter((s) => s.lying)).toHaveLength(1);
+    expect(pileSpots(5, 0).every((s) => !s.lying)).toBe(true);
+    expect(pileSpots(0, 5).every((s) => s.lying)).toBe(true);
+    expect(pileSpots(0, 5)).toHaveLength(PILE_SHOWN);
   });
 });

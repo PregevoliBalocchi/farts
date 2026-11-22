@@ -15,7 +15,7 @@ import type { ContentIndex } from '../../game/engine';
 import { layout } from '../map';
 import { assetUrl } from './assets';
 import defaultCalibration from './board.default.json';
-import { BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pileSpots, shipSpot, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
+import { BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, PILE_SHOWN, pileSpots, shipSpot, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
 import type { BoardCalibration, Spot } from './board3d-layout';
 import { loadKitPieces, piece } from './kitpieces';
 import { boardImageSvg } from './mapview';
@@ -59,6 +59,8 @@ const TILT = TILT_FAR;
 const OWN_SCALE = 1.15;
 /** Scale of the kit's ships on the map (their pictures are larger than the board's scale). */
 const KIT_SHIP_SCALE = 1.15;
+/** Ships in the calibrated ship zones are drawn smaller, closer to the real pieces on the board picture. */
+const ZONE_SHIP_SCALE = 0.7;
 const VALID = new THREE.Color('#5fd4e6');
 const CHOSEN = new THREE.Color('#ffcc66');
 const SURROUND = '#0b0a0c';
@@ -331,10 +333,10 @@ export class Board3D {
           o.position.set(p.x + c.x + sp.dx, 0, p.z + c.z + sp.dz);
           // Turned three-quarters to the viewer, so the profile of a standing ship shows.
           o.rotation.y = -0.55;
-          o.scale.setScalar(o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE);
+          o.scale.setScalar((o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE) * (zone ? ZONE_SHIP_SCALE : 1));
           this.pieces.add(o);
         }
-        if (st.fresh + st.damaged > MAX_SHOWN) this.pieces.add(countTag(st.fresh + st.damaged, p.x + c.x, p.z + c.z));
+        if (st.fresh + st.damaged > (zone ? PILE_SHOWN : MAX_SHOWN)) this.pieces.add(countTag(st.fresh + st.damaged, p.x + c.x, p.z + c.z));
       });
       const arc = buildingSpots(s.buildings.length);
       s.buildings.forEach((bd, i) => {

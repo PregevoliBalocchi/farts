@@ -101,6 +101,8 @@ export interface ShipSpot {
 
 /** Pieces drawn per stack; more are summed up by a count tag. */
 export const MAX_SHOWN = 6;
+/** Ships drawn in one seat's pile on a calibrated ship zone; more get a count tag. */
+export const PILE_SHOWN = 3;
 
 /**
  * Ships of one seat in one system: fresh ones standing in a row, damaged ones
@@ -118,13 +120,15 @@ export function stackSpots(fresh: number, damaged: number, gap = 0.22): ShipSpot
  * Ships of one seat on its own spot of a system's ship zone: a compact pile
  * that takes little more room than one ship. Fresh ones stand in echelon,
  * each a little behind and to the side of the one before; damaged ones lie in
- * front of them, also in echelon. At most MAX_SHOWN in all (fresh first).
+ * front of them, also in echelon. At most PILE_SHOWN in all: a damaged ship
+ * keeps one place when there is one, the rest go to fresh ones; a count tag
+ * gives the total.
  */
 export function pileSpots(fresh: number, damaged: number): ShipSpot[] {
-  const f = Math.min(fresh, MAX_SHOWN);
-  const d = Math.min(damaged, MAX_SHOWN - f);
-  const standing = Array.from({ length: f }, (_, i) => ({ dx: i * 0.11 - (f - 1) * 0.055, dz: -i * 0.09 - (d ? 0.08 : 0), lying: false }));
-  const lying = Array.from({ length: d }, (_, i) => ({ dx: i * 0.11 - (d - 1) * 0.055, dz: (f ? 0.14 : 0) + i * 0.05, lying: true }));
+  const d = Math.min(damaged, fresh > 0 ? 1 : PILE_SHOWN, PILE_SHOWN);
+  const f = Math.min(fresh, PILE_SHOWN - d);
+  const standing = Array.from({ length: f }, (_, i) => ({ dx: i * 0.09 - (f - 1) * 0.045, dz: -i * 0.07 - (d ? 0.06 : 0), lying: false }));
+  const lying = Array.from({ length: d }, (_, i) => ({ dx: i * 0.09 - (d - 1) * 0.045, dz: (f ? 0.11 : 0) + i * 0.04, lying: true }));
   return [...standing, ...lying];
 }
 
