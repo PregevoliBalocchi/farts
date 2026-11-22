@@ -149,29 +149,64 @@ function slotsHtml(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, 
   return `<div class="slots">${slots}${bonus ? `<span class="slot-sep"></span>${bonus}` : ''}</div>`;
 }
 
-/** Resource tokens held, as counts by type (rival boards). Outraged types are marked. */
-function heldCounts(p: PlayerView, t: Translate): string {
-  return `<div class="held">${p.held
-    .map((h) => `<span class="st${p.outraged.includes(h.resource) ? ' outraged' : ''}${h.count ? '' : ' zero'}" title="${esc(t(`resource.${h.resource}`))}">${resIcon(h.resource, t)}<b class="num">${h.count}</b></span>`)
-    .join('')}</div>`;
-}
-
 /**
- * The Outrage row of a seat board, as on the physical one: a round space per
- * resource type with its icon printed faint; an Outraged type is covered by
- * one of the seat's agents.
+ * The Outrage corner of a seat board: each Outraged resource type, covered by
+ * one of the seat's agents (empty when none).
  */
 function outrage(p: PlayerView, t: Translate): string {
   const agent = pieceIcon('agent', p.id, t('stat.agents'));
-  const spaces = p.held
-    .map((h) => {
-      const label = t(`resource.${h.resource}`);
-      const on = p.outraged.includes(h.resource);
-      const title = on ? t('outraged', { list: label }) : label;
-      return `<span class="o-space${on ? ' on' : ''}" title="${esc(title)}"><span class="o-res">${resIcon(h.resource, t)}</span>${on ? `<span class="o-agent">${agent}</span>` : ''}</span>`;
+  const spaces = p.outraged
+    .map((r) => {
+      const label = t(`resource.${r}`);
+      return `<span class="o-space" title="${esc(t('outraged', { list: label }))}"><span class="o-res">${resIcon(r, t)}</span><span class="o-agent">${agent}</span></span>`;
     })
     .join('');
   return `<div class="outrage" aria-label="${esc(t('outrage.row'))}">${spaces}</div>`;
+}
+
+/** The leader's picture when the seat has a leader card with art, else the seat portrait. */
+function leaderPortrait(p: PlayerView): string {
+  const art = p.leader ? cardArt(p.leader) : null;
+  return art ? `<div class="portrait leader"><img src="${esc(art)}" alt=""></div>` : portrait(p.id);
+}
+
+/** A card with a prelude power on the board's tab: lit (and clickable) when it can be used now. */
+export interface PreludeCard {
+  card: string;
+  lit: boolean;
+}
+
+function preludeTab(cards: readonly PreludeCard[], t: Translate): string {
+  if (!cards.length) return '';
+  const btns = cards
+    .map((c) => {
+      const art = cardArt(c.card);
+      const face = art ? `<img src="${esc(art)}" alt="">` : icon('court');
+      return c.lit
+        ? `<button type="button" class="pre lit" data-act="powers-open" data-zoom="${esc(c.card)}" title="${esc(t('powers.title'))}">${face}</button>`
+        : `<span class="pre" data-zoom="${esc(c.card)}" title="${esc(c.card)}">${face}</span>`;
+    })
+    .join('');
+  return `<div class="pb-tab" aria-label="${esc(t('powers.title'))}">${btns}</div>`;
+}
+
+/**
+ * A seat board drawn like the physical one (local and rivals alike, rivals
+ * smaller): the leader top left, the prelude tab top right, the resource
+ * slots with their keys and the unbuilt cities on them; captives and
+ * trophies beside the guild cards; the reserve and the Outraged resources;
+ * the name bar with the power in a ring.
+ */
+function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<number>; chosen: number | null; preludes: readonly PreludeCard[]; maxCards: number; head: string }): string {
+  return `${preludeTab(o.preludes, t)}
+    <div class="pb-body">
+      <div class="pb-face">${o.head}</div>
+      ${slotsHtml(p, t, o.spendable, o.chosen)}
+      ${spoils(p, t)}
+      <div class="pb-guild">${miniCards([...p.court, ...p.lore], o.maxCards)}</div>
+      <div class="pb-low">${stats(p, t, false)}${outrage(p, t)}</div>
+    </div>
+    ${nameBar(p, t)}`;
 }
 
 function miniCards(cards: string[], max: number): string {
@@ -205,32 +240,23 @@ export function playedCard(ix: ContentIndex, v: TableView, t: Translate, player:
 }
 
 /**
- * One rival's board (click opens their details), drawn like the local one but
- * smaller: portrait and resources held by type; captives, trophies and Court
- * cards; pieces in supply; name and power. The card they played sits beside it.
+ * One rival's board (click opens their details), drawn like the local one
+ * but smaller. The card they played sits beside it.
  */
 export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Translate): string {
-  return `<div class="rival-wrap"><button type="button" class="board rival s-${p.id % 4}${p.isActive ? ' active' : ''}" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">
-    <div class="b-top">${portrait(p.id)}${heldCounts(p, t)}</div>
-    <div class="b-mid">${spoils(p, t)}${miniCards(p.court, 5)}</div>
-    ${outrage(p, t)}
-    ${stats(p, t, true)}
-    ${nameBar(p, t)}
+  return `<div class="rival-wrap"><button type="button" class="board pb rival s-${p.id % 4}${p.isActive ? ' active' : ''}" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">
+    ${seatBoard(p, t, { spendable: new Set(), chosen: null, preludes: [], maxCards: 6, head: leaderPortrait(p) })}
   </button>${playedCard(ix, v, t, p.id)}</div>`;
 }
 
 /**
- * The local seat's board: portrait and resource slots with the unbuilt cities
- * on them (a slot is clickable when its token can be spent); captives,
- * trophies and outrage; pieces in supply; name and power. Its Court cards
- * have their own box (ownedPanel).
+ * The local seat's board, like the physical one: a slot is clickable when its
+ * token can be spent; the prelude tab lights the cards whose power can be used now.
  */
-export function localPanel(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null): string {
-  return `<div class="board local s-${p.id % 4}${p.isActive ? ' active' : ''}">
-    <div class="b-top"><button type="button" class="portrait-btn" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">${portrait(p.id)}</button>${slotsHtml(p, t, spendable, chosen)}</div>
-    <div class="b-mid">${spoils(p, t)}${outrage(p, t)}</div>
-    ${stats(p, t, false)}
-    ${nameBar(p, t)}
+export function localPanel(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, preludes: readonly PreludeCard[] = []): string {
+  const head = `<button type="button" class="portrait-btn" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">${leaderPortrait(p)}</button>`;
+  return `<div class="board pb local s-${p.id % 4}${p.isActive ? ' active' : ''}">
+    ${seatBoard(p, t, { spendable, chosen, preludes, maxCards: 9, head })}
   </div>`;
 }
 

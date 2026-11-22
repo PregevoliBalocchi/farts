@@ -24,7 +24,7 @@ import type { Intent } from './intent';
 import { place, REGIONS, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  ambitionsStrip, button, cardLabel, playedText, cardPicker, courtFace, courtPanel, declareGlyphs, esc, handPanel, header, largeCard, localPanel, ownedPanel, PICKER_PAGE, playerName, rivalPanel,
+  ambitionsStrip, button, cardLabel, playedText, cardPicker, courtFace, courtPanel, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownedPanel, PICKER_PAGE, playerName, rivalPanel,
 } from './render';
 import type { PickerGroup, PickerState } from './render';
 import { legal, othersTurn, tableView } from './view';
@@ -228,6 +228,25 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       const e = effectOf(ix, c);
       return v.phase === 'actions' ? !!(e?.prelude || e?.actions) : !!e?.reroll;
     });
+  }
+
+  /**
+   * The local cards with a prelude power or a new action, for the board's
+   * prelude tab; lit when the power can be used in this phase on our turn.
+   */
+  function preludeCards(v: TableView): PreludeCard[] {
+    const pl = state.players[local()];
+    const live = myTurn() && hasPowers(v);
+    return [...pl.court, ...pl.lore, ...(pl.leader ? [pl.leader] : [])]
+      .filter((c) => {
+        const e = effectOf(ix, c);
+        return !!(e?.prelude || e?.actions || e?.reroll);
+      })
+      .map((card) => {
+        const e = effectOf(ix, card);
+        const now = v.phase === 'actions' ? !!(e?.prelude || e?.actions) : v.phase === 'allocate' ? !!e?.reroll : false;
+        return { card, lit: live && now };
+      });
   }
 
   function partText(p: DecisionPart): string {
@@ -685,7 +704,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', courtPanel(v, t, courtPickable(intent)), ambitionsStrip(ix, v, t), undo)}</div>
       <div class="map-area${board3d ? '' : ' glass'}" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
-      <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null)}</div>
+      <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, preludeCards(v))}</div>
       <div class="region glass hand" data-region="hand" style="${place(REGIONS.hand)}">${handPanel(ix, v, t, selected, choosing, seizeWith, handTools)}</div>
       <div class="region glass owned${v.players[me].court.length ? '' : ' empty'}" data-region="owned" style="${place(REGIONS.owned)};--w:${REGIONS.owned.w}px">${ownedPanel(ix, v.players[me], t)}</div>
       ${ctx ? `<div class="region glass actions${myTurn() ? ' mine' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : ''}

@@ -53,6 +53,9 @@ export interface PlayerView {
   stats: { trophies: number; captives: number; ships: number; cities: number; starports: number; agents: number };
   /** Court cards the player holds. */
   court: string[];
+  /** Leaders & Lore: the player's leader card and lore cards (none in the base game). */
+  leader: string | null;
+  lore: string[];
   /** Rival pieces taken as trophies: whose, and what. */
   trophies: { owner: PlayerId; piece: string }[];
   /** Rival agents held captive, by owner. */
@@ -210,6 +213,8 @@ function playerView(ix: ContentIndex, s: GameState, id: PlayerId): PlayerView {
       agents: p.supply.agents,
     },
     court: [...p.court],
+    leader: p.leader ?? null,
+    lore: [...(p.lore ?? [])],
     trophies: p.trophies.map((x) => ({ owner: x.owner, piece: x.piece })),
     captives: [...p.captives],
     cities: Array.from({ length: ix.content.citiesPerPlayer }, (_, i) => ({
