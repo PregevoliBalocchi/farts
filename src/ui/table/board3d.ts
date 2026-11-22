@@ -71,6 +71,13 @@ const VALID = new THREE.Color('#5fd4e6');
 const CHOSEN = new THREE.Color('#ffcc66');
 const SURROUND = '#0b0a0c';
 
+/** A seat's ship groups to light up: those in `systems`, the one in `chosen` as picked. */
+export interface ShipGlow {
+  player: number;
+  systems: ReadonlySet<string>;
+  chosen?: string;
+}
+
 /** The 3D map. Create with createBoard3D (null when WebGL is not available). */
 export class Board3D {
   readonly canvas: HTMLCanvasElement;
@@ -93,6 +100,7 @@ export class Board3D {
   private pulsing = false;
   /** Ship groups as last drawn, to fly the ones that moved when the map changes. */
   private shipsAt: ShipGroupAt[] = [];
+  private glow: ShipGlow | null = null;
   /** Ship groups flying from one system to another: start time set on the first frame. */
   private flights: { o: THREE.Object3D; from: { x: number; z: number }; to: { x: number; z: number }; heading: number; t0: number | null }[] = [];
   private framed = false;
@@ -254,7 +262,11 @@ export class Board3D {
   }
 
   /** Shows the view: board (redrawn when systems leave play), pieces, and the step's highlights. */
-  update(v: TableView, valid: ReadonlySet<string>, chosen: ReadonlySet<string>): void {
+  /**
+   * `ships`: a seat's ship groups to light up under the models, in the given
+   * systems (`chosen` drawn as picked): the ships the local player can move.
+   */
+  update(v: TableView, valid: ReadonlySet<string>, chosen: ReadonlySet<string>, ships: ShipGlow | null = null): void {
     this.last = v;
     const key = v.systems.map((s) => (s.inPlay ? '1' : '0')).join('');
     if (key !== this.boardKey) {
@@ -270,6 +282,7 @@ export class Board3D {
       this.piecesKey = pk;
       this.buildPieces(v);
     }
+    this.glow = ships;
     this.buildRings(v, valid, chosen);
     this.dirty = true;
   }
@@ -364,6 +377,7 @@ export class Board3D {
             // Three-quarters to the viewer, each group turned its own way.
             o.rotation.y = SHIP_HEADING + headingJitter(`${s.id}:${st.player}:${g.lying ? 'd' : 'f'}`);
             if (!o.userData.model) o.scale.setScalar((o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE) * ZONE_SHIP_SCALE);
+            o.userData.system = s.id;
             this.pieces.add(o);
             shipsAt.push({ player: st.player, damaged: g.lying, system: s.id, count: g.count, x: w.x, z: w.z });
             groupObjects.set(`${s.id}:${st.player}:${g.lying ? 1 : 0}`, o);
@@ -378,6 +392,7 @@ export class Board3D {
           // Turned three-quarters to the viewer, so the profile of a standing ship shows.
           o.rotation.y = SHIP_HEADING;
           if (!o.userData.model) o.scale.setScalar(o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE);
+          o.userData.system = s.id;
           this.pieces.add(o);
         }
         if (st.fresh + st.damaged > MAX_SHOWN) this.pieces.add(countTag(st.fresh + st.damaged, p.x + c.x, p.z + c.z));
@@ -393,6 +408,7 @@ export class Board3D {
           o.rotation.y = -0.4;
           o.scale.setScalar(OWN_SCALE);
         }
+        o.userData.system = s.id;
         this.pieces.add(o);
       });
     }
@@ -435,6 +451,35 @@ export class Board3D {
       if (ring.userData.pulse) this.pulsing = true;
       this.rings.add(ring);
     }
+    // The local player's movable ships: a small ring under each of their groups.
+    const g = this.glow;
+    if (!g) return;
+    for (const at of this.shipsAt) {
+      if (at.player !== g.player || !g.systems.has(at.system)) continue;
+      const picked = g.chosen === at.system;
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.16, 0.21, 40),
+        new THREE.MeshBasicMaterial({ color: picked ? CHOSEN : VALID, transparent: true, opacity: 0.95, depthWrite: false }),
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(at.x, 0.014, at.z);
+      ring.userData.pulse = !picked;
+      if (!picked) this.pulsing = true;
+      this.rings.add(ring);
+    }
+  }
+
+  /**
+   * Where system `id` is on screen, in CSS pixels from the canvas's top-left
+   * (null when it is not on the board or is behind the camera).
+   */
+  screenOf(id: string): { x: number; y: number } | null {
+    const p = this.spots[id];
+    if (!p) return null;
+    const v = new THREE.Vector3(p.x, 0, p.z).project(this.camera);
+    if (v.z > 1) return null;
+    const r = this.canvas.getBoundingClientRect();
+    return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
   }
 
   private frame(t: number): void {
@@ -492,6 +537,13 @@ export class Board3D {
 
   private hit(e: PointerEvent): string | null {
     this.ray.setFromCamera(this.pointer(e), this.camera);
+    // A ship or building model picks its system; else the system's disc under the pointer.
+    for (const h of this.ray.intersectObjects(this.pieces.children, true)) {
+      if (!(h.object as THREE.Mesh).isMesh) continue;
+      for (let o: THREE.Object3D | null = h.object; o; o = o.parent) {
+        if (o.userData.system) return o.userData.system as string;
+      }
+    }
     return (this.ray.intersectObjects(this.discs.children, false)[0]?.object.userData.sys as string | undefined) ?? null;
   }
 
