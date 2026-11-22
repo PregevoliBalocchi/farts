@@ -1,0 +1,14 @@
+rules_version = '2';
+// Invite-only access (docs/online-access.md). Clients may only read their own
+// invitation; every write goes through the callable functions (Admin SDK).
+// Everything not matched below is denied.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /members/{email} {
+      allow read: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() == email;
+      allow write: if false;
+    }
+  }
+}

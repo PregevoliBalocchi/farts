@@ -14,13 +14,20 @@
     "test:unit": "vitest run",
     "test:e2e": "npm run build:single && playwright test",
     "smoke": "npm run build:single && playwright test --grep @boot",
-    "check:content": "vitest run tests/unit/content"
+    "check:content": "vitest run tests/unit/content",
+    "build:online": "tsc --noEmit && vite build --config vite.online.config.ts",
+    "dev:online": "vite --config vite.online.config.ts",
+    "deploy:online": "firebase deploy"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
     "typescript": "7.0.2",
     "vite": "8.3.4",
     "vite-plugin-singlefile": "2.3.3",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "firebase-tools": "15.35.0"
+  },
+  "dependencies": {
+    "firebase": "13.2.0"
   }
 }

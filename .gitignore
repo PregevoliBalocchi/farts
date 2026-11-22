@@ -190,3 +190,12 @@ PG/
 # Card/Fate images copied for the UI lab (owner material, local only)
 prototypes/ui-lab/img/
 data/*.local.md
+
+# Online deploy (docs/online-access.md)
+dist-online/
+functions/lib/
+functions/.env
+functions/.env.*
+.firebase/
+firebase-debug.log
+firestore-debug.log
