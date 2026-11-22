@@ -7,6 +7,7 @@ import type { ContentIndex, Resource } from '../../game/engine';
 import type { Translate } from '../../i18n';
 import { assetUrl, cardArt, icon, seatIcon } from './assets';
 import type { IconName } from './assets';
+import { roundedTriangle } from './model-fx';
 import type { ActionCardView, CourtCardView, PlayerView, TableView } from './view';
 
 /** Escapes text for HTML. */
@@ -118,35 +119,50 @@ function nameBar(p: PlayerView, t: Translate): string {
   return `<div class="name-bar"><span class="seat-c">${icon(seatIcon(p.id))}</span><span class="nm">${esc(playerName(t, p.id))}</span>${init}<span class="pow num" title="${esc(t('stat.power'))}">${p.power}</span></div>`;
 }
 
+/** The city triangle printed on the board (rounded corners, like the map's), as an SVG outline. */
+const CITY_TRIANGLE = (() => {
+  const pts = roundedTriangle(100, 13, 5);
+  const xs = pts.map((p) => p.x);
+  const zs = pts.map((p) => p.z);
+  const w = Math.max(...xs) - Math.min(...xs) + 6;
+  const h = Math.max(...zs) - Math.min(...zs) + 6;
+  const d = pts.map((p) => `${p.x.toFixed(1)},${p.z.toFixed(1)}`).join(' ');
+  return `<svg class="tri" viewBox="${(-w / 2).toFixed(1)} ${(-h / 2).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}" aria-hidden="true"><polygon points="${d}"/></svg>`;
+})();
+
 /**
- * The resource slots of a board with the cities on it: each unbuilt city sits
- * on the slots it covers (the slot shows under it, locked), and the cities
- * that cover no slot sit after them with the power they add once built.
+ * The resource slots of a board laid out like the physical one: from the
+ * left, the open slots, then each city's printed triangle over the slot(s) it
+ * covers (one triangle over two overlapping circles for a city covering two),
+ * then the triangles of the cities that cover no slot, with the power they
+ * add. An unbuilt city stands on its triangle; built, the printed outline
+ * shows and its slots take resources.
  */
 function slotsHtml(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null): string {
-  const coverOf = (i: number) => p.cities.find((c) => !c.built && c.slots.includes(i));
-  const slots = p.slots
-    .map((s) => {
-      const keys = `<span class="keys">${Array.from({ length: s.keys }, () => icon('key')).join('')}</span>`;
-      const city = coverOf(s.index);
-      if (s.locked) {
-        const on = city ? `<span class="on-city">${pieceIcon('city', p.id)}</span>` : icon('lock');
-        return `<div class="slot locked" title="${esc(t('slot.locked'))}">${keys}<span class="well">${on}</span></div>`;
-      }
-      if (!s.resource) return `<div class="slot" title="${esc(t('slot.empty'))}">${keys}<span class="well"></span></div>`;
-      const out = p.outraged.includes(s.resource) ? ' outraged' : '';
-      const label = t(`resource.${s.resource}`);
-      if (spendable.has(s.index)) {
-        return `<button type="button" class="slot spend${out}${chosen === s.index ? ' chosen' : ''}" data-act="spend" data-slot="${s.index}" title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></button>`;
-      }
-      return `<div class="slot${out}" title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></div>`;
-    })
-    .join('');
-  const bonus = p.cities
-    .filter((c) => !c.slots.length)
-    .map((c) => `<div class="slot bonus${c.built ? ' built' : ''}" title="${esc(t('slot.bonus', { n: c.bonus }))}"><span class="keys plus num">+${c.bonus}</span><span class="well">${c.built ? '' : `<span class="on-city">${pieceIcon('city', p.id)}</span>`}</span></div>`)
-    .join('');
-  return `<div class="slots">${slots}${bonus ? `<span class="slot-sep"></span>${bonus}` : ''}</div>`;
+  const slot = (i: number, covered: boolean) => {
+    const s = p.slots[i];
+    const keys = `<span class="keys">${Array.from({ length: s.keys }, () => icon('key')).join('')}</span>`;
+    if (s.locked) return `<div class="slot locked${covered ? ' covered' : ''}" title="${esc(t('slot.locked'))}">${keys}<span class="well">${covered ? '' : icon('lock')}</span></div>`;
+    if (!s.resource) return `<div class="slot${covered ? ' covered' : ''}" title="${esc(t('slot.empty'))}">${keys}<span class="well"></span></div>`;
+    const out = p.outraged.includes(s.resource) ? ' outraged' : '';
+    const cls = `slot${covered ? ' covered' : ''}${out}`;
+    const label = t(`resource.${s.resource}`);
+    if (spendable.has(s.index)) {
+      return `<button type="button" class="${cls} spend${chosen === s.index ? ' chosen' : ''}" data-act="spend" data-slot="${s.index}" title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></button>`;
+    }
+    return `<div class="${cls}" title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></div>`;
+  };
+  const onCity = (built: boolean) => (built ? '' : `<span class="on-city">${pieceIcon('city', p.id)}</span>`);
+  const covered = new Set(p.cities.flatMap((c) => c.slots));
+  const free = p.slots.filter((s) => !covered.has(s.index)).map((s) => slot(s.index, false));
+  const cities = p.cities.map((c) => {
+    if (c.slots.length) {
+      const pair = c.slots.length > 1 ? ' pair' : '';
+      return `<div class="cover${pair}${c.built ? ' built' : ''}">${c.slots.map((i) => slot(i, true)).join('')}${CITY_TRIANGLE}${onCity(c.built)}</div>`;
+    }
+    return `<div class="cover bonus${c.built ? ' built' : ''}" title="${esc(t('slot.bonus', { n: c.bonus }))}"><span class="keys"></span><span class="tri-cell">${CITY_TRIANGLE}<b class="plus num">+${c.bonus}</b></span>${onCity(c.built)}</div>`;
+  });
+  return `<div class="slots">${free.join('')}${cities.join('')}</div>`;
 }
 
 /**

@@ -71,8 +71,9 @@
     "arc": 0.5
   },
   "base": {
-    "side": 0.62,
+    "side": 0.73,
+    "radius": 0.07,
     "height": 0.05,
-    "bevel": 0.012
+    "bevel": 0.014
   }
 }
