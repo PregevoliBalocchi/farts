@@ -1,8 +1,9 @@
 // Access roles for the online game (docs/online-access.md).
-// Pure rules, no Firebase: the callable functions and the tests share them.
+// Pure rules, no Firebase: the page uses them to show what each role may do,
+// and firestore.rules enforces the same rules on the database (keep in step).
 //
-//   master — one Google account set at deploy time (MASTER_ADMIN_EMAIL); cannot
-//            be changed or removed; appoints and removes admins.
+//   master — one Google account, stored by the owner in Firestore config/access;
+//            cannot be changed or removed; appoints and removes admins.
 //   admin  — invites and removes players.
 //   player — plays; sees only their own access.
 // Anyone else signs in with Google but gets no access.

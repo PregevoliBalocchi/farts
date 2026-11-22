@@ -1,30 +1,25 @@
 // Online access page (docs/online-access.md): Google sign-in, then the
-// server says the caller's role. Admins manage invitations here. The game
-// itself (and the owner's content) is not part of this page.
+// caller's role from Firestore. Admins manage invitations here. Access is
+// enforced by firestore.rules; the checks below only explain refusals.
+// The game itself (and the owner's content) is not part of this page.
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { firebaseConfig, functionsRegion } from './firebase-config';
-
-type Role = 'master' | 'admin' | 'player';
-type MemberRow = { email: string; role: 'admin' | 'player'; invitedBy: string; invitedAt: number };
+import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
+import { isAdmin, normalizeEmail, removeRefusal, roleOf, setRoleRefusal } from '../online/roles';
+import type { Member, MemberRole, Role } from '../online/roles';
+import { firebaseConfig } from './firebase-config';
 
 const ROLE_LABEL: Record<Role, string> = { master: 'amministratore principale', admin: 'amministratore', player: 'giocatore' };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const fns = getFunctions(app, functionsRegion);
-const call = <Req, Res>(name: string) => async (data?: Req) => (await httpsCallable<Req, Res>(fns, name)(data as Req)).data;
-const whoAmI = call<void, { email: string; role: Role | null }>('whoAmI');
-const listMembers = call<void, { master: string; members: MemberRow[] }>('listMembers');
-const setMember = call<{ email: string; role: 'admin' | 'player' }, MemberRow>('setMember');
-const removeMember = call<{ email: string }, { email: string }>('removeMember');
+const db = getFirestore(app);
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const status = $('status');
-let myRole: Role | null = null;
-let myEmail = '';
+let me = { email: '', role: null as Role | null, master: '' };
+let members: (Member & { email: string })[] = [];
 
 $('sign-in').addEventListener('click', async () => {
   try {
@@ -47,17 +42,26 @@ onAuthStateChanged(auth, async (user) => {
   $('signed-in').hidden = false;
   show(status, 'Controllo l’invito…', 'muted');
   try {
-    const me = await whoAmI();
-    myRole = me.role;
-    myEmail = me.email;
+    const email = normalizeEmail(user.email);
+    const config = await getDoc(doc(db, 'config', 'access'));
+    const master = String(config.data()?.master ?? '').trim().toLowerCase();
+    if (!master) throw new Error('manca l’amministratore principale (config/access) nel database');
+    let mine: Member | undefined;
+    try {
+      const snap = await getDoc(doc(db, 'members', email));
+      mine = snap.exists() ? (snap.data() as Member) : undefined;
+    } catch {
+      mine = undefined;
+    }
+    me = { email, role: roleOf(email, master, mine), master };
     if (!me.role) {
-      $('who').textContent = me.email;
-      show(status, `Questo indirizzo non è invitato. Chiedi a un amministratore di aggiungere ${me.email}.`, 'err');
+      $('who').textContent = email;
+      show(status, `Questo indirizzo non è invitato. Chiedi a un amministratore di aggiungere ${email}.`, 'err');
       return;
     }
-    $('who').innerHTML = `${escape(me.email)} · <b>${ROLE_LABEL[me.role]}</b>`;
+    $('who').innerHTML = `${escape(email)} · <b>${ROLE_LABEL[me.role]}</b>`;
     show(status, 'Accesso consentito. La partita online arriverà qui.', 'ok');
-    if (me.role === 'master' || me.role === 'admin') {
+    if (isAdmin(me.role)) {
       // Only the master appoints admins.
       $<HTMLSelectElement>('invite-role').querySelector<HTMLOptionElement>('option[value="admin"]')!.hidden = me.role !== 'master';
       $('admin').hidden = false;
@@ -70,25 +74,40 @@ onAuthStateChanged(auth, async (user) => {
 
 $('invite').addEventListener('submit', async (ev) => {
   ev.preventDefault();
-  const email = $<HTMLInputElement>('invite-email').value;
-  const role = $<HTMLSelectElement>('invite-role').value as 'admin' | 'player';
+  const raw = $<HTMLInputElement>('invite-email').value;
+  const role = $<HTMLSelectElement>('invite-role').value as MemberRole;
   await act(async () => {
-    const r = await setMember({ email, role });
+    const email = normalizeEmail(raw);
+    await writeMember(email, role);
     $<HTMLInputElement>('invite-email').value = '';
-    return `${r.email} invitato come ${ROLE_LABEL[r.role]}.`;
+    return `${email} invitato come ${ROLE_LABEL[role]}.`;
   });
 });
 
+/** Invites an address or changes its role (the rules check it again). */
+async function writeMember(email: string, role: MemberRole): Promise<void> {
+  const prev = members.find((m) => m.email === email);
+  const current = roleOf(email, me.master, prev);
+  const why = setRoleRefusal(me.role, current, role, email === me.email);
+  if (why) throw new Error(why);
+  const now = Date.now();
+  const data: Member = { role, invitedBy: prev?.invitedBy ?? me.email, invitedAt: prev?.invitedAt ?? now, updatedAt: now };
+  await setDoc(doc(db, 'members', email), data);
+}
+
 async function refresh(): Promise<void> {
-  const { master, members } = await listMembers();
-  const rows = [`<tr><td>${escape(master)}</td><td>${ROLE_LABEL.master}</td><td></td></tr>`];
+  const snap = await getDocs(collection(db, 'members'));
+  members = snap.docs.map((d) => ({ email: d.id, ...(d.data() as Member) }));
+  members.sort((a, b) => (a.role === b.role ? a.email.localeCompare(b.email) : a.role === 'admin' ? -1 : 1));
+  const rows = [`<tr><td>${escape(me.master)}</td><td>${ROLE_LABEL.master}</td><td></td></tr>`];
   for (const m of members) {
-    const canEdit = m.email !== myEmail && (myRole === 'master' || m.role === 'player');
-    const other = m.role === 'admin' ? 'player' : 'admin';
-    const buttons = !canEdit
-      ? ''
-      : `${myRole === 'master' ? `<button type="button" data-set="${escape(m.email)}" data-role="${other}">rendi ${ROLE_LABEL[other]}</button>` : ''}
-         <button type="button" data-remove="${escape(m.email)}">togli accesso</button>`;
+    const canRemove = removeRefusal(me.role, m.role, m.email === me.email) === null;
+    const other: MemberRole = m.role === 'admin' ? 'player' : 'admin';
+    const canSwitch = setRoleRefusal(me.role, m.role, other, m.email === me.email) === null;
+    const buttons = [
+      canSwitch ? `<button type="button" data-set="${escape(m.email)}" data-role="${other}">rendi ${ROLE_LABEL[other]}</button>` : '',
+      canRemove ? `<button type="button" data-remove="${escape(m.email)}">togli accesso</button>` : '',
+    ].join('');
     rows.push(`<tr><td>${escape(m.email)}</td><td>${ROLE_LABEL[m.role]}</td><td class="actions">${buttons}</td></tr>`);
   }
   $('members').innerHTML = rows.join('');
@@ -99,12 +118,17 @@ $('members').addEventListener('click', async (ev) => {
   if (!b) return;
   if (b.dataset.set) {
     const email = b.dataset.set;
-    const role = b.dataset.role as 'admin' | 'player';
-    await act(async () => (await setMember({ email, role }), `${email} ora è ${ROLE_LABEL[role]}.`));
+    const role = b.dataset.role as MemberRole;
+    await act(async () => (await writeMember(email, role), `${email} ora è ${ROLE_LABEL[role]}.`));
   } else if (b.dataset.remove) {
     const email = b.dataset.remove;
     if (!confirm(`Togliere l’accesso a ${email}?`)) return;
-    await act(async () => (await removeMember({ email }), `Accesso tolto a ${email}.`));
+    await act(async () => {
+      const why = removeRefusal(me.role, roleOf(email, me.master, members.find((m) => m.email === email)), email === me.email);
+      if (why) throw new Error(why);
+      await deleteDoc(doc(db, 'members', email));
+      return `Accesso tolto a ${email}.`;
+    });
   }
 });
 
@@ -125,7 +149,8 @@ function show(el: HTMLElement, text: string, cls: 'ok' | 'err' | 'muted'): void 
 }
 
 function message(e: unknown): string {
-  return e instanceof Error ? e.message.replace(/^Firebase: /, '') : String(e);
+  const text = e instanceof Error ? e.message.replace(/^Firebase: /, '') : String(e);
+  return /insufficient permissions/i.test(text) ? 'Operazione non permessa per il tuo ruolo.' : text;
 }
 
 function escape(s: string): string {

@@ -193,9 +193,7 @@ data/*.local.md
 
 # Online deploy (docs/online-access.md)
 dist-online/
-functions/lib/
-functions/.env
-functions/.env.*
+functions/
 .firebase/
 firebase-debug.log
 firestore-debug.log

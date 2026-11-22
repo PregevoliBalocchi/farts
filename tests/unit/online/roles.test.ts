@@ -1,6 +1,6 @@
 // Invite-only roles (docs/online-access.md): who may invite, promote and remove.
 import { describe, expect, it } from 'vitest';
-import { AccessError, isAdmin, normalizeEmail, removeRefusal, roleOf, setRoleRefusal } from '../../../functions/src/roles';
+import { AccessError, isAdmin, normalizeEmail, removeRefusal, roleOf, setRoleRefusal } from '../../../src/online/roles';
 
 const MASTER = 'master@example.com';
 

@@ -1,21 +1,22 @@
 {
   "hosting": {
     "public": "dist-online",
-    "ignore": ["firebase.json", "**/.*"],
-    "predeploy": ["npm run build:online"],
-    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+    "ignore": [
+      "firebase.json",
+      "**/.*"
+    ],
+    "predeploy": [
+      "npm run build:online"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
-  },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "runtime": "nodejs22",
-      "ignore": ["node_modules", ".env.local", "src", "tsconfig.json"],
-      "predeploy": ["npm --prefix functions run build"]
-    }
-  ]
+  }
 }
