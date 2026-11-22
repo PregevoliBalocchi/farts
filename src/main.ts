@@ -27,4 +27,5 @@ if (app) install({
   step() {},
   send: app!.send,
   newGame: app!.newGame,
+  ...('load' in app! ? { load: (s: unknown) => (app as { load(next: unknown): void }).load(s) } : {}),
 } as Parameters<typeof install>[0]);

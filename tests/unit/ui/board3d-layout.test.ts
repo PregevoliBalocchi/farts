@@ -2,7 +2,7 @@
 // mapping, schematic fallback, and how ship stacks are laid out.
 import { describe, expect, it } from 'vitest';
 import {
-  BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pictureToWorld, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
+  BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pictureToWorld, pileSpots, shipSpot, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
 } from '../../../src/ui/table/board3d-layout';
 
 const PICTURE = { width: 4000, height: 2000 };
@@ -92,5 +92,37 @@ describe('tiltForZoom', () => {
     const tilts = [2, 4, 6, 8, 10].map((d) => tiltForZoom(d, 2, 10));
     expect(tilts).toEqual([...tilts].sort((a, b) => a - b));
     expect(tiltForZoom(6, 2, 10)).toBeCloseTo((TILT_NEAR + TILT_FAR) / 2);
+  });
+});
+
+describe('ship zones', () => {
+  const calib = { ...PICTURE, systems: { a: { x: 100, y: 100, ships: [{ x: 10, y: 20 }, { x: 30, y: 40 }] }, b: { x: 5, y: 5 } } };
+
+  it('puts each seat on its own point of the system ship zone', () => {
+    expect(shipSpot(calib, 'a', 0)).toEqual(pictureToWorld(PICTURE, 10, 20));
+    expect(shipSpot(calib, 'a', 1)).toEqual(pictureToWorld(PICTURE, 30, 40));
+    expect(shipSpot(calib, 'a', 2)).toEqual(pictureToWorld(PICTURE, 10, 20));
+  });
+
+  it('has no zone without calibration or ship points', () => {
+    expect(shipSpot(null, 'a', 0)).toBeNull();
+    expect(shipSpot(calib, 'b', 0)).toBeNull();
+    expect(shipSpot(calib, 'missing', 0)).toBeNull();
+  });
+
+  it('keeps a pile within a ship-and-a-half of its point, fresh standing behind damaged', () => {
+    const pile = pileSpots(3, 2);
+    expect(pile).toHaveLength(5);
+    for (const s of pile) expect(Math.hypot(s.dx, s.dz)).toBeLessThan(0.3);
+    const standing = pile.filter((s) => !s.lying);
+    const lying = pile.filter((s) => s.lying);
+    expect(standing).toHaveLength(3);
+    expect(Math.max(...standing.map((s) => s.dz))).toBeLessThan(Math.min(...lying.map((s) => s.dz)));
+  });
+
+  it('shows at most MAX_SHOWN ships in a pile, fresh first', () => {
+    const pile = pileSpots(MAX_SHOWN + 2, 3);
+    expect(pile).toHaveLength(MAX_SHOWN);
+    expect(pile.every((s) => !s.lying)).toBe(true);
   });
 });
