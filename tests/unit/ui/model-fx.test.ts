@@ -1,7 +1,7 @@
 // Pure helpers behind the 3D piece models (src/ui/table/model-fx.ts): fitting,
 // surface points for lights and fire, building bases, and ship flights.
 import { describe, expect, it } from 'vitest';
-import { agentLayout, arcHeight, easeInOut, headingSway, engineSpots, fireSpots, fitModel, planMoves, rimSpots, triangleCorners, windowSpots } from '../../../src/ui/table/model-fx';
+import { agentLayout, arcHeight, easeInOut, headingSway, engineSpots, fireSpots, fitModel, planMoves, rimSpots, fleetFormation, roundedTriangle, triangleCorners, windowSpots } from '../../../src/ui/table/model-fx';
 import type { ShipGroupAt } from '../../../src/ui/table/model-fx';
 
 /** A box from -1..1 on every axis as 8 corner vertices, normals pointing out along y for the top four. */
@@ -72,6 +72,49 @@ describe('surface points', () => {
       expect(p.ny).toBeGreaterThan(0.5);
       expect(p.y).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('roundedTriangle', () => {
+  it('rounds the corners and centres the outline on its bounding box, apex away from the viewer', () => {
+    const side = 0.73;
+    const r = 0.07;
+    const pts = roundedTriangle(side, r, 12);
+    const xs = pts.map((p) => p.x);
+    const zs = pts.map((p) => p.z);
+    // Rounding trims each base corner by r·(√3 − 1) and the apex by r.
+    expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(side - 2 * r * (Math.sqrt(3) - 1), 3);
+    expect(Math.max(...zs) - Math.min(...zs)).toBeCloseTo((side * Math.sqrt(3)) / 2 - r, 3);
+    expect(Math.min(...zs) + Math.max(...zs)).toBeCloseTo(0);
+    expect(pts.length).toBe(39);
+    expect(pts.find((p) => p.z === Math.min(...zs))!.x).toBeCloseTo(0);
+  });
+});
+
+describe('fleetFormation', () => {
+  const o = { front: 1.5, gapX: 1.2, gapZ: 0.8, perLine: 3 };
+
+  it('puts fresh ships in the front lines and damaged ones behind', () => {
+    const f = fleetFormation(4, 2, o);
+    expect(f).toHaveLength(6);
+    const freshX = Math.max(...f.filter((p) => !p.damaged).map((p) => p.x));
+    const damagedX = Math.min(...f.filter((p) => p.damaged).map((p) => p.x));
+    expect(Math.min(...f.map((p) => p.x))).toBe(1.5);
+    expect(damagedX).toBeGreaterThan(freshX);
+  });
+
+  it('keeps every two ships at least a gap apart, so none overlap', () => {
+    const f = fleetFormation(8, 8, o);
+    for (let i = 0; i < f.length; i++)
+      for (let j = i + 1; j < f.length; j++) {
+        const sameLine = f[i].x === f[j].x;
+        expect(sameLine ? Math.abs(f[i].z - f[j].z) : Math.abs(f[i].x - f[j].x)).toBeGreaterThanOrEqual(sameLine ? o.gapZ - 1e-9 : o.gapX - 1e-9);
+      }
+  });
+
+  it('centres a short line across the field', () => {
+    const f = fleetFormation(2, 0, o);
+    expect(f[0].z + f[1].z).toBeCloseTo(0);
   });
 });
 

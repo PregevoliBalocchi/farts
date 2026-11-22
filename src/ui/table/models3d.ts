@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import config from './models.json';
-import { bounds, engineSpots, fireSpots, fitModel, rimSpots, rng, triangleCorners, windowSpots } from './model-fx';
+import { bounds, engineSpots, fireSpots, fitModel, rimSpots, rng, roundedTriangle, windowSpots } from './model-fx';
 import type { ModelSpec } from './model-fx';
 import { paintedWood, SEAT_PAINT } from './pieces3d';
 import type { PieceKind } from './pieces3d';
@@ -249,15 +249,15 @@ let baseGeo: THREE.BufferGeometry | null = null;
 
 function baseGeometry(): THREE.BufferGeometry {
   if (baseGeo) return baseGeo;
-  const { side, height, bevel } = config.base;
-  const c = triangleCorners(side);
+  const { side, radius, height, bevel } = config.base;
+  // The outline is shrunk by the bevel, which grows it back out to the printed triangle's size.
+  const c = roundedTriangle(side - 2 * Math.sqrt(3) * bevel, Math.max(0.001, radius - bevel), 6);
   const shape = new THREE.Shape();
   // Shape space is x/y; it is laid flat below, so shape y becomes −z.
   shape.moveTo(c[0].x, -c[0].z);
-  shape.lineTo(c[1].x, -c[1].z);
-  shape.lineTo(c[2].x, -c[2].z);
+  for (const p of c.slice(1)) shape.lineTo(p.x, -p.z);
   shape.closePath();
-  const g = new THREE.ExtrudeGeometry(shape, { depth: height - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2 });
+  const g = new THREE.ExtrudeGeometry(shape, { depth: height - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3, curveSegments: 1 });
   g.rotateX(-Math.PI / 2);
   g.translate(0, bevel, 0);
   baseGeo = g;

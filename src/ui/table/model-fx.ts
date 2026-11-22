@@ -161,6 +161,60 @@ export function triangleCorners(side: number): { x: number; z: number }[] {
   ];
 }
 
+/**
+ * Outline of a building's base like the triangles printed on the map: the
+ * triangle of `side` with each corner rounded to `radius` (`steps` points per
+ * corner), one corner away from the viewer (−Z), centred on its bounding box
+ * (as the map's slot points are). Points go round in order.
+ */
+export function roundedTriangle(side: number, radius: number, steps = 6): { x: number; z: number }[] {
+  const c = triangleCorners(side);
+  const pts: { x: number; z: number }[] = [];
+  c.forEach((v) => {
+    // A corner's arc: centred 2r inside the corner along its bisector, spanning 120°.
+    const toCentre = { x: -v.x, z: -v.z };
+    const len = Math.hypot(toCentre.x, toCentre.z);
+    const centre = { x: v.x + (toCentre.x / len) * 2 * radius, z: v.z + (toCentre.z / len) * 2 * radius };
+    const mid = Math.atan2(v.z - centre.z, v.x - centre.x);
+    for (let k = 0; k <= steps; k++) {
+      const a = mid - Math.PI / 3 + ((2 * Math.PI) / 3) * (k / steps);
+      pts.push({ x: centre.x + radius * Math.cos(a), z: centre.z + radius * Math.sin(a) });
+    }
+  });
+  const zs = pts.map((p) => p.z);
+  const shift = (Math.min(...zs) + Math.max(...zs)) / 2;
+  return pts.map((p) => ({ x: p.x, z: p.z - shift }));
+}
+
+/** One ship of a fleet in battle formation: distance from the centre line (x ≥ 0), across (z), and whether it is damaged. */
+export interface FormationSpot {
+  x: number;
+  z: number;
+  damaged: boolean;
+}
+
+/**
+ * A fleet drawn in formation for the battle view: fresh ships in lines
+ * across the front (`front` from the centre), damaged ships in lines behind
+ * them, `perLine` ships per line `gapZ` apart, lines `gapX` apart, each line
+ * centred and every other line staggered by half a gap. `x` grows away from
+ * the enemy; the caller mirrors it for the side on the left.
+ */
+export function fleetFormation(fresh: number, damaged: number, o: { front: number; gapX: number; gapZ: number; perLine: number }): FormationSpot[] {
+  const out: FormationSpot[] = [];
+  let line = 0;
+  const place = (n: number, dmg: boolean) => {
+    for (let start = 0; start < n; start += o.perLine, line++) {
+      const k = Math.min(o.perLine, n - start);
+      const stagger = line % 2 ? o.gapZ / 4 : -o.gapZ / 4;
+      for (let j = 0; j < k; j++) out.push({ x: o.front + line * o.gapX, z: (j - (k - 1) / 2) * o.gapZ + (k < o.perLine ? 0 : stagger), damaged: dmg });
+    }
+  };
+  place(fresh, false);
+  place(damaged, true);
+  return out;
+}
+
 /** One seat's group of ships drawn in a system: fresh or damaged, how many, and where. */
 export interface ShipGroupAt {
   player: number;

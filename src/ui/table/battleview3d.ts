@@ -7,12 +7,13 @@
 // left out. One renderer, created on the first battle and reused.
 
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import type { DieFace, DieType } from '../../game/engine';
 import { assetUrl } from './assets';
 import type { BattleAfter, BattlePick } from './battle';
 import { facePicture } from './battle';
 import { piece } from './kitpieces';
-import { easeInOut, rng } from './model-fx';
+import { easeInOut, fleetFormation, rng } from './model-fx';
 
 /** Size of the 3D view in the battle window, in CSS pixels. */
 export const BATTLE_VIEW = { w: 1180, h: 520 } as const;
@@ -39,6 +40,8 @@ export interface BattleScene {
 /** Scale of the pieces in this close view, against their size on the board. */
 const PIECE_SCALE = 2.1;
 const DIE_SIZE = 0.42;
+/** Radius of the dice's rounded edges and corners. */
+const DIE_ROUND = 0.07;
 /** Height of a floating ship's body in this view (its hover times PIECE_SCALE). */
 const SHIP_RING_Y = 0.3;
 const ROLL_SECONDS = 1.3;
@@ -166,6 +169,8 @@ export class BattleView3D {
     this.canPick = scene.canPick;
     this.buildForces(scene);
     if (scene.rollKey !== this.rollKey) {
+      // Framed once per roll, so the view holds still while hits are placed.
+      this.fitCamera();
       this.rollKey = scene.rollKey;
       this.buildDice(scene.dice);
       this.rollStart = null;
@@ -212,36 +217,39 @@ export class BattleView3D {
       m.userData.pulse = true;
       this.forces.add(m);
     };
+    // One ship's footprint at this scale, so the formation spaces them without overlapping.
+    const size = this.shipSize(scene.attackerSeat);
+    const spacing = { front: 1.35 + size.x / 2, gapX: size.x + 0.3, gapZ: Math.max(0.8, size.z + 0.45), perLine: 3 };
+    let farthest = spacing.front;
     const fleet = (seat: number, st: BattleAfter['attacker'], side: 'attacker' | 'defender') => {
+      // The attacker on the left with its noses (−X on the models) turned right, the defender facing it.
       const dir = side === 'attacker' ? -1 : 1;
-      const ships: ('fresh' | 'damaged')[] = [...Array<'fresh'>(Math.min(st.fresh, 8)).fill('fresh'), ...Array<'damaged'>(Math.min(st.damaged, 8)).fill('damaged')];
-      ships.forEach((kind, i) => {
-        const o = piece('ship', seat, { lying: kind === 'damaged' });
-        const col = i % 3;
-        const row = Math.floor(i / 3);
-        const x = dir * (1.75 + row * 0.95 + (col % 2) * 0.2);
-        const z = -0.9 + col * 0.9;
-        o.position.set(x, 0, z);
+      for (const at of fleetFormation(Math.min(st.fresh, 8), Math.min(st.damaged, 8), spacing)) {
+        const kind = at.damaged ? 'damaged' : 'fresh';
+        const o = piece('ship', seat, { lying: at.damaged });
+        const x = dir * at.x;
+        o.position.set(x, 0, at.z);
         o.scale.setScalar(PIECE_SCALE);
-        // The models' nose is −X: the attacker faces right, the defender left.
         o.rotation.y = side === 'attacker' ? Math.PI : 0;
         const pick: BattlePick = { side, ship: kind };
         o.userData.pick = pick;
         this.forces.add(o);
+        if (side === 'defender') farthest = Math.max(farthest, at.x);
         // The ring circles the ship at the height it floats, so it reads as that ship's.
-        if (can?.(pick)) ring(x, SHIP_RING_Y, z, 0.5);
-      });
+        if (can?.(pick)) ring(x, SHIP_RING_Y, at.z, Math.max(0.42, size.x * 0.5));
+      }
     };
     fleet(scene.attackerSeat, scene.after.attacker, 'attacker');
     fleet(scene.defenderSeat, scene.after.defender, 'defender');
-    // The defender's buildings stand behind its ships; other seats' buildings further back.
+    // The buildings stand behind the defender's last line of ships.
+    const behind = farthest + size.x / 2 + 0.75;
     let k = 0;
     scene.buildings.forEach((b, i) => {
       const state = scene.after.buildings[i];
       if (state === 'destroyed') return;
       const o = piece(b.type, b.owner, { damaged: state === 'damaged' });
-      const x = 3.9 + (k % 2) * 0.9;
-      const z = -1.3 + Math.floor(k / 2) * 1.1;
+      const x = behind + Math.floor(k / 3) * 0.95;
+      const z = ((k % 3) - 1) * 1.05;
       k++;
       o.position.set(x, 0, z);
       o.scale.setScalar(PIECE_SCALE);
@@ -250,6 +258,40 @@ export class BattleView3D {
       this.forces.add(o);
       if (can?.(pick)) ring(x, 0.02, z, 0.62);
     });
+  }
+
+  /** A ship's footprint in this view (its meshes only, not its lights or smoke), measured once. */
+  private shipFoot: THREE.Vector3 | null = null;
+  private shipSize(seat: number): THREE.Vector3 {
+    if (this.shipFoot) return this.shipFoot;
+    const o = piece('ship', seat);
+    o.updateMatrixWorld(true);
+    const box = new THREE.Box3();
+    o.traverse((x) => {
+      if ((x as THREE.Mesh).isMesh) box.expandByObject(x);
+    });
+    const size = box.isEmpty() ? new THREE.Vector3(0.5, 0.2, 0.25) : box.getSize(new THREE.Vector3());
+    // Only keep it once the owner's model has loaded (the stand-in shape is a different size).
+    if (o.userData.model) this.shipFoot = size.multiplyScalar(PIECE_SCALE);
+    return size.clone().multiplyScalar(o.userData.model ? 1 : PIECE_SCALE);
+  }
+
+  /** Backs the camera off just enough to show every piece, centred on them. */
+  private fitCamera(): void {
+    const box = new THREE.Box3();
+    this.forces.updateMatrixWorld(true);
+    this.forces.traverse((x) => {
+      if ((x as THREE.Mesh).isMesh) box.expandByObject(x);
+    });
+    const minX = Math.min(-1.3, box.isEmpty() ? -3 : box.min.x);
+    const maxX = Math.max(1.3, box.isEmpty() ? 3 : box.max.x);
+    const cx = (minX + maxX) / 2;
+    const half = (maxX - minX) / 2 + 0.35;
+    const tanH = Math.tan(((this.camera.fov / 2) * Math.PI) / 180) * this.camera.aspect;
+    const dist = Math.max(6.2, half / tanH);
+    const dir = new THREE.Vector3(0, 4.8, 5.2).normalize();
+    this.camera.position.set(cx, 0.35, -0.1).addScaledVector(dir, dist);
+    this.camera.lookAt(cx, 0.35, -0.1);
   }
 
   private buildDice(dice: readonly RolledDie[]): void {
@@ -263,7 +305,7 @@ export class BattleView3D {
     this.dice = dice.map((d, i) => {
       const mats = d.faces.slice(0, 6).map((f) => new THREE.MeshStandardMaterial({ map: faceTexture(d.type, f), roughness: 0.45 }));
       while (mats.length < 6) mats.push(new THREE.MeshStandardMaterial({ color: DIE_COLOURS[d.type] }));
-      const geo = new THREE.BoxGeometry(DIE_SIZE, DIE_SIZE, DIE_SIZE);
+      const geo = new RoundedBoxGeometry(DIE_SIZE, DIE_SIZE, DIE_SIZE, 4, DIE_ROUND);
       const mesh = new THREE.Mesh(geo, mats);
       mesh.castShadow = true;
       const col = i % cols;
