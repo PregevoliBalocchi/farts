@@ -22,7 +22,7 @@ const phase = (page: Page) => page.evaluate(() => (window.game!.state as { phase
 test('boots the table with every region and no errors', async ({ page }) => {
   const errors = await open(page);
   expect(await page.evaluate(() => window.game!.scene)).toBe('table');
-  for (const r of ['header', 'rivals', 'map', 'ambitions', 'court', 'recent', 'local', 'hand', 'owned']) {
+  for (const r of ['header', 'rivals', 'map', 'side', 'ambitions', 'court', 'recent', 'local', 'hand', 'confirm']) {
     await expect(page.locator(`[data-region="${r}"]`)).toBeVisible();
   }
   // The context box shows only when there is something to choose: not before a card is picked.

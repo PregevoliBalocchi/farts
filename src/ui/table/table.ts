@@ -29,10 +29,10 @@ import { detailHtml } from './details';
 import type { DetailTarget } from './details';
 import { actionCommand, battlePayload, clamp, IDLE, movePayload, startAction } from './intent';
 import type { Intent } from './intent';
-import { place, REGIONS, STAGE, placeUp } from './layout';
+import { HAND_AWAY, place, REGIONS, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  ambitionsStrip, button, cardLabel, playedText, cardPicker, courtFace, courtPanel, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownedPanel, PICKER_PAGE, playerName, rivalPanel,
+  actionCard, button, cardLabel, confirmButtons, playedCard, playedText, cardPicker, courtFace, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, PICKER_PAGE, playerName, rivalPanel, sidePanel,
 } from './render';
 import type { PickerGroup, PickerState } from './render';
 import { legal, othersTurn, tableView } from './view';
@@ -612,9 +612,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         // Actions left as stars; the suit's actions as buttons; prelude by clicking a resource on the board.
         const stars = `<span class="ctx-pips" title="${esc(t('prompt.actions', { n: b.remaining }))}">${Array.from({ length: b.remaining }, () => icon('pip')).join('') || '0'}</span>`;
         const prelude = b.preludeOpen && v.players[me].slots.some((s) => s.resource && !s.locked) ? `<div class="hint small">${esc(t('play.preludeShort'))}</div>` : '';
-        const canEnd = can({ type: 'endTurn', player: me });
-        const end = button('end-turn', t('play.endTurn'), { cls: `primary end${b.remaining === 0 ? ' pulse' : ''}`, title: t('play.endTurn'), html: `${icon('confirm')}<span>${esc(t('play.endTurn'))}</span>`, disabled: !canEnd });
-        return `<div class="ctx-head">${stars}${prelude}</div><div class="btn-grid kind-row">${kindButtons(b.kinds, undefined, b.remaining > 0)}</div><div class="ctx-foot">${powersButton(v)}${end}</div>`;
+        // Ending the turn is the confirm button in the bottom-right corner.
+        const powers = powersButton(v);
+        return `<div class="ctx-head">${stars}${prelude}</div><div class="btn-grid kind-row">${kindButtons(b.kinds, undefined, b.remaining > 0)}</div>${powers ? `<div class="ctx-foot">${powers}</div>` : ''}`;
       }
       case 'choose':
         return `<div class="ctx-head"><span class="ctx-title">${esc(t('play.preludeWith', { res: t(`resource.${i.prelude}`) }))}</span></div><div class="btn-grid kind-row">${kindButtons(i.kinds, i.prelude, true)}${cancel}</div>`;
@@ -814,6 +814,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     el?.focus();
   }
 
+  /** Whether the hand was slid away at the last render (to animate only the change). */
+  let lastHandAway = false;
   function render(): void {
     const key = focusKey();
     const me = local();
@@ -828,7 +830,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (intent.step === 'build' || intent.step === 'repair' || intent.step === 'tax' || intent.step === 'battle') chosen.add(intent.system);
 
     const rivals = v.rivals.map((r) => rivalPanel(ix, v, v.players[r], t)).join('');
-    const undo = online ? '' : button('undo', '', { cls: 'icon', title: t('btn.undo'), html: icon('undo'), disabled: history.length === 0 });
+    const ending = myTurn() && v.phase === 'actions' && intent.step === 'idle';
+    const corner = confirmButtons(t, { show: !online, enabled: history.length > 0 }, { show: ending, enabled: ending && can({ type: 'endTurn', player: me }), ready: (v.budget?.remaining ?? 1) === 0 });
     // Choosing a card: passing and redrawing the first hand sit by the hand's title.
     const choosing = myTurn() && (v.phase === 'lead' || v.phase === 'follow');
     const handTools = myTurn() && v.phase === 'lead'
@@ -836,15 +839,27 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       : '';
     // The context box: only when there is something to choose (a picked card, the actions, a step, a battle).
     const ctx = actionsPanel(v);
+    // The hand sits beside the local board and slides away while the action box is open (animated only when that changes).
+    const handAway = !!ctx;
+    const handMoved = handAway !== lastHandAway;
+    lastHandAway = handAway;
+    // The action box shows the card being played on its left, as on the digital table.
+    const picked = selected ? v.hand.find((h) => h.card === selected) : undefined;
+    const ownPlay = v.plays.some((x) => x.player === me)
+      ? `<div class="act-card">${playedCard(ix, v, t, me)}</div>`
+      : picked && ctx
+        ? `<div class="act-card"><div class="play">${actionCard(ix, picked, t)}</div></div>`
+        : '';
 
     stage.innerHTML = `<div class="tbl-stars"></div>
-      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', courtPanel(v, t, courtPickable(intent)), ambitionsStrip(ix, v, t), undo)}</div>
+      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', prompt(v))}</div>
       <div class="map-area${board3d ? '' : ' glass'}" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
+      <div class="region side" data-region="side" style="${place(REGIONS.side)}">${sidePanel(ix, v, t, courtPickable(intent))}</div>
       <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, preludeCards(v))}</div>
-      <div class="region glass hand" data-region="hand" style="${place(REGIONS.hand)}">${handPanel(ix, v, t, selected, choosing, seizeWith, handTools)}</div>
-      <div class="region glass owned${v.players[me].court.length ? '' : ' empty'}" data-region="owned" style="${place(REGIONS.owned)};--w:${REGIONS.owned.w}px">${ownedPanel(ix, v.players[me], t)}</div>
-      ${ctx ? `<div class="region glass actions${myTurn() ? ' mine' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : ''}
+      <div class="region hand${handAway ? ' away' : ''}${handMoved ? (handAway ? ' slide-out' : ' slide-in') : ''}" data-region="hand" style="${place(REGIONS.hand)};--away:${HAND_AWAY}px">${handPanel(ix, v, t, selected, choosing, seizeWith, handTools)}</div>
+      <div class="region confirm" data-region="confirm" style="${place(REGIONS.confirm)}">${corner}</div>
+      ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ''}${ownPlay ? ' with-card' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}">${ownPlay}<div class="actions-body">${ctx}</div></div>` : ''}
       <div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>
       ${modalHtml(v)}
       ${toast ? `<div class="toast" role="alert">${esc(toast)}</div>` : ''}

@@ -1,12 +1,11 @@
 // Where each region of the table sits on the fixed 1920x1080 stage (scaled to
-// the window by stage.ts). The 3D map fills the window behind everything; the
-// interface floats in front of it, from the owner's sketch: chapter, Court,
-// ambitions and round state along the top, rivals down the left (each with the
-// card they played beside it), and along the bottom the local board, the hand
-// and the local player's Court cards. A context box with the choices of the
-// current step (how to play the picked card, the actions, a battle) appears
-// above the hand only when there is something to choose.
-// `?debug=layout` outlines these rectangles.
+// the window by stage.ts), copied from the official digital table the owner
+// sent: the 3D map fills the window behind everything; along the top, the
+// chapter and the general supply (left), the prompt (centre) and the menu
+// buttons (right); rivals down the left, each with the card they played
+// beside it; down the right, the ambitions and then the Court; along the
+// bottom, the local board, the action box, the hand, and undo/confirm in the
+// corner. `?debug=layout` outlines these rectangles.
 
 /** Stage size in stage pixels. */
 export const STAGE = { w: 1920, h: 1080 } as const;
@@ -19,31 +18,35 @@ export interface Rect {
   h: number;
 }
 
-const G = 16; // gutter
-const TOP = 100; // height of the top strip
-const BOTTOM = 236;
-const BOT_Y = 1080 - BOTTOM - G;
-const SIDE_L = 404; // a rival's box plus the card played beside it
-const LOCAL_W = 496;
-const HAND_W = 620;
-const RIVAL_H = 158;
+const G = 10; // gutter
+const TOP = 70; // height of the top strip
+const SIDE_R = 180; // the right column: ambitions, then the Court
+const LOCAL_W = 470;
+const LOCAL_H = 236;
+const RIVAL_H = 206;
+const BOT = 1080 - G; // bottom edge of the bottom row
+
+/** How far the hand slides right to make room for the action box (its width plus a gutter). */
+export const HAND_AWAY = 450 + G;
 
 /** Region ids and rectangles. */
 export const REGIONS = {
-  /** Chapter, Court row, ambitions, round state, supply, latest move, menu buttons (the gaps let clicks through to the map). */
+  /** Chapter and supply, the prompt, the menu buttons (the gaps let clicks through to the map). */
   header: { x: 0, y: 0, w: 1920, h: TOP },
   /** Rival seats, stacked, each with its played card. */
-  rivals: { x: G, y: TOP + 4, w: SIDE_L, h: RIVAL_H * 3 + 20 },
+  rivals: { x: G, y: TOP + 8, w: 470, h: RIVAL_H * 3 + 16 },
+  /** The ambitions (declared markers on top, then one row per ambition) and the Court below them. */
+  side: { x: 1920 - SIDE_R - G, y: TOP - 6, w: SIDE_R, h: 1080 - TOP - 80 },
   /** The free middle of the screen: the 2D map and the 3D map's keyboard stand-ins. */
-  map: { x: G * 2 + SIDE_L, y: TOP + 4, w: 1920 - SIDE_L - G * 3, h: BOT_Y - TOP - 80 },
+  map: { x: 490, y: TOP + 8, w: 1920 - 490 - SIDE_R - G * 3, h: 1080 - TOP - LOCAL_H - 40 },
   /** Local seat board. */
-  local: { x: G, y: BOT_Y, w: LOCAL_W, h: BOTTOM },
-  /** Local hand. */
-  hand: { x: G * 2 + LOCAL_W, y: BOT_Y, w: HAND_W, h: BOTTOM },
-  /** The local player's Court cards. */
-  owned: { x: G * 3 + LOCAL_W + HAND_W, y: BOT_Y, w: 1920 - G * 4 - LOCAL_W - HAND_W, h: BOTTOM },
-  /** Context box with the current step's choices: anchored above the hand, as wide as its content up to w, grows upwards up to h. */
-  actions: { x: G * 2 + LOCAL_W, y: BOT_Y - 10 - 440, w: 1920 - G * 3 - LOCAL_W, h: 440 },
+  local: { x: G, y: BOT - LOCAL_H, w: LOCAL_W, h: LOCAL_H },
+  /** Local hand, fanned, beside the local board; it slides right by HAND_AWAY while the action box is open. */
+  hand: { x: LOCAL_W + G * 3, y: BOT - 226, w: 640, h: 226 },
+  /** Undo and confirm, bottom right. */
+  confirm: { x: 1920 - 140 - G, y: BOT - 64, w: 140, h: 64 },
+  /** The action box: anchored at the bottom between the local board and the hand, grows upwards up to h. */
+  actions: { x: LOCAL_W + G * 3, y: BOT - 440, w: 450, h: 440 },
   /** Card picker and other dialogs. */
   modal: { x: 160, y: 90, w: 1600, h: 900 },
   /** Detail windows (height grows with the content, up to h). */
