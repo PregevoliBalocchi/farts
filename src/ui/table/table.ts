@@ -14,6 +14,10 @@ import { loadContent } from '../content';
 import { assetUrl, icon } from './assets';
 import { defaultAllocation } from './battle';
 import { createBoard3D } from './board3d';
+import { AGENTS_VIEW, CourtAgents3D } from './courtagents3d';
+
+/** How far the agents' view rises over the bottom of the zoomed card, in pixels. */
+const AGENTS_OVERLAP = 45;
 import { cardPowers, decisionOptions } from './decide';
 import type { PowerOption } from './decide';
 import type { DecisionOption, DecisionPart } from './decide';
@@ -1021,18 +1025,40 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   });
 
   // ---- card zoom: hovering or focusing any [data-zoom] card shows it large beside it ----
+  // A Court card in the row also shows the agents on it, standing in 3D in front of it.
+  let agents3d: CourtAgents3D | null | undefined;
+  function agentsView(): CourtAgents3D | null {
+    if (agents3d === undefined) {
+      try {
+        agents3d = new CourtAgents3D(params.get('motion') !== 'off');
+      } catch {
+        agents3d = null;
+      }
+    }
+    return agents3d;
+  }
   function showZoom(el: HTMLElement): void {
     const zoom = stage.querySelector<HTMLElement>('.card-zoom');
     const id = el.dataset.zoom;
     if (!zoom || !id) return;
     const d = ix.courtCards.get(id);
     zoom.innerHTML = largeCard({ card: id, kind: d?.kind ?? null, resource: d?.resource ?? null, keys: d?.keys ?? 0 }, t, { selected: false, disabled: false });
+    const onCard = (el.dataset.agents ?? '')
+      .split(',')
+      .filter(Boolean)
+      .map((x) => x.split(':').map(Number))
+      .map(([player, count]) => ({ player, count }));
+    const view = onCard.length ? agentsView() : null;
+    if (view) {
+      zoom.appendChild(view.canvas);
+      view.show(onCard);
+    } else agents3d?.hide();
     const r = el.getBoundingClientRect();
     const s = stage.getBoundingClientRect();
     const x = (r.left - s.left) / scale;
     const y = (r.top - s.top) / scale;
     const w = r.width / scale;
-    const ZW = 300, ZH = 416, GAP = 14;
+    const ZW = 300, ZH = 416 + (view ? AGENTS_VIEW.h - AGENTS_OVERLAP : 0), GAP = 14;
     const left = x + w / 2 > STAGE.w / 2 ? x - ZW - GAP : x + w + GAP;
     const top = Math.max(8, Math.min(STAGE.h - ZH - 8, y + (r.height / scale) / 2 - ZH / 2));
     zoom.style.left = `${left}px`;
@@ -1042,6 +1068,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   function hideZoom(): void {
     const zoom = stage.querySelector<HTMLElement>('.card-zoom');
     if (zoom) zoom.hidden = true;
+    agents3d?.hide();
   }
   const zoomTarget = (e: Event) => (e.target as Element).closest<HTMLElement>('[data-zoom]');
   stage.addEventListener('mouseover', (e) => {

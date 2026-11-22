@@ -349,7 +349,7 @@ export function courtPanel(v: TableView, t: Translate, pickable: ReadonlySet<num
   const cards = v.court
     .map((c) => {
       const agents = c.agents.map((a) => `<span class="agent s-${a.player % 4}" title="${esc(playerName(t, a.player))}">${icon('agent')}${a.count}</span>`).join('');
-      return `<button type="button" class="court-tile${pickable.has(c.slot) ? ' pickable' : ''}" data-act="court" data-slot="${c.slot}" data-zoom="${esc(c.card)}" aria-label="${esc(c.card)}">
+      return `<button type="button" class="court-tile${pickable.has(c.slot) ? ' pickable' : ''}" data-act="court" data-slot="${c.slot}" data-zoom="${esc(c.card)}" data-agents="${esc(c.agents.map((a) => `${a.player}:${a.count}`).join(','))}" aria-label="${esc(c.card)}">
         <span class="court-face">${courtFace(c, t)}</span><span class="agents">${agents || '&nbsp;'}</span></button>`;
     })
     .join('');

@@ -1,7 +1,7 @@
 // Pure helpers behind the 3D piece models (src/ui/table/model-fx.ts): fitting,
 // surface points for lights and fire, building bases, and ship flights.
 import { describe, expect, it } from 'vitest';
-import { arcHeight, easeInOut, engineSpots, fireSpots, fitModel, planMoves, rimSpots, triangleCorners, windowSpots } from '../../../src/ui/table/model-fx';
+import { agentLayout, arcHeight, easeInOut, headingSway, engineSpots, fireSpots, fitModel, planMoves, rimSpots, triangleCorners, windowSpots } from '../../../src/ui/table/model-fx';
 import type { ShipGroupAt } from '../../../src/ui/table/model-fx';
 
 /** A box from -1..1 on every axis as 8 corner vertices, normals pointing out along y for the top four. */
@@ -118,5 +118,36 @@ describe('flight curve', () => {
     expect(easeInOut(-1)).toBe(0);
     expect(easeInOut(0.5)).toBeCloseTo(0.5);
     expect(easeInOut(2)).toBe(1);
+  });
+});
+
+describe('agentLayout', () => {
+  it('draws every agent up to the cap, each seat in its own cluster, centred', () => {
+    const { spots, more } = agentLayout([{ player: 0, count: 2 }, { player: 2, count: 7 }, { player: 3, count: 0 }], 5);
+    expect(spots.filter((s) => s.player === 0)).toHaveLength(2);
+    expect(spots.filter((s) => s.player === 2)).toHaveLength(5);
+    expect(spots.some((s) => s.player === 3)).toBe(false);
+    expect(more).toEqual([expect.objectContaining({ player: 2, count: 7 })]);
+    const xs = spots.map((s) => s.x);
+    expect(Math.min(...xs) + Math.max(...xs)).toBeCloseTo(0);
+  });
+
+  it('keeps clusters apart: every agent of the first seat stands left of the second', () => {
+    const { spots } = agentLayout([{ player: 1, count: 3 }, { player: 0, count: 3 }]);
+    const a = spots.filter((s) => s.player === 1).map((s) => s.x);
+    const b = spots.filter((s) => s.player === 0).map((s) => s.x);
+    expect(Math.max(...a)).toBeLessThan(Math.min(...b));
+  });
+
+  it('puts the fourth agent and on in a row behind', () => {
+    const { spots } = agentLayout([{ player: 0, count: 4 }], 5, 3);
+    expect(spots.filter((s) => s.z < 0)).toHaveLength(1);
+  });
+});
+
+describe('headingSway', () => {
+  it('stays a small turn and is the same for the same time and agent', () => {
+    for (const t of [0, 1, 5, 9]) expect(Math.abs(headingSway(t, 2))).toBeLessThan(0.4);
+    expect(headingSway(3, 1)).toBe(headingSway(3, 1));
   });
 });

@@ -223,3 +223,47 @@ export function easeInOut(t: number): number {
   const c = Math.min(1, Math.max(0, t));
   return c * c * (3 - 2 * c);
 }
+
+/** One agent model to stand in front of a Court card: whose, and where (card-local units, x across, z towards the viewer). */
+export interface AgentSpot {
+  player: number;
+  x: number;
+  z: number;
+}
+
+/**
+ * Where the agents on a Court card stand in its close-up: each seat's agents
+ * in their own cluster (up to `maxShown`, in rows of `perRow`), the clusters
+ * side by side and centred. `more` lists the seats with more agents than drawn.
+ */
+export function agentLayout(groups: readonly { player: number; count: number }[], maxShown = 5, perRow = 3, step = 0.14, gap = 0.12): { spots: AgentSpot[]; more: { player: number; count: number; x: number }[] } {
+  const clusters = groups
+    .filter((g) => g.count > 0)
+    .map((g) => {
+      const n = Math.min(g.count, maxShown);
+      const cols = Math.min(n, perRow);
+      return { g, n, cols, width: (cols - 1) * step };
+    });
+  const total = clusters.reduce((s, c) => s + c.width, 0) + gap * Math.max(0, clusters.length - 1) + step * clusters.length;
+  let left = -total / 2 + step / 2;
+  const spots: AgentSpot[] = [];
+  const more: { player: number; count: number; x: number }[] = [];
+  for (const c of clusters) {
+    for (let i = 0; i < c.n; i++) {
+      const row = Math.floor(i / perRow);
+      const col = i % perRow;
+      const inRow = Math.min(perRow, c.n - row * perRow);
+      // A back row sits behind and between the front one.
+      const x = left + (c.width - (inRow - 1) * step) / 2 + col * step;
+      spots.push({ player: c.g.player, x, z: -row * step * 0.9 });
+    }
+    if (c.g.count > c.n) more.push({ player: c.g.player, count: c.g.count, x: left + c.width / 2 });
+    left += c.width + step + gap;
+  }
+  return { spots, more };
+}
+
+/** An agent's turn at `sec` seconds: a fixed lean of its own (from `phase`) plus a slow small sway. */
+export function headingSway(sec: number, phase: number): number {
+  return 0.25 * Math.sin(phase * 2.3) + 0.12 * Math.sin(sec * 0.7 + phase);
+}
