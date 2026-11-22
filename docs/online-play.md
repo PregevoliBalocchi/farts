@@ -44,8 +44,8 @@ table (`src/ui/debug.ts`) keeps its own online mode but is no longer used here.
   anyone with the link. `assets/ui/` is picked up by the build when present,
   and it is committed: it holds the publisher's development kit pictures and
   the board picture (owner's decision for the invite-only beta, see
-  `docs/ui-assets.md`). Card images still belong in Firestore content, not in
-  the build.
+  `docs/ui-assets.md`). The card faces in `assets/cards/court/`,
+  `court-campaign/`, `lore/` and `leaders/` are committed and bundled too.
 
 ## Deploy
 

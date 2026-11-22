@@ -185,17 +185,34 @@ export class Board3D {
    */
   resetView(): void {
     const { w, d } = this.size();
-    const tanV = Math.tan((this.camera.fov * Math.PI) / 360);
-    const tanH = tanV * this.camera.aspect;
-    // The far edge looks narrower and the near one sits lower: allow for both.
-    const lean = (d / 2) * Math.cos(TILT);
-    const dist = Math.max(1, Math.min(w / 2 / tanH - lean, (d * Math.sin(TILT)) / 2 / tanV - lean) * 0.98);
     this.camera.clearViewOffset();
     this.controls.target.set(0, 0, 0);
-    this.camera.position.set(0, dist * Math.sin(TILT), dist * Math.cos(TILT));
+    // Seated at the table: the closest distance at which the whole board is in view.
+    const corners = [-1, 1].flatMap((sx) => [-1, 1].map((sz) => new THREE.Vector3((sx * w) / 2, 0, (sz * d) / 2)));
+    const place = (r: number) => {
+      this.camera.position.set(0, r * Math.sin(TILT), r * Math.cos(TILT));
+      this.camera.lookAt(0, 0, 0);
+      this.camera.updateMatrixWorld();
+    };
+    const fits = (r: number) => {
+      place(r);
+      return corners.every((c) => {
+        const p = c.clone().project(this.camera);
+        return Math.abs(p.x) <= 0.98 && Math.abs(p.y) <= 0.98 && p.z < 1;
+      });
+    };
+    let lo = 0.5;
+    let hi = 200;
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      if (fits(mid)) hi = mid;
+      else lo = mid;
+    }
+    const dist = hi;
+    place(dist);
     this.coverDist = dist;
     this.controls.minDistance = dist * 0.22;
-    this.controls.maxDistance = dist * 1.7;
+    this.controls.maxDistance = dist * 1.3;
     this.controls.update();
     this.framed = true;
     this.dirty = true;

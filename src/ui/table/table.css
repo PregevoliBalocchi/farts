@@ -613,3 +613,11 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .court-strip .face-ph > span:not(.face-ph-foot) { display: none; }
 .tbl-stage .hd.court-strip { height: 86px; padding-top: 5px; }
 .tbl-stage .court-strip .court-face { width: 40px; }
+
+/* ---- Card powers window ---- */
+.tbl .powers-btn { margin-right: auto; border-color: var(--warn); color: var(--warn); }
+.tbl .power-card { display: grid; grid-template-columns: 150px 1fr; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--rule); align-items: start; }
+.tbl .power-card .court-face { width: 150px; }
+.tbl .power-abs { display: grid; gap: 10px; align-content: start; }
+.tbl .power-name { font-weight: 700; margin-bottom: 4px; }
+.tbl .power-name .tag { font-size: .75em; font-weight: 600; }

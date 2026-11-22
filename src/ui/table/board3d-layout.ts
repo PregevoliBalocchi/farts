@@ -112,14 +112,14 @@ export function buildingSpots(n: number, r = 0.5): Spot[] {
   });
 }
 
-/** Camera elevation limits, in radians above the table: low when close to the pieces, almost straight down when far. */
-export const TILT_NEAR = (32 * Math.PI) / 180;
-export const TILT_FAR = (86 * Math.PI) / 180;
+/** Camera elevation limits, in radians above the table: like a player seated at the table, leaning in when close. */
+export const TILT_NEAR = (34 * Math.PI) / 180;
+export const TILT_FAR = (56 * Math.PI) / 180;
 
 /**
  * Camera elevation for a zoom distance: TILT_NEAR at `near` or closer,
- * TILT_FAR at `far` or farther, easing smoothly in between. Zooming in leans
- * the camera towards the pieces; zooming out looks down on the whole map.
+ * TILT_FAR at `far` or farther, easing smoothly in between: seated at the
+ * table, leaning towards the pieces when close, sitting back to see the map.
  */
 export function tiltForZoom(dist: number, near: number, far: number): number {
   const t = far > near ? Math.max(0, Math.min(1, (dist - near) / (far - near))) : 1;

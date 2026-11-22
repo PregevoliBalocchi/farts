@@ -29,7 +29,7 @@ The game's real data is the owner's and is **git-ignored on purpose**:
 |---|---|
 | `data/content.json` | map, setup cards, leaders, cards, campaign data |
 | `data/*.local.md` | mechanics summaries of the cards |
-| `assets/cards/`, `assets/map/` | card and board images |
+| `assets/cards/campaign/`, `assets/cards/setup/`, `assets/map/` | other card and board images (the card faces the table shows are committed) |
 | `PG/` | campaign Fate transcriptions |
 | `prototypes/ui-lab/img/` | images used by the UI test table |
 
@@ -41,7 +41,9 @@ through the repo, issues or pull requests) and copy them to the same paths.
 **Rule for code, tests and docs:** no names, card texts or images of the
 original game. One exception, decided by the owner (2026-11): the pictures in
 `assets/ui/` (the publisher's development kit and the board picture) are
-committed, see `docs/ui-assets.md`. Card images and card texts are not. Cards are named by neutral ids (`court-01`, `lore-01`,
+committed, and so are the card pictures the table shows (`assets/cards/court/`,
+`court-campaign/`, `lore/`, `leaders/`), see `docs/ui-assets.md`. Card texts
+are not: they stay out of code, tests and docs. Cards are named by neutral ids (`court-01`, `lore-01`,
 `leader-01`, `court-cc-01`, `fate-a-01`); rules are summarised in our own
 words. The publisher's online card library (FAQ, errata) is the reference
 for rulings: https://cards.buriedgiant.com/search?q=game:arcs — read it,

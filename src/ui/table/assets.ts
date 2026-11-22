@@ -1,7 +1,8 @@
 // Asset manifest (docs/ui/UI_SPEC.md §13): every picture the table shows goes
 // through here. An image in assets/ui/ (committed, see docs/ui-assets.md) replaces the
 // placeholder drawn in code. Folders become dots in the key:
-//   assets/ui/card/<card id>.png     Court card art (picker, Court row, held cards)
+//   assets/ui/card/<card id>.png     Court card art (picker, Court row, held cards);
+//                                    else assets/cards/<group>/<card id>.png
 //   assets/ui/icon/<glyph>.png       a glyph: material, fuel, weapons, relic, psionic,
 //                                    ship, city, starport, agent, trophy, captive, key, …
 //   assets/ui/suit/<suit id>.png     suit symbol on action cards
@@ -15,7 +16,19 @@ const files = import.meta.glob('../../../assets/ui/**/*.{png,webp,svg,jpg,jpeg,P
   import: 'default',
 }) as Record<string, string>;
 
+// The owner's card pictures (assets/cards/<group>/<card id>.png, see
+// docs/collaboration.md) are the card faces when present: key card.<card id>.
+// An image in assets/ui/card/ wins over them.
+const cardFiles = import.meta.glob('../../../assets/cards/{court,court-campaign,lore,leaders}/*.{png,webp,jpg,jpeg}', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Record<string, string>;
+
 const byKey = new Map<string, string>();
+for (const [path, url] of Object.entries(cardFiles)) {
+  byKey.set(`card.${path.replace(/^.*\//, '').replace(/\.[a-zA-Z]+$/, '')}`, url);
+}
 for (const [path, url] of Object.entries(files)) {
   const key = path.replace(/^.*assets\/ui\//, '').replace(/\.[a-zA-Z]+$/, '').replace(/\//g, '.');
   byKey.set(key, url);
