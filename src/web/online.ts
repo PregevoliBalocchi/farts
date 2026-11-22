@@ -3,18 +3,14 @@
 // enforced by firestore.rules; the checks below only explain refusals.
 // The game itself (and the owner's content) is not part of this page.
 
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import { isAdmin, normalizeEmail, removeRefusal, roleOf, setRoleRefusal } from '../online/roles';
 import type { Member, MemberRole, Role } from '../online/roles';
-import { firebaseConfig } from './firebase-config';
+import { auth, createGame, db, loadContent, myGames, uploadContent } from './games';
 
 const ROLE_LABEL: Record<Role, string> = { master: 'amministratore principale', admin: 'amministratore', player: 'giocatore' };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const status = $('status');
@@ -32,6 +28,8 @@ $('sign-out').addEventListener('click', () => signOut(auth));
 
 onAuthStateChanged(auth, async (user) => {
   $('admin').hidden = true;
+  $('lobby').hidden = true;
+  $('content-admin').hidden = true;
   if (!user) {
     $('signed-out').hidden = false;
     $('signed-in').hidden = true;
@@ -60,7 +58,10 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
     $('who').innerHTML = `${escape(email)} · <b>${ROLE_LABEL[me.role]}</b>`;
-    show(status, 'Accesso consentito. La partita online arriverà qui.', 'ok');
+    show(status, 'Accesso consentito.', 'ok');
+    $('lobby').hidden = false;
+    $('content-admin').hidden = me.role !== 'master';
+    await refreshGames();
     if (isAdmin(me.role)) {
       // Only the master appoints admins.
       $<HTMLSelectElement>('invite-role').querySelector<HTMLOptionElement>('option[value="admin"]')!.hidden = me.role !== 'master';
@@ -82,6 +83,52 @@ $('invite').addEventListener('submit', async (ev) => {
     $<HTMLInputElement>('invite-email').value = '';
     return `${email} invitato come ${ROLE_LABEL[role]}.`;
   });
+});
+
+// ---------- games ----------
+
+const VARIANT_LABEL = { base: 'base', leaders: 'personaggi e lore' } as const;
+
+async function refreshGames(): Promise<void> {
+  const list = await myGames(me.email);
+  $('games').innerHTML = list.length
+    ? list
+        .map((g) => {
+          const others = g.players.filter((p) => p !== me.email).map(escape).join(', ');
+          const when = new Date(g.createdAt).toLocaleString('it-IT');
+          const phase = g.status === 'over' ? 'finita' : `capitolo ${g.state.chapter}`;
+          return `<li><a href="play.html?id=${encodeURIComponent(g.id)}">Partita del ${when}</a> · con ${others} · ${VARIANT_LABEL[g.variant]} · ${phase}</li>`;
+        })
+        .join('')
+    : '<li class="muted">Nessuna partita.</li>';
+}
+
+$('new-game').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const msg = $('game-msg');
+  try {
+    const others = $<HTMLInputElement>('new-players').value.split(/[\s,;]+/).filter(Boolean).map(normalizeEmail);
+    const players = [me.email, ...others.filter((e) => e !== me.email)];
+    const variant = $<HTMLSelectElement>('new-variant').value as 'base' | 'leaders';
+    show(msg, 'Creo la partita…', 'muted');
+    const id = await createGame(await loadContent(), players, variant, me.email);
+    location.href = `play.html?id=${encodeURIComponent(id)}`;
+  } catch (e) {
+    show(msg, message(e), 'err');
+  }
+});
+
+$('content-file').addEventListener('change', async () => {
+  const msg = $('content-msg');
+  const file = $<HTMLInputElement>('content-file').files?.[0];
+  if (!file) return;
+  try {
+    show(msg, 'Controllo e carico…', 'muted');
+    const warnings = await uploadContent(await file.text(), me.email);
+    show(msg, `Contenuti caricati${warnings.length ? ` (${warnings.length} avvisi: effetti da risolvere a mano)` : ''}.`, 'ok');
+  } catch (e) {
+    show(msg, `Non caricati: ${message(e)}`, 'err');
+  }
 });
 
 /** Invites an address or changes its role (the rules check it again). */
