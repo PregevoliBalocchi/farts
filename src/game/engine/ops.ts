@@ -41,7 +41,7 @@ export function stealBlocked(ix: ContentIndex, s: GameState, thief: PlayerId, vi
   if ('resource' in what) {
     if (guards.some((g) => g.effect.guardsSteals)) return `P${victim}'s resources are protected from stealing`;
     const w = guards.find((g) => g.effect.guardResourcesWhile && isDeclared(s, g.effect.guardResourcesWhile));
-    if (w && heldResources(s.players[thief]).includes(what.resource)) return `P${victim} is protected: you already hold ${what.resource}`;
+    if (w && hasResourceType(ix, s, thief, what.resource)) return `P${victim} is protected: you already hold ${what.resource}`;
     return null;
   }
   // Guild cards: the guard card itself may be stolen (then it is buried), the others may not.
@@ -49,7 +49,7 @@ export function stealBlocked(ix: ContentIndex, s: GameState, thief: PlayerId, vi
   if (guard && guard.card !== what.card) return `P${victim}'s Guild cards are protected from stealing`;
   const type = ix.courtCards.get(what.card)?.resource;
   const w = guards.find((g) => g.effect.guardGuildWhile && isDeclared(s, g.effect.guardGuildWhile));
-  if (w && type && heldResources(s.players[victim]).includes(type)) return `P${victim} holds ${type}: that Guild card cannot be stolen`;
+  if (w && type && hasResourceType(ix, s, victim, type)) return `P${victim} holds ${type}: that Guild card cannot be stolen`;
   return null;
 }
 
@@ -136,6 +136,21 @@ export function returnCity(ix: ContentIndex, s: GameState, system: string, index
   owner.supply.cities += 1;
   returnToSupply(s, ...onCityReturned(ix.content, owner));
   return b.owner;
+}
+
+/** Resources a player has on cards that keep a supply (by type). */
+export function cartelSupply(ix: ContentIndex, s: GameState, p: PlayerId): Partial<Record<Resource, number>> {
+  const out: Partial<Record<Resource, number>> = {};
+  for (const { effect } of ownedEffects(ix, s, p)) {
+    const r = effect.keepsSupply;
+    if (r) out[r] = s.resourceSupply[r] ?? 0;
+  }
+  return out;
+}
+
+/** True if the player has this resource type: on their board or on a card keeping that supply. */
+export function hasResourceType(ix: ContentIndex, s: GameState, p: PlayerId, r: Resource): boolean {
+  return heldResources(s.players[p]).includes(r) || (cartelSupply(ix, s, p)[r] ?? 0) > 0;
 }
 
 /** A planet's resource type, after any card that changed it for good. */

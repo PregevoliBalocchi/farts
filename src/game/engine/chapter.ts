@@ -20,6 +20,7 @@ import type { DeclareGift } from './declare';
 import { HANDLERS } from './actions';
 import type { MovePayload } from './actions';
 import { effectOf, hasPassive, isDeclared, ownedEffects } from './effects';
+import { cartelSupply } from './ops';
 import type { ActionPayload, ActionResult, Allocation } from './actions';
 import { shuffle } from './rng';
 import { gainFromSupply, onCityReturned, returnToSupply, takeResourceAt } from './board';
@@ -507,7 +508,7 @@ export function endChapter(ix: ContentIndex, s: GameState): void {
   const { rankings, gains } = scoreAmbitions(c, s, (p, a) => {
     const fx = ownedEffects(ix, s, p).map((f) => f.effect);
     return { secondOnFirst: fx.some((e) => e.scoringSecondOnFirst?.includes(a)), firstOnly: fx.some((e) => e.scoringFirstOnly) };
-  });
+  }, (p, a) => cartelMetric(ix, s, p, a));
   log(s, `Chapter ${s.chapter} ends; power gained ${gains.join('/')}`, rankings);
   afterScoring(ix, s);
   cleanUp(ix, s);
@@ -525,6 +526,14 @@ export function endChapter(ix: ContentIndex, s: GameState): void {
     return;
   }
   startChapter(ix, s);
+}
+
+/** Resources kept on a player's cards that count toward an ambition. */
+export function cartelMetric(ix: ContentIndex, s: GameState, p: PlayerId, a: AmbitionId): number {
+  const m = ix.content.ambitionMetrics[a];
+  if (m.kind !== 'resources') return 0;
+  const kept = cartelSupply(ix, s, p);
+  return (m.resources ?? []).reduce((n, r) => n + (kept[r] ?? 0), 0);
 }
 
 /** Card effects right after scoring: discarding resources (design/gdd/card-effects.md "Scoring"). */

@@ -6,7 +6,7 @@ import { nextInt } from './rng';
 import { shuffle } from './rng';
 import { RuleError } from './errors';
 import { effectOf, isDeclared, ownedEffects } from './effects';
-import { cityTypes, planetType, provokeOutrage, stealBlocked, weaponIcons } from './ops';
+import { cartelSupply, cityTypes, planetType, provokeOutrage, stealBlocked, weaponIcons } from './ops';
 import type { CardEffect, RerollAbility } from './effects';
 import { gainFromSupply, gainResource, onCityReturned, returnToSupply, slotKeys, takeResourceAt } from './board';
 import type { DicePool, DiceTotals, RollResult } from './dice';
@@ -25,7 +25,7 @@ export type ActionPayload =
    * `shape` puts the resource on that own slot over the planet's type; `again` hits the city to tax again
    * (`ransack`: Court slot if that destroys a Rival city).
    */
-  | { kind: 'tax'; system: string; cityOwner?: PlayerId; city?: number; emptySlot?: boolean; resource?: Resource; shape?: number; again?: { ransack?: number } }
+  | { kind: 'tax'; system: string; cityOwner?: PlayerId; city?: number; emptySlot?: boolean; resource?: Resource; shape?: number | { cartel: Resource }; again?: { ransack?: number } }
   /** Card options: `outside` builds a city outside the slots paying the resource on slot `pay`; `again` hits the starport to build another ship. */
   | { kind: 'build'; system: string; what: 'ship' | 'city' | 'starport'; outside?: boolean; pay?: number; again?: { ransack?: number } }
   | { kind: 'repair'; system: string; target: 'ship' | 'building' }
@@ -178,7 +178,14 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
       if (!fx.some((e) => e.reshapePlanets)) err('No card lets you change a planet type');
       if (def.kind !== 'planet' || !city) err('Only after taxing a city on a planet');
       if (s.planetTypes?.[a.system]) err('That planet type was already changed');
-      const t = takeResourceAt(pl, a.shape);
+      let t: Resource;
+      if (typeof a.shape === 'number') t = takeResourceAt(pl, a.shape);
+      else {
+        // A resource kept on a card counts as one you have.
+        t = a.shape.cartel;
+        if ((cartelSupply(ix, s, p)[t] ?? 0) < 1) err(`You have no ${t} on a card`);
+        s.resourceSupply[t] -= 1;
+      }
       (s.planetTypes ??= {})[a.system] = t;
       text += `; ${a.system} becomes ${t}`;
     }

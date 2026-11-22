@@ -63,9 +63,12 @@ export interface AmbitionRanking {
   metrics: number[];
 }
 
-/** Ranks players for one ambition applying the content's tie rules. */
-export function rankAmbition(c: GameContent, state: GameState, a: AmbitionId): AmbitionRanking {
-  const metrics = state.players.map((p) => ambitionMetric(c, p, a));
+/**
+ * Ranks players for one ambition applying the content's tie rules.
+ * `extra` adds what cards give a player toward it (e.g. resources kept on a card).
+ */
+export function rankAmbition(c: GameContent, state: GameState, a: AmbitionId, extra: ExtraMetric = () => 0): AmbitionRanking {
+  const metrics = state.players.map((p) => ambitionMetric(c, p, a) + extra(p.id, a));
   // 2 players: the ambition box counts as a third player (id = playerCount); it can place but gains nothing.
   if (state.playerCount === 2) metrics.push(boxMetric(c, state, a));
   const secondAllowed = true;
@@ -102,13 +105,21 @@ export function boxMetric(c: GameContent, state: GameState, a: AmbitionId): numb
 /** Per-player scoring rule from cards: `secondOnFirst` (first place pays the second-place value, no city bonus; second pays nothing), `firstOnly` (only an untied first place pays). */
 export type ScoringRule = (p: PlayerId, a: AmbitionId) => { secondOnFirst: boolean; firstOnly: boolean };
 
-export function scoreAmbitions(c: GameContent, state: GameState, rule: ScoringRule = () => ({ secondOnFirst: false, firstOnly: false })): { rankings: AmbitionRanking[]; gains: number[] } {
+/** What cards add to a player's count for an ambition. */
+export type ExtraMetric = (p: PlayerId, a: AmbitionId) => number;
+
+export function scoreAmbitions(
+  c: GameContent,
+  state: GameState,
+  rule: ScoringRule = () => ({ secondOnFirst: false, firstOnly: false }),
+  extra: ExtraMetric = () => 0,
+): { rankings: AmbitionRanking[]; gains: number[] } {
   const gains = state.players.map(() => 0);
   const rankings: AmbitionRanking[] = [];
   for (const a of AMBITIONS) {
     const markers = state.ambitions.declared[a];
     if (!markers.length) continue;
-    const r = rankAmbition(c, state, a);
+    const r = rankAmbition(c, state, a, extra);
     rankings.push(r);
     for (const mid of markers) {
       const values = markerValues(c, mid, state.chapter);

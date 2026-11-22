@@ -139,9 +139,10 @@ function producer(r: Resource): CardEffect {
   };
 }
 
-/** Guild: prelude discard to steal 1 `r`. (The supply kept on the card is not modelled yet.) */
+/** Guild: keeps the `r` supply (counted, not spendable); after scoring Rivals discard `r`; prelude discard to steal 1 `r`. */
 function cartel(r: Resource): CardEffect {
   return {
+    keepsSupply: r,
     afterScoringRivalsDiscard: r,
     prelude: {
       steal: {

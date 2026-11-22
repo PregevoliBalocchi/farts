@@ -7,7 +7,7 @@ export { effectOf, hasPassive, isDeclared, ownedEffects } from './effects';
 export type { CardAction, CardEffect, EffectContext, EffectHandler, EffectRegistry, PreludeAbility, RerollAbility } from './effects';
 export * from './ops';
 export { HANDLERS, actionKindOf, currentBudget, takeCourtCard, collectAndRoll, finalizeBattle, rerollDice } from './actions';
-export { discardOwnCard } from './chapter';
+export { discardOwnCard, cartelMetric } from './chapter';
 export { afterDeclare, payDeclareCost } from './declare';
 export type { DeclareGift } from './declare';
 export { receiveCourtCard } from './actions';

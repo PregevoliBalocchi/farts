@@ -192,6 +192,13 @@ export interface CardEffect {
   afterScoringDiscard?: { resource: Resource; ifScored?: AmbitionId };
   /** After scoring: every Rival discards all of this resource. */
   afterScoringRivalsDiscard?: Resource;
+  /**
+   * The general supply of this resource is kept on the card: its owner has
+   * those tokens for ambitions and anything counting what they have, but
+   * cannot spend, discard or lose them, and nobody can steal them. Gaining
+   * that resource from the supply takes it from the card.
+   */
+  keepsSupply?: Resource;
 
   // ---- setup (leaders) ----
   setup?: {

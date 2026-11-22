@@ -135,8 +135,15 @@ Declaring: leaders 04, 07, 08, 12, court-17. Copy/Pivot: leaders 06, 07, 12.
 Scoring: leaders 01, 03, 06, 09, 12; court-03/06 make Rivals discard.
 Setup: leaders 02, 09, 10, 13, 16.
 
+Cartels (tested in `tests/unit/cards/cartel-effects.test.ts`): court-03 and
+court-06 complete. The card holds the general supply of its type: the owner
+has those tokens for ambitions (`cartelMetric`) and for anything checking
+which types they have (lore-21/22 guards, leader-14), but cannot spend,
+discard or lose them, and nobody can steal them; gaining that type from the
+supply takes from the card; the kept supply follows the card if it changes
+hands.
+
 Still to do:
-- **Cartels holding the supply** (court-03, court-06): the supply kept on the card.
 - **Campaign cards** (Fates, Edicts, Laws, Titles, campaign Court, events).
 
 ## General principles (rulebook "Other Actions", "Fine Print", "Glossary")
@@ -181,7 +188,7 @@ compared card by card with `src/game/cards/base.ts`. Applied:
 
 | Card | Ruling | Status |
 |---|---|---|
-| court-03, court-06 | Supply on the card counts for ambitions and protection, cannot be stolen or discarded for court-24; Rivals discard after every scoring, Tycoon scored or not. Any "discard this to…" card may be discarded for nothing. | Rivals discard: done; supply on the card: to do |
+| court-03, court-06 | Supply on the card counts for ambitions and protection, cannot be stolen or discarded for court-24; Rivals discard after every scoring, Tycoon scored or not. Any "discard this to…" card may be discarded for nothing. | done |
 | court-04/05/10/11 | The action card is taken after every player's turn; once placed the card is not in the play area, so it cannot be stolen. | done |
 | court-17 | Cards discarded with it are shuffled before going on the discard pile; with no other card, draw 1. | done |
 | court-25 | Seize and declare in either order; a 7 declares any ambition. | done (declare) |
