@@ -87,3 +87,15 @@ export function cardArt(id: string): string | null {
 export function seatIcon(player: number): IconName {
   return `seat${player % 4}` as IconName;
 }
+
+/**
+ * A glyph placed inside an SVG at (x, y), `size` wide, centred: the image asset
+ * when present, else the inline placeholder drawn in `color`. `inlineOnly`:
+ * always the inline glyph (an SVG used as an image cannot load other files).
+ */
+export function svgGlyph(name: IconName, x: number, y: number, size: number, color: string, inlineOnly = false): string {
+  const url = inlineOnly ? null : assetUrl(`icon.${name}`);
+  const at = `x="${(x - size / 2).toFixed(1)}" y="${(y - size / 2).toFixed(1)}" width="${size}" height="${size}"`;
+  if (url) return `<image href="${url}" ${at} aria-hidden="true"/>`;
+  return `<svg ${at} viewBox="0 0 24 24" color="${color}" aria-hidden="true">${PATHS[name]}</svg>`;
+}

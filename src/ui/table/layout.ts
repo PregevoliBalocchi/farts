@@ -52,6 +52,8 @@ export const REGIONS = {
   actions: { x: G * 3 + 520 + 760, y: BOT_Y, w: 1920 - G * 4 - 520 - 760, h: BOTTOM },
   /** Card picker and other dialogs. */
   modal: { x: 160, y: 90, w: 1600, h: 900 },
+  /** Detail windows (height grows with the content, up to h). */
+  detail: { x: 460, y: 150, w: 1000, h: 780 },
 } satisfies Record<string, Rect>;
 
 export type RegionId = keyof typeof REGIONS;

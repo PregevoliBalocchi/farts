@@ -6,13 +6,13 @@ import { pathToFileURL } from 'node:url';
 
 const build = (query: string): string => `${pathToFileURL(resolve('dist-single/index.html')).href}?${query}`;
 
-async function open(page: Page): Promise<string[]> {
+async function open(page: Page, extra = ''): Promise<string[]> {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(m.text());
   });
-  await page.goto(build('view=table&lang=en&motion=off'));
+  await page.goto(build(`view=table&lang=en&motion=off${extra}`));
   await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
   return errors;
 }
@@ -25,7 +25,15 @@ test('boots the table with every region and no errors', async ({ page }) => {
   for (const r of ['header', 'prompt', 'rivals', 'map', 'ambitions', 'court', 'recent', 'local', 'hand', 'actions']) {
     await expect(page.locator(`[data-region="${r}"]`)).toBeVisible();
   }
+  // The 3D map (a canvas plus keyboard stand-ins for its systems), or the 2D map without WebGL.
+  await expect(page.locator('[data-region="map"] [data-sys]').first()).toBeAttached();
+  expect(errors).toEqual([]);
+});
+
+test('the 2D map stays available with ?map=2d', async ({ page }) => {
+  const errors = await open(page, '&map=2d');
   await expect(page.locator('.m-sys').first()).toBeAttached();
+  await expect(page.locator('canvas.map3d')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

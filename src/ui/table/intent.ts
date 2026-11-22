@@ -13,12 +13,14 @@ export type Intent =
   | { step: 'choose'; prelude: Resource; kinds: ActionKind[] }
   | { step: 'system'; kind: 'tax' | 'build' | 'repair' | 'battle'; prelude?: Resource }
   | { step: 'from'; prelude?: Resource }
-  | { step: 'to'; from: string; prelude?: Resource }
+  /** `via`: systems already passed through on a Catapult move. */
+  | { step: 'to'; from: string; via: string[]; prelude?: Resource }
   | { step: 'court'; kind: 'influence' | 'secure'; prelude?: Resource }
   | { step: 'build'; system: string; prelude?: Resource }
   | { step: 'repair'; system: string; prelude?: Resource }
   | { step: 'tax'; system: string; prelude?: Resource }
-  | { step: 'move'; from: string; to: string; ships: number; damaged: number; prelude?: Resource }
+  /** `drop`: fresh ships left on the way, by system passed through (Catapult). */
+  | { step: 'move'; from: string; via: string[]; to: string; ships: number; damaged: number; drop: Record<string, number>; prelude?: Resource }
   | { step: 'battle'; system: string; target: PlayerId | null; dice: Dice; prelude?: Resource };
 
 export const IDLE: Intent = { step: 'idle' };
@@ -41,9 +43,22 @@ export function actionCommand(player: PlayerId, action: ActionPayload, prelude?:
   return prelude ? { type: 'prelude', player, resource: prelude, action } : { type: 'action', player, action };
 }
 
-/** The move payload of a 'move' intent (damaged ships only when some are moved). */
+/**
+ * The move payload of a 'move' intent: damaged ships only when some are moved;
+ * for a Catapult, the systems passed through and the ships dropped there.
+ * `ships` counts every fresh ship leaving `from`, dropped ones included.
+ */
 export function movePayload(i: Extract<Intent, { step: 'move' }>): ActionPayload {
-  return { kind: 'move', from: i.from, to: i.to, ships: i.ships, ...(i.damaged ? { damaged: i.damaged } : {}) };
+  const drop = i.via.filter((at) => (i.drop[at] ?? 0) > 0).map((at) => ({ at, ships: i.drop[at] }));
+  return {
+    kind: 'move',
+    from: i.from,
+    to: i.to,
+    ships: i.ships,
+    ...(i.damaged ? { damaged: i.damaged } : {}),
+    ...(i.via.length ? { via: [...i.via] } : {}),
+    ...(drop.length ? { drop } : {}),
+  };
 }
 
 /** The battle payload of a 'battle' intent, or null until a defender is chosen. */
