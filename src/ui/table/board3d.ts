@@ -15,7 +15,7 @@ import type { ContentIndex } from '../../game/engine';
 import { layout } from '../map';
 import { assetUrl } from './assets';
 import defaultCalibration from './board.default.json';
-import { BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, PILE_SHOWN, pileSpots, shipSpot, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
+import { BOARD_DEPTH, boardWidth, buildingSpots, headingJitter, isCalibration, MAX_SHOWN, shipGroups, shipSpot, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
 import type { BoardCalibration, Spot } from './board3d-layout';
 import { loadKitPieces, piece } from './kitpieces';
 import { boardImageSvg } from './mapview';
@@ -60,7 +60,9 @@ const OWN_SCALE = 1.15;
 /** Scale of the kit's ships on the map (their pictures are larger than the board's scale). */
 const KIT_SHIP_SCALE = 1.15;
 /** Ships in the calibrated ship zones are drawn smaller, closer to the real pieces on the board picture. */
-const ZONE_SHIP_SCALE = 0.7;
+const ZONE_SHIP_SCALE = 0.85;
+/** Default heading of a ship model: three-quarters to the viewer. */
+const SHIP_HEADING = -0.55;
 const VALID = new THREE.Color('#5fd4e6');
 const CHOSEN = new THREE.Color('#ffcc66');
 const SURROUND = '#0b0a0c';
@@ -324,19 +326,35 @@ export class Board3D {
       const centres = stackCentres(s.ships.length, slots ? 0.7 : 0.75);
       s.ships.forEach((st, i) => {
         // On the owner's picture each seat has its own spot in the system's
-        // ship zone (clear of the slots, inside the planet), and its ships
-        // stand in a compact pile there; elsewhere the stacks ring the system point.
+        // ship zone (clear of the slots, inside the planet): one model for its
+        // fresh ships and one for its damaged ones, each with how many it
+        // stands for. Elsewhere the stacks ring the system point.
         const zone = shipSpot(this.calib, s.id, st.player);
         const c = zone ? { x: zone.x - p.x, z: zone.z - p.z } : centres[i];
-        for (const sp of zone ? pileSpots(st.fresh, st.damaged) : stackSpots(st.fresh, st.damaged, 0.36)) {
+        const at = (dx: number, dz: number) => ({ x: p.x + c.x + dx, z: p.z + c.z + dz });
+        if (zone) {
+          for (const g of shipGroups(st.fresh, st.damaged)) {
+            const o = piece('ship', st.player, { lying: g.lying });
+            const w = at(g.dx, g.dz);
+            o.position.set(w.x, 0, w.z);
+            // Three-quarters to the viewer, each group turned its own way.
+            o.rotation.y = SHIP_HEADING + headingJitter(`${s.id}:${st.player}:${g.lying ? 'd' : 'f'}`);
+            o.scale.setScalar((o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE) * ZONE_SHIP_SCALE);
+            this.pieces.add(o);
+            if (g.count > 1) this.pieces.add(countTag(g.count, w.x, w.z, 'small'));
+          }
+          return;
+        }
+        for (const sp of stackSpots(st.fresh, st.damaged, 0.36)) {
           const o = piece('ship', st.player, { lying: sp.lying });
-          o.position.set(p.x + c.x + sp.dx, 0, p.z + c.z + sp.dz);
+          const w = at(sp.dx, sp.dz);
+          o.position.set(w.x, 0, w.z);
           // Turned three-quarters to the viewer, so the profile of a standing ship shows.
-          o.rotation.y = -0.55;
-          o.scale.setScalar((o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE) * (zone ? ZONE_SHIP_SCALE : 1));
+          o.rotation.y = SHIP_HEADING;
+          o.scale.setScalar(o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE);
           this.pieces.add(o);
         }
-        if (st.fresh + st.damaged > (zone ? PILE_SHOWN : MAX_SHOWN)) this.pieces.add(countTag(st.fresh + st.damaged, p.x + c.x, p.z + c.z));
+        if (st.fresh + st.damaged > MAX_SHOWN) this.pieces.add(countTag(st.fresh + st.damaged, p.x + c.x, p.z + c.z));
       });
       const arc = buildingSpots(s.buildings.length);
       s.buildings.forEach((bd, i) => {
@@ -424,26 +442,41 @@ export class Board3D {
   }
 }
 
-/** A small "×n" label floating over a stack with more pieces than drawn. */
-function countTag(n: number, x: number, z: number): THREE.Sprite {
+/**
+ * A "×n" label floating over a stack with more pieces than drawn; `small` is
+ * the plain number beside one ship group in a ship zone.
+ */
+function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'large'): THREE.Sprite {
+  const small = size === 'small';
   const cv = document.createElement('canvas');
-  cv.width = 128;
+  cv.width = small ? 64 : 128;
   cv.height = 64;
   const g = cv.getContext('2d')!;
-  g.fillStyle = 'rgba(10,14,28,.85)';
+  g.fillStyle = 'rgba(10,14,28,.9)';
   g.beginPath();
-  g.roundRect(4, 4, 120, 56, 18);
+  if (small) g.arc(32, 32, 30, 0, Math.PI * 2);
+  else g.roundRect(4, 4, 120, 56, 18);
   g.fill();
+  if (small) {
+    g.strokeStyle = 'rgba(255,255,255,.85)';
+    g.lineWidth = 3;
+    g.stroke();
+  }
   g.fillStyle = '#fff';
   g.font = 'bold 40px sans-serif';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillText(`×${n}`, 64, 34);
+  g.fillText(small ? String(n) : `×${n}`, cv.width / 2, 34);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
-  sprite.scale.set(0.5, 0.25, 1);
-  sprite.position.set(x, 0.6, z);
+  if (small) {
+    sprite.scale.set(0.15, 0.15, 1);
+    sprite.position.set(x + 0.08, 0.3, z);
+  } else {
+    sprite.scale.set(0.5, 0.25, 1);
+    sprite.position.set(x, 0.6, z);
+  }
   return sprite;
 }
 
