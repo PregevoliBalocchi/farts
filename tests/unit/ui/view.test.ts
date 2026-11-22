@@ -2,7 +2,7 @@
 // allocation (src/ui/table/battle.ts), on the placeholder content.
 import { describe, expect, it } from 'vitest';
 import { activePlayer, dispatch, RESOURCES } from '../../../src/game/engine';
-import { legal, rivalsOf, tableView } from '../../../src/ui/table/view';
+import { legal, othersTurn, rivalsOf, tableView } from '../../../src/ui/table/view';
 import { defaultAllocation } from '../../../src/ui/table/battle';
 import { game, index } from '../engine/fixture';
 
@@ -93,6 +93,15 @@ describe('tableView', () => {
     for (const sys of v.systems) expect(sys.inPlay).toBe(s.map[sys.id].inPlay);
   });
 
+  it('gives each system its controller and its linked neighbours', () => {
+    const s = game(ix, 3, 7, 0);
+    const [a, b] = ix.content.map.links.find(([x, y]) => s.map[x].inPlay && s.map[y].inPlay)!;
+    s.map[a].ships = { 1: { fresh: 2, damaged: 0 }, 2: { fresh: 1, damaged: 3 } };
+    const sys = tableView(ix, s, 0).systems.find((x) => x.id === a)!;
+    expect(sys.controller).toBe(1);
+    expect(sys.neighbors).toContain(b);
+  });
+
   it('legal() answers from the engine without changing the state', () => {
     const s = game(ix, 3, 7, 0);
     const before = JSON.stringify(s);
@@ -100,6 +109,39 @@ describe('tableView', () => {
     expect(legal(ix, s, { type: 'lead', player: p, card: s.players[p].hand[0] })).toBe(true);
     expect(legal(ix, s, { type: 'lead', player: (p + 1) % 3, card: s.players[(p + 1) % 3].hand[0] })).toBe(false);
     expect(JSON.stringify(s)).toBe(before);
+  });
+});
+
+describe('othersTurn', () => {
+  const ix = index();
+
+  it('names the next seat while the leader chooses', () => {
+    const s = game(ix, 3, 7, 0);
+    const p = activePlayer(s)!;
+    const o = othersTurn(s)!;
+    expect(o.player).toBe(p);
+    expect(o.next).toBe((p + 1) % 3);
+    expect(o.remaining).toBeNull();
+  });
+
+  it('shows the actions left and only the latest lines of the acting seat', () => {
+    let s = game(ix, 3, 7, 0);
+    const p = activePlayer(s)!;
+    s = dispatch(ix, s, { type: 'lead', player: p, card: s.players[p].hand[0] });
+    const o = othersTurn(s)!;
+    expect(o.remaining).toBe(ix.actionCards.get(s.round.plays[0].card!)!.pips);
+    expect(o.live.length).toBeGreaterThan(0);
+    for (const l of o.live) expect(l.startsWith(`P${p} `)).toBe(true);
+  });
+
+  it('says the round ends after the last follower', () => {
+    let s = game(ix, 2, 7, 0);
+    const p = activePlayer(s)!;
+    s = dispatch(ix, s, { type: 'lead', player: p, card: s.players[p].hand[0] });
+    s = dispatch(ix, s, { type: 'endTurn', player: p });
+    const o = othersTurn(s)!;
+    expect(o.player).toBe((p + 1) % 2);
+    expect(o.next).toBeNull();
   });
 });
 

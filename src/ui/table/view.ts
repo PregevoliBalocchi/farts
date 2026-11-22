@@ -9,6 +9,7 @@ import {
   AMBITIONS,
   ambitionMetric,
   cartelMetric,
+  controls,
   dispatch,
   markerValues,
   openSlots,
@@ -51,6 +52,10 @@ export interface PlayerView {
   stats: { trophies: number; captives: number; ships: number; cities: number; starports: number; agents: number };
   /** Court cards the player holds. */
   court: string[];
+  /** Rival pieces taken as trophies: whose, and what. */
+  trophies: { owner: PlayerId; piece: string }[];
+  /** Rival agents held captive, by owner. */
+  captives: PlayerId[];
 }
 
 /** An action card, face up. */
@@ -110,6 +115,10 @@ export interface SystemView {
   inPlay: boolean;
   ships: { player: PlayerId; fresh: number; damaged: number }[];
   buildings: { owner: PlayerId; type: 'city' | 'starport'; damaged: boolean }[];
+  /** The seat that controls the system (engine rule), or null. */
+  controller: PlayerId | null;
+  /** Systems linked to this one by an open link. */
+  neighbors: string[];
 }
 
 /** Everything the table draws, for the seat `local`. */
@@ -193,6 +202,8 @@ function playerView(ix: ContentIndex, s: GameState, id: PlayerId): PlayerView {
       agents: p.supply.agents,
     },
     court: [...p.court],
+    trophies: p.trophies.map((x) => ({ owner: x.owner, piece: x.piece })),
+    captives: [...p.captives],
   };
 }
 
@@ -204,6 +215,40 @@ function playable(ix: ContentIndex, s: GameState, local: PlayerId, card: string)
     return (['surpass', 'pivot', 'copy'] as const).some((mode) => legal(ix, s, { type: 'follow', player: local, card, mode }));
   }
   return false;
+}
+
+/** What another seat is doing now, for the panel shown while you wait. */
+export interface OthersTurnView {
+  /** The seat whose turn it is. */
+  player: PlayerId;
+  phase: GameState['phase']['type'];
+  /** Card actions left this turn (only while taking actions). */
+  remaining: number | null;
+  /** Its latest log lines this turn, oldest first. */
+  live: string[];
+  /** Who plays after it this round, or null when the round ends after it. */
+  next: PlayerId | null;
+}
+
+/** The turn of the active seat as seen by the others, or null when nobody is acting. */
+export function othersTurn(s: GameState, maxLines = 5): OthersTurnView | null {
+  const player = activePlayer(s);
+  if (player === null) return null;
+  const live: string[] = [];
+  for (let i = s.log.length - 1; i >= 0 && live.length < maxLines; i--) {
+    if (!s.log[i].text.startsWith(`P${player} `)) break;
+    live.unshift(s.log[i].text);
+  }
+  const after = (player + 1) % s.playerCount;
+  const roundPlayer = s.phase.type === 'actions' ? s.phase.budget.player : player;
+  const following = (roundPlayer + 1) % s.playerCount;
+  return {
+    player,
+    phase: s.phase.type,
+    remaining: s.phase.type === 'actions' ? s.phase.budget.remaining : null,
+    live,
+    next: s.phase.type === 'lead' ? after : following === s.round.leader ? null : following,
+  };
 }
 
 /** Builds the table view of `s` for the seat `local`. */
@@ -282,7 +327,10 @@ export function tableView(ix: ContentIndex, s: GameState, local: PlayerId): Tabl
     canMulligan: ph.type === 'lead' && s.mulligan === local,
     systems: c.map.systems.map((d) => {
       const st = s.map[d.id];
+      const open = openLinks(c.map.links, s);
       return {
+        controller: s.players.find((p) => controls(st, p.id))?.id ?? null,
+        neighbors: open.filter(([a, b]) => a === d.id || b === d.id).map(([a, b]) => (a === d.id ? b : a)),
         id: d.id,
         cluster: d.cluster,
         kind: d.kind,
@@ -295,9 +343,12 @@ export function tableView(ix: ContentIndex, s: GameState, local: PlayerId): Tabl
         buildings: st.buildings.map((b) => ({ owner: b.owner, type: b.type, damaged: b.damaged })),
       };
     }),
-    links: [
-      ...c.map.links.filter(([a, b]) => !s.closedLinks.some(([x, y]) => (x === a && y === b) || (x === b && y === a))),
-      ...s.openLinks,
-    ],
+    links: openLinks(c.map.links, s),
   };
+}
+
+/** The map's links minus the closed ones, plus the ones the setup card opens. */
+function openLinks(links: [string, string][], s: GameState): [string, string][] {
+  const closed = (a: string, b: string) => s.closedLinks.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+  return [...links.filter(([a, b]) => !closed(a, b)), ...s.openLinks];
 }

@@ -6,22 +6,27 @@
 
 import './table.css';
 import { activePlayer, AMBITIONS, dispatch, indexContent, newGame } from '../../game/engine';
-import type { ActionKind, ActionPayload, AmbitionId, Command, GameState, PlayerCount, PlayerId, Resource } from '../../game/engine';
+import type { ActionKind, ActionPayload, AmbitionId, Command, GameState, PlayerCount, PlayerId, RaidTake, Resource } from '../../game/engine';
 import { BASE_EFFECTS } from '../../game/cards/base';
 import { LANGS, pickLang, translator } from '../../i18n';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
 import { assetUrl, icon } from './assets';
 import { defaultAllocation } from './battle';
+import { createBoard3D } from './board3d';
+import { decisionOptions } from './decide';
+import type { DecisionOption, DecisionPart } from './decide';
+import { detailHtml } from './details';
+import type { DetailTarget } from './details';
 import { actionCommand, battlePayload, clamp, IDLE, movePayload, startAction } from './intent';
 import type { Intent } from './intent';
 import { place, REGIONS, STAGE } from './layout';
 import { mapSvg } from './mapview';
 import {
-  ambitionsPanel, button, cardLabel, cardPicker, courtPanel, esc, handPanel, header, localPanel, PICKER_PAGE, playerName, promptBar, recentPanel, rivalPanel,
+  ambitionsPanel, button, cardLabel, playedText, cardPicker, courtPanel, esc, handPanel, header, largeCard, localPanel, PICKER_PAGE, playerName, promptBar, recentPanel, rivalPanel,
 } from './render';
 import type { PickerGroup, PickerState } from './render';
-import { legal, tableView } from './view';
+import { legal, othersTurn, tableView } from './view';
 import type { TableView } from './view';
 
 type CourtPick = { kind: 'influence' | 'secure'; prelude?: Resource };
@@ -30,7 +35,8 @@ type Modal =
   | { type: 'picker'; picker: PickerState; court?: CourtPick }
   | { type: 'log' }
   | { type: 'settings' }
-  | { type: 'decide'; args: string };
+  | { type: 'detail'; target: DetailTarget }
+  | { type: 'decide'; args: string; options: DecisionOption[] };
 
 /** Handle returned to main.ts (and window.game for automated checks). */
 export interface TableHandle {
@@ -55,7 +61,14 @@ export function mountTable(root: HTMLElement): TableHandle {
   let seatChoice: PlayerId = follow ? 0 : Number(params.get('seat')) || 0;
 
   let selected: string | null = null;
+  /** Following: the second card discarded to seize the initiative, and whether the next hand click picks it. */
+  let seizeWith: string | null = null;
+  let seizePick = false;
+  /** Allocating: what the rolled keys steal, in order. */
+  let raid: RaidTake[] = [];
   let intent: Intent = IDLE;
+  /** The move being Catapulted further, kept while the next system is picked. */
+  let pendingMove: Extract<Intent, { step: 'move' }> | null = null;
   let modal: Modal | null = null;
   let toast: string | null = null;
   let toastTimer = 0;
@@ -77,13 +90,42 @@ export function mountTable(root: HTMLElement): TableHandle {
   shell.appendChild(stage);
   root.appendChild(shell);
 
+  let scale = 1;
   function fit(): void {
     const s = Math.min(window.innerWidth / STAGE.w, window.innerHeight / STAGE.h);
+    scale = s;
     const x = (window.innerWidth - STAGE.w * s) / 2;
     const y = (window.innerHeight - STAGE.h * s) / 2;
     stage.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+    board3d?.resize(REGIONS.map.w, REGIONS.map.h, window.devicePixelRatio * s);
   }
   window.addEventListener('resize', fit);
+
+  // ---- 3D map (default; ?map=2d or no WebGL keeps the 2D map) ----
+  /** Calibration of the owner's board picture (?debug=calibrate): systems to click, in order, and the clicks so far. */
+  const calibrating = params.get('debug') === 'calibrate';
+  const calib = { order: [] as string[], i: 0, points: {} as Record<string, { x: number; y: number }> };
+  const board3d = params.get('map') === '2d'
+    ? null
+    : createBoard3D(ix, {
+        aspect: REGIONS.map.w / REGIONS.map.h,
+        motion: params.get('motion') !== 'off',
+        onPick: (id) => pickSystem(id),
+        ...(calibrating
+          ? {
+              onCalibrate: (fx: number, fy: number) => {
+                const id = calib.order[calib.i];
+                if (!id || !board3d) return;
+                const size = board3d.pictureSize();
+                calib.points[id] = { x: Math.round(fx * size.width), y: Math.round(fy * size.height) };
+                calib.i++;
+                render();
+              },
+            }
+          : {}),
+      });
+  if (board3d) shell.classList.add('has-3d');
+  calib.order = ix.content.map.systems.map((x) => x.id);
   fit();
 
   // ---- helpers ----
@@ -106,8 +148,7 @@ export function mountTable(root: HTMLElement): TableHandle {
       const next = dispatch(ix, state, cmd);
       history.push(state);
       state = next;
-      selected = null;
-      intent = IDLE;
+      resetChoices();
       if (modal?.type === 'picker' && modal.court) modal = null;
       render();
       return true;
@@ -118,12 +159,62 @@ export function mountTable(root: HTMLElement): TableHandle {
     }
   }
 
+  /** Clears every half-made choice (after a command, an undo or a new game). */
+  function resetChoices(): void {
+    selected = null;
+    seizeWith = null;
+    seizePick = false;
+    raid = [];
+    pendingMove = null;
+    intent = IDLE;
+  }
+
   function restart(): void {
     state = newGame(ix, { playerCount: players, seed, variant: 'base' });
     history = [];
-    selected = null;
-    intent = IDLE;
+    resetChoices();
     modal = null;
+  }
+
+  /** The follow command for the selected card, with the seize card when one is chosen. */
+  function followCmd(card: string, mode: 'surpass' | 'pivot' | 'copy'): Command {
+    return { type: 'follow', player: local(), card, mode, ...(seizeWith && seizeWith !== card ? { seizeWith } : {}) };
+  }
+
+  /** The proposed allocation for the pending battle, with the chosen raid. */
+  function allocation() {
+    if (state.phase.type !== 'allocate') return null;
+    return { ...defaultAllocation(state, state.phase.battle), raid: [...raid] };
+  }
+
+  /** A part of a Decision answer as text. */
+  function partText(p: DecisionPart): string {
+    const label = t(`decide.key.${p.key}`);
+    const v = p.value;
+    const value =
+      p.kind === 'player' ? playerName(t, v as number)
+      : p.kind === 'resource' ? t(`resource.${v}`)
+      : p.kind === 'ambition' ? t(`ambition.${v}`)
+      : p.kind === 'court' ? (Array.isArray(v) ? v : [v]).map((i) => state.court[i as number]?.card ?? '?').join(', ')
+      : p.kind === 'cards' ? (v as string[]).join(', ')
+      : p.kind === 'index' ? `#${(v as number) + 1}`
+      : p.kind === 'ships' ? (v as { from: string; ships: number }[]).map((m) => t('decide.shipsFrom', { n: m.ships, from: m.from })).join(', ')
+      : p.kind === 'flag' ? ''
+      : String(v);
+    return value ? `${label}: ${value}` : label;
+  }
+
+  /** Systems the moving ships may enter next, Catapulting through `via`. */
+  function moveTargets(v: TableView, from: string, via: string[], prelude?: Resource): Set<string> {
+    const out = new Set<string>();
+    const mine = v.systems.find((s) => s.id === from)?.ships.find((x) => x.player === local());
+    const fresh = mine && mine.fresh > 0 ? 1 : 0;
+    for (const s of v.systems) {
+      if (!s.inPlay || s.id === from || via.includes(s.id)) continue;
+      const payload: ActionPayload = { kind: 'move', from, to: s.id, ships: fresh, ...(fresh ? {} : { damaged: 1 }), ...(via.length ? { via } : {}) };
+      if (can(act(payload, prelude))) out.add(s.id);
+    }
+    return out;
   }
 
   // ---- what the current step accepts ----
@@ -152,11 +243,7 @@ export function mountTable(root: HTMLElement): TableHandle {
     } else if (i.step === 'from') {
       for (const s of live) if (s.ships.some((x) => x.player === me)) out.add(s.id);
     } else if (i.step === 'to') {
-      const mine = v.systems.find((s) => s.id === i.from)?.ships.find((x) => x.player === me);
-      const fresh = mine && mine.fresh > 0 ? 1 : 0;
-      for (const s of live) {
-        if (can(act({ kind: 'move', from: i.from, to: s.id, ships: fresh, ...(fresh ? {} : { damaged: 1 }) }, i.prelude))) out.add(s.id);
-      }
+      for (const id of moveTargets(v, i.from, i.via, i.prelude)) out.add(id);
     }
     return out;
   }
@@ -229,10 +316,35 @@ export function mountTable(root: HTMLElement): TableHandle {
     return `<span class="stepper"><span>${esc(label)}</span>${button('step', '−', { args: { name, d: -1 } })}<span class="num">${value}</span>${button('step', '+', { args: { name, d: 1 } })}</span>`;
   }
 
+  /** While another seat plays: who, what they are doing (live), who is next, what you can look at. */
+  function othersPanel(v: TableView): string {
+    const o = othersTurn(state, 3);
+    if (!o) return `<div class="hint">${esc(prompt(v))}</div>`;
+    const who = playerName(t, o.player);
+    const played = playedText(v, t, o.player);
+    const doing = o.phase === 'actions' ? (played ? t('others.doing', { what: played }) : t('others.acting'))
+      : o.phase === 'decide' ? t('others.deciding')
+      : o.phase === 'allocate' ? t('others.allocating')
+      : o.phase === 'lead' ? t('others.leading')
+      : t('others.following');
+    const facts = [
+      o.remaining !== null ? t('others.remaining', { n: o.remaining }) : '',
+      o.next === null ? t('others.lastInRound') : o.next === local() ? t('others.nextYou') : t('others.next', { name: playerName(t, o.next) }),
+    ].filter(Boolean).join(' · ');
+    // Engine log lines name seats P0, P1…; show them with the table's seat names.
+    const live = o.live.map((l) => `<li>${esc(l.replace(/\bP(\d)\b/g, (_, n) => playerName(t, Number(n))))}</li>`).join('');
+    return `<div class="live-head s-${o.player % 4}"><span class="live-dot" aria-hidden="true"></span>${esc(t('others.title', { name: who }))}</div>
+      <div class="hint">${esc(doing)}</div>
+      ${live ? `<ol class="live-list" aria-live="polite">${live}</ol>` : ''}
+      <div class="hint">${esc(facts)}</div>
+      <div class="btn-grid wait"><span class="wait-label">${esc(t('others.whileWaiting'))}</span>${button('court-view', t('court'))}${button('log', t('btn.log'))}</div>`;
+  }
+
   function actionsPanel(v: TableView): string {
     const me = local();
     const cancel = button('cancel', t('btn.cancel'));
-    if (v.phase === 'gameOver' || !myTurn()) return `<div class="hint">${esc(prompt(v))}</div>`;
+    if (v.phase === 'gameOver') return `<div class="hint">${esc(prompt(v))}</div>`;
+    if (!myTurn()) return othersPanel(v);
 
     if (v.phase === 'lead' || v.phase === 'follow') {
       const card = selected;
@@ -253,7 +365,12 @@ export function mountTable(root: HTMLElement): TableHandle {
         if (v.canMulligan) h += button('mulligan', t('play.mulligan'));
       } else {
         for (const mode of ['surpass', 'pivot', 'copy'] as const) {
-          h += button('follow', t(`play.${mode}`), { args: { mode }, cls: mode === 'surpass' ? 'primary' : '', disabled: !card || !can({ type: 'follow', player: me, card, mode }) });
+          h += button('follow', t(`play.${mode}`), { args: { mode }, cls: mode === 'surpass' ? 'primary' : '', disabled: !card || !can(followCmd(card, mode)) });
+        }
+        // Seizing: discard a second card. Offered while nobody has seized this round.
+        if (v.seizedBy === null && v.hand.length > 1) {
+          const label = seizePick ? t('play.seizePick') : seizeWith ? t('play.seizeWith', { card: seizeWith }) : t('play.seize');
+          h += button('seize', label, { cls: seizeWith || seizePick ? 'on' : '' });
         }
       }
       return h + '</div>';
@@ -262,11 +379,27 @@ export function mountTable(root: HTMLElement): TableHandle {
     if (v.phase === 'allocate' && v.battle) {
       const b = v.battle;
       const summary = t('battle.summary', { hit: b.totals.hit, buildingHit: b.totals.buildingHit, selfHit: b.totals.selfHit, intercept: b.interceptHits, key: b.totals.key });
-      return `<div class="hint">${esc(`${b.system}: ${playerName(t, b.attacker)} → ${playerName(t, b.target)}`)}</div><div class="hint">${esc(summary)}</div><div>${button('allocate', t('battle.assign'), { cls: 'primary' })}</div>`;
+      const al = allocation();
+      const ok = al !== null && can({ type: 'allocate', player: me, allocation: al });
+      let takes = '';
+      if (b.totals.key > 0) {
+        const def = state.players[b.target];
+        const on = (x: RaidTake) => raid.some((r) => ('resource' in r && 'resource' in x && r.resource === x.resource) || ('card' in r && 'card' in x && r.card === x.card));
+        const res = def.resources
+          .map((r, i) => (r ? button('raid', `${t(`resource.${r}`)} · ${t('card.keys', { n: content.playerBoard.slotKeys[i] ?? 1 })}`, { args: { res: i }, cls: on({ resource: i }) ? 'on' : '' }) : ''))
+          .join('');
+        const cards = def.court
+          .filter((c) => ix.courtCards.get(c)?.kind === 'faction')
+          .map((c) => button('raid', `${c} · ${t('card.keys', { n: ix.courtCards.get(c)?.keys ?? 1 })}`, { args: { card: c }, cls: on({ card: c }) ? 'on' : '' }))
+          .join('');
+        takes = `<div class="hint">${esc(t('battle.raid', { n: b.totals.key }))}</div><div class="opt-row wrap">${res}${cards}</div>`;
+      }
+      return `<div class="hint">${esc(`${b.system}: ${playerName(t, b.attacker)} → ${playerName(t, b.target)}`)}</div><div class="hint">${esc(summary)}</div>${takes}<div>${button('allocate', t('battle.assign'), { cls: 'primary', disabled: !ok })}</div>`;
     }
 
     if (v.phase === 'decide' && v.decision) {
-      return `<div class="hint">${esc(`${v.decision.card} · ${v.decision.effect}`)}</div><div class="btn-grid two">${button('decide-open', t('decide.title'), { cls: 'primary' })}${button('decline', t('decide.decline'))}</div>`;
+      const declinable = can({ type: 'decide', player: me, args: {} });
+      return `<div class="hint">${esc(t('decide.what', { card: v.decision.card, effect: t(`decide.effect.${v.decision.effect}`) }))}</div><div class="btn-grid two">${button('decide-open', t('decide.choose'), { cls: 'primary' })}${declinable ? button('decline', t('decide.decline')) : ''}</div>`;
     }
 
     if (v.phase !== 'actions' || !v.budget) return `<div class="hint">${esc(prompt(v))}</div>`;
@@ -303,9 +436,12 @@ export function mountTable(root: HTMLElement): TableHandle {
       }
       case 'move': {
         const ok = can(act(movePayload(i), i.prelude));
-        return `<div class="hint">${esc(`${t('action.move')} · ${i.from} → ${i.to}`)}</div>
-          <div class="opt-row">${stepper('ships', t('move.ships'), i.ships)}${stepper('damaged', t('move.damaged'), i.damaged)}</div>
-          <div class="btn-grid two">${button('do-move', t('btn.confirm'), { cls: 'primary', disabled: !ok })}${cancel}</div>`;
+        const path = [i.from, ...i.via, i.to].join(' → ');
+        const drops = i.via.map((at) => stepper(`drop:${at}`, t('move.drop', { at }), i.drop[at] ?? 0)).join('');
+        const further = moveTargets(v, i.from, [...i.via, i.to], i.prelude).size > 0;
+        return `<div class="hint">${esc(`${t('action.move')} · ${path}`)}</div>
+          <div class="opt-row wrap">${stepper('ships', t('move.ships'), i.ships)}${stepper('damaged', t('move.damaged'), i.damaged)}${drops}</div>
+          <div class="btn-grid">${button('do-move', t('btn.confirm'), { cls: 'primary', disabled: !ok })}${further ? button('catapult', t('move.further')) : ''}${cancel}</div>`;
       }
       case 'battle': {
         const targets = rivalsIn(v, i.system)
@@ -345,7 +481,14 @@ export function mountTable(root: HTMLElement): TableHandle {
     if (!modal) return '';
     let inner = '';
     if (modal.type === 'picker') inner = cardPicker(modal.picker, t);
-    else if (modal.type === 'log') {
+    else if (modal.type === 'detail') {
+      const html = detailHtml(ix, v, modal.target, t);
+      if (html === null) {
+        modal = null;
+        return '';
+      }
+      inner = html;
+    } else if (modal.type === 'log') {
       const items = state.log.slice(-120).reverse().map((l) => `<li>[${l.chapter}] ${esc(l.text)}</li>`).join('');
       inner = `<h2 id="modal-title">${esc(t('log.title'))}</h2><div></div><div class="modal-body"><ol class="log-list" reversed>${items}</ol></div><div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`;
     } else if (modal.type === 'settings') {
@@ -364,11 +507,61 @@ export function mountTable(root: HTMLElement): TableHandle {
         </div>
         <div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`;
     } else if (modal.type === 'decide' && v.decision) {
+      const opts = modal.options
+        .map((o, i) => (o.parts.length ? button('decide-pick', o.parts.map(partText).join(' · '), { args: { i }, cls: 'decide-opt' }) : ''))
+        .join('');
+      const declinable = modal.options.some((o) => !o.parts.length);
       inner = `<h2 id="modal-title">${esc(t('decide.title'))}</h2><div></div>
-        <div class="modal-body"><pre>${esc(JSON.stringify(v.decision, null, 1))}</pre><p>${esc(t('decide.args'))}</p><textarea data-set="decide-args">${esc(modal.args)}</textarea></div>
-        <div class="modal-foot">${button('close-modal', t('btn.back'))}${button('decline', t('decide.decline'))}${button('decide-send', t('decide.send'), { cls: 'primary' })}</div>`;
+        <div class="modal-body">
+          <p class="hint">${esc(t('decide.what', { card: v.decision.card, effect: t(`decide.effect.${v.decision.effect}`) }))}</p>
+          <div class="decide-list">${opts || `<p class="hint">${esc(t('decide.none'))}</p>`}</div>
+          <details class="decide-adv"><summary>${esc(t('decide.advanced'))}</summary>
+            <pre>${esc(JSON.stringify(v.decision, null, 1))}</pre><p>${esc(t('decide.args'))}</p><textarea data-set="decide-args">${esc(modal.args)}</textarea>
+            <div>${button('decide-send', t('decide.send'))}</div>
+          </details>
+        </div>
+        <div class="modal-foot">${button('close-modal', t('btn.back'))}${declinable ? button('decline', t('decide.decline')) : ''}</div>`;
     }
-    return `<div class="overlay" data-act="close-modal"></div><div class="glass modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" style="${place(REGIONS.modal)}">${inner}</div>`;
+    const box = modal.type === 'detail'
+      ? `left:${REGIONS.detail.x}px;top:${REGIONS.detail.y}px;width:${REGIONS.detail.w}px;max-height:${REGIONS.detail.h}px`
+      : place(REGIONS.modal);
+    return `<div class="overlay" data-act="close-modal"></div><div class="glass modal${modal.type === 'detail' ? ' detail' : ''}" role="dialog" aria-modal="true" aria-labelledby="modal-title" style="${box}">${inner}</div>`;
+  }
+
+  /**
+   * What sits over the 3D canvas: a keyboard and screen-reader list of the
+   * systems (the canvas itself is not focusable), the camera hint, and in
+   * calibration mode the system to click next.
+   */
+  function map3dOverlay(v: TableView, valid: ReadonlySet<string>): string {
+    const keys = v.systems
+      .filter((s) => s.inPlay)
+      .map((s) => {
+        const label = `${s.id}${s.resource ? ' · ' + t(`resource.${s.resource}`) : ''}`;
+        return `<span role="button" tabindex="0" class="sys-key${valid.has(s.id) ? ' valid' : ''}" data-sys="${esc(s.id)}" aria-label="${esc(label)}">${esc(s.id)}</span>`;
+      })
+      .join('');
+    let cal = '';
+    if (calibrating) {
+      const next = calib.order[calib.i];
+      cal = `<div class="calib glass">
+        <div>${esc(next ? t('calib.next', { id: next, n: calib.i + 1, total: calib.order.length }) : t('calib.done'))}</div>
+        <div class="btn-grid">${button('calib-skip', t('calib.skip'), { disabled: !next })}${button('calib-back', t('calib.back'), { disabled: calib.i === 0 })}${button('calib-save', t('calib.save'), { cls: 'primary' })}</div>
+      </div>`;
+    }
+    return `<div class="map3d-host"></div><div class="sys-keys" aria-label="${esc(t('map3d.systems'))}">${keys}</div><div class="map3d-hint">${esc(t('map3d.hint'))}</div>${cal}`;
+  }
+
+  /** Saves the calibration as board.json (the owner moves it to assets/ui/map/). */
+  function saveCalibration(): void {
+    if (!board3d) return;
+    const size = board3d.pictureSize();
+    const json = JSON.stringify({ width: size.width, height: size.height, systems: calib.points }, null, 2);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+    a.download = 'board.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   // ---- render ----
@@ -394,7 +587,10 @@ export function mountTable(root: HTMLElement): TableHandle {
     const v = tableView(ix, state, me);
     const valid = validSystems(v);
     const chosen = new Set<string>();
-    if (intent.step === 'to' || intent.step === 'move') chosen.add(intent.from);
+    if (intent.step === 'to' || intent.step === 'move') {
+      chosen.add(intent.from);
+      for (const id of intent.via) chosen.add(id);
+    }
     if (intent.step === 'move') chosen.add(intent.to);
     if (intent.step === 'build' || intent.step === 'repair' || intent.step === 'tax' || intent.step === 'battle') chosen.add(intent.system);
 
@@ -408,16 +604,21 @@ export function mountTable(root: HTMLElement): TableHandle {
     stage.innerHTML = `<div class="tbl-stars"></div>
       <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example')}</div>
       <div class="region prompt-wrap" data-region="prompt" style="${place(REGIONS.prompt)}">${promptBar(prompt(v), promptSub(v), myTurn())}</div>
-      <div class="map-area glass" data-region="map" style="${place(REGIONS.map)}">${mapSvg(ix, v, valid, chosen, t)}</div>
+      <div class="map-area glass" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
       <div class="region glass ambitions" data-region="ambitions" style="${place(REGIONS.ambitions)}">${ambitionsPanel(v, t)}</div>
       <div class="region glass court" data-region="court" style="${place(REGIONS.court)}">${courtPanel(v, t, courtPickable(intent))}</div>
       <div class="region glass recent" data-region="recent" style="${place(REGIONS.recent)}">${recentPanel(v, t)}</div>
       <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null)}</div>
-      <div class="region glass hand" data-region="hand" style="${place(REGIONS.hand)}">${handPanel(ix, v, t, selected, myTurn())}</div>
+      <div class="region glass hand" data-region="hand" style="${place(REGIONS.hand)}">${handPanel(ix, v, t, selected, myTurn(), seizeWith)}</div>
       <div class="region glass actions${myTurn() ? ' mine' : ''}" data-region="actions" style="${place(REGIONS.actions)}"><div class="actions-body">${actionsPanel(v)}</div>${confirmRow}</div>
       ${modalHtml(v)}
-      ${toast ? `<div class="toast" role="alert">${esc(toast)}</div>` : ''}`;
+      ${toast ? `<div class="toast" role="alert">${esc(toast)}</div>` : ''}
+      <div class="card-zoom" aria-hidden="true" hidden></div>`;
+    if (board3d) {
+      stage.querySelector('.map3d-host')?.appendChild(board3d.canvas);
+      board3d.update(v, valid, chosen);
+    }
     restoreFocus(key);
     const dialog = stage.querySelector('.modal');
     if (dialog && !dialog.contains(document.activeElement)) {
@@ -428,7 +629,14 @@ export function mountTable(root: HTMLElement): TableHandle {
   // ---- input ----
   function pickSystem(id: string): void {
     const v = tableView(ix, state, local());
-    if (!validSystems(v).has(id)) return;
+    if (!validSystems(v).has(id)) {
+      // Not a choice for the current step: outside a step, the click opens the system's details.
+      if (intent.step === 'idle' && !modal) {
+        modal = { type: 'detail', target: { kind: 'system', id } };
+        render();
+      }
+      return;
+    }
     const i = intent;
     if (i.step === 'system') {
       if (i.kind === 'battle') {
@@ -438,10 +646,18 @@ export function mountTable(root: HTMLElement): TableHandle {
         if (owners.length === 1) return void send(act({ kind: 'tax', system: id, cityOwner: owners[0] }, i.prelude));
         intent = { step: 'tax', system: id, prelude: i.prelude };
       } else intent = { step: i.kind, system: id, prelude: i.prelude };
-    } else if (i.step === 'from') intent = { step: 'to', from: id, prelude: i.prelude };
+    } else if (i.step === 'from') {
+      pendingMove = null;
+      intent = { step: 'to', from: id, via: [], prelude: i.prelude };
+    }
     else if (i.step === 'to') {
       const mine = v.systems.find((s) => s.id === i.from)?.ships.find((x) => x.player === local());
-      intent = { step: 'move', from: i.from, to: id, ships: mine?.fresh ?? 0, damaged: mine && mine.fresh === 0 ? mine.damaged : 0, prelude: i.prelude };
+      // Catapulting on keeps the counts chosen so far; a first pick moves every ship there.
+      const prev = pendingMove;
+      pendingMove = null;
+      intent = prev && prev.from === i.from
+        ? { ...prev, via: i.via, to: id }
+        : { step: 'move', from: i.from, via: i.via, to: id, ships: mine?.fresh ?? 0, damaged: mine && mine.fresh === 0 ? mine.damaged : 0, drop: {}, prelude: i.prelude };
     }
     render();
   }
@@ -470,7 +686,19 @@ export function mountTable(root: HTMLElement): TableHandle {
     const v = tableView(ix, state, me);
     switch (d.act) {
       case 'hand':
-        selected = selected === d.card ? null : d.card!;
+        if (seizePick && d.card !== selected) {
+          seizeWith = d.card!;
+          seizePick = false;
+        } else {
+          selected = selected === d.card ? null : d.card!;
+          if (seizeWith === selected) seizeWith = null;
+        }
+        break;
+      case 'seize':
+        if (seizeWith || seizePick) {
+          seizeWith = null;
+          seizePick = false;
+        } else seizePick = true;
         break;
       case 'lead':
         if (selected) send({ type: 'lead', player: me, card: selected });
@@ -485,7 +713,7 @@ export function mountTable(root: HTMLElement): TableHandle {
         send({ type: 'mulligan', player: me });
         return;
       case 'follow':
-        if (selected) send({ type: 'follow', player: me, card: selected, mode: d.mode as 'surpass' | 'pivot' | 'copy' });
+        if (selected) send(followCmd(selected, d.mode as 'surpass' | 'pivot' | 'copy'));
         return;
       case 'kind': {
         const next = startAction(d.kind as ActionKind, d.prelude as Resource | undefined);
@@ -507,6 +735,7 @@ export function mountTable(root: HTMLElement): TableHandle {
       }
       case 'cancel':
         intent = IDLE;
+        pendingMove = null;
         if (modal?.type === 'picker' && modal.court) modal = null;
         break;
       case 'build':
@@ -520,7 +749,10 @@ export function mountTable(root: HTMLElement): TableHandle {
         return;
       case 'step': {
         const n = Number(d.d);
-        if (intent.step === 'move') {
+        if (intent.step === 'move' && d.name?.startsWith('drop:')) {
+          const at = d.name.slice(5);
+          intent = { ...intent, drop: { ...intent.drop, [at]: clamp((intent.drop[at] ?? 0) + n, intent.ships) } };
+        } else if (intent.step === 'move') {
           const from = intent.from;
           const mine = v.systems.find((s) => s.id === from)?.ships.find((x) => x.player === me);
           intent = d.name === 'ships'
@@ -535,6 +767,18 @@ export function mountTable(root: HTMLElement): TableHandle {
       case 'target':
         if (intent.step === 'battle') intent = { ...intent, target: Number(d.player) };
         break;
+      case 'catapult':
+        if (intent.step === 'move') {
+          pendingMove = intent;
+          intent = { step: 'to', from: intent.from, via: [...intent.via, intent.to], prelude: intent.prelude };
+        }
+        break;
+      case 'raid': {
+        const take: RaidTake = d.card !== undefined ? { card: d.card } : { resource: Number(d.res) };
+        const same = (r: RaidTake) => ('card' in r && 'card' in take && r.card === take.card) || ('resource' in r && 'resource' in take && r.resource === take.resource);
+        raid = raid.some(same) ? raid.filter((r) => !same(r)) : [...raid, take];
+        break;
+      }
       case 'do-move':
         if (intent.step === 'move') send(act(movePayload(intent), intent.prelude));
         return;
@@ -545,11 +789,21 @@ export function mountTable(root: HTMLElement): TableHandle {
         }
         return;
       case 'allocate':
-        if (state.phase.type === 'allocate') send({ type: 'allocate', player: me, allocation: defaultAllocation(state, state.phase.battle) });
+        {
+          const al = allocation();
+          if (al) send({ type: 'allocate', player: me, allocation: al });
+        }
         return;
       case 'decide-open':
-        modal = { type: 'decide', args: '{}' };
+        modal = { type: 'decide', args: '{}', options: decisionOptions(ix, state, me) };
         break;
+      case 'decide-pick':
+        if (modal?.type === 'decide') {
+          const o = modal.options[Number(d.i)];
+          modal = null;
+          if (o) send({ type: 'decide', player: me, args: o.args });
+        }
+        return;
       case 'decline':
         modal = null;
         send({ type: 'decide', player: me, args: {} });
@@ -572,8 +826,7 @@ export function mountTable(root: HTMLElement): TableHandle {
       case 'undo': {
         const prev = history.pop();
         if (prev) state = prev;
-        selected = null;
-        intent = IDLE;
+        resetChoices();
         modal = null;
         break;
       }
@@ -588,6 +841,18 @@ export function mountTable(root: HTMLElement): TableHandle {
         break;
       case 'seat-cards':
         openPicker(v, t('modal.ownedTitle'), 1 + Number(d.player));
+        break;
+      case 'seat-detail':
+        modal = { type: 'detail', target: { kind: 'seat', player: Number(d.player) } };
+        break;
+      case 'detail-system':
+        modal = { type: 'detail', target: { kind: 'system', id: d.id! } };
+        break;
+      case 'amb-detail':
+        modal = { type: 'detail', target: { kind: 'ambition', id: d.id! } };
+        break;
+      case 'supply-detail':
+        modal = { type: 'detail', target: { kind: 'supply' } };
         break;
       case 'tab':
         if (modal?.type === 'picker') modal.picker = { ...modal.picker, active: Number(d.tab), page: 0 };
@@ -607,6 +872,16 @@ export function mountTable(root: HTMLElement): TableHandle {
       case 'log':
         modal = { type: 'log' };
         break;
+      case 'calib-skip':
+        calib.i = Math.min(calib.order.length, calib.i + 1);
+        break;
+      case 'calib-back':
+        calib.i = Math.max(0, calib.i - 1);
+        delete calib.points[calib.order[calib.i]];
+        break;
+      case 'calib-save':
+        saveCalibration();
+        return;
       case 'settings':
         modal = { type: 'settings' };
         break;
@@ -629,6 +904,45 @@ export function mountTable(root: HTMLElement): TableHandle {
     if (sys) return pickSystem(sys.dataset.sys!);
     const el = target.closest('[data-act]') as HTMLElement | null;
     if (el && !(el as HTMLButtonElement).disabled) onAct(el);
+  });
+
+  // ---- card zoom: hovering or focusing any [data-zoom] card shows it large beside it ----
+  function showZoom(el: HTMLElement): void {
+    const zoom = stage.querySelector<HTMLElement>('.card-zoom');
+    const id = el.dataset.zoom;
+    if (!zoom || !id) return;
+    const d = ix.courtCards.get(id);
+    zoom.innerHTML = largeCard({ card: id, kind: d?.kind ?? null, resource: d?.resource ?? null, keys: d?.keys ?? 0 }, t, { selected: false, disabled: false });
+    const r = el.getBoundingClientRect();
+    const s = stage.getBoundingClientRect();
+    const x = (r.left - s.left) / scale;
+    const y = (r.top - s.top) / scale;
+    const w = r.width / scale;
+    const ZW = 300, ZH = 416, GAP = 14;
+    const left = x + w / 2 > STAGE.w / 2 ? x - ZW - GAP : x + w + GAP;
+    const top = Math.max(8, Math.min(STAGE.h - ZH - 8, y + (r.height / scale) / 2 - ZH / 2));
+    zoom.style.left = `${left}px`;
+    zoom.style.top = `${top}px`;
+    zoom.hidden = false;
+  }
+  function hideZoom(): void {
+    const zoom = stage.querySelector<HTMLElement>('.card-zoom');
+    if (zoom) zoom.hidden = true;
+  }
+  const zoomTarget = (e: Event) => (e.target as Element).closest<HTMLElement>('[data-zoom]');
+  stage.addEventListener('mouseover', (e) => {
+    const el = zoomTarget(e);
+    if (el) showZoom(el);
+  });
+  stage.addEventListener('mouseout', (e) => {
+    if (zoomTarget(e)) hideZoom();
+  });
+  stage.addEventListener('focusin', (e) => {
+    const el = zoomTarget(e);
+    if (el) showZoom(el);
+  });
+  stage.addEventListener('focusout', (e) => {
+    if (zoomTarget(e)) hideZoom();
   });
 
   stage.addEventListener('keydown', (e) => {

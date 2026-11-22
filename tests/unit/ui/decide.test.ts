@@ -1,0 +1,63 @@
+// Decision answers offered as buttons (src/ui/table/decide.ts) and the Catapult
+// move payload (src/ui/table/intent.ts), on the card test content.
+import { describe, expect, it } from 'vitest';
+import { dispatch } from '../../../src/game/engine';
+import { decisionOptions } from '../../../src/ui/table/decide';
+import { movePayload } from '../../../src/ui/table/intent';
+import { cardsIndex, runAll, start } from '../cards/fixture';
+
+describe('decisionOptions', () => {
+  const ix = cardsIndex();
+
+  /** P0 secures the Vox card with effect `effect` and waits on its Decision. */
+  function secured(effect: string) {
+    const s = start(ix);
+    s.court[0] = { card: `v:${effect}`, agents: { 0: 1 } };
+    s.players[0].resources = ['relic'];
+    return runAll(ix, s, [
+      { type: 'lead', player: 0, card: 'suitC-2' },
+      { type: 'prelude', player: 0, resource: 'relic', action: { kind: 'secure', courtSlot: 0 } },
+    ]);
+  }
+
+  it('offers declining first, then one button per Outrage type', () => {
+    const s = secured('court-28');
+    expect(s.phase.type).toBe('decide');
+    const opts = decisionOptions(ix, s, 0);
+    expect(opts[0].parts).toEqual([]);
+    const types = opts.filter((o) => o.parts.some((p) => p.key === 'type')).map((o) => o.args.type);
+    expect(types).toContain('material');
+    expect(types.length).toBeGreaterThan(1);
+  });
+
+  it('only offers answers the engine accepts', () => {
+    const s = secured('court-27');
+    const opts = decisionOptions(ix, s, 0);
+    expect(opts.some((o) => o.parts.some((p) => p.key === 'ambition'))).toBe(true);
+    for (const o of opts) expect(() => dispatch(ix, s, { type: 'decide', player: 0, args: o.args })).not.toThrow();
+  });
+
+  it('merges answers that lead to the same game state', () => {
+    const s = secured('court-28');
+    const opts = decisionOptions(ix, s, 0);
+    // Keys the effect ignores (a rival, a system...) give the same state as declining.
+    expect(opts.some((o) => o.parts.some((p) => p.key === 'rival'))).toBe(false);
+  });
+
+  it('is empty for a player the Decision does not wait on', () => {
+    const s = secured('court-28');
+    expect(decisionOptions(ix, s, 1)).toEqual([]);
+  });
+});
+
+describe('movePayload', () => {
+  it('lists the Catapult path and the ships dropped on the way', () => {
+    const p = movePayload({ step: 'move', from: 'a', via: ['b', 'c'], to: 'd', ships: 3, damaged: 0, drop: { b: 1, c: 0 } });
+    expect(p).toEqual({ kind: 'move', from: 'a', to: 'd', ships: 3, via: ['b', 'c'], drop: [{ at: 'b', ships: 1 }] });
+  });
+
+  it('leaves via and drop out of a plain move', () => {
+    const p = movePayload({ step: 'move', from: 'a', via: [], to: 'b', ships: 2, damaged: 1, drop: {} });
+    expect(p).toEqual({ kind: 'move', from: 'a', to: 'b', ships: 2, damaged: 1 });
+  });
+});
