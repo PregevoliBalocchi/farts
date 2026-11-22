@@ -6,7 +6,7 @@
 
 import './table.css';
 import { activePlayer, AMBITIONS, dispatch, indexContent, newGame } from '../../game/engine';
-import type { ActionKind, ActionPayload, AmbitionId, Command, GameState, PlayerCount, PlayerId, RaidTake, Resource } from '../../game/engine';
+import type { ActionKind, ActionPayload, AmbitionId, Command, GameContent, GameState, PlayerCount, PlayerId, RaidTake, Resource } from '../../game/engine';
 import { BASE_EFFECTS } from '../../game/cards/base';
 import { LANGS, pickLang, translator } from '../../i18n';
 import type { Lang } from '../../i18n';
@@ -43,22 +43,40 @@ export interface TableHandle {
   readonly state: GameState;
   send(cmd: Command): boolean;
   newGame(fields: Record<string, string>): void;
+  /** Online: shows a state saved by another screen. */
+  load(next: GameState): void;
+}
+
+/**
+ * Online use (docs/online-play.md): one player's screen on a shared game.
+ * Without it the table is the local one, where the view follows the active seat.
+ */
+export interface TableOnline {
+  /** The game content (read from the database, not bundled). */
+  content: GameContent;
+  /** The shared game state to show first. */
+  state: GameState;
+  /** The seat this screen plays: only its commands are sent. */
+  seat: PlayerId;
+  /** Saves a new state after a command; a rejection shows the error and the shared state comes back. */
+  commit: (next: GameState, cmd: Command) => Promise<void>;
 }
 
 /** Mounts the table into `root`. */
-export function mountTable(root: HTMLElement): TableHandle {
+export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle {
   const params = new URLSearchParams(location.search);
   let lang: Lang = pickLang(location.search, navigator.language);
   let t = translator(lang);
-  const { content, source } = loadContent();
+  const { content, source } = online ? { content: online.content, source: 'owner' as const } : loadContent();
   const ix = indexContent(content, BASE_EFFECTS);
 
   let players = Number(params.get('players') ?? 3) as PlayerCount;
   let seed = Number(params.get('seed') ?? 1) || 1;
-  let state: GameState = newGame(ix, { playerCount: players, seed, variant: 'base' });
+  let state: GameState = online ? online.state : newGame(ix, { playerCount: players, seed, variant: 'base' });
   let history: GameState[] = [];
-  let follow = params.get('seat') === null;
-  let seatChoice: PlayerId = follow ? 0 : Number(params.get('seat')) || 0;
+  // Online the seat is fixed; locally the view follows the active seat unless ?seat= pins it.
+  let follow = online ? false : params.get('seat') === null;
+  let seatChoice: PlayerId = online ? online.seat : follow ? 0 : Number(params.get('seat')) || 0;
 
   let selected: string | null = null;
   /** Following: the second card discarded to seize the initiative, and whether the next hand click picks it. */
@@ -145,12 +163,19 @@ export function mountTable(root: HTMLElement): TableHandle {
 
   function send(cmd: Command): boolean {
     try {
+      // Online, a screen only plays its own seat.
+      if (online && cmd.player !== online.seat) throw new Error(t('online.notYours'));
       const next = dispatch(ix, state, cmd);
-      history.push(state);
+      if (!online) history.push(state);
       state = next;
       resetChoices();
       if (modal?.type === 'picker' && modal.court) modal = null;
       render();
+      if (online)
+        online.commit(next, cmd).catch((e: Error) => {
+          showToast(t('error', { msg: e.message }));
+          render();
+        });
       return true;
     } catch (e) {
       showToast(t('error', { msg: (e as Error).message }));
@@ -495,7 +520,14 @@ export function mountTable(root: HTMLElement): TableHandle {
       const seatOpts = v.players.map((p) => `<option value="${p.id}"${seatChoice === p.id ? ' selected' : ''}>${esc(playerName(t, p.id))}</option>`).join('');
       const countOpts = [2, 3, 4].map((n) => `<option${players === n ? ' selected' : ''}>${n}</option>`).join('');
       const langOpts = LANGS.map((l) => `<option${lang === l ? ' selected' : ''}>${l}</option>`).join('');
-      inner = `<h2 id="modal-title">${esc(t('settings.title'))}</h2><div></div>
+      // Online the seat, players and seed belong to the shared game: only the language can change.
+      inner = online
+        ? `<h2 id="modal-title">${esc(t('settings.title'))}</h2><div></div>
+        <div class="settings-grid">
+          <label for="set-lang">${esc(t('settings.lang'))}</label><select id="set-lang" data-set="lang">${langOpts}</select>
+        </div>
+        <div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`
+        : `<h2 id="modal-title">${esc(t('settings.title'))}</h2><div></div>
         <div class="settings-grid">
           <label for="set-follow">${esc(t('settings.follow'))}</label><input id="set-follow" type="checkbox" data-set="follow"${follow ? ' checked' : ''}>
           <label for="set-seat">${esc(t('settings.view'))}</label><select id="set-seat" data-set="seat"${follow ? ' disabled' : ''}>${seatOpts}</select>
@@ -824,6 +856,7 @@ export function mountTable(root: HTMLElement): TableHandle {
         send({ type: 'endTurn', player: me });
         return;
       case 'undo': {
+        if (online) return;
         const prev = history.pop();
         if (prev) state = prev;
         resetChoices();
@@ -886,6 +919,7 @@ export function mountTable(root: HTMLElement): TableHandle {
         modal = { type: 'settings' };
         break;
       case 'new-game':
+        if (online) return;
         restart();
         break;
       case 'close-modal':
@@ -1011,9 +1045,17 @@ export function mountTable(root: HTMLElement): TableHandle {
     },
     send,
     newGame(fields: Record<string, string>) {
+      if (online) return;
       if (fields['g-players']) players = Number(fields['g-players']) as PlayerCount;
       if (fields['g-seed']) seed = Number(fields['g-seed']) || 1;
       restart();
+      render();
+    },
+    load(next: GameState) {
+      state = next;
+      history = [];
+      resetChoices();
+      if (modal?.type !== 'log' && modal?.type !== 'settings') modal = null;
       render();
     },
   };

@@ -1,10 +1,11 @@
 // Online game screen (docs/online-play.md): one player's view of a shared
-// game. The rules run in this browser; every move is saved to Firestore and
-// reaches the other screens through the live listener.
+// game, on the table screen (src/ui/table). The rules run in this browser;
+// every move is saved to Firestore and reaches the other screens through the
+// live listener.
 
 import { onAuthStateChanged } from 'firebase/auth';
 import { normalizeEmail } from '../online/roles';
-import { mountDebug } from '../ui/debug';
+import { mountTable } from '../ui/table/table';
 import type { GameState } from '../game/engine';
 import { auth, loadContent, saveMove, watchGame } from './games';
 
@@ -14,6 +15,8 @@ const id = new URLSearchParams(location.search).get('id') ?? '';
 
 function say(text: string): void {
   status.innerHTML = `${text} · <a href="./">torna all'ingresso</a>`;
+  // Over the table (a fixed full-screen layer) once it is mounted.
+  status.classList.toggle('over-table', root.childElementCount > 0);
 }
 
 let started = false;
@@ -27,7 +30,7 @@ onAuthStateChanged(auth, async (user) => {
     const content = await loadContent();
     let version = 0;
     let shared: GameState | null = null;
-    let screen: ReturnType<typeof mountDebug> | null = null;
+    let screen: ReturnType<typeof mountTable> | null = null;
     watchGame(
       id,
       (g) => {
@@ -38,11 +41,10 @@ onAuthStateChanged(auth, async (user) => {
         shared = g.state;
         say(`Partita ${id.slice(0, 6)} · ${g.status === 'over' ? 'finita' : 'in corso'} · mossa ${g.version}`);
         if (!screen)
-          screen = mountDebug(root, {
+          screen = mountTable(root, {
             content,
             state: g.state,
             seat,
-            names: g.players.map((p) => p.split('@')[0]),
             commit: async (next) => {
               try {
                 version = await saveMove(id, version, next, email);

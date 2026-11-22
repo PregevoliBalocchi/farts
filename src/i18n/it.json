@@ -209,5 +209,6 @@
   "piece.flagshipDamaged": "ammiraglia danneggiata",
   "piece.cityDamaged": "città danneggiata",
   "empty": "—",
-  "error": "Non consentito: {msg}"
+  "error": "Non consentito: {msg}",
+  "online.notYours": "Non è il tuo posto: qui si gioca solo il tuo turno"
 }

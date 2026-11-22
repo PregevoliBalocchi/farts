@@ -209,5 +209,6 @@
   "piece.flagshipDamaged": "damaged flagship",
   "piece.cityDamaged": "damaged city",
   "empty": "—",
-  "error": "Not allowed: {msg}"
+  "error": "Not allowed: {msg}",
+  "online.notYours": "This is not your seat: only your own turn can be played here"
 }
