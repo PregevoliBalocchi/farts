@@ -2,7 +2,7 @@
 // mapping, schematic fallback, and how ship stacks are laid out.
 import { describe, expect, it } from 'vitest';
 import {
-  BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pictureToWorld, pileSpots, shipSpot, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
+  BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pictureToWorld, GROUP_GAP, headingJitter, HEADING_SPREAD, shipGroups, shipSpot, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
 } from '../../../src/ui/table/board3d-layout';
 
 const PICTURE = { width: 4000, height: 2000 };
@@ -110,19 +110,23 @@ describe('ship zones', () => {
     expect(shipSpot(calib, 'missing', 0)).toBeNull();
   });
 
-  it('keeps a pile within a ship-and-a-half of its point, fresh standing behind damaged', () => {
-    const pile = pileSpots(3, 2);
-    expect(pile).toHaveLength(5);
-    for (const s of pile) expect(Math.hypot(s.dx, s.dz)).toBeLessThan(0.3);
-    const standing = pile.filter((s) => !s.lying);
-    const lying = pile.filter((s) => s.lying);
-    expect(standing).toHaveLength(3);
-    expect(Math.max(...standing.map((s) => s.dz))).toBeLessThan(Math.min(...lying.map((s) => s.dz)));
+  it('puts fresh and damaged ships in two groups side by side, each with its count', () => {
+    const groups = shipGroups(3, 2);
+    expect(groups.map((g) => [g.lying, g.count])).toEqual([[false, 3], [true, 2]]);
+    expect(groups[1].dx - groups[0].dx).toBeCloseTo(GROUP_GAP);
   });
 
-  it('shows at most MAX_SHOWN ships in a pile, fresh first', () => {
-    const pile = pileSpots(MAX_SHOWN + 2, 3);
-    expect(pile).toHaveLength(MAX_SHOWN);
-    expect(pile.every((s) => !s.lying)).toBe(true);
+  it('puts a single kind of ship on the spot itself and leaves out empty groups', () => {
+    expect(shipGroups(4, 0)).toEqual([{ dx: 0, dz: 0, lying: false, count: 4 }]);
+    expect(shipGroups(0, 1)).toEqual([{ dx: 0, dz: 0, lying: true, count: 1 }]);
+    expect(shipGroups(0, 0)).toEqual([]);
+  });
+
+  it('turns each ship group a fixed amount within the spread', () => {
+    const keys = ['a:0:f', 'a:0:d', 'a:1:f', 'b:2:f', 'c:3:d'];
+    const turns = keys.map(headingJitter);
+    for (const t of turns) expect(Math.abs(t)).toBeLessThanOrEqual(HEADING_SPREAD);
+    expect(keys.map(headingJitter)).toEqual(turns);
+    expect(new Set(turns).size).toBeGreaterThan(3);
   });
 });

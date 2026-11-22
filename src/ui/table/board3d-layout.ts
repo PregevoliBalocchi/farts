@@ -114,18 +114,42 @@ export function stackSpots(fresh: number, damaged: number, gap = 0.22): ShipSpot
   return [...row(f, d ? -0.14 : 0, false), ...row(d, f ? 0.2 : 0, true)];
 }
 
+/** One group of a seat's ships in a ship zone: one model stands for `count` ships. */
+export interface ShipGroup {
+  dx: number;
+  dz: number;
+  lying: boolean;
+  count: number;
+}
+
 /**
- * Ships of one seat on its own spot of a system's ship zone: a compact pile
- * that takes little more room than one ship. Fresh ones stand in echelon,
- * each a little behind and to the side of the one before; damaged ones lie in
- * front of them, also in echelon. At most MAX_SHOWN in all (fresh first).
+ * Ships of one seat on its own spot of a system's ship zone, in two groups:
+ * fresh ships (one standing model) and damaged ships (one lying model), side
+ * by side; each group carries how many ships it stands for. A seat with only
+ * one kind has its group on the spot itself.
  */
-export function pileSpots(fresh: number, damaged: number): ShipSpot[] {
-  const f = Math.min(fresh, MAX_SHOWN);
-  const d = Math.min(damaged, MAX_SHOWN - f);
-  const standing = Array.from({ length: f }, (_, i) => ({ dx: i * 0.11 - (f - 1) * 0.055, dz: -i * 0.09 - (d ? 0.08 : 0), lying: false }));
-  const lying = Array.from({ length: d }, (_, i) => ({ dx: i * 0.11 - (d - 1) * 0.055, dz: (f ? 0.14 : 0) + i * 0.05, lying: true }));
-  return [...standing, ...lying];
+export function shipGroups(fresh: number, damaged: number): ShipGroup[] {
+  const both = fresh > 0 && damaged > 0;
+  const out: ShipGroup[] = [];
+  if (fresh > 0) out.push({ dx: both ? -GROUP_GAP / 2 : 0, dz: 0, lying: false, count: fresh });
+  if (damaged > 0) out.push({ dx: both ? GROUP_GAP / 2 : 0, dz: both ? 0.03 : 0, lying: true, count: damaged });
+  return out;
+}
+
+/** World distance between a seat's fresh and damaged groups. */
+export const GROUP_GAP = 0.2;
+/** How far (radians) a ship model may turn either side of the default heading. */
+export const HEADING_SPREAD = 0.6;
+
+/**
+ * A fixed, random-looking turn for the model keyed by `key` (system, seat and
+ * kind): within ±HEADING_SPREAD, the same every redraw, so ships do not all
+ * point the same way and do not spin when the map changes.
+ */
+export function headingJitter(key: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+  return (((h >>> 0) % 10000) / 10000 * 2 - 1) * HEADING_SPREAD;
 }
 
 /** Centres of up to 4 seat stacks around a system point (radius `r`). */
