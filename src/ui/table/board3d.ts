@@ -15,7 +15,7 @@ import type { ContentIndex } from '../../game/engine';
 import { layout } from '../map';
 import { assetUrl } from './assets';
 import defaultCalibration from './board.default.json';
-import { BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
+import { BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pileSpots, shipSpot, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
 import type { BoardCalibration, Spot } from './board3d-layout';
 import { loadKitPieces, piece } from './kitpieces';
 import { boardImageSvg } from './mapview';
@@ -321,8 +321,12 @@ export class Board3D {
       const slots = slotSpots(this.calib, s.id);
       const centres = stackCentres(s.ships.length, slots ? 0.7 : 0.75);
       s.ships.forEach((st, i) => {
-        const c = centres[i];
-        for (const sp of stackSpots(st.fresh, st.damaged, 0.36)) {
+        // On the owner's picture each seat has its own spot in the system's
+        // ship zone (clear of the slots, inside the planet), and its ships
+        // stand in a compact pile there; elsewhere the stacks ring the system point.
+        const zone = shipSpot(this.calib, s.id, st.player);
+        const c = zone ? { x: zone.x - p.x, z: zone.z - p.z } : centres[i];
+        for (const sp of zone ? pileSpots(st.fresh, st.damaged) : stackSpots(st.fresh, st.damaged, 0.36)) {
           const o = piece('ship', st.player, { lying: sp.lying });
           o.position.set(p.x + c.x + sp.dx, 0, p.z + c.z + sp.dz);
           // Turned three-quarters to the viewer, so the profile of a standing ship shows.

@@ -30,6 +30,8 @@ export interface GameHook {
   send?(cmd: unknown): boolean;
   /** Debug UI: start a new game from form values (g-players, g-variant, g-seed, g-setup). */
   newGame?(fields: Record<string, string>): void;
+  /** Table: show a given game state (checks use it to set up a board position). */
+  load?(state: unknown): void;
 }
 
 /** A clock in seconds. */

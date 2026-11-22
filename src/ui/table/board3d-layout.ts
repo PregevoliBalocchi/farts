@@ -13,8 +13,19 @@ export const SCHEMATIC = { pxPerUnit: 72, cx: 320, cy: 320 } as const;
 export interface BoardCalibration {
   width: number;
   height: number;
-  /** Each system's centre; `slots`: the centres of its building slots, in slot order. */
-  systems: Record<string, { x: number; y: number; slots?: { x: number; y: number }[] }>;
+  /**
+   * Each system's point; `slots`: the centres of its building slots, in slot
+   * order; `ships`: where each seat's ships stand, by seat (tools/map-zones.mjs);
+   * `disc`: the planet drawn on the picture (centre and radius), which the ship
+   * points are kept inside.
+   */
+  systems: Record<string, {
+    x: number;
+    y: number;
+    slots?: { x: number; y: number }[];
+    ships?: { x: number; y: number }[];
+    disc?: { x: number; y: number; r: number };
+  }>;
 }
 
 /** A point on the table. */
@@ -73,6 +84,14 @@ export function slotSpots(calib: BoardCalibration | null, id: string): Spot[] | 
   return calib && slots?.length ? slots.map((p) => pictureToWorld(calib, p.x, p.y)) : null;
 }
 
+/** Table point where seat `seat`'s ships stand in a system, from the calibration, or null when it gives none. */
+export function shipSpot(calib: BoardCalibration | null, id: string, seat: number): Spot | null {
+  const ships = calib?.systems[id]?.ships;
+  if (!calib || !ships?.length) return null;
+  const p = ships[seat % ships.length];
+  return pictureToWorld(calib, p.x, p.y);
+}
+
 /** One ship of a stack: offset from the stack centre, and whether it lies down (damaged). */
 export interface ShipSpot {
   dx: number;
@@ -93,6 +112,20 @@ export function stackSpots(fresh: number, damaged: number, gap = 0.22): ShipSpot
   const row = (n: number, dz: number, lying: boolean) =>
     Array.from({ length: n }, (_, i) => ({ dx: (i - (n - 1) / 2) * gap * (lying ? 1.5 : 1), dz, lying }));
   return [...row(f, d ? -0.14 : 0, false), ...row(d, f ? 0.2 : 0, true)];
+}
+
+/**
+ * Ships of one seat on its own spot of a system's ship zone: a compact pile
+ * that takes little more room than one ship. Fresh ones stand in echelon,
+ * each a little behind and to the side of the one before; damaged ones lie in
+ * front of them, also in echelon. At most MAX_SHOWN in all (fresh first).
+ */
+export function pileSpots(fresh: number, damaged: number): ShipSpot[] {
+  const f = Math.min(fresh, MAX_SHOWN);
+  const d = Math.min(damaged, MAX_SHOWN - f);
+  const standing = Array.from({ length: f }, (_, i) => ({ dx: i * 0.11 - (f - 1) * 0.055, dz: -i * 0.09 - (d ? 0.08 : 0), lying: false }));
+  const lying = Array.from({ length: d }, (_, i) => ({ dx: i * 0.11 - (d - 1) * 0.055, dz: (f ? 0.14 : 0) + i * 0.05, lying: true }));
+  return [...standing, ...lying];
 }
 
 /** Centres of up to 4 seat stacks around a system point (radius `r`). */
