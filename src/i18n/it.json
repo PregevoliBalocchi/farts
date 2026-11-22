@@ -130,5 +130,6 @@
   "hand.title": "La tua mano · le carte che non puoi giocare sono attenuate",
   "hand.waiting": "La tua mano · non è il tuo turno",
   "empty": "—",
-  "error": "Non consentito: {msg}"
+  "error": "Non consentito: {msg}",
+  "online.notYours": "Non è il tuo posto: qui si gioca solo il tuo turno"
 }

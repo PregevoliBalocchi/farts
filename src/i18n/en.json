@@ -130,5 +130,6 @@
   "hand.title": "Your hand · cards you cannot play are dimmed",
   "hand.waiting": "Your hand · not your turn",
   "empty": "—",
-  "error": "Not allowed: {msg}"
+  "error": "Not allowed: {msg}",
+  "online.notYours": "This is not your seat: only your own turn can be played here"
 }
