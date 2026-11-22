@@ -633,7 +633,7 @@ function raid(ix: ContentIndex, s: GameState, sys: SystemState, b: PendingBattle
   if (shipCount(sys, b.attacker) === 0) err('No attacker ship survived: the keys are lost');
   const att = s.players[b.attacker];
   const def = s.players[b.target];
-  let cost = 0;
+  let keysNeeded = 0;
   const resIdx: number[] = [];
   const cards: string[] = [];
   for (const t of takes) {
@@ -643,17 +643,17 @@ function raid(ix: ContentIndex, s: GameState, sys: SystemState, b: PendingBattle
       if (why) err(why);
       if (resIdx.includes(t.resource)) err(`Resource slot ${t.resource} taken twice`);
       resIdx.push(t.resource);
-      cost += slotKeys(ix.content, t.resource);
+      keysNeeded += slotKeys(ix.content, t.resource);
     } else {
       if (!def.court.includes(t.card)) err(`Defender has no card ${t.card}`);
       const why = stealBlocked(ix, s, b.attacker, b.target, { card: t.card });
       if (why) err(why);
       if (cards.includes(t.card)) err(`Card ${t.card} taken twice`);
       cards.push(t.card);
-      cost += ix.courtCards.get(t.card)?.keys ?? 1;
+      keysNeeded += ix.courtCards.get(t.card)?.keys ?? 1;
     }
   }
-  if (cost > b.totals.key) err(`Raid costs ${cost} keys, only ${b.totals.key} rolled`);
+  if (keysNeeded > b.totals.key) err(`Raid costs ${keysNeeded} keys, only ${b.totals.key} rolled`);
   const gained = resIdx.map((i) => takeResourceAt(def, i));
   // Stolen tokens the attacker cannot hold are discarded to the supply.
   for (const r of gained) if (!gainResource(ix.content, att, r)) returnToSupply(s, r);
@@ -663,7 +663,7 @@ function raid(ix: ContentIndex, s: GameState, sys: SystemState, b: PendingBattle
     if (effectOf(ix, card)?.guardsSteals) s.courtDeck.push(card);
     else att.court.push(card);
   }
-  return `; steals ${[...gained, ...cards].join(', ')} for ${cost} keys`;
+  return `; steals ${[...gained, ...cards].join(', ')} for ${keysNeeded} keys`;
 }
 
 function applyShipHits(s: GameState, sys: SystemState, owner: PlayerId, by: PlayerId, rolled: number, entries: ShipHit[], label: string): void {

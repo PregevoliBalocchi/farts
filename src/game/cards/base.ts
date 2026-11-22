@@ -197,7 +197,7 @@ const justScoring = (a: AmbitionId): CardEffect => ({ scoringSecondOnFirst: [a] 
 
 // ---------------------------------------------------------------- registry ---
 
-/** Base-game Court and lore effects. Leaders: see the TODO list in card-effects.md. */
+/** Base-game Court, lore and leader effects (status per card: design/gdd/card-effects.md). */
 export const BASE_EFFECTS: EffectRegistry = {
   // ---- Guild ----
   'court-01': loyalGuild('material'),
