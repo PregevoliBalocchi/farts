@@ -63,10 +63,48 @@ service cloud.firestore {
         && (isMaster() || resource.data.role == 'player');
     }
 
-    // Game data will live under /games, readable by members only (to come).
-    match /games/{gameId} {
+    function isInvited(email) {
+      return email == masterEmail() || exists(memberDoc(email));
+    }
+
+    // The game content (owner's data): members read it, only the master replaces it.
+    match /content/main {
       allow read: if isMember();
-      allow write: if false;
+      allow write: if isMaster()
+        && request.resource.data.keys().hasOnly(['json', 'updatedAt', 'updatedBy'])
+        && request.resource.data.json is string
+        && request.resource.data.updatedBy == me();
+    }
+
+    // Shared games (docs/online-play.md). Seated players read and move; each
+    // move bumps `version` by one, so two screens cannot overwrite each other.
+    match /games/{gameId} {
+      allow read: if signedIn() && me() in resource.data.players;
+
+      allow create: if isMember()
+        && request.resource.data.keys().hasOnly(['players', 'createdBy', 'createdAt', 'variant', 'status', 'version', 'state', 'updatedAt', 'updatedBy'])
+        && request.resource.data.createdBy == me()
+        && request.resource.data.updatedBy == me()
+        && me() in request.resource.data.players
+        && request.resource.data.players.size() >= 2
+        && request.resource.data.players.size() <= 4
+        && isInvited(request.resource.data.players[0])
+        && isInvited(request.resource.data.players[1])
+        && (request.resource.data.players.size() < 3 || isInvited(request.resource.data.players[2]))
+        && (request.resource.data.players.size() < 4 || isInvited(request.resource.data.players[3]))
+        && request.resource.data.variant in ['base', 'leaders']
+        && request.resource.data.status == 'playing'
+        && request.resource.data.version == 1
+        && request.resource.data.state is string;
+
+      allow update: if signedIn() && me() in resource.data.players
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state', 'version', 'status', 'updatedAt', 'updatedBy'])
+        && request.resource.data.version == resource.data.version + 1
+        && request.resource.data.updatedBy == me()
+        && request.resource.data.status in ['playing', 'over']
+        && request.resource.data.state is string;
+
+      allow delete: if signedIn() && (resource.data.createdBy == me() || isAdmin());
     }
   }
 }

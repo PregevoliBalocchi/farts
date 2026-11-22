@@ -11,7 +11,7 @@ import {
   newGame,
   openSlots,
 } from '../game/engine';
-import type { Allocation, Command, ContentIndex, GameState, PendingBattle, PlayerCount } from '../game/engine';
+import type { Allocation, Command, ContentIndex, GameContent, GameState, PendingBattle, PlayerCount, PlayerId } from '../game/engine';
 import { loadContent } from './content';
 import { BASE_EFFECTS } from '../game/cards/base';
 import { drawMap, playerColor } from './map';
@@ -48,13 +48,31 @@ interface Ui {
   message: { kind: 'error' | 'info'; text: string } | null;
 }
 
-/** Mounts the debug UI into `root`. Returns a handle for automated checks. */
-export function mountDebug(root: HTMLElement) {
-  const { content, source } = loadContent();
+/**
+ * Online use (docs/online-play.md): one player's screen on a shared game.
+ * Without it the page is the local debug table where anyone plays any seat.
+ */
+export interface OnlineOptions {
+  /** The game content (loaded from the database, not bundled). */
+  content: GameContent;
+  /** The shared game state to show first. */
+  state: GameState;
+  /** The seat this screen plays: only its commands are sent, only its hand is shown. */
+  seat: PlayerId;
+  /** Seat labels (e.g. the players' addresses). */
+  names: string[];
+  /** Saves a new state after a command; a rejection shows the error and keeps the shared state. */
+  commit: (next: GameState, cmd: Command) => Promise<void>;
+}
+
+/** Mounts the debug UI into `root`. Returns a handle for automated checks (and `load` for online updates). */
+export function mountDebug(root: HTMLElement, online?: OnlineOptions) {
+  const { content, source } = online ? { content: online.content, source: 'owner' as const } : loadContent();
   const ix: ContentIndex = indexContent(content, BASE_EFFECTS);
   const ui: Ui = { selected: null, fields: {}, message: null };
   let history: GameState[] = [];
-  let state: GameState = start();
+  let state: GameState = online ? online.state : start();
+  const seatName = (p: PlayerId) => (online ? `P${p} ${online.names[p] ?? ''}`.trim() : `P${p}`);
 
   function start(): GameState {
     const n = Number(ui.fields['g-players'] ?? 3) as PlayerCount;
@@ -69,11 +87,17 @@ export function mountDebug(root: HTMLElement) {
 
   function send(cmd: Command): boolean {
     try {
+      if (online && cmd.player !== online.seat) throw new Error(`Non tocca a te: ora agisce ${seatName(cmd.player)}`);
       const next = dispatch(ix, state, cmd);
       history.push(state);
       state = next;
       ui.message = null;
       render();
+      if (online)
+        online.commit(next, cmd).catch((e: Error) => {
+          ui.message = { kind: 'error', text: `Non salvato: ${e.message}` };
+          render();
+        });
       return true;
     } catch (e) {
       ui.message = { kind: 'error', text: (e as Error).message };
@@ -211,6 +235,11 @@ export function mountDebug(root: HTMLElement) {
     const ph = state.phase;
     const p = activePlayer(state);
     let h = '';
+    if (online && ph.type !== 'gameOver' && p !== online.seat) {
+      // Another player's turn: show no one else's options (they would reveal their hand).
+      const redraw = state.mulligan === online.seat && ph.type === 'lead' ? `<div class="row">${btn('mulligan', 'Rifai la tua mano')}</div>` : '';
+      return `<p>In attesa di <b style="color:${playerColor(p ?? 0)}">${esc(seatName(p ?? 0))}</b>…</p>${redraw}`;
+    }
     if (ph.type === 'gameOver') return `<p class="big">Partita finita — vince ${ph.winners.map((w) => `<b style="color:${playerColor(w)}">P${w}</b>`).join(', ')}</p>`;
     if (ph.type === 'draft') {
       const d = state.draft!;
@@ -263,6 +292,12 @@ export function mountDebug(root: HTMLElement) {
       h += `<p class="hint">Assegnazione proposta: modificala se vuoi (raid: [{"resource":slot}] o [{"card":"id"}]).</p>`;
       h += `<textarea data-f="alloc" id="alloc" rows="8">${esc(fv('alloc', ''))}</textarea>${btn('allocate', 'Assegna')}`;
     }
+    if (ph.type === 'decide') {
+      const d = ph.decision;
+      h += `<p>Scelta richiesta da <b>${esc(d.card)}</b> (${esc(d.effect)})${d.data ? ` <span class="hint">${esc(JSON.stringify(d.data))}</span>` : ''}</p>`;
+      h += `<p class="hint">Scrivi le scelte in JSON (vuoto = rinuncia), vedi design/gdd/card-effects.md.</p>`;
+      h += `<textarea data-f="decide-args" id="decide-args" rows="3">${esc(fv('decide-args', '{}'))}</textarea>${btn('decide', 'Conferma')}`;
+    }
     if (state.mulligan !== null && ph.type === 'lead') h += `<div class="row">${btn('mulligan', `P${state.mulligan}: rifai la mano`)}</div>`;
     return h;
   }
@@ -304,12 +339,12 @@ export function mountDebug(root: HTMLElement) {
         const res = ix.content.playerBoard.slotKeys.map((_, i) => (slots.includes(i) ? (p.resources[i] ?? '·') : '▒')).join(' ');
         const act = activePlayer(state) === p.id ? ' active' : '';
         return `<div class="player${act}" style="border-color:${playerColor(p.id)}">
-          <h3 style="color:${playerColor(p.id)}">P${p.id}${state.initiative === p.id ? ' ★' : ''} — Potere ${p.power}</h3>
+          <h3 style="color:${playerColor(p.id)}">${esc(seatName(p.id))}${state.initiative === p.id ? ' ★' : ''} — Potere ${p.power}</h3>
           <p>Slot: <code>${esc(res)}</code>${p.outraged.length ? ` · Outrage: ${p.outraged.join(', ')}` : ''}</p>
           <p>Riserva: navi ${p.supply.ships}, città ${p.supply.cities}, porti ${p.supply.starports}, agenti ${p.supply.agents}</p>
           <p>Trofei ${p.trophies.length} · Prigionieri ${p.captives.length} · Corte: ${p.court.join(', ') || '—'}</p>
           ${p.leader ? `<p>Personaggio: ${p.leader}${p.lore.length ? ' · Lore: ' + p.lore.join(', ') : ''}</p>` : ''}
-          <p class="hint">Mano (${p.hand.length}): ${p.hand.join(', ')}</p></div>`;
+          <p class="hint">Mano (${p.hand.length})${!online || online.seat === p.id ? `: ${p.hand.join(', ')}` : ''}</p></div>`;
       })
       .join('');
   }
@@ -320,20 +355,20 @@ export function mountDebug(root: HTMLElement) {
     // Turn-scoped fields start fresh whenever the turn or step changes hands.
     const turnKey = `${state.chapter}|${state.phase.type}|${p}|${state.round.plays.length}`;
     if (ui.fields.__turn !== turnKey) {
-      for (const k of Object.keys(ui.fields)) if (/^(act|pre|fol|lead|alloc|rescue)/.test(k)) delete ui.fields[k];
+      for (const k of Object.keys(ui.fields)) if (/^(act|pre|fol|lead|alloc|rescue|decide)/.test(k)) delete ui.fields[k];
       ui.fields.__turn = turnKey;
     }
     const n = String(state.playerCount);
     root.innerHTML = `
       <header>
         <h1>${T.title}</h1>
-        <div class="row">
+        ${online ? `<p>Giochi come <b style="color:${playerColor(online.seat)}">${esc(seatName(online.seat))}</b>${p === online.seat ? ' — <b>tocca a te</b>' : ''}</p>` : `<div class="row">
           ${label(T.players, sel('g-players', ['2', '3', '4'].map((v) => ({ v, l: v })), n))}
           ${label(T.variant, sel('g-variant', [{ v: 'base', l: T.base }, { v: 'leaders', l: T.leaders }], state.variant))}
           ${label(T.seed, num('g-seed', state.seed, 1))}
           ${label(T.setup, sel('g-setup', [{ v: '', l: T.random }, ...ix.content.setupCards.filter((c) => String(c.playerCount) === fv('g-players', n)).map((c) => ({ v: c.id, l: c.id }))], ''))}
           ${btn('new', T.newGame)} ${btn('undo', T.undo, history.length ? '' : 'disabled')} ${btn('export', T.exportJson)} ${btn('import', T.importJson)}
-        </div>
+        </div>`}
         <p class="status">${T.chapter} <b>${state.chapter}</b> · ${T.phase} <b>${state.phase.type}</b> · ${T.turnOf} ${p === null ? '—' : `<b style="color:${playerColor(p)}">P${p}</b>`} · setup ${state.setupCard} · <span class="hint">${source === 'owner' ? T.contentOwner : T.contentExample}</span></p>
         ${ui.message ? `<p class="msg ${ui.message.kind}" role="alert">${esc(ui.message.text)}</p>` : ''}
       </header>
@@ -377,6 +412,8 @@ export function mountDebug(root: HTMLElement) {
     if (!b) return;
     const act = b.dataset.act!;
     const p = activePlayer(state) ?? 0;
+    // Online, the shared game cannot be restarted, undone or replaced from one screen.
+    if (online && ['new', 'undo', 'import'].includes(act)) return;
     if (act === 'new') {
       try {
         history = [];
@@ -416,6 +453,7 @@ export function mountDebug(root: HTMLElement) {
       ui.fields['lead-declare'] = '';
     } else if (act === 'pass') send({ type: 'pass', player: p });
     else if (act === 'mulligan') send({ type: 'mulligan', player: state.mulligan! });
+    // (online: a redraw is sent by the player who may redraw, from their own screen)
     else if (act === 'follow') {
       const hand = state.players[p].hand;
       const seize = fv('fol-seize', '');
@@ -435,6 +473,13 @@ export function mountDebug(root: HTMLElement) {
         ui.message = { kind: 'error', text: `JSON non valido: ${(err as Error).message}` };
         render();
       }
+    } else if (act === 'decide') {
+      try {
+        send({ type: 'decide', player: p, args: JSON.parse(fv('decide-args', '{}') || '{}') });
+      } catch (err) {
+        ui.message = { kind: 'error', text: `JSON non valido: ${(err as Error).message}` };
+        render();
+      }
     } else if (act === 'raw') {
       try {
         send(JSON.parse(fv('raw', '{}')));
@@ -449,6 +494,12 @@ export function mountDebug(root: HTMLElement) {
   return {
     get state() {
       return state;
+    },
+    /** Shows a state saved by another screen (online). */
+    load(next: GameState) {
+      history = [];
+      state = next;
+      render();
     },
     send,
     newGame(fields: Record<string, string>) {

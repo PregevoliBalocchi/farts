@@ -52,6 +52,29 @@
     </div>
   </section>
 
+  <section id="lobby" class="card" hidden>
+    <h2>Le tue partite</h2>
+    <ul id="games"></ul>
+    <h2>Nuova partita</h2>
+    <form id="new-game">
+      <input id="new-players" type="text" placeholder="indirizzi degli altri giocatori, separati da virgola" required autocomplete="off">
+      <select id="new-variant" aria-label="Variante">
+        <option value="base">base</option>
+        <option value="leaders">personaggi e lore</option>
+      </select>
+      <button class="primary" type="submit">Crea</button>
+    </form>
+    <p class="muted">Da 2 a 4 giocatori, tu compreso; devono essere tutti invitati. L'ordine dei posti segue l'elenco.</p>
+    <p id="game-msg" class="muted" role="status"></p>
+  </section>
+
+  <section id="content-admin" class="card" hidden>
+    <h2>Contenuti del gioco</h2>
+    <p class="muted">Carica il file <code>data/content.json</code>: resta nel database, leggibile solo dagli invitati.</p>
+    <input id="content-file" type="file" accept="application/json,.json">
+    <p id="content-msg" class="muted" role="status"></p>
+  </section>
+
   <section id="admin" class="card" hidden>
     <h2>Amministrazione</h2>
     <form id="invite">
