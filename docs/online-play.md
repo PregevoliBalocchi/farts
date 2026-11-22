@@ -2,7 +2,8 @@
 
 A first way to play a whole game online, each player on their own computer,
 behind the invite-only access (`docs/online-access.md`). The screen is the
-debug table for now; the real interface replaces it later.
+table screen (`src/ui/table/`, spec in `docs/ui/UI_SPEC.md`); the older debug
+table (`src/ui/debug.ts`) keeps its own online mode but is no longer used here.
 
 ## How it works
 
@@ -19,9 +20,13 @@ debug table for now; the real interface replaces it later.
   (`dispatch`); the new state is saved in `games/{id}` with a transaction that
   only succeeds if nobody else moved meanwhile (`version`); every other screen
   receives it through a live listener.
-- **One seat per screen**: a screen only sends commands for its own seat and
-  shows only its own hand; during someone else's turn it shows "In attesa di…".
-  Choices asked by card effects (Decisions) are typed as JSON for now.
+- **One seat per screen**: `mountTable(root, online)` takes the fixed seat, a
+  `commit` callback that saves a move, and exposes `load(state)` for states
+  saved by other screens. A screen only sends commands for its own seat (any
+  other is refused with a message), shows only its own hand and, during
+  someone else's turn, the waiting prompt. Undo, restart, seat and player
+  settings are off online; only the language can be changed. Choices asked by
+  card effects (Decisions) are typed as JSON for now.
 - **Firestore rules** (`firestore.rules`): only seated players read and move a
   game; a move must bump `version` by one and touch only the state fields;
   only invited addresses can be seated; creators and admins can delete games.
@@ -34,7 +39,11 @@ debug table for now; the real interface replaces it later.
   this needs a server (not available on the free plan); see the options in
   `docs/online-access.md`.
 - The saved log keeps the last 400 entries.
-- The screen is the debug table (forms and JSON), not the final interface.
+- Seats are labelled P1…P4 (the table does not show the players' addresses yet).
+- **Images are public**: anything bundled into `dist-online/` is visible to
+  anyone with the link. `assets/ui/` is picked up by the build when present,
+  so before deploying make sure it holds only our own art, never the original
+  game's images (card images belong in Firestore content, not in the build).
 
 ## Deploy
 
