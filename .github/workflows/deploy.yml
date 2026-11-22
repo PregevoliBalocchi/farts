@@ -1,0 +1,60 @@
+# Publishes the site on Firebase Hosting (docs/online-access.md, "Automatic deploy"):
+# - every push to main: the live site, https://farts-9435d.web.app
+# - every pull request from this repository: a preview site; its link is posted
+#   as a comment on the pull request and expires after 7 days.
+# Needs the repository secret FIREBASE_SERVICE_ACCOUNT_FARTS_9435D, created once
+# by the Firebase project owner (`npx firebase init hosting:github`). Without it
+# the job skips the deploy and says so. Firestore rules are not deployed here:
+# after changing firestore.rules, run `npm run deploy:online` by hand.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Pull requests from forks get no secrets: no preview for them.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      HAS_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FARTS_9435D != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p .
+      - run: npm run test:unit
+      - name: Missing deploy key
+        if: env.HAS_KEY != 'true'
+        run: echo "::warning::FIREBASE_SERVICE_ACCOUNT_FARTS_9435D is not set; nothing deployed (docs/online-access.md)."
+      # firebase.json's predeploy runs npm run build:online.
+      - name: Deploy (live site)
+        if: env.HAS_KEY == 'true' && github.event_name == 'push'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FARTS_9435D }}
+          projectId: farts-9435d
+          channelId: live
+      - name: Deploy (preview for this pull request)
+        if: env.HAS_KEY == 'true' && github.event_name == 'pull_request'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FARTS_9435D }}
+          projectId: farts-9435d
+          expires: 7d

@@ -70,3 +70,31 @@ npm run deploy:online                   # builds and deploys hosting and rules
 
 The site is then at `https://<project-id>.web.app`. Google sign-in works
 there out of the box (Hosting domains are authorized automatically).
+
+## Automatic deploy (GitHub Actions)
+
+`.github/workflows/deploy.yml` publishes the site by itself:
+
+- **Merge into `main`** → the live site is rebuilt and published.
+- **Pull request** → a preview site with its own address; the link appears
+  as a comment on the pull request (it expires after 7 days). Test there
+  before merging.
+
+Nobody needs to run `git pull`, `npm` or `deploy:online` for the site any
+more. Firestore rules are not deployed automatically: after changing
+`firestore.rules`, run `npm run deploy:online` by hand.
+
+**One-time setup, by the Firebase project owner** (on a computer where
+`npx firebase login` was done with the owner's account), from the repository
+folder:
+
+```bash
+npx firebase init hosting:github
+```
+
+Answer: repository `PregevoliBalocchi/farts`; **No** to setting up the build
+script and to overwriting files it offers to create (the workflow already
+exists). The command creates a Google service account allowed to deploy and
+saves its key in the GitHub repository as the secret
+`FIREBASE_SERVICE_ACCOUNT_FARTS_9435D`. Until that secret exists, the
+workflow runs the tests and skips the deploy with a warning.
