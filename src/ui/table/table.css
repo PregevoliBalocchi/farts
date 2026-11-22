@@ -1,7 +1,6 @@
 /* Table screen. Our own look ("orbital chart"): deep ink background, chamfered
    glass panels with a thin cyan rule, light cool-grey cards with a suit band.
    Everything is scoped under .tbl so the debug page keeps its styles. */
-
 .tbl {
   /* Space and panels */
   --space-0: #070a14;
@@ -43,18 +42,15 @@
   --suit-2: #3fae6a;
   --suit-3: #b05ad0;
   --suit-4: #c9a43a;
-
   --ok: #6fe3a5;
   --warn: #ffcc66;
   --danger: #ff6b6b;
   --select: 0 0 0 2px #fff, 0 0 0 5px var(--rule-hi), 0 0 22px 4px rgba(95, 212, 230, .55);
-
   --cut: 14px;
   --r: 6px;
   --font-ui: "Segoe UI", "Inter", system-ui, sans-serif;
   --font-num: "Cascadia Mono", "Consolas", ui-monospace, monospace;
   --text-scale: 1;
-
   position: fixed;
   inset: 0;
   background: #000;
@@ -64,7 +60,6 @@
   user-select: none;
 }
 .tbl.large-text { --text-scale: 1.15; }
-
 .tbl-stage {
   position: absolute;
   left: 0;
@@ -92,7 +87,6 @@
     radial-gradient(1px 1px at 230px 200px, #dde, transparent 60%);
   background-size: 260px 240px;
 }
-
 .region { position: absolute; z-index: 20; }
 .debug-layout .region, .debug-layout .map-area { outline: 2px dashed rgba(255, 80, 200, .8); outline-offset: -1px; }
 .debug-layout .region::after, .debug-layout .map-area::after {
@@ -112,14 +106,10 @@
   display: flex; align-items: center; gap: 8px; margin: 0 0 6px;
 }
 .glass-title::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--rule), transparent); }
-
 .ic { width: 1em; height: 1em; flex: none; vertical-align: -.15em; }
 .ic-img { object-fit: contain; }
 .mini-card.has-art { padding: 0; overflow: hidden; }
 .mini-card img { width: 100%; height: 100%; object-fit: cover; }
-.court-card.has-art { grid-template-columns: 44px 1fr auto; }
-.cc-thumb { width: 44px; height: 34px; object-fit: cover; border-radius: 4px; }
-.acard .suit-img { height: 14px; width: auto; vertical-align: middle; }
 .num { font-family: var(--font-num); font-weight: 700; }
 .muted { color: var(--text-dim); }
 
@@ -154,23 +144,13 @@
 .header .top-buttons .btn.icon { width: 42px; height: 42px; font-size: 22px; }
 
 /* ---- Prompt line ---- */
-.prompt-wrap { display: flex; align-items: center; justify-content: center; }
-.prompt { text-align: center; padding: 4px 28px; border-radius: 10px; max-width: 1560px; }
-.prompt-main { font-size: 1.45em; font-weight: 600; line-height: 1.25; text-shadow: 0 2px 6px #000; }
-.prompt-sub { font-size: .95em; color: var(--text-dim); margin-top: 2px; }
-.prompt.mine { background: rgba(95, 212, 230, .10); box-shadow: inset 0 0 0 1px rgba(95, 212, 230, .45); }
-.prompt.mine .prompt-main { color: var(--rule-hi); }
 
 /* ---- Columns ---- */
 .rivals { display: grid; gap: 10px; grid-template-rows: repeat(3, minmax(0, 1fr)); }
 .rivals .rival { height: 100%; gap: 5px; padding-top: 8px; padding-bottom: 8px; }
 .rivals .stats { flex-wrap: nowrap; gap: 9px; font-size: .88em; }
 .rivals .slot { width: 34px; height: 34px; font-size: 21px; }
-.rival-row { display: flex; gap: 10px; align-items: center; }
-.played { font-size: .88em; color: var(--warn); min-height: 1.2em; }
 .recent { padding: 12px 14px; display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
-.recent-list { margin: 0; padding-left: 18px; color: var(--text-dim); font-size: .86em; display: grid; gap: 3px; align-content: start; overflow: hidden; }
-.recent-list li:first-child { color: var(--text); }
 .map-area.glass { --cut: 22px; background: rgba(6, 9, 20, .55); }
 
 /* ---- Bottom ---- */
@@ -178,14 +158,12 @@
 .hand-cards { display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; }
 .actions.mine { border-color: var(--rule-hi); box-shadow: inset 0 0 0 1px var(--rule-hi); }
 .actions-body { display: grid; gap: 8px; align-content: start; min-height: 0; overflow: hidden; }
-.confirm-row { display: flex; justify-content: flex-end; gap: 10px; align-self: end; }
 .btn.end { height: 48px; padding: 0 22px; font-size: 18px; }
 .btn.end .ic { font-size: 22px; }
 .chapter-badge { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1em; }
 .chapter-badge .num { font-size: 1.5em; color: var(--rule-hi); }
 .supply { display: flex; gap: 14px; padding: 6px 12px; border: 1px solid var(--rule); border-radius: 999px; background: #0008; }
 .supply span { display: inline-flex; align-items: center; gap: 5px; font-size: 1.1em; }
-.prompt { flex: 1; text-align: center; font-size: 1.5em; font-weight: 500; letter-spacing: .01em; text-shadow: 0 2px 6px #000; }
 .top-buttons { display: flex; gap: 8px; }
 .content-note { font-size: .75em; color: var(--text-faint); }
 
@@ -198,11 +176,7 @@
 .seat-c { color: var(--seat); }
 
 /* ---- Player panels ---- */
-.seat-panel { position: relative; padding: 10px 12px 10px 16px; display: grid; gap: 7px; align-content: start; }
-.seat-panel::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--seat); }
-.seat-panel.active { border-color: var(--rule-hi); box-shadow: inset 0 0 0 1px var(--rule-hi), inset 0 0 40px rgba(95, 212, 230, .18); }
 .rival { height: 218px; cursor: pointer; width: 100%; text-align: left; font: inherit; color: inherit; }
-.seat-head { display: flex; align-items: center; gap: 10px; }
 .portrait {
   width: 52px; height: 52px; flex: none; border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--seat) 70%, #fff), var(--seat) 55%, color-mix(in srgb, var(--seat) 40%, #000));
@@ -211,11 +185,7 @@
 }
 .portrait img { width: 100%; height: 100%; object-fit: cover; }
 .local .portrait { width: 68px; height: 68px; font-size: 34px; }
-.seat-name { font-weight: 700; font-size: 1.15em; display: flex; align-items: center; gap: 6px; }
-.seat-tags { display: flex; gap: 6px; font-size: .78em; color: var(--text-dim); margin-top: 3px; }
 .tag { border: 1px solid var(--rule); border-radius: 999px; padding: 1px 8px; }
-.tag.init { border-color: var(--warn); color: var(--warn); }
-.tag.turn { border-color: var(--rule-hi); color: var(--rule-hi); }
 .power {
   margin-left: auto; min-width: 54px; height: 54px; border-radius: 12px; display: grid; place-items: center; align-content: center;
   background: #0007; border: 2px solid var(--seat); font: 700 1.5em var(--font-num); color: var(--text);
@@ -242,12 +212,9 @@
 }
 .mini-card.more { background: var(--panel-raise); color: var(--text); font: 700 13px var(--font-num); }
 .local { padding: 12px 14px 12px 18px; }
-.local-body { display: grid; grid-template-columns: 1fr auto; gap: 8px 14px; align-items: end; }
 
 /* ---- Round (lead) ---- */
 .round { padding: 10px 12px; }
-.round-body { display: flex; gap: 8px; }
-.plays { display: flex; gap: 8px; align-items: flex-end; }
 .play { display: grid; justify-items: center; gap: 3px; font-size: .72em; color: var(--text-dim); }
 .play .acard { width: 46px; height: 96px; padding: 3px 2px; border-width: 3px; gap: 1px; }
 .play .acard .n { font-size: 24px; }
@@ -256,7 +223,6 @@
 .play.lead .acard { box-shadow: 0 0 0 2px var(--warn); }
 .facedown { width: 52px; height: 74px; border-radius: 7px; background: repeating-linear-gradient(135deg, #1d2848 0 6px, #16203b 6px 12px); border: 1px solid var(--rule); }
 .kinds { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; align-self: center; max-width: 130px; justify-content: flex-end; }
-.kind-tag { font-size: .7em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; background: var(--card); color: var(--ink); }
 .round .empty-note { font-size: .95em; }
 
 /* ---- Action cards ---- */
@@ -306,39 +272,11 @@
 
 /* ---- Ambitions ---- */
 .ambitions { padding: 12px 14px; display: grid; grid-template-rows: auto 1fr auto; }
-.amb-row { display: grid; grid-template-columns: 96px 84px 1fr; align-items: center; gap: 6px; padding: 7px 2px; border-bottom: 1px solid rgba(45, 61, 102, .55); min-height: 62px; }
-.amb-row:last-child { border-bottom: 0; }
-.amb-name { font-weight: 700; font-size: .92em; }
 .marker { display: inline-grid; grid-template-rows: 1fr 1fr; width: 34px; height: 44px; border-radius: 6px; background: linear-gradient(180deg, #2a8fa0, #1b6676); border: 1px solid var(--rule-hi); text-align: center; font: 700 14px/20px var(--font-num); margin-right: 4px; }
 .marker span + span { border-top: 1px solid #0006; color: #cfeef3; }
-.tallies { display: flex; gap: 9px; font-size: .9em; justify-content: flex-end; }
-.tallies span { display: inline-flex; align-items: center; gap: 3px; }
-.tallies .ic { font-size: .85em; }
-.tallies .zero { opacity: .35; }
-.tallies sup { font-size: .7em; font-weight: 700; margin-left: 1px; }
-.tallies .first { color: var(--warn); }
-.tallies .second { color: #d6dbe8; }
-.amb-row.declared .amb-name { color: var(--rule-hi); }
-.amb-row { min-height: 44px; padding: 3px 2px; grid-template-columns: 92px auto 1fr; }
-.amb-row .tallies { gap: 6px; font-size: .84em; }
-.amb-row .marker { height: 38px; line-height: 18px; }
-.markers-left { display: flex; gap: 6px; align-items: center; font-size: .8em; color: var(--text-dim); }
-.markers-left .marker { width: 28px; height: 36px; font-size: 12px; line-height: 16px; }
 
 /* ---- Court ---- */
 .court { padding: 12px 14px; display: grid; grid-template-rows: auto 1fr; }
-.court-list { display: grid; gap: 6px; align-content: start; }
-.court-card .cc-sub { line-height: 1.2; }
-.court-card {
-  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
-  background: var(--card); color: var(--ink); border-radius: 8px; padding: 4px 10px; min-height: 38px;
-  border: 1px solid #0008; cursor: pointer; text-align: left; font: inherit;
-  transition: transform .12s, box-shadow .12s;
-}
-.court-card:hover { transform: translateX(-4px); }
-.court-card.pickable { box-shadow: var(--select); }
-.court-card .cc-id { font-weight: 800; letter-spacing: .04em; text-transform: uppercase; font-size: .9em; }
-.court-card .cc-sub { font-size: .78em; color: var(--ink-dim); display: flex; gap: 8px; align-items: center; }
 .agents { display: flex; gap: 6px; }
 .agent { display: inline-flex; align-items: center; gap: 2px; font: 700 14px var(--font-num); color: var(--ink); }
 .agent .ic { color: var(--seat); font-size: 18px; filter: drop-shadow(0 0 1px #000); }
@@ -370,10 +308,8 @@
 .detail-cards { display: flex; gap: 10px; flex-wrap: wrap; }
 .detail-card { width: 90px; aspect-ratio: .72; border-radius: 6px; overflow: hidden; display: block; cursor: zoom-in; }
 .btn.chip-btn { padding: 3px 10px; font-size: .85em; margin: 0 4px 4px 0; }
-.seat-head-btn, .amb-row, button.supply { font: inherit; color: inherit; text-align: left; cursor: pointer; }
-.seat-head-btn { background: none; border: 0; padding: 0; width: 100%; }
-button.amb-row { background: none; border: 0; border-bottom: 1px solid rgba(45, 61, 102, .55); width: 100%; }
-button.amb-row:hover, .seat-head-btn:hover .seat-name, button.supply:hover { color: var(--rule-hi); }
+button.supply { font: inherit; color: inherit; text-align: left; cursor: pointer; }
+button.supply:hover { color: var(--rule-hi); }
 button.supply:hover { border-color: var(--rule-hi); }
 
 /* ---- Card zoom (hover / focus) ---- */
@@ -444,7 +380,6 @@ button.supply:hover { border-color: var(--rule-hi); }
 .m-ship-n { font: 800 13px var(--font-num); fill: #0b0f1c; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
 .m-bld { stroke: #0b0f1c; stroke-width: 1.5; }
 .m-bld.dmg { opacity: .45; }
-
 @keyframes pulse { 0%, 100% { stroke-opacity: .4; } 50% { stroke-opacity: 1; } }
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { transform: scale(.96); opacity: 0; } }
@@ -536,7 +471,6 @@ button.supply:hover { border-color: var(--rule-hi); }
 .card-sheet .glyph .small .ic { width: 16px; height: 16px; }
 .card-sheet .glyph figcaption { grid-column: 1 / -1; }
 
-
 /* ==== Layout v2: the interface floats in front of the full-window map ==== */
 /* Top strip: boxes side by side, the gaps let clicks through to the map. */
 .tbl-stage .header { background: none; border: 0; pointer-events: none; align-items: flex-start; padding: 12px 16px 0; gap: 12px; }
@@ -583,18 +517,10 @@ button.supply:hover { border-color: var(--rule-hi); }
 
 /* Ambitions: a narrow column, each ambition on two lines. */
 .tbl-stage .ambitions { height: auto !important; padding: 10px 10px 8px; --cut: 10px; }
-.tbl-stage .ambitions .amb-row { grid-template-columns: 1fr auto; grid-template-areas: "name marks" "tally tally"; gap: 2px 4px; min-height: 0; padding: 6px 2px; }
-.tbl-stage .ambitions .amb-name { grid-area: name; }
-.tbl-stage .ambitions .amb-row > span:nth-child(2) { grid-area: marks; display: flex; gap: 2px; }
-.tbl-stage .ambitions .tallies { grid-area: tally; justify-content: flex-start; gap: 8px; font-size: .86em; }
-.tbl-stage .ambitions .amb-row .marker { width: 26px; height: 30px; font-size: 11px; line-height: 14px; }
-.tbl-stage .ambitions .markers-left { flex-wrap: wrap; padding-top: 6px; }
 
 /* Bottom row. */
 .tbl-stage .local { height: 100%; }
-.tbl-stage .seat-panel.local { height: 100%; align-content: start; gap: 8px; }
 .tbl-stage .local .glass-title { margin: 2px 0 0; }
-.tbl-stage .local-body { grid-template-columns: 1fr; }
 .tbl-stage .hand-cards { align-items: flex-end; }
 .tbl-stage .own-play { display: grid; justify-items: center; margin-right: 14px; padding-right: 14px; border-right: 1px solid var(--rule); }
 .tbl-stage .owned { padding: 10px 14px 0; display: grid; grid-template-rows: auto 1fr; --cut: 14px; }
@@ -604,13 +530,9 @@ button.supply:hover { border-color: var(--rule-hi); }
 /* Prompt and the current step: a strip above the hand that grows upwards. */
 .tbl-stage .actions { height: auto; padding: 8px 14px 10px; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 6px 14px; align-items: end; overflow: hidden; --cut: 10px; }
 .tbl-stage .actions > [data-region="prompt"] { grid-column: 1 / -1; }
-.tbl-stage .actions .prompt { text-align: left; padding: 0; max-width: none; background: none; box-shadow: none; font-size: 1em; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-.tbl-stage .actions .prompt-main { font-size: 1.2em; }
-.tbl-stage .actions .prompt-sub { margin: 0; font-size: .88em; }
 .tbl-stage .actions .actions-body { max-height: 340px; }
 .tbl-stage .actions .btn-grid { display: flex; flex-wrap: wrap; }
 .tbl-stage .actions .btn { padding: 6px 14px; }
-.tbl-stage .actions .confirm-row { align-self: end; }
 .tbl-stage .actions .btn.end { height: 42px; }
 .tbl-stage .actions .btn.icon { width: 42px; height: 42px; }
 .tbl.has-3d .map3d-hint { left: 0; bottom: auto; top: 0; }
@@ -697,7 +619,6 @@ button.supply:hover { border-color: var(--rule-hi); }
 .board .outrage { display: flex; gap: 6px; align-items: center; }
 .board .outrage .out { position: relative; font-size: 20px; display: inline-flex; }
 .board .outrage .out::after { content: ""; position: absolute; left: -3px; right: -3px; top: 50%; height: 2px; background: var(--danger); transform: rotate(-35deg); }
-
 .tbl-stage .rivals .board.rival { width: 318px; height: 158px; flex: none; cursor: pointer; padding: 6px 8px 0; gap: 3px; }
 .board.rival .portrait { width: 40px; height: 40px; font-size: 20px; }
 .board.rival .held { display: grid; grid-template-columns: repeat(3, auto); gap: 1px 14px; font-size: .9em; }
@@ -760,3 +681,30 @@ button.supply:hover { border-color: var(--rule-hi); }
 .acard .kinds { flex-direction: column; align-items: center; gap: 1px; }
 .acard .kinds .kw { font: 800 9px/1.15 var(--font-ui); letter-spacing: .06em; text-transform: uppercase; color: var(--suit); white-space: nowrap; }
 .play .acard .kinds .kw { font-size: 6.5px; letter-spacing: .02em; }
+
+/* ---- Cleanup: one panel look for every box (dark, rounded, warm rule), gold titles ---- */
+.tbl { --pnl-bg: linear-gradient(180deg, rgba(24, 31, 52, .95), rgba(12, 17, 32, .95)); --pnl-rule: #4a4130; }
+.tbl .glass { clip-path: none; border-radius: 10px; background: var(--pnl-bg); border: 1px solid var(--pnl-rule); box-shadow: 0 6px 18px #0008; }
+.tbl .glass-title { color: var(--gold); opacity: .9; }
+.tbl .glass-title::after { background: linear-gradient(90deg, rgba(230, 181, 74, .35), transparent); }
+.tbl-stage .actions.mine { border-color: var(--rule-hi); box-shadow: 0 0 0 1px var(--rule-hi), 0 6px 18px #0008; }
+.tbl-stage .chip { background: #0006; border-color: var(--pnl-rule); }
+.tbl-stage .supply { border-color: var(--pnl-rule); }
+/* The local Court cards box takes only the room its cards need */
+.tbl-stage .owned { width: fit-content !important; min-width: 150px; max-width: var(--w); }
+.tbl-stage .owned.empty .owned-row { justify-content: center; }
+.tbl-stage .owned.empty .hand-empty { width: 96px; height: 134px; margin-top: 10px; border: 1px dashed var(--pnl-rule); border-radius: 8px; }
+.tbl-stage .owned.empty .hand-empty .ic { display: none; }
+/* The hand title stays readable over a raised card */
+.tbl-stage .hand-top { position: relative; z-index: 6; }
+.hand-card.selected { transform: translateY(-8px); }
+.tbl-stage .hand-card { height: 178px; }
+.tbl-stage .hand-card:hover, .tbl-stage .hand-card:focus-visible { transform: translateY(-6px); }
+/* The top bar fits 1920 with every box */
+.tbl-stage .header { gap: 10px; }
+.tbl-stage .header .top-buttons { gap: 6px; }
+.tbl-stage .header .top-buttons .btn.icon { width: 38px; height: 38px; font-size: 20px; }
+.tbl-stage .hd.tools { gap: 10px; }
+.amb-col { width: 106px; }
+/* A rival that has not played yet: nothing beside its board */
+.play.none { border: 0; background: none; }
