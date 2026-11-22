@@ -39,7 +39,9 @@ check the real content, get these files **privately from the owner** (never
 through the repo, issues or pull requests) and copy them to the same paths.
 
 **Rule for code, tests and docs:** no names, card texts or images of the
-original game. Cards are named by neutral ids (`court-01`, `lore-01`,
+original game. One exception, decided by the owner (2026-11): the pictures in
+`assets/ui/` (the publisher's development kit and the board picture) are
+committed, see `docs/ui-assets.md`. Card images and card texts are not. Cards are named by neutral ids (`court-01`, `lore-01`,
 `leader-01`, `court-cc-01`, `fate-a-01`); rules are summarised in our own
 words. The publisher's online card library (FAQ, errata) is the reference
 for rulings: https://cards.buriedgiant.com/search?q=game:arcs — read it,

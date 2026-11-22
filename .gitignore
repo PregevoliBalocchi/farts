@@ -193,8 +193,8 @@ prototypes/ui-lab/img/
 # Reference screenshots of the original game's interface for docs/ui/UI_SPEC.md: local only.
 docs/ui/mockup/
 
-# Art the table screen loads when present (src/ui/table/assets.ts): local only, never committed.
-assets/ui/
+# assets/ui/ (the development kit's pictures and the board picture the table screen loads) IS committed:
+# owner's decision, 2026-11 (docs/ui-assets.md). Card images and texts stay local.
 data/*.local.md
 
 # Online deploy (docs/online-access.md)

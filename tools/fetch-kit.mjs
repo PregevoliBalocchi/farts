@@ -1,7 +1,7 @@
 // Downloads the publisher's development kit (free for non-commercial fan use)
 // and copies the pictures the table screen uses into assets/ui/, under the
-// names src/ui/table/assets.ts reads. assets/ui/ is git-ignored: the kit is
-// never committed, every machine that builds the site runs this once.
+// names src/ui/table/assets.ts reads. assets/ui/ is committed (docs/ui-assets.md):
+// run this only to refresh the pictures when the kit changes.
 //
 //   node tools/fetch-kit.mjs            download and install
 //   node tools/fetch-kit.mjs <kit.zip>  install from a zip already downloaded

@@ -42,8 +42,10 @@ table (`src/ui/debug.ts`) keeps its own online mode but is no longer used here.
 - Seats are labelled P1…P4 (the table does not show the players' addresses yet).
 - **Images are public**: anything bundled into `dist-online/` is visible to
   anyone with the link. `assets/ui/` is picked up by the build when present,
-  so before deploying make sure it holds only our own art, never the original
-  game's images (card images belong in Firestore content, not in the build).
+  and it is committed: it holds the publisher's development kit pictures and
+  the board picture (owner's decision for the invite-only beta, see
+  `docs/ui-assets.md`). Card images still belong in Firestore content, not in
+  the build.
 
 ## Deploy
 

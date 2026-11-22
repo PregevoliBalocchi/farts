@@ -1,5 +1,5 @@
 // The players' pieces cut out of the development kit's pictures
-// (assets/ui/piece/*.png, installed by tools/fetch-kit.mjs, git-ignored): the
+// (assets/ui/piece/*.png, installed by tools/fetch-kit.mjs): the
 // outline of each picture becomes a wooden piece of the same shape, with the
 // picture on its faces. Ships, agents and flagships stand up (a damaged ship
 // lies on its side); cities and starports are tiles lying on their slot, the
