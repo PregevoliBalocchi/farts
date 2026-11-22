@@ -11,7 +11,7 @@ import { BASE_EFFECTS } from '../../game/cards/base';
 import { LANGS, pickLang, translator } from '../../i18n';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
-import { assetUrl, icon } from './assets';
+import { assetUrl, icon, seatIcon } from './assets';
 import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, hitsLeft } from './battle';
 import type { BattlePick } from './battle';
 import { BATTLE_VIEW, BattleView3D } from './battleview3d';
@@ -66,10 +66,14 @@ export interface TableOnline {
   content: GameContent;
   /** The shared game state to show first. */
   state: GameState;
-  /** The seat this screen plays: only its commands are sent. */
-  seat: PlayerId;
-  /** Saves a new state after a command; a rejection shows the error and the shared state comes back. */
-  commit: (next: GameState, cmd: Command) => Promise<void>;
+  /**
+   * The seat this screen plays: only its commands are sent. null: a hotseat
+   * game on one computer, every seat played here in turn (the view follows the
+   * active seat, a hand-over screen hides it between players, undo works).
+   */
+  seat: PlayerId | null;
+  /** Saves a new state after a command (or an undo, without one); a rejection shows the error and the shared state comes back. */
+  commit: (next: GameState, cmd?: Command) => Promise<void>;
 }
 
 /** Mounts the table into `root`. */
@@ -85,8 +89,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let state: GameState = online ? online.state : newGame(ix, { playerCount: players, seed, variant: 'base' });
   let history: GameState[] = [];
   // Online the seat is fixed; locally the view follows the active seat unless ?seat= pins it.
-  let follow = online ? false : params.get('seat') === null;
-  let seatChoice: PlayerId = online ? online.seat : follow ? 0 : Number(params.get('seat')) || 0;
+  // Hotseat: a shared game whose seat is null, or locally ?hotseat=1 (to try the hand-over screen).
+  const hotseat = online ? online.seat === null : params.get('hotseat') === '1';
+  let follow = online ? hotseat : params.get('seat') === null;
+  let seatChoice: PlayerId = online?.seat ?? (follow ? 0 : Number(params.get('seat')) || 0);
+  /** Hotseat: the seat the screen last showed, and the seat the hand-over screen is waiting for (null: none). */
+  let shownSeat: PlayerId | null = null;
+  let curtainFor: PlayerId | null = null;
 
   let selected: string | null = null;
   /** Following: the second card discarded to seize the initiative, and whether the next hand click picks it. */
@@ -182,9 +191,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   function send(cmd: Command): boolean {
     try {
       // Online, a screen only plays its own seat.
-      if (online && cmd.player !== online.seat) throw new Error(t('online.notYours'));
+      if (online && online.seat !== null && cmd.player !== online.seat) throw new Error(t('online.notYours'));
       const next = dispatch(ix, state, cmd);
-      if (!online) history.push(state);
+      if (!online || hotseat) history.push(state);
       state = next;
       resetChoices();
       if (modal?.type === 'picker' && modal.court) modal = null;
@@ -814,6 +823,17 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     el?.focus();
   }
 
+  /** The hotseat hand-over screen: whose turn it is, and a button to show their view. */
+  function handOver(seat: PlayerId): string {
+    const name = playerName(t, seat);
+    return `<div class="hs-curtain" role="dialog" aria-modal="true" aria-labelledby="hs-title"><div class="hs-box s-${seat % 4}">
+      <span class="hs-seat seat-c">${icon(seatIcon(seat))}</span>
+      <h2 id="hs-title">${esc(t('hotseat.turn', { name }))}</h2>
+      <p>${esc(t('hotseat.pass', { name }))}</p>
+      ${button('hs-ready', t('hotseat.ready'), { cls: 'primary' })}
+    </div></div>`;
+  }
+
   /** Whether the hand was slid away at the last render (to animate only the change). */
   let lastHandAway = false;
   function render(): void {
@@ -831,7 +851,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
     const rivals = v.rivals.map((r) => rivalPanel(ix, v, v.players[r], t)).join('');
     const ending = myTurn() && v.phase === 'actions' && intent.step === 'idle';
-    const corner = confirmButtons(t, { show: !online, enabled: history.length > 0 }, { show: ending, enabled: ending && can({ type: 'endTurn', player: me }), ready: (v.budget?.remaining ?? 1) === 0 });
+    const corner = confirmButtons(t, { show: !online || hotseat, enabled: history.length > 0 }, { show: ending, enabled: ending && can({ type: 'endTurn', player: me }), ready: (v.budget?.remaining ?? 1) === 0 });
     // Choosing a card: passing and redrawing the first hand sit by the hand's title.
     const choosing = myTurn() && (v.phase === 'lead' || v.phase === 'follow');
     const handTools = myTurn() && v.phase === 'lead'
@@ -839,6 +859,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       : '';
     // The context box: only when there is something to choose (a picked card, the actions, a step, a battle).
     const ctx = actionsPanel(v);
+    // Hotseat: when the screen turns to another seat, hide it until that player is ready.
+    if (hotseat && v.phase !== 'gameOver' && me !== shownSeat) curtainFor = me;
+    shownSeat = me;
     // The hand sits beside the local board and slides away while the action box is open (animated only when that changes).
     const handAway = !!ctx;
     const handMoved = handAway !== lastHandAway;
@@ -862,6 +885,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ''}${ownPlay ? ' with-card' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}">${ownPlay}<div class="actions-body">${ctx}</div></div>` : ''}
       <div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>
       ${modalHtml(v)}
+      ${curtainFor !== null ? handOver(curtainFor) : ''}
       ${toast ? `<div class="toast" role="alert">${esc(toast)}</div>` : ''}
       <div class="card-zoom" aria-hidden="true" hidden></div>`;
     board3d?.update(v, valid, chosen, shipGlow(v, valid));
@@ -1103,10 +1127,14 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'end-turn':
         send({ type: 'endTurn', player: me });
         return;
+      case 'hs-ready':
+        curtainFor = null;
+        break;
       case 'undo': {
-        if (online) return;
+        if (online && !hotseat) return;
         const prev = history.pop();
         if (prev) state = prev;
+        if (prev && online && hotseat) online.commit(prev).catch((e: Error) => showToast(t('error', { msg: e.message })));
         resetChoices();
         modal = null;
         break;

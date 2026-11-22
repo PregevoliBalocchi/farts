@@ -269,5 +269,8 @@
   "piece.cityDamaged": "damaged city",
   "empty": "—",
   "error": "Not allowed: {msg}",
-  "online.notYours": "This is not your seat: only your own turn can be played here"
+  "online.notYours": "This is not your seat: only your own turn can be played here",
+  "hotseat.turn": "{name}'s turn",
+  "hotseat.pass": "Hand the computer to {name}. Everyone else look away: their hand will show.",
+  "hotseat.ready": "I'm ready"
 }

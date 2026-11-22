@@ -8,6 +8,7 @@ import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/fi
 import { isAdmin, normalizeEmail, removeRefusal, roleOf, setRoleRefusal } from '../online/roles';
 import type { Member, MemberRole, Role } from '../online/roles';
 import { auth, createGame, db, loadContent, myGames, uploadContent } from './games';
+import { loadHotseat, startHotseat } from './hotseat';
 
 const ROLE_LABEL: Record<Role, string> = { master: 'amministratore principale', admin: 'amministratore', player: 'giocatore' };
 
@@ -62,6 +63,7 @@ onAuthStateChanged(auth, async (user) => {
     $('lobby').hidden = false;
     $('content-admin').hidden = me.role !== 'master';
     await refreshGames();
+    refreshHotseat();
     if (isAdmin(me.role)) {
       // Only the master appoints admins.
       $<HTMLSelectElement>('invite-role').querySelector<HTMLOptionElement>('option[value="admin"]')!.hidden = me.role !== 'master';
@@ -102,6 +104,29 @@ async function refreshGames(): Promise<void> {
         .join('')
     : '<li class="muted">Nessuna partita.</li>';
 }
+
+/** The hotseat game saved in this browser, if any, with a link to resume it. */
+function refreshHotseat(): void {
+  const g = loadHotseat();
+  $('hotseat-resume').innerHTML = g
+    ? `<a href="play.html?hotseat=1">Riprendi la partita su questo computer</a> · ${g.players} giocatori · ${VARIANT_LABEL[g.variant]} · capitolo ${g.state.chapter} · iniziata il ${new Date(g.startedAt).toLocaleString('it-IT')}`
+    : '';
+}
+
+$('hotseat-game').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const msg = $('hotseat-msg');
+  try {
+    if (loadHotseat() && !confirm('In questo browser c’è già una partita hotseat: iniziarne una nuova la cancella. Continuo?')) return;
+    const players = Number($<HTMLSelectElement>('hotseat-players').value);
+    const variant = $<HTMLSelectElement>('hotseat-variant').value as 'base' | 'leaders';
+    show(msg, 'Preparo la partita…', 'muted');
+    startHotseat(await loadContent(), players, variant);
+    location.href = 'play.html?hotseat=1';
+  } catch (e) {
+    show(msg, message(e), 'err');
+  }
+});
 
 $('new-game').addEventListener('submit', async (ev) => {
   ev.preventDefault();

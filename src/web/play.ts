@@ -8,10 +8,14 @@ import { normalizeEmail } from '../online/roles';
 import { mountTable } from '../ui/table/table';
 import type { GameState } from '../game/engine';
 import { auth, loadContent, saveMove, watchGame } from './games';
+import { loadHotseat, saveHotseat } from './hotseat';
 
 const status = document.getElementById('play-status')!;
 const root = document.getElementById('app')!;
-const id = new URLSearchParams(location.search).get('id') ?? '';
+const params = new URLSearchParams(location.search);
+const id = params.get('id') ?? '';
+/** ?hotseat=1: the game saved in this browser, every seat played here in turn. */
+const hotseat = params.get('hotseat') === '1';
 
 function say(text: string): void {
   status.innerHTML = `${text} · <a href="./">torna all'ingresso</a>`;
@@ -23,6 +27,10 @@ let started = false;
 onAuthStateChanged(auth, async (user) => {
   if (started) return;
   if (!user) return say('Accedi prima dalla pagina d’ingresso.');
+  if (hotseat) {
+    started = true;
+    return void playHotseat();
+  }
   if (!id) return say('Nessuna partita indicata.');
   started = true;
   const email = normalizeEmail(user.email);
@@ -64,3 +72,25 @@ onAuthStateChanged(auth, async (user) => {
     say(`Errore: ${(e as Error).message}`);
   }
 });
+
+/** Plays the hotseat game saved in this browser: every move is saved here, nothing is shared. */
+async function playHotseat(): Promise<void> {
+  const game = loadHotseat();
+  if (!game) return say('Nessuna partita hotseat salvata in questo browser.');
+  try {
+    const content = await loadContent();
+    mountTable(root, {
+      content,
+      state: game.state,
+      seat: null,
+      commit: async (next) => {
+        game.state = next;
+        saveHotseat(game);
+      },
+    });
+    // After mounting, so the line sits over the table.
+    say(`Partita hotseat · ${game.players} giocatori su questo computer`);
+  } catch (e) {
+    say(`Errore: ${(e as Error).message}`);
+  }
+}

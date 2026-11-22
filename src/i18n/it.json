@@ -269,5 +269,8 @@
   "piece.cityDamaged": "città danneggiata",
   "empty": "—",
   "error": "Non consentito: {msg}",
-  "online.notYours": "Non è il tuo posto: qui si gioca solo il tuo turno"
+  "online.notYours": "Non è il tuo posto: qui si gioca solo il tuo turno",
+  "hotseat.turn": "Tocca a {name}",
+  "hotseat.pass": "Passa il computer a {name}. Gli altri non guardino: si vedrà la sua mano.",
+  "hotseat.ready": "Sono pronto"
 }
