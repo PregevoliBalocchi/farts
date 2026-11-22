@@ -3,6 +3,13 @@
 Indie game development managed through 49 coordinated Claude Code subagents.
 Each agent owns a specific domain, enforcing separation of concerns and quality.
 
+## This Project
+
+Two people work on this repo in parallel, each with their own Claude Code.
+**Read `docs/collaboration.md` first**: setup, branches and pull requests,
+which files are the owner's and stay out of git, and the project decisions
+(neutral card ids, no original texts or images, remote multiplayer, campaign).
+
 ## Technology Stack
 
 - **Engine**: Web (Vite 8.3.4, TypeScript 7.0.2)
