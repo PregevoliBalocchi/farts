@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accesso</title>
+<style>
+  :root {
+    --bg: #f2f3f7; --panel: #fff; --fg: #1b1e2b; --muted: #5d6275; --line: #cfd2dc;
+    --accent: #2f5be0; --err: #b3261e; --ok: #1d6b3a;
+    font: 15px/1.5 "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #12141c; --panel: #1b1e2a; --fg: #e8e9f0; --muted: #9a9fb4; --line: #3a3f55;
+      --accent: #7d9bff; --err: #ff8a80; --ok: #7fe0a6; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px; display: flex; flex-direction: column; gap: 16px; }
+  h1 { margin: 0; font-size: 24px; }
+  h2 { margin: 0 0 8px; font-size: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .muted { color: var(--muted); }
+  .err { color: var(--err); }
+  .ok { color: var(--ok); }
+  button, select, input { font: inherit; min-height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); padding: 0 12px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button:disabled { opacity: .5; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  form input { flex: 1 1 240px; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  td.actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Accesso al gioco</h1>
+  <p id="status" class="muted" role="status">Caricamento…</p>
+
+  <section id="signed-out" class="card" hidden>
+    <p>Si entra solo su invito, con un account Google.</p>
+    <button id="sign-in" class="primary" type="button">Accedi con Google</button>
+  </section>
+
+  <section id="signed-in" class="card" hidden>
+    <div class="row">
+      <span id="who"></span>
+      <button id="sign-out" type="button">Esci</button>
+    </div>
+  </section>
+
+  <section id="admin" class="card" hidden>
+    <h2>Amministrazione</h2>
+    <form id="invite">
+      <input id="invite-email" type="email" placeholder="indirizzo Google da invitare" required autocomplete="off">
+      <select id="invite-role" aria-label="Ruolo">
+        <option value="player">giocatore</option>
+        <option value="admin">amministratore</option>
+      </select>
+      <button class="primary" type="submit">Invita</button>
+    </form>
+    <p id="admin-msg" class="muted" role="status"></p>
+    <table>
+      <thead><tr><th>Indirizzo</th><th>Ruolo</th><th></th></tr></thead>
+      <tbody id="members"></tbody>
+    </table>
+  </section>
+</main>
+<script type="module" src="../src/web/online.ts"></script>
+</body>
+</html>

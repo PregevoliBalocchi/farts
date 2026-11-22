@@ -1,0 +1,72 @@
+rules_version = '2';
+// Invite-only access on the free Spark plan (docs/online-access.md).
+// These rules ARE the access control: there is no server code. They mirror
+// src/online/roles.ts (tested there); keep the two in step.
+//
+//   config/access   { master: "<email>" }  — created once by the owner in the
+//                    Firebase console; nobody can write it from the app.
+//   members/{email} { role: "admin"|"player", invitedBy, invitedAt, updatedAt }
+//                    — document id = lower-case Google address.
+// Everything not matched below is denied.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.token.email_verified == true;
+    }
+    function me() {
+      return request.auth.token.email.lower();
+    }
+    function masterEmail() {
+      return get(/databases/$(database)/documents/config/access).data.master.lower();
+    }
+    function isMaster() {
+      return signedIn() && me() == masterEmail();
+    }
+    function memberDoc(email) {
+      return /databases/$(database)/documents/members/$(email);
+    }
+    function isAdmin() {
+      return isMaster()
+        || (signedIn() && exists(memberDoc(me())) && get(memberDoc(me())).data.role == 'admin');
+    }
+    function isMember() {
+      return isMaster() || (signedIn() && exists(memberDoc(me())));
+    }
+    // A change by an admin to someone else, never to the master.
+    function onOther(email) {
+      return isAdmin() && email == email.lower() && email != me() && email != masterEmail();
+    }
+
+    match /config/access {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /members/{email} {
+      allow read: if signedIn() && (me() == email || isAdmin());
+
+      // Invite or change a role. Admins handle players only; the master also admins.
+      allow create, update: if onOther(email)
+        && request.resource.data.keys().hasOnly(['role', 'invitedBy', 'invitedAt', 'updatedAt'])
+        && request.resource.data.role in ['admin', 'player']
+        && request.resource.data.invitedBy is string
+        && request.resource.data.invitedAt is int
+        && (isMaster()
+            || (request.resource.data.role == 'player'
+                && (resource == null || resource.data.role == 'player')));
+
+      // Remove access. Admins remove players only; the master also admins.
+      allow delete: if onOther(email)
+        && (isMaster() || resource.data.role == 'player');
+    }
+
+    // Game data will live under /games, readable by members only (to come).
+    match /games/{gameId} {
+      allow read: if isMember();
+      allow write: if false;
+    }
+  }
+}

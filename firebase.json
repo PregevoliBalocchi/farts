@@ -1,0 +1,22 @@
+{
+  "hosting": {
+    "public": "dist-online",
+    "ignore": [
+      "firebase.json",
+      "**/.*"
+    ],
+    "predeploy": [
+      "npm run build:online"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
