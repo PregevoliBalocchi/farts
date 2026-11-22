@@ -20,10 +20,10 @@ import { detailHtml } from './details';
 import type { DetailTarget } from './details';
 import { actionCommand, battlePayload, clamp, IDLE, movePayload, startAction } from './intent';
 import type { Intent } from './intent';
-import { place, REGIONS, STAGE } from './layout';
+import { place, REGIONS, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  ambitionsPanel, button, cardLabel, playedText, cardPicker, courtPanel, esc, handPanel, header, largeCard, localPanel, PICKER_PAGE, playerName, promptBar, recentPanel, rivalPanel,
+  ambitionsPanel, button, cardLabel, playedText, cardPicker, courtPanel, esc, handPanel, header, largeCard, localPanel, ownedPanel, PICKER_PAGE, playerName, promptBar, rivalPanel,
 } from './render';
 import type { PickerGroup, PickerState } from './render';
 import { legal, othersTurn, tableView } from './view';
@@ -115,7 +115,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const x = (window.innerWidth - STAGE.w * s) / 2;
     const y = (window.innerHeight - STAGE.h * s) / 2;
     stage.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
-    board3d?.resize(REGIONS.map.w, REGIONS.map.h, window.devicePixelRatio * s);
+    // The 3D map fills the window; it is centred on the area the panels leave free.
+    const m = REGIONS.map;
+    board3d?.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio, { x: x + m.x * s, y: y + m.y * s, w: m.w * s, h: m.h * s });
   }
   window.addEventListener('resize', fit);
 
@@ -126,7 +128,6 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   const board3d = params.get('map') === '2d'
     ? null
     : createBoard3D(ix, {
-        aspect: REGIONS.map.w / REGIONS.map.h,
         motion: params.get('motion') !== 'off',
         onPick: (id) => pickSystem(id),
         ...(calibrating
@@ -142,7 +143,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
             }
           : {}),
       });
-  if (board3d) shell.classList.add('has-3d');
+  if (board3d) {
+    // Behind the stage, as large as the window: the interface is drawn in front of it.
+    shell.classList.add('has-3d');
+    shell.insertBefore(board3d.canvas, stage);
+  }
   calib.order = ix.content.map.systems.map((x) => x.id);
   fit();
 
@@ -581,7 +586,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         <div class="btn-grid">${button('calib-skip', t('calib.skip'), { disabled: !next })}${button('calib-back', t('calib.back'), { disabled: calib.i === 0 })}${button('calib-save', t('calib.save'), { cls: 'primary' })}</div>
       </div>`;
     }
-    return `<div class="map3d-host"></div><div class="sys-keys" aria-label="${esc(t('map3d.systems'))}">${keys}</div><div class="map3d-hint">${esc(t('map3d.hint'))}</div>${cal}`;
+    return `<div class="sys-keys" aria-label="${esc(t('map3d.systems'))}">${keys}</div><div class="map3d-hint">${esc(t('map3d.hint'))}</div>${cal}`;
   }
 
   /** Saves the calibration as board.json (the owner moves it to assets/ui/map/). */
@@ -626,7 +631,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (intent.step === 'move') chosen.add(intent.to);
     if (intent.step === 'build' || intent.step === 'repair' || intent.step === 'tax' || intent.step === 'battle') chosen.add(intent.system);
 
-    const rivals = v.rivals.map((r) => rivalPanel(v, v.players[r], t)).join('');
+    const rivals = v.rivals.map((r) => rivalPanel(ix, v, v.players[r], t)).join('');
     const canEnd = myTurn() && v.phase === 'actions' && intent.step === 'idle' && can({ type: 'endTurn', player: me });
     const confirmRow = `<div class="confirm-row">
         ${button('undo', '', { cls: 'icon', title: t('btn.undo'), html: icon('undo'), disabled: history.length === 0 })}
@@ -634,23 +639,20 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       </div>`;
 
     stage.innerHTML = `<div class="tbl-stars"></div>
-      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example')}</div>
-      <div class="region prompt-wrap" data-region="prompt" style="${place(REGIONS.prompt)}">${promptBar(prompt(v), promptSub(v), myTurn())}</div>
-      <div class="map-area glass" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
+      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', courtPanel(v, t, courtPickable(intent)))}</div>
+      <div class="map-area${board3d ? '' : ' glass'}" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
       <div class="region glass ambitions" data-region="ambitions" style="${place(REGIONS.ambitions)}">${ambitionsPanel(v, t)}</div>
-      <div class="region glass court" data-region="court" style="${place(REGIONS.court)}">${courtPanel(v, t, courtPickable(intent))}</div>
-      <div class="region glass recent" data-region="recent" style="${place(REGIONS.recent)}">${recentPanel(v, t)}</div>
       <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null)}</div>
       <div class="region glass hand" data-region="hand" style="${place(REGIONS.hand)}">${handPanel(ix, v, t, selected, myTurn(), seizeWith)}</div>
-      <div class="region glass actions${myTurn() ? ' mine' : ''}" data-region="actions" style="${place(REGIONS.actions)}"><div class="actions-body">${actionsPanel(v)}</div>${confirmRow}</div>
+      <div class="region glass owned" data-region="owned" style="${place(REGIONS.owned)}">${ownedPanel(ix, v.players[me], t)}</div>
+      <div class="region glass actions${myTurn() ? ' mine' : ''}" data-region="actions" style="${placeUp(REGIONS.actions)}">
+        <div data-region="prompt">${promptBar(prompt(v), promptSub(v), myTurn())}</div>
+        <div class="actions-body">${actionsPanel(v)}</div>${confirmRow}</div>
       ${modalHtml(v)}
       ${toast ? `<div class="toast" role="alert">${esc(toast)}</div>` : ''}
       <div class="card-zoom" aria-hidden="true" hidden></div>`;
-    if (board3d) {
-      stage.querySelector('.map3d-host')?.appendChild(board3d.canvas);
-      board3d.update(v, valid, chosen);
-    }
+    board3d?.update(v, valid, chosen);
     restoreFocus(key);
     const dialog = stage.querySelector('.modal');
     if (dialog && !dialog.contains(document.activeElement)) {

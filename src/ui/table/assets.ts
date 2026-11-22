@@ -31,6 +31,7 @@ export type IconName =
   | 'material' | 'fuel' | 'weapons' | 'relic' | 'psionic'
   | 'ship' | 'city' | 'starport' | 'agent' | 'trophy' | 'captive' | 'key' | 'cards' | 'power'
   | 'log' | 'settings' | 'court' | 'undo' | 'confirm' | 'close' | 'prev' | 'next' | 'trash' | 'lock'
+  | 'build' | 'repair' | 'tax' | 'influence' | 'move' | 'battle' | 'secure' | 'pip' | 'anyAmbition'
   | 'seat0' | 'seat1' | 'seat2' | 'seat3';
 
 // 24×24 glyphs drawn with currentColor, so CSS picks the colour.
@@ -59,6 +60,17 @@ const PATHS: Record<IconName, string> = {
   next: '<path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
   trash: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
   lock: '<rect x="6" y="11" width="12" height="9" rx="2" fill="currentColor"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3" fill="none" stroke="currentColor" stroke-width="2"/>',
+  // Actions (our own drawings; assets/ui/icon/<name>.* replaces one).
+  build: '<path d="M3 21h18M5 21V11l4-3 4 3v10M13 21V5h6v16M7 14h2M7 17h2M15 9h2M15 13h2M15 17h2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  repair: '<path d="M14.5 5.5a4.5 4.5 0 0 0-5.9 5.6L3 16.7 7.3 21l5.6-5.6a4.5 4.5 0 0 0 5.6-5.9l-3 3-2.5-2.5z" fill="currentColor"/>',
+  tax: '<ellipse cx="12" cy="7" rx="7" ry="3" fill="currentColor"/><path d="M5 11c0 1.7 3.1 3 7 3s7-1.3 7-3M5 15c0 1.7 3.1 3 7 3s7-1.3 7-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  influence: '<circle cx="8" cy="8" r="3.5" fill="currentColor"/><path d="M2 20c0-4 2.5-6.5 6-6.5s6 2.5 6 6.5z" fill="currentColor"/><path d="M15 6h6m-2.5-2.5L21 6l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  move: '<path d="M3 12h13M11 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
+  battle: '<path d="M12 2l2.2 5.8L20 5l-2.8 5.8L22 13l-5.3 1.2L18 20l-5-3-1 5-2.5-5.3L4 19l2.2-5.3L2 11l5.5-.8L6 4l5 3.5z" fill="currentColor"/>',
+  secure: '<path d="M12 2 20 5v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M8 12l3 3 5-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+  // One action of a card: a four-pointed star.
+  pip: '<path d="M12 1c1 6 4 9 10 11-6 2-9 5-10 11-1-6-4-9-10-11 6-2 9-5 10-11z" fill="currentColor"/>',
+  anyAmbition: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M9 9.5a3 3 0 1 1 4.5 2.6c-1 .6-1.5 1.2-1.5 2.4M12 17.5v.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
   // Seat shapes: colour is never the only cue (colour-blind players).
   seat0: '<circle cx="12" cy="12" r="8" fill="currentColor"/>',
   seat1: '<rect x="4.5" y="4.5" width="15" height="15" rx="2" fill="currentColor"/>',

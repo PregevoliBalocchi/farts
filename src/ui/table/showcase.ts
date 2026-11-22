@@ -5,7 +5,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { pickLang, translator } from '../../i18n';
-import { makePiece, paintedWood, SEAT_PAINT } from './pieces3d';
+import { loadKitPieces, piece } from './kitpieces';
+import { paintedWood, SEAT_PAINT } from './pieces3d';
 import type { PieceKind } from './pieces3d';
 import './table.css';
 
@@ -62,15 +63,21 @@ export function mountPieces(root: HTMLElement): void {
   scene.add(turn);
   const dx = 0.82;
   const dz = 0.62;
-  COLUMNS.forEach((c, i) => {
-    SEAT_PAINT.forEach((_, seat) => {
-      const piece = makePiece(c.kind, seat, { lying: c.lying, damaged: c.damaged });
-      piece.position.set((i - (COLUMNS.length - 1) / 2) * dx, 0, (seat - 1.5) * dz);
-      piece.rotation.y = -0.5;
-      piece.scale.setScalar(1.4);
-      turn.add(piece);
+  const fill = () => {
+    turn.clear();
+    COLUMNS.forEach((c, i) => {
+      SEAT_PAINT.forEach((_, seat) => {
+        const o = piece(c.kind, seat, { lying: c.lying, damaged: c.damaged });
+        o.position.set((i - (COLUMNS.length - 1) / 2) * dx, 0, (seat - 1.5) * dz);
+        if (c.kind !== 'city' && c.kind !== 'starport') o.rotation.y = -0.5;
+        o.scale.setScalar(o.userData.kit ? 1 : 1.4);
+        turn.add(o);
+      });
     });
-  });
+  };
+  fill();
+  // The kit's shapes replace our own once their pictures are cut.
+  void loadKitPieces().then((any) => any && fill());
 
   const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 100);
   camera.position.set(0, 3.4, 5.2);

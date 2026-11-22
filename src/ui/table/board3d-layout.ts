@@ -13,7 +13,8 @@ export const SCHEMATIC = { pxPerUnit: 72, cx: 320, cy: 320 } as const;
 export interface BoardCalibration {
   width: number;
   height: number;
-  systems: Record<string, { x: number; y: number }>;
+  /** Each system's centre; `slots`: the centres of its building slots, in slot order. */
+  systems: Record<string, { x: number; y: number; slots?: { x: number; y: number }[] }>;
 }
 
 /** A point on the table. */
@@ -66,6 +67,12 @@ export function systemSpots(schematic: Record<string, { x: number; y: number }>,
   return out;
 }
 
+/** Table points of a system's building slots from the calibration, or null when it gives none. */
+export function slotSpots(calib: BoardCalibration | null, id: string): Spot[] | null {
+  const slots = calib?.systems[id]?.slots;
+  return calib && slots?.length ? slots.map((p) => pictureToWorld(calib, p.x, p.y)) : null;
+}
+
 /** One ship of a stack: offset from the stack centre, and whether it lies down (damaged). */
 export interface ShipSpot {
   dx: number;
@@ -103,4 +110,19 @@ export function buildingSpots(n: number, r = 0.5): Spot[] {
     const a = ((90 + (i - (n - 1) / 2) * 24) * Math.PI) / 180;
     return { x: r * Math.cos(a), z: r * Math.sin(a) };
   });
+}
+
+/** Camera elevation limits, in radians above the table: low when close to the pieces, almost straight down when far. */
+export const TILT_NEAR = (32 * Math.PI) / 180;
+export const TILT_FAR = (86 * Math.PI) / 180;
+
+/**
+ * Camera elevation for a zoom distance: TILT_NEAR at `near` or closer,
+ * TILT_FAR at `far` or farther, easing smoothly in between. Zooming in leans
+ * the camera towards the pieces; zooming out looks down on the whole map.
+ */
+export function tiltForZoom(dist: number, near: number, far: number): number {
+  const t = far > near ? Math.max(0, Math.min(1, (dist - near) / (far - near))) : 1;
+  const ease = t * t * (3 - 2 * t);
+  return TILT_NEAR + (TILT_FAR - TILT_NEAR) * ease;
 }
