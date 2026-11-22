@@ -9,8 +9,7 @@ import type { ActionKind } from '../../game/engine/types';
 import { pickLang, translator } from '../../i18n';
 import { loadContent } from '../content';
 import { icon } from './assets';
-import type { IconName } from './assets';
-import { actionCard, esc, suitClass, suitName } from './render';
+import { actionCard, declareGlyphs, esc, suitClass, suitName } from './render';
 import type { ActionCardView } from './view';
 import './table.css';
 
@@ -38,7 +37,7 @@ export function mountCards(root: HTMLElement): void {
           return figure(actionCard(ix, view, t), lines.filter(Boolean).join('<br>'));
         })
         .join('');
-      const legend = kinds.map((k) => `${icon(k as IconName)} ${esc(t(`action.${k}`))}`).join(' · ');
+      const legend = kinds.map((k) => esc(t(`action.${k}`))).join(' · ');
       return `<h2 class="${suitClass(ix, suit)}" style="color:var(--suit)">${esc(suitName(t, suit))}<small>${legend}</small></h2><div class="row">${cards}</div>`;
     })
     .join('');
@@ -51,5 +50,15 @@ export function mountCards(root: HTMLElement): void {
     ${figure(actionCard(ix, event, t, '', t('cards.event')), `<b>event-01</b><br>${esc(t('cards.eventNote'))}`)}
     ${figure(actionCard(ix, fate, t, '', 'F'), esc(t('cards.fateNote')))}</div>`;
 
-  root.innerHTML = `<div class="tbl card-sheet"><h1>${esc(t('cards.title'))}</h1><p>${esc(t('cards.intro'))}</p>${rows}${special}</div>`;
+  // Ambition symbols: gold as in the ambitions box, ink as on the action cards.
+  const ambs = (['wealth', 'captives', 'trophies', 'relics', 'psionics'] as const)
+    .map((a) => {
+      const n = Number(Object.entries(declareByNumber).find(([, x]) => x === a)?.[0] ?? 0);
+      const gs = declareGlyphs(ix, n);
+      return `<figure class="glyph amb-glyph"><span class="big gold">${gs.map((g) => icon(g)).join('')}</span><span class="on-card">${gs.map((g) => icon(g)).join('')}</span><figcaption><b>${n} · ${esc(t(`ambition.${a}`))}</b></figcaption></figure>`;
+    })
+    .join('');
+  const icons = `<h2>${esc(t('cards.ambitionIcons'))}</h2><div class="row glyphs">${ambs}</div>`;
+
+  root.innerHTML = `<div class="tbl card-sheet"><h1>${esc(t('cards.title'))}</h1><p>${esc(t('cards.intro'))}</p>${icons}${rows}${special}</div>`;
 }

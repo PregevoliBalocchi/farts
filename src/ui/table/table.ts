@@ -24,7 +24,7 @@ import type { Intent } from './intent';
 import { place, REGIONS, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  ambitionsPanel, button, cardLabel, playedText, cardPicker, courtFace, courtPanel, esc, handPanel, header, largeCard, localPanel, ownedPanel, PICKER_PAGE, playerName, promptBar, rivalPanel,
+  ambitionsStrip, button, cardLabel, playedText, cardPicker, courtFace, courtPanel, declareGlyphs, esc, handPanel, header, largeCard, localPanel, ownedPanel, PICKER_PAGE, playerName, rivalPanel,
 } from './render';
 import type { PickerGroup, PickerState } from './render';
 import { legal, othersTurn, tableView } from './view';
@@ -339,22 +339,15 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
   }
 
-  /** The explanation under the prompt: the selected card, or what this step means. */
-  function promptSub(v: TableView): string {
-    if (v.phase === 'gameOver') return '';
-    if (!myTurn()) return t('sub.waiting');
-    const card = selected ? v.hand.find((h) => h.card === selected) : undefined;
-    if (card && (v.phase === 'lead' || v.phase === 'follow')) {
-      return `${t('sub.card', { card: cardLabel(t, card), pips: card.pips, kinds: card.kinds.map((k) => t(`action.${k}`)).join(', ') })} — ${t(v.phase === 'lead' ? 'sub.lead' : 'sub.follow')}`;
-    }
-    if (v.phase === 'lead') return t('sub.lead');
-    if (v.phase === 'follow') return t('sub.follow');
-    if (v.phase === 'actions' && intent.step === 'idle') return t('sub.actions');
-    return '';
+  function kindButtons(kinds: ActionKind[], prelude: Resource | undefined, enabled: boolean): string {
+    return kinds
+      .map((k) => button('kind', t(`action.${k}`), { args: { kind: k, ...(prelude ? { prelude } : {}) }, cls: 'kind-btn', disabled: !enabled }))
+      .join('');
   }
 
-  function kindButtons(kinds: ActionKind[], prelude: Resource | undefined, enabled: boolean): string {
-    return kinds.map((k) => button('kind', t(`action.${k}`), { args: { kind: k, ...(prelude ? { prelude } : {}) }, disabled: !enabled })).join('');
+  /** The button opening the powers of the local player's cards, when one can be used in this phase. */
+  function powersButton(v: TableView): string {
+    return myTurn() && hasPowers(v) ? button('powers-open', t('powers.open'), { cls: 'powers-btn', title: t('powers.title') }) : '';
   }
 
   function stepper(name: string, label: string, value: number): string {
@@ -392,25 +385,27 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (!myTurn()) return othersPanel(v);
 
     if (v.phase === 'lead' || v.phase === 'follow') {
+      // No box until a card is picked from the hand: then how to play it.
       const card = selected;
       const chosenCard = card ? v.hand.find((x) => x.card === card) : undefined;
-      let h = `<div class="hint">${esc(chosenCard ? cardLabel(t, chosenCard) : t('play.selectCard'))}</div><div class="btn-grid">`;
+      if (!card || !chosenCard) return '';
+      const close = button('deselect', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
+      let h = `<div class="ctx-head"><span class="ctx-title">${esc(cardLabel(t, chosenCard))}</span>${close}</div><div class="btn-grid play-modes">`;
       if (v.phase === 'lead') {
-        const def = card ? ix.actionCards.get(card) : undefined;
-        const decl = def ? content.declareByNumber[String(def.number)] : undefined;
-        h += button('lead', t('play.lead'), { cls: 'primary', disabled: !card || !can({ type: 'lead', player: me, card }) });
+        const decl = content.declareByNumber[String(chosenCard.number)];
+        h += button('lead', t('play.lead'), { cls: 'primary', disabled: !can({ type: 'lead', player: me, card }) });
         if (decl === 'any') {
           for (const a of AMBITIONS) {
-            h += button('lead-declare', `${t('play.leadDeclare')}: ${t(`ambition.${a}`)}`, { args: { ambition: a }, disabled: !card || !can({ type: 'lead', player: me, card, declare: true, ambition: a }) });
+            const glyphs = declareGlyphs(ix, Number(Object.entries(content.declareByNumber).find(([, x]) => x === a)?.[0] ?? 0)).map((g) => icon(g)).join('');
+            h += button('lead-declare', t('play.leadDeclare'), { args: { ambition: a }, title: `${t('play.leadDeclare')}: ${t(`ambition.${a}`)}`, html: `${esc(t('play.declareShort'))} ${glyphs}`, disabled: !can({ type: 'lead', player: me, card, declare: true, ambition: a }) });
           }
-        } else {
-          h += button('lead-declare', t('play.leadDeclare'), { disabled: !card || !can({ type: 'lead', player: me, card, declare: true }) });
+        } else if (decl) {
+          const glyphs = declareGlyphs(ix, chosenCard.number).map((g) => icon(g)).join('');
+          h += button('lead-declare', t('play.leadDeclare'), { title: `${t('play.leadDeclare')}: ${t(`ambition.${decl}`)}`, html: `${esc(t('play.leadDeclare'))} ${glyphs}`, disabled: !can({ type: 'lead', player: me, card, declare: true }) });
         }
-        h += button('pass', t('play.pass'), { disabled: !can({ type: 'pass', player: me }) });
-        if (v.canMulligan) h += button('mulligan', t('play.mulligan'));
       } else {
-        for (const mode of ['surpass', 'pivot', 'copy'] as const) {
-          h += button('follow', t(`play.${mode}`), { args: { mode }, cls: mode === 'surpass' ? 'primary' : '', disabled: !card || !can(followCmd(card, mode)) });
+        for (const mode of ['surpass', 'copy', 'pivot'] as const) {
+          h += button('follow', t(`play.${mode}`), { args: { mode }, cls: mode === 'surpass' ? 'primary' : '', disabled: !can(followCmd(card, mode)) });
         }
         // Seizing: discard a second card. Offered while nobody has seized this round.
         if (v.seizedBy === null && v.hand.length > 1) {
@@ -439,7 +434,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           .join('');
         takes = `<div class="hint">${esc(t('battle.raid', { n: b.totals.key }))}</div><div class="opt-row wrap">${res}${cards}</div>`;
       }
-      return `<div class="hint">${esc(`${b.system}: ${playerName(t, b.attacker)} → ${playerName(t, b.target)}`)}</div><div class="hint">${esc(summary)}</div>${takes}<div>${button('allocate', t('battle.assign'), { cls: 'primary', disabled: !ok })}</div>`;
+      return `<div class="ctx-head"><span class="ctx-title">${esc(`${b.system}: ${playerName(t, b.attacker)} → ${playerName(t, b.target)}`)}</span></div><div class="hint">${esc(summary)}</div>${takes}<div class="btn-grid">${button('allocate', t('battle.assign'), { cls: 'primary', disabled: !ok })}${powersButton(v)}</div>`;
     }
 
     if (v.phase === 'decide' && v.decision) {
@@ -451,10 +446,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const b = v.budget;
     const i = intent;
     switch (i.step) {
-      case 'idle':
-        return `<div class="hint">${esc(b.preludeOpen ? t('play.preludeHint') : t('prompt.actions', { n: b.remaining }))}</div><div class="btn-grid">${kindButtons(b.kinds, undefined, b.remaining > 0)}</div>`;
+      case 'idle': {
+        // Actions left as stars; the suit's actions as buttons; prelude by clicking a resource on the board.
+        const stars = `<span class="ctx-pips" title="${esc(t('prompt.actions', { n: b.remaining }))}">${Array.from({ length: b.remaining }, () => icon('pip')).join('') || '0'}</span>`;
+        const prelude = b.preludeOpen && v.players[me].slots.some((s) => s.resource && !s.locked) ? `<div class="hint small">${esc(t('play.preludeShort'))}</div>` : '';
+        const canEnd = can({ type: 'endTurn', player: me });
+        const end = button('end-turn', t('play.endTurn'), { cls: `primary end${b.remaining === 0 ? ' pulse' : ''}`, title: t('play.endTurn'), html: `${icon('confirm')}<span>${esc(t('play.endTurn'))}</span>`, disabled: !canEnd });
+        return `<div class="ctx-head">${stars}${prelude}</div><div class="btn-grid kind-row">${kindButtons(b.kinds, undefined, b.remaining > 0)}</div><div class="ctx-foot">${powersButton(v)}${end}</div>`;
+      }
       case 'choose':
-        return `<div class="hint">${esc(t('play.preludeWith', { res: t(`resource.${i.prelude}`) }))}</div><div class="btn-grid">${kindButtons(i.kinds, i.prelude, true)}${cancel}</div>`;
+        return `<div class="ctx-head"><span class="ctx-title">${esc(t('play.preludeWith', { res: t(`resource.${i.prelude}`) }))}</span></div><div class="btn-grid kind-row">${kindButtons(i.kinds, i.prelude, true)}${cancel}</div>`;
       case 'system':
       case 'from':
       case 'to':
@@ -671,24 +672,24 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (intent.step === 'build' || intent.step === 'repair' || intent.step === 'tax' || intent.step === 'battle') chosen.add(intent.system);
 
     const rivals = v.rivals.map((r) => rivalPanel(ix, v, v.players[r], t)).join('');
-    const canEnd = myTurn() && v.phase === 'actions' && intent.step === 'idle' && can({ type: 'endTurn', player: me });
-    const powersBtn = myTurn() && hasPowers(v) ? button('powers-open', t('powers.open'), { cls: 'powers-btn', title: t('powers.title') }) : '';
-    const confirmRow = `<div class="confirm-row">${powersBtn}
-        ${button('undo', '', { cls: 'icon', title: t('btn.undo'), html: icon('undo'), disabled: history.length === 0 })}
-        ${button('end-turn', t('play.endTurn'), { cls: 'primary end', title: t('play.endTurn'), html: `${icon('confirm')}<span>${esc(t('play.endTurn'))}</span>`, disabled: !canEnd })}
-      </div>`;
+    const undo = online ? '' : button('undo', '', { cls: 'icon', title: t('btn.undo'), html: icon('undo'), disabled: history.length === 0 });
+    // Choosing a card: passing and redrawing the first hand sit by the hand's title.
+    const choosing = myTurn() && (v.phase === 'lead' || v.phase === 'follow');
+    const handTools = myTurn() && v.phase === 'lead'
+      ? `${v.canMulligan ? button('mulligan', t('play.mulligan'), { cls: 'small' }) : ''}${button('pass', t('play.pass'), { cls: 'small', disabled: !can({ type: 'pass', player: me }) })}`
+      : '';
+    // The context box: only when there is something to choose (a picked card, the actions, a step, a battle).
+    const ctx = actionsPanel(v);
 
     stage.innerHTML = `<div class="tbl-stars"></div>
-      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', courtPanel(v, t, courtPickable(intent)))}</div>
+      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', courtPanel(v, t, courtPickable(intent)), ambitionsStrip(ix, v, t), undo)}</div>
       <div class="map-area${board3d ? '' : ' glass'}" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
-      <div class="region glass ambitions" data-region="ambitions" style="${place(REGIONS.ambitions)}">${ambitionsPanel(v, t)}</div>
       <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null)}</div>
-      <div class="region glass hand" data-region="hand" style="${place(REGIONS.hand)}">${handPanel(ix, v, t, selected, myTurn(), seizeWith)}</div>
+      <div class="region glass hand" data-region="hand" style="${place(REGIONS.hand)}">${handPanel(ix, v, t, selected, choosing, seizeWith, handTools)}</div>
       <div class="region glass owned" data-region="owned" style="${place(REGIONS.owned)}">${ownedPanel(ix, v.players[me], t)}</div>
-      <div class="region glass actions${myTurn() ? ' mine' : ''}" data-region="actions" style="${placeUp(REGIONS.actions)}">
-        <div data-region="prompt">${promptBar(prompt(v), promptSub(v), myTurn())}</div>
-        <div class="actions-body">${actionsPanel(v)}</div>${confirmRow}</div>
+      ${ctx ? `<div class="region glass actions${myTurn() ? ' mine' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : ''}
+      <div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>
       ${modalHtml(v)}
       ${toast ? `<div class="toast" role="alert">${esc(toast)}</div>` : ''}
       <div class="card-zoom" aria-hidden="true" hidden></div>`;
@@ -759,6 +760,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const me = local();
     const v = tableView(ix, state, me);
     switch (d.act) {
+      case 'deselect':
+        selected = null;
+        seizeWith = null;
+        seizePick = false;
+        break;
       case 'hand':
         if (seizePick && d.card !== selected) {
           seizeWith = d.card!;

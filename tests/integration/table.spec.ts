@@ -22,9 +22,11 @@ const phase = (page: Page) => page.evaluate(() => (window.game!.state as { phase
 test('boots the table with every region and no errors', async ({ page }) => {
   const errors = await open(page);
   expect(await page.evaluate(() => window.game!.scene)).toBe('table');
-  for (const r of ['header', 'prompt', 'rivals', 'map', 'ambitions', 'court', 'recent', 'local', 'hand', 'owned', 'actions']) {
+  for (const r of ['header', 'rivals', 'map', 'ambitions', 'court', 'recent', 'local', 'hand', 'owned']) {
     await expect(page.locator(`[data-region="${r}"]`)).toBeVisible();
   }
+  // The context box shows only when there is something to choose: not before a card is picked.
+  await expect(page.locator('[data-region="actions"]')).toHaveCount(0);
   // The 3D map (a canvas plus keyboard stand-ins for its systems), or the 2D map without WebGL.
   await expect(page.locator('[data-region="map"] [data-sys]').first()).toBeAttached();
   expect(errors).toEqual([]);
@@ -40,8 +42,12 @@ test('the 2D map stays available with ?map=2d', async ({ page }) => {
 test('leading a card and ending the turn passes play to the next seat', async ({ page }) => {
   const errors = await open(page);
   await page.locator('.hand-card:not(.unplayable)').first().click();
+  // Picking a card opens the box with the ways to play it.
+  await expect(page.locator('[data-region="actions"]')).toBeVisible();
   await page.getByRole('button', { name: 'Lead', exact: true }).click();
   expect(await phase(page)).toBe('actions');
+  // Then the actions of the led card, as buttons with their icons.
+  await expect(page.locator('[data-region="actions"] [data-act="kind"]').first()).toBeVisible();
   await page.getByRole('button', { name: 'End turn' }).click();
   expect(await phase(page)).toBe('follow');
   expect(errors).toEqual([]);

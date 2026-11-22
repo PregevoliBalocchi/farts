@@ -7,6 +7,7 @@
 import {
   activePlayer,
   AMBITIONS,
+  citiesBuilt,
   ambitionMetric,
   cartelMetric,
   controls,
@@ -56,6 +57,13 @@ export interface PlayerView {
   trophies: { owner: PlayerId; piece: string }[];
   /** Rival agents held captive, by owner. */
   captives: PlayerId[];
+  /**
+   * The cities of the player board in build order: the resource slots each
+   * one covers while unbuilt, and the power it adds once built.
+   */
+  cities: { built: boolean; slots: number[]; bonus: number }[];
+  /** Resource tokens held, counted by type (every type listed, zero included). */
+  held: { resource: Resource; count: number }[];
 }
 
 /** An action card, face up. */
@@ -204,6 +212,12 @@ function playerView(ix: ContentIndex, s: GameState, id: PlayerId): PlayerView {
     court: [...p.court],
     trophies: p.trophies.map((x) => ({ owner: x.owner, piece: x.piece })),
     captives: [...p.captives],
+    cities: Array.from({ length: ix.content.citiesPerPlayer }, (_, i) => ({
+      built: i < citiesBuilt(ix.content, p),
+      slots: [...(ix.content.playerBoard.cityUnlocks[i] ?? [])],
+      bonus: ix.content.playerBoard.cityBonusPower[i] ?? 0,
+    })),
+    held: RESOURCES.map((r) => ({ resource: r, count: p.resources.filter((x) => x === r).length })),
   };
 }
 
