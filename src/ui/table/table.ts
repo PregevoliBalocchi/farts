@@ -626,7 +626,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         <div class="btn-grid">${button('calib-skip', t('calib.skip'), { disabled: !next })}${button('calib-back', t('calib.back'), { disabled: calib.i === 0 })}${button('calib-save', t('calib.save'), { cls: 'primary' })}</div>
       </div>`;
     }
-    return `<div class="sys-keys" aria-label="${esc(t('map3d.systems'))}">${keys}</div><div class="map3d-hint">${esc(t('map3d.hint'))}</div>${cal}`;
+    return `<div class="sys-keys" aria-label="${esc(t('map3d.systems'))}">${keys}</div>${cal}`;
   }
 
   /** Saves the calibration as board.json (the owner moves it to assets/ui/map/). */
@@ -687,7 +687,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
       <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null)}</div>
       <div class="region glass hand" data-region="hand" style="${place(REGIONS.hand)}">${handPanel(ix, v, t, selected, choosing, seizeWith, handTools)}</div>
-      <div class="region glass owned" data-region="owned" style="${place(REGIONS.owned)}">${ownedPanel(ix, v.players[me], t)}</div>
+      <div class="region glass owned${v.players[me].court.length ? '' : ' empty'}" data-region="owned" style="${place(REGIONS.owned)};--w:${REGIONS.owned.w}px">${ownedPanel(ix, v.players[me], t)}</div>
       ${ctx ? `<div class="region glass actions${myTurn() ? ' mine' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : ''}
       <div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>
       ${modalHtml(v)}
@@ -960,6 +960,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         break;
       case 'pick-confirm':
         return confirmPick();
+      case 'help':
+        showToast(t('map3d.hint'));
+        break;
       case 'log':
         modal = { type: 'log' };
         break;

@@ -70,13 +70,13 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, cour
     <div class="glass hd round-strip"><div class="glass-title">${esc(t('round.title'))}</div><div class="chips">${chips}</div>
       <button type="button" class="supply" data-act="supply-detail" aria-label="${esc(t('supply'))}">${supply}</button></div>
     <div class="glass hd tools">
-      <span class="last-move" data-region="recent" title="${esc(last)}"><span class="muted">${esc(t('recent.last'))}</span> ${esc(last)}</span>
       ${exampleContent ? `<span class="content-note">${esc(t('content.example'))}</span>` : ''}
       <span class="you s-${v.local % 4}"><span class="seat-c">${icon(seatIcon(v.local))}</span>${esc(t('header.you', { name: playerName(t, v.local) }))}</span>
       <div class="top-buttons">
         ${undoHtml}
         ${button('court-view', '', { cls: 'icon', title: t('btn.court'), html: icon('court') })}
-        ${button('log', '', { cls: 'icon', title: t('btn.log'), html: icon('log') })}
+        <span data-region="recent">${button('log', '', { cls: 'icon', title: `${t('btn.log')} · ${t('recent.last')} ${last}`, html: icon('log') })}</span>
+        ${button('help', '', { cls: 'icon', title: t('btn.help'), html: icon('anyAmbition') })}
         ${button('settings', '', { cls: 'icon', title: t('btn.settings'), html: icon('settings') })}
       </div>
     </div>`;
@@ -230,7 +230,7 @@ export function ownedPanel(ix: ContentIndex, p: PlayerView, t: Translate): strin
       return `<button type="button" class="court-tile owned" data-act="seat-detail" data-player="${p.id}" data-zoom="${esc(id)}" aria-label="${esc(id)}"><span class="court-face">${face}</span></button>`;
     })
     .join('');
-  return `<div class="glass-title">${esc(t('owned.title'))} · ${p.court.length}</div><div class="owned-row">${cards || `<div class="hand-empty">${esc(t('owned.none'))}</div>`}</div>`;
+  return `<div class="glass-title">${esc(t('owned.title'))} · ${p.court.length}</div><div class="owned-row">${cards || `<div class="hand-empty" title="${esc(t('owned.none'))}">${icon('court')}</div>`}</div>`;
 }
 
 /** Glyphs of the ambition a card of this number can declare ('any': a free choice), or [] when it declares none. */
