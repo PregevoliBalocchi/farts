@@ -1,0 +1,335 @@
+<!-- PROTOTYPE - NOT FOR PRODUCTION: data-entry page to verify planet resources and building slots. -->
+<title>Verifica mappa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: schematic radial map on the left, inspector + planet list on the right; stacks on phones. */
+:root {
+  --bg: #f3f4f7; --panel: #ffffff; --fg: #1b1e2b; --muted: #5d6275; --line: #c9ccd8; --ring: #e3e5ee;
+  --accent: #3b4fd8; --ok: #1f8a4c; --warn: #b5651d;
+  --r-material: #8a6d3b; --r-fuel: #d9822b; --r-weapons: #c23b3b; --r-relic: #2a9d8f; --r-psionic: #8a4fd6; --r-none: #b8bbc8;
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12141c; --panel: #1b1e2a; --fg: #e8e9f0; --muted: #9a9fb4; --line: #3a3f55; --ring: #262a3a;
+  --accent: #8d9bff; --ok: #4cc782; --warn: #e9a15a;
+  --r-material: #c9a66b; --r-fuel: #f0a04b; --r-weapons: #ef6b6b; --r-relic: #4cc3b4; --r-psionic: #b58cf2; --r-none: #555a70;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #12141c; --panel: #1b1e2a; --fg: #e8e9f0; --muted: #9a9fb4; --line: #3a3f55; --ring: #262a3a;
+  --accent: #8d9bff; --ok: #4cc782; --warn: #e9a15a;
+  --r-material: #c9a66b; --r-fuel: #f0a04b; --r-weapons: #ef6b6b; --r-relic: #4cc3b4; --r-psionic: #b58cf2; --r-none: #555a70;
+  color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+h1 { font-family: var(--font-display); font-size: 1.6rem; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 4px 0 0; max-width: 65ch; }
+.status { font-family: var(--font-display); font-variant-numeric: tabular-nums; color: var(--muted); }
+.status b { color: var(--fg); }
+.save { font-size: 0.85rem; color: var(--muted); }
+.save.err { color: var(--warn); }
+.main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.mapbox { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+svg { width: 100%; height: auto; display: block; max-width: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.82rem; color: var(--muted); padding: 8px 4px 0; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.ln { width: 22px; height: 0; border-top: 2px solid var(--muted); display: inline-block; }
+.ln.wall { border-top: 4px solid var(--fg); }
+.ln.open { border-top: 2px dashed var(--muted); }
+.side { display: grid; gap: 16px; min-width: 0; }
+.inspector { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.inspector h2 { font-family: var(--font-display); font-size: 1.15rem; margin: 0; }
+.label { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.res { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; text-align: left; }
+.res[aria-pressed="true"] { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); font-weight: 600; }
+.slots { display: flex; gap: 8px; }
+.slot { width: 44px; height: 40px; border-radius: 8px; border: 1px solid var(--line); background: transparent; font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+.slot[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.navrow { display: flex; justify-content: space-between; gap: 8px; }
+.navrow button { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: transparent; }
+.hint { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.tablebox { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--ring); white-space: nowrap; }
+th { font-weight: 600; color: var(--muted); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; }
+tr.sel td { background: var(--ring); }
+tbody tr { cursor: pointer; }
+.pill { display: inline-flex; align-items: center; gap: 6px; }
+.missing { color: var(--warn); }
+.export { display: grid; gap: 8px; }
+.export button { justify-self: start; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: transparent; }
+textarea { width: 100%; min-height: 90px; font: 12px/1.4 ui-monospace, Consolas, monospace; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+.node { cursor: pointer; }
+.node:focus { outline: none; }
+.node:focus-visible circle.body { stroke: var(--accent); stroke-width: 4; }
+@media (prefers-reduced-motion: no-preference) { circle.body { transition: fill .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Verifica mappa</h1>
+      <p class="sub">Seleziona un pianeta, scegli la sua risorsa e correggi gli spazi edificio se li ho letti male. Ogni scelta viene salvata e Claude la legge da qui.</p>
+    </div>
+    <div>
+      <div class="status" id="status"></div>
+      <div class="save" id="save" aria-live="polite"></div>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="mapbox">
+      <svg id="map" viewBox="0 0 640 640" role="group" aria-label="Schema della mappa: 6 cluster, ciascuno con un gate e 3 pianeti"></svg>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="side">
+      <section class="inspector" aria-labelledby="ins-title">
+        <div>
+          <div class="label" id="ins-cluster"></div>
+          <h2 id="ins-title"></h2>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:6px">Risorsa</div>
+          <div class="choices" id="res-choices"></div>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:6px">Spazi edificio</div>
+          <div class="slots" id="slot-choices"></div>
+        </div>
+        <div class="navrow">
+          <button type="button" id="prev">← Precedente</button>
+          <button type="button" id="next">Successivo →</button>
+        </div>
+        <p class="hint">Ordine: cluster 1→6, pianeti p1→p3 in senso orario. Nel cluster 1, p1 è il pianeta subito dopo la crepa tra 6 e 1.</p>
+      </section>
+
+      <div class="tablebox">
+        <table>
+          <thead><tr><th>Pianeta</th><th>Risorsa</th><th>Spazi</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <div class="export">
+        <button type="button" id="copy">Copia i dati come JSON</button>
+        <textarea id="json" readonly aria-label="Dati in formato JSON" hidden></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const RES = [
+  { id: 'material', label: 'Material' },
+  { id: 'fuel', label: 'Fuel' },
+  { id: 'weapons', label: 'Weapons' },
+  { id: 'relic', label: 'Relics' },
+  { id: 'psionic', label: 'Psionics' },
+];
+const resLabel = id => (RES.find(r => r.id === id) || {}).label || '—';
+const resVar = id => `var(--r-${id || 'none'})`;
+
+// Slot counts as read from the photo; resources start unset.
+const READ_SLOTS = { 1: [2, 1, 2], 2: [1, 1, 2], 3: [1, 1, 2], 4: [2, 2, 1], 5: [1, 1, 2], 6: [1, 2, 1] };
+const planets = [];
+for (let c = 1; c <= 6; c++) for (let k = 1; k <= 3; k++)
+  planets.push({ id: `c${c}-p${k}`, cluster: c, k, resource: null, slots: READ_SLOTS[c][k - 1] });
+const byId = Object.fromEntries(planets.map(p => [p.id, p]));
+let selected = planets[0].id;
+let db = null;
+
+// ---------- geometry ----------
+const CX = 320, CY = 320, R_GATE = 92, R_PLANET = 236;
+const angle = (c, k) => (-90 + (c - 1) * 60 + (k === undefined ? 0 : (k - 2) * 19)) * Math.PI / 180;
+const pt = (r, a) => [CX + r * Math.cos(a), CY + r * Math.sin(a)];
+const gatePos = c => pt(R_GATE, angle(c));
+const planetPos = (c, k) => pt(R_PLANET, angle(c, k));
+// Borders between clusters: blocked ("wall") or passable between outer planets.
+const OPEN_BORDERS = new Set(['2-3', '5-6']);
+
+const NS = 'http://www.w3.org/2000/svg';
+function el(name, attrs, parent) {
+  const e = document.createElementNS(NS, name);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+function drawMap() {
+  const svg = document.getElementById('map');
+  svg.textContent = '';
+  // Central ring.
+  el('circle', { cx: CX, cy: CY, r: R_GATE + 34, fill: 'var(--ring)', stroke: 'var(--line)' }, svg);
+  el('circle', { cx: CX, cy: CY, r: R_GATE - 34, fill: 'var(--panel)', stroke: 'var(--line)' }, svg);
+  // Cluster borders.
+  for (let c = 1; c <= 6; c++) {
+    const next = c % 6 + 1;
+    const a = (-90 + (c - 1) * 60 + 30) * Math.PI / 180;
+    const open = OPEN_BORDERS.has(`${c}-${next}`);
+    const [x1, y1] = pt(R_GATE - 34, a);
+    const [x2, y2] = pt(open ? R_GATE + 60 : 305, a);
+    el('line', { x1, y1, x2, y2, stroke: 'var(--fg)', 'stroke-width': open ? 4 : 5, 'stroke-linecap': 'round', opacity: open ? 0.85 : 1 }, svg);
+  }
+  const links = el('g', { stroke: 'var(--muted)', 'stroke-width': 2, fill: 'none' }, svg);
+  const line = (a, b, dashed) => el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], ...(dashed ? { 'stroke-dasharray': '5 5' } : {}) }, links);
+  for (let c = 1; c <= 6; c++) {
+    for (let k = 1; k <= 3; k++) line(gatePos(c), planetPos(c, k));
+    line(planetPos(c, 1), planetPos(c, 2));
+    line(planetPos(c, 2), planetPos(c, 3));
+  }
+  line(planetPos(2, 3), planetPos(3, 1), true);
+  line(planetPos(5, 3), planetPos(6, 1), true);
+  // Gates.
+  for (let c = 1; c <= 6; c++) {
+    const [x, y] = gatePos(c);
+    el('circle', { cx: x, cy: y, r: 18, fill: 'var(--panel)', stroke: 'var(--fg)', 'stroke-width': 2 }, svg);
+    const t = el('text', { x, y: y + 6, 'text-anchor': 'middle', 'font-family': 'Space Grotesk, sans-serif', 'font-size': 17, 'font-weight': 700, fill: 'var(--fg)' }, svg);
+    t.textContent = c;
+  }
+  // Planets.
+  for (const p of planets) {
+    const [x, y] = planetPos(p.cluster, p.k);
+    const g = el('g', { class: 'node', tabindex: 0, role: 'button', 'aria-label': `Pianeta ${p.id}, ${resLabel(p.resource)}, ${p.slots} spazi` }, svg);
+    if (p.id === selected) el('circle', { cx: x, cy: y, r: 31, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 3 }, g);
+    el('circle', { class: 'body', cx: x, cy: y, r: 24, fill: resVar(p.resource), stroke: 'var(--fg)', 'stroke-width': 1.5 }, g);
+    // Building slots as small triangles under the label.
+    const w = 12, gap = 3, total = p.slots * w + (p.slots - 1) * gap;
+    for (let i = 0; i < p.slots; i++) {
+      const sx = x - total / 2 + i * (w + gap);
+      el('path', { d: `M${sx} ${y + 13} l${w / 2} -10 l${w / 2} 10 z`, fill: 'var(--panel)', stroke: 'var(--fg)', 'stroke-width': 1.2 }, g);
+    }
+    const t = el('text', { x, y: y - 4, 'text-anchor': 'middle', 'font-family': 'Inter, sans-serif', 'font-size': 11, 'font-weight': 600, fill: 'var(--fg)' }, g);
+    t.textContent = `p${p.k}`;
+    if (!p.resource) {
+      const q = el('text', { x: x + 20, y: y - 16, 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 700, fill: 'var(--warn)' }, g);
+      q.textContent = '?';
+    }
+    g.addEventListener('click', () => select(p.id));
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(p.id); } });
+  }
+}
+
+function drawLegend() {
+  const lg = document.getElementById('legend');
+  lg.innerHTML = RES.map(r => `<span><i class="sw" style="background:${resVar(r.id)}"></i>${r.label}</span>`).join('')
+    + `<span><i class="sw" style="background:var(--r-none)"></i>Da assegnare</span>`
+    + `<span><i class="ln wall"></i>Crepa (bordo chiuso)</span>`
+    + `<span><i class="ln open"></i>Collegamento tra cluster</span>`;
+}
+
+function drawInspector() {
+  const p = byId[selected];
+  document.getElementById('ins-cluster').textContent = `Cluster ${p.cluster}`;
+  document.getElementById('ins-title').textContent = `Pianeta ${p.id}`;
+  const rc = document.getElementById('res-choices');
+  rc.innerHTML = '';
+  for (const r of RES) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'res'; b.id = `res-${r.id}`;
+    b.setAttribute('aria-pressed', String(p.resource === r.id));
+    b.innerHTML = `<i class="sw" style="background:${resVar(r.id)}"></i>`;
+    b.append(r.label);
+    b.addEventListener('click', () => change(p.id, { resource: r.id }));
+    rc.appendChild(b);
+  }
+  const sc = document.getElementById('slot-choices');
+  sc.innerHTML = '';
+  for (let n = 1; n <= 3; n++) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'slot'; b.id = `slot-${n}`; b.textContent = n;
+    b.setAttribute('aria-pressed', String(p.slots === n));
+    b.setAttribute('aria-label', `${n} spazi`);
+    b.addEventListener('click', () => change(p.id, { slots: n }));
+    sc.appendChild(b);
+  }
+}
+
+function drawTable() {
+  const tb = document.getElementById('rows');
+  tb.innerHTML = '';
+  for (const p of planets) {
+    const tr = document.createElement('tr');
+    if (p.id === selected) tr.className = 'sel';
+    tr.innerHTML = `<td>${p.id}</td><td>${p.resource
+      ? `<span class="pill"><i class="sw" style="background:${resVar(p.resource)}"></i>${resLabel(p.resource)}</span>`
+      : '<span class="missing">da assegnare</span>'}</td><td>${p.slots}</td>`;
+    tr.addEventListener('click', () => select(p.id));
+    tb.appendChild(tr);
+  }
+  const done = planets.filter(p => p.resource).length;
+  document.getElementById('status').innerHTML = `<b>${done}</b> / 18 risorse assegnate`;
+  const ta = document.getElementById('json');
+  if (!ta.hidden) ta.value = exportJson();
+}
+
+function render() { drawMap(); drawInspector(); drawTable(); }
+
+function select(id) { selected = id; render(); }
+function step(d) { const i = planets.findIndex(p => p.id === selected); select(planets[(i + d + 18) % 18].id); }
+document.getElementById('prev').addEventListener('click', () => step(-1));
+document.getElementById('next').addEventListener('click', () => step(1));
+
+// ---------- persistence ----------
+const saveEl = document.getElementById('save');
+function setSave(text, err) { saveEl.textContent = text; saveEl.classList.toggle('err', !!err); }
+const writing = {};
+async function change(id, patch) {
+  const p = byId[id];
+  const before = { resource: p.resource, slots: p.slots };
+  Object.assign(p, patch);
+  if (before.resource === p.resource && before.slots === p.slots) return;
+  render();
+  if (!db) { setSave('Salvataggio non disponibile qui: usa "Copia i dati come JSON".', true); return; }
+  // One write at a time per document: chain writes for the same planet.
+  writing[id] = (writing[id] || Promise.resolve()).then(async () => {
+    setSave('Salvataggio…');
+    try {
+      await db.doc(`planets/${id}`).set({ resource: p.resource, slots: p.slots });
+      setSave('Salvato');
+    } catch (e) {
+      setSave(e && e.code === 'invalid_argument' ? 'Non hai i permessi per salvare: usa "Copia i dati come JSON".' : 'Salvataggio non riuscito, riprova.', true);
+    }
+  });
+}
+
+function exportJson() {
+  return JSON.stringify(Object.fromEntries(planets.map(p => [p.id, { resource: p.resource, slots: p.slots }])), null, 1);
+}
+document.getElementById('copy').addEventListener('click', () => {
+  const ta = document.getElementById('json');
+  ta.hidden = false; ta.value = exportJson();
+  const fallback = () => { ta.focus(); ta.select(); };
+  try { navigator.clipboard.writeText(ta.value).then(() => setSave('JSON copiato'), fallback); } catch (e) { fallback(); }
+});
+
+drawLegend();
+render();
+setSave('Caricamento dati salvati…');
+
+(async () => {
+  try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { db = null; }
+  if (!db) { setSave('Salvataggio non disponibile in questa vista: le scelte restano solo qui finché la pagina è aperta.', true); return; }
+  const timer = setTimeout(() => setSave('I dati salvati non rispondono ancora; le modifiche verranno salvate appena possibile.', true), 10000);
+  db.collection('planets').onSnapshot(snap => {
+    for (const d of snap.docs) {
+      const p = byId[d.id]; const v = d.data();
+      if (!p || !v) continue;
+      if (typeof v.resource === 'string' || v.resource === null) p.resource = v.resource;
+      if (typeof v.slots === 'number') p.slots = v.slots;
+    }
+    if (!snap.metadata.fromCache) { clearTimeout(timer); if (saveEl.textContent.startsWith('Caricamento') || saveEl.textContent.startsWith('I dati')) setSave(''); }
+    render();
+  }, err => { clearTimeout(timer); setSave('Dati salvati non raggiungibili; usa "Copia i dati come JSON".', true); });
+})();
+</script>

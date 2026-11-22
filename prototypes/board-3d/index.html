@@ -1,0 +1,351 @@
+<!-- PROTOTYPE - NOT FOR PRODUCTION: 3D board look test following the owner's board layout. -->
+<meta charset="utf-8">
+<title>Tabellone 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one full-window WebGL scene of the game board; a small toolbar floats over it. */
+:root { --bg: #050509; --fg: #e8eaf2; --muted: #9aa1b6; --gold: #f2b544; --panel: rgba(12,14,22,.85); --line: #2a3147; color-scheme: dark; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 13px/1.4 "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+canvas { display: block; }
+#ui { position: fixed; left: max(14px, env(safe-area-inset-left, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); max-width: calc(100% - 28px); }
+#ui b { color: var(--gold); }
+#ui button { font: inherit; color: var(--fg); background: #1b2131; border: 1px solid var(--line); border-radius: 7px; padding: 5px 9px; cursor: pointer; }
+#ui button:hover, #ui button[aria-pressed="true"] { border-color: var(--gold); }
+#ui button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+#ui .muted { color: var(--muted); }
+#tip { position: fixed; pointer-events: none; padding: 5px 8px; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); font-size: 12px; }
+#err { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--muted); }
+</style>
+
+<div id="err" hidden>Il browser non riesce ad avviare la grafica 3D (WebGL).</div>
+<div id="ui" role="toolbar" aria-label="Controlli della vista">
+  <b>Tabellone 3D</b>
+  <span class="muted">Trascina per inclinare e ruotare · rotella per lo zoom · tasto destro per spostare</span>
+  <button type="button" id="bTilt">Vista inclinata</button>
+  <button type="button" id="bTop">Vista dall'alto</button>
+  <button type="button" id="bSpin" aria-pressed="true">Rotazione pianeti</button>
+  <button type="button" id="bPieces" aria-pressed="true">Pezzi</button>
+</div>
+<div id="tip" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(() => {
+if (!window.THREE) { document.getElementById('err').hidden = false; return; }
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const D2R = THREE.MathUtils.degToRad;
+
+// ---------------- renderer, scene, camera ----------------
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ antialias: true }); } catch (e) { document.getElementById('err').hidden = false; return; }
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.localClippingEnabled = true;
+document.body.prepend(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x050509);
+const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 2000);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08; controls.minDistance = 25; controls.maxDistance = 220; controls.maxPolarAngle = D2R(80);
+const viewTilt = () => { camera.position.set(0, 105, 92); controls.target.set(0, 0, 4); };
+const viewTop = () => { camera.position.set(0, 150, 0.01); controls.target.set(0, 0, 0); };
+viewTilt();
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+scene.add(new THREE.AmbientLight(0x8890b0, 0.7));
+const sun = new THREE.DirectionalLight(0xfff2e0, 0.95); sun.position.set(-50, 90, 60); scene.add(sun);
+const coreLight = new THREE.PointLight(0xa58cff, 0.6, 70, 2); coreLight.position.set(0, 6, 0); scene.add(coreLight);
+
+// ---------------- board geometry ----------------
+const W = 140, H = 98;                 // board rectangle (same proportions as the printed board)
+const R_IN = 13.5, R_OUT = 25;         // crown (ring) inner and outer radius
+const CLUSTERS = 6;
+// board edges as clipping planes, so wedges and cracks stop at the board's border
+const clip = [new THREE.Plane(new THREE.Vector3(1, 0, 0), W / 2), new THREE.Plane(new THREE.Vector3(-1, 0, 0), W / 2), new THREE.Plane(new THREE.Vector3(0, 0, 1), H / 2), new THREE.Plane(new THREE.Vector3(0, 0, -1), H / 2)];
+const edgeDist = (a) => { const c = Math.cos(a), s = Math.sin(a); return Math.min(c ? Math.abs((W / 2) / c) : 1e9, s ? Math.abs((H / 2) / s) : 1e9); };
+// angle convention: cluster 1 at the top of the board (−z), clockwise
+const ang = (deg) => D2R(deg - 90);
+const pos = (deg, r) => [Math.cos(ang(deg)) * r, Math.sin(ang(deg)) * r];
+
+// base slab
+{
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(W + 3, 2, H + 3), new THREE.MeshStandardMaterial({ color: 0x0d0c12, roughness: 0.9 }));
+  slab.position.y = -1.05; scene.add(slab);
+}
+
+// shared GLSL noise
+const NOISE = `
+vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;} vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);} vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+float snoise(vec3 v){const vec2 C=vec2(1.0/6.0,1.0/3.0);const vec4 D=vec4(0.0,0.5,1.0,2.0);
+vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.0-g;vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);
+vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;i=mod289(i);
+vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+float n_=0.142857142857;vec3 ns=n_*D.wyz-D.xzx;vec4 j=p-49.0*floor(p*ns.z*ns.z);vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.0*x_);
+vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.0-abs(x)-abs(y);vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);
+vec4 s0=floor(b0)*2.0+1.0;vec4 s1=floor(b1)*2.0+1.0;vec4 sh=-step(h,vec4(0.0));vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);
+vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);m=m*m;return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));}
+float fbm(vec3 p){float a=0.5,s=0.0;for(int i=0;i<5;i++){s+=a*snoise(p);p*=2.03;a*=0.5;}return s;}
+vec2 cells(vec3 p){vec3 i=floor(p),f=fract(p);float d1=8.0,d2=8.0;for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++)for(int z=-1;z<=1;z++){vec3 g=vec3(x,y,z);
+vec3 o=fract(sin(vec3(dot(i+g,vec3(127.1,311.7,74.7)),dot(i+g,vec3(269.5,183.3,246.1)),dot(i+g,vec3(113.5,271.9,124.6))))*43758.5453);
+float d=length(g+o-f);if(d<d1){d2=d1;d1=d;}else if(d<d2){d2=d;}}return vec2(d1,d2);}
+`;
+
+// ---------------- planets data (from the owner's map) ----------------
+const RES = {
+  material: { name: 'Material', wedge: 0x5a4a1e, a: [0.86, 0.66, 0.22], b: [0.62, 0.28, 0.6], type: 0 },
+  fuel:     { name: 'Fuel',     wedge: 0x4d4718, a: [0.78, 0.68, 0.2],  b: [0.45, 0.38, 0.1], type: 1 },
+  weapons:  { name: 'Weapons',  wedge: 0x5b2e16, a: [0.95, 0.47, 0.16], b: [0.45, 0.12, 0.06], type: 2 },
+  relic:    { name: 'Relics',   wedge: 0x1f4448, a: [0.55, 0.86, 0.9],  b: [0.2, 0.45, 0.55], type: 3 },
+  psionic:  { name: 'Psionics', wedge: 0x4a2152, a: [0.93, 0.5, 0.78],  b: [0.42, 0.32, 0.85], type: 4 },
+};
+const MAP = { 1: ['weapons', 'fuel', 'material'], 2: ['psionic', 'weapons', 'relic'], 3: ['material', 'fuel', 'weapons'], 4: ['relic', 'fuel', 'material'], 5: ['weapons', 'relic', 'psionic'], 6: ['material', 'fuel', 'psionic'] };
+const SLOTS = { 1: [2, 1, 2], 2: [1, 1, 2], 3: [1, 1, 2], 4: [2, 2, 1], 5: [1, 1, 2], 6: [1, 2, 1] };
+const IDSYM = ['▲', '☾', '⬢'];
+const RINGED = { 'c2-p3': 1, 'c4-p2': 1, 'c5-p2': 1 };
+
+// ---------------- wedges, separators, cracks ----------------
+const flat = (mesh, y) => { mesh.rotation.x = -Math.PI / 2; mesh.position.y = y; return mesh; };
+const wedgeMat = (color) => new THREE.ShaderMaterial({
+  transparent: false, side: THREE.DoubleSide,
+  uniforms: { uC: { value: new THREE.Color(color) }, uHalf: { value: new THREE.Vector2(W / 2, H / 2) } },
+  vertexShader: `varying vec3 vW;
+    void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+  fragmentShader: NOISE + `varying vec3 vW; uniform vec3 uC; uniform vec2 uHalf;
+    void main(){ if(abs(vW.x)>uHalf.x || abs(vW.z)>uHalf.y) discard;
+      float r=length(vW.xz); float n=fbm(vec3(vW.xz*0.06,1.0))*0.5+0.5; float m=fbm(vec3(vW.xz*0.25,3.0));
+      float fade=smoothstep(24.0,60.0,r)*0.55+0.45; vec3 c=uC*(0.65+0.55*n)*fade; c+=uC*0.12*smoothstep(0.3,0.8,m);
+      c=mix(c,vec3(0.03,0.025,0.05),smoothstep(70.0,95.0,r)*0.5);
+      gl_FragColor=vec4(c,1.0); }`,
+});
+function wedge(deg0, deg1, color) {
+  const s = new THREE.Shape(); s.moveTo(...pos(deg0, R_OUT - 1)); s.lineTo(...pos(deg0, 140)); s.lineTo(...pos((deg0 + deg1) / 2, 160)); s.lineTo(...pos(deg1, 140)); s.lineTo(...pos(deg1, R_OUT - 1)); s.lineTo(...pos(deg0, R_OUT - 1));
+  // Shape is in xy; after rotating -90° about x, y becomes -z, so mirror y now.
+  const g = new THREE.ShapeGeometry(s); g.scale(1, -1, 1);
+  return flat(new THREE.Mesh(g, wedgeMat(color)), 0);
+}
+const lineMat = new THREE.LineBasicMaterial({ color: 0xe8d9a8, transparent: true, opacity: 0.55, clippingPlanes: clip });
+const planets = [];
+for (let c = 1; c <= CLUSTERS; c++) {
+  const base = (c - 1) * 60;
+  for (let k = 0; k < 3; k++) {
+    const d0 = base - 30 + k * 20 + 1.2, d1 = d0 + 20 - 2.4;
+    scene.add(wedge(d0, d1, RES[MAP[c][k]].wedge));
+    if (k > 0) { const a = pos(d0 - 1.2, R_OUT), b = pos(d0 - 1.2, 140); scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a[0], 0.05, a[1]), new THREE.Vector3(b[0], 0.05, b[1])]), lineMat)); }
+  }
+}
+// wide jagged cracks at cluster borders, cutting the crown too
+const crackFill = new THREE.MeshBasicMaterial({ color: 0x07060b, clippingPlanes: clip, side: THREE.DoubleSide });
+const crackEdge = new THREE.LineBasicMaterial({ color: 0xf1ecff, transparent: true, opacity: 0.8, clippingPlanes: clip });
+function crack(deg, seed) {
+  let rnd = seed; const rand = () => ((rnd = (rnd * 9301 + 49297) % 233280) / 233280);
+  const L = [], R = []; const a = ang(deg), nx = -Math.sin(a), nz = Math.cos(a);
+  let wobble = 0;
+  for (let r = R_IN - 1; r <= 150; r += 1.6) {
+    wobble += (rand() - 0.5) * 1.1; wobble *= 0.9;
+    const inCrown = r < R_OUT + 1; const wdt = inCrown ? 0.35 + rand() * 0.25 : 1.0 + rand() * 1.8 + Math.sin(r * 0.21 + seed) * 0.6;
+    const cx = Math.cos(a) * r + nx * wobble, cz = Math.sin(a) * r + nz * wobble;
+    L.push(new THREE.Vector3(cx + nx * wdt, 0.08, cz + nz * wdt)); R.push(new THREE.Vector3(cx - nx * wdt, 0.08, cz - nz * wdt));
+  }
+  const pts = L.concat(R.slice().reverse()); const shape = new THREE.Shape(pts.map((p) => new THREE.Vector2(p.x, -p.z)));
+  const g = new THREE.ShapeGeometry(shape); g.scale(1, -1, 1);
+  scene.add(flat(new THREE.Mesh(g, crackFill), 0.08));
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(L), crackEdge));
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(R), crackEdge));
+}
+for (let c = 0; c < CLUSTERS; c++) crack(c * 60 + 30, 17 + c * 31);
+
+// ---------------- crown with numbers and ID badges ----------------
+const crownMat = new THREE.ShaderMaterial({
+  transparent: true, uniforms: { uTime: { value: 0 } },
+  vertexShader: `varying vec3 vP; void main(){ vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: NOISE + `varying vec3 vP; uniform float uTime;
+    void main(){ float r=length(vP.xy); float a=atan(vP.y,vP.x);
+      float ragged = 13.5 + 2.6*(fbm(vec3(cos(a)*2.2,sin(a)*2.2,0.5))*0.5+0.5) + 0.8*snoise(vec3(a*6.0,0.0,1.0));
+      if(r<ragged) discard;
+      float stone=fbm(vec3(vP.xy*0.35,2.0))*0.5+0.5; float grain=snoise(vec3(vP.xy*3.0,4.0))*0.5+0.5;
+      vec3 c=mix(vec3(0.09,0.09,0.1),vec3(0.36,0.36,0.38),stone)*(0.8+0.25*grain);
+      float shade=smoothstep(ragged,ragged+3.5,r)*0.5+0.5; c*=shade;
+      float star=step(0.985,snoise(vec3(vP.xy*4.0,7.0)))*0.9; c+=star;
+      float edge=smoothstep(24.6,25.0,r); c=mix(c,vec3(0.86,0.82,0.95),edge*0.9);
+      float inner=1.0-smoothstep(ragged,ragged+0.35,r); c=mix(c,vec3(0.92,0.9,1.0),inner);
+      gl_FragColor=vec4(c,1.0); }`,
+});
+scene.add(flat(new THREE.Mesh(new THREE.CircleGeometry(R_OUT, 160), crownMat), 0.12));
+function canvasTex(draw, size = 256) { const cv = document.createElement('canvas'); cv.width = cv.height = size; const x = cv.getContext('2d'); draw(x, size); const t = new THREE.CanvasTexture(cv); t.anisotropy = 8; return t; }
+function flatLabel(text, deg, r, s, font = '700 170px Georgia, serif') {
+  const tex = canvasTex((x, n) => { x.fillStyle = '#f4f1ff'; x.font = font; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, n / 2, n / 2 + 10); });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(s, s), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+  const [x, z] = pos(deg, r); m.rotation.x = -Math.PI / 2; m.rotation.z = -D2R(deg); m.position.set(x, 0.2, z); scene.add(m); return m;
+}
+const gateHits = [];
+for (let c = 1; c <= CLUSTERS; c++) {
+  flatLabel(String(c), (c - 1) * 60, (R_IN + R_OUT) / 2 + 1.2, 7.5);
+  const [gx, gz] = pos((c - 1) * 60, (R_IN + R_OUT) / 2 + 1);
+  const hit = new THREE.Mesh(new THREE.CircleGeometry(5, 24), new THREE.MeshBasicMaterial({ visible: false })); hit.rotation.x = -Math.PI / 2; hit.position.set(gx, 0.3, gz); hit.userData.tip = `Gate del cluster ${c}`; scene.add(hit); gateHits.push(hit);
+  for (let k = 0; k < 3; k++) {
+    const deg = (c - 1) * 60 - 20 + k * 20; const [bx, bz] = pos(deg, R_OUT + 1.6);
+    const badge = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, 0.4, 6), new THREE.MeshStandardMaterial({ color: 0xf2ead2, roughness: 0.6 }));
+    badge.position.set(bx, 0.3, bz); badge.rotation.y = -D2R(deg); scene.add(badge);
+    const sym = canvasTex((x, n) => { x.fillStyle = '#2a2230'; x.font = '700 150px Segoe UI Symbol, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(IDSYM[k], n / 2, n / 2 + 8); });
+    const sm = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.7), new THREE.MeshBasicMaterial({ map: sym, transparent: true })); sm.rotation.x = -Math.PI / 2; sm.rotation.z = -D2R(deg); sm.position.set(bx, 0.52, bz); scene.add(sm);
+  }
+}
+
+// ---------------- black hole inside the crown ----------------
+const voidMesh = flat(new THREE.Mesh(new THREE.CircleGeometry(R_IN + 3.5, 96), new THREE.MeshBasicMaterial({ color: 0x000000 })), -0.5); scene.add(voidMesh);
+const holeMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uTime: { value: 0 } },
+  vertexShader: `varying vec3 vP; void main(){ vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: NOISE + `varying vec3 vP; uniform float uTime;
+    void main(){ float r=length(vP.xy); float a=atan(vP.y,vP.x);
+      float ragged = 13.5 + 2.6*(fbm(vec3(cos(a)*2.2,sin(a)*2.2,0.5))*0.5+0.5) + 0.8*snoise(vec3(a*6.0,0.0,1.0));
+      float sw=a + 2.2/(r*0.12+0.4) - uTime*0.35;
+      float gasN=fbm(vec3(cos(sw)*r*0.22, sin(sw)*r*0.22, uTime*0.12))*0.5+0.5;
+      float band=smoothstep(ragged-9.0,ragged-0.6,r)*(1.0-smoothstep(ragged-0.2,ragged+0.4,r));
+      float g=band*smoothstep(0.25,0.8,gasN)*1.6;
+      vec3 col=mix(vec3(0.45,0.25,0.85),vec3(0.95,0.75,1.0),gasN);
+      float deep=exp(-r*0.16)*0.35*(0.6+0.4*sin(uTime*1.3));
+      gl_FragColor=vec4(col*g*1.2 + vec3(0.25,0.15,0.5)*deep, g); }`,
+});
+scene.add(flat(new THREE.Mesh(new THREE.CircleGeometry(R_IN + 3.5, 160), holeMat), -0.2));
+// lightning discharges inside the hole
+const bolts = [];
+for (let i = 0; i < 6; i++) { const l = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0xe4d6ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); scene.add(l); bolts.push({ line: l, life: 0 }); }
+function strike(b) {
+  const a1 = Math.random() * Math.PI * 2, a2 = a1 + Math.PI * (0.5 + Math.random()), r1 = 11 + Math.random() * 2.5, r2 = 3 + Math.random() * 9;
+  const A = new THREE.Vector3(Math.cos(a1) * r1, 0.2, Math.sin(a1) * r1), B = new THREE.Vector3(Math.cos(a2) * r2, 0.2, Math.sin(a2) * r2);
+  const pts = []; const n = 18;
+  for (let s = 0; s <= n; s++) { const p = A.clone().lerp(B, s / n); if (s > 0 && s < n) p.add(new THREE.Vector3((Math.random() - 0.5) * 2.2, Math.random() * 0.5, (Math.random() - 0.5) * 2.2)); pts.push(p); }
+  b.line.geometry.dispose(); b.line.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.1), 60, 0.12 + Math.random() * 0.1, 5, false); b.life = 0.15 + Math.random() * 0.25;
+}
+const flashDisk = flat(new THREE.Mesh(new THREE.CircleGeometry(R_IN, 64), new THREE.MeshBasicMaterial({ color: 0x7d5cff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })), -0.1); scene.add(flashDisk);
+
+// ---------------- planets ----------------
+const planetVS = `varying vec3 vObj; varying vec3 vN; varying vec3 vView;
+  void main(){ vObj=position; vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.0); vView=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`;
+const planetFS = NOISE + `varying vec3 vObj; varying vec3 vN; varying vec3 vView;
+  uniform int uType; uniform float uSeed; uniform float uTime; uniform vec3 uLight; uniform vec3 uA; uniform vec3 uB;
+  void main(){
+    vec3 n3=normalize(vObj); vec3 p=n3*2.0+uSeed; vec3 col; float emit=0.0;
+    if(uType==0){ // Material: golden ground with violet blotches and craters
+      float n=fbm(p*1.5); col=mix(uA*0.55,uA,n*0.5+0.5);
+      float blot=smoothstep(0.15,0.45,fbm(p*1.1+3.0)); col=mix(col,uB,blot*0.75);
+      vec2 c=cells(p*2.6); col*=1.0-smoothstep(0.26,0.12,c.x)*0.4; col+= (smoothstep(0.3,0.27,c.x)-smoothstep(0.27,0.22,c.x))*0.15;
+    } else if(uType==1){ // Fuel: banded gas with contour lines
+      float w=fbm(p*1.4+vec3(0.0,0.0,uTime*0.03)); float bands=sin(n3.y*12.0+w*3.0)*0.5+0.5;
+      col=mix(uB,uA,bands); float contour=smoothstep(0.06,0.0,abs(fract(w*5.0)-0.5)-0.44); col=mix(col,uA*1.25,contour*0.35);
+    } else if(uType==2){ // Weapons: orange crust with dark jagged cracks
+      float n=fbm(p*1.6); col=mix(uA*0.7,uA,n*0.5+0.5);
+      vec2 c=cells(p*2.0); float edge=c.y-c.x; float crack=smoothstep(0.07,0.0,edge); col=mix(col,uB,crack*0.85);
+      float glow=smoothstep(0.03,0.0,edge)*(0.6+0.4*sin(uTime*2.0+uSeed)); col+=vec3(1.0,0.6,0.2)*glow*0.5; emit=glow*0.3;
+    } else if(uType==3){ // Relics: pale ice with etched lines
+      float n=fbm(p*1.8); col=mix(uB,uA,n*0.5+0.5);
+      float etch=smoothstep(0.03,0.0,abs(snoise(p*2.6))); col=mix(col,vec3(0.95,1.0,1.0),etch*0.5);
+      vec2 c=cells(p*3.4); col=mix(col,uB,smoothstep(0.05,0.0,c.y-c.x)*0.4);
+    } else { // Psionics: pink and violet swirls
+      vec3 q=p; float t=uTime*0.05; q.xz=mat2(cos(t),-sin(t),sin(t),cos(t))*q.xz;
+      float s=fbm(q+fbm(q*1.4)*1.8); col=mix(uB,uA,s*0.5+0.5);
+      float rings=smoothstep(0.08,0.0,abs(fract(s*4.0)-0.5)-0.4); col=mix(col,vec3(1.0,0.85,0.95),rings*0.35);
+    }
+    float diff=max(dot(normalize(vN),normalize(uLight)),0.0);
+    float rim=pow(1.0-max(dot(normalize(vN),normalize(vView)),0.0),2.2);
+    vec3 outc=col*(0.35+diff*0.85)+uA*rim*0.22+col*emit;
+    gl_FragColor=vec4(outc,1.0);
+  }`;
+const lightView = new THREE.Vector3();
+const slotPads = [];
+for (let c = 1; c <= CLUSTERS; c++) {
+  for (let k = 0; k < 3; k++) {
+    const deg = (c - 1) * 60 - 20 + k * 20, a = ang(deg), edge = edgeDist(a);
+    const r = Math.max(35, Math.min(edge - 9, 34 + (edge - 34) * 0.45));
+    const res = RES[MAP[c][k]], size = 5.0 + ((c * 5 + k * 3) % 3) * 0.45, id = `c${c}-p${k + 1}`;
+    const [x, z] = pos(deg, r);
+    const mat = new THREE.ShaderMaterial({ vertexShader: planetVS, fragmentShader: planetFS, uniforms: {
+      uType: { value: res.type }, uSeed: { value: c * 3.7 + k * 5.3 }, uTime: { value: 0 }, uLight: { value: new THREE.Vector3() },
+      uA: { value: new THREE.Vector3(...res.a) }, uB: { value: new THREE.Vector3(...res.b) } } });
+    const holder = new THREE.Group(); holder.position.set(x, size * 0.55, z); holder.rotation.z = D2R(((c * 13 + k * 29) % 30) - 15); scene.add(holder);
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 72, 54), mat); mesh.userData.tip = `${id} · ${res.name} · ${SLOTS[c][k]} spazi · ${IDSYM[k]}`; holder.add(mesh);
+    if (RINGED[id]) {
+      const ringMat = new THREE.ShaderMaterial({ transparent: true, side: THREE.DoubleSide, depthWrite: false, uniforms: { uC: { value: new THREE.Vector3(...res.a) } },
+        vertexShader: `varying vec3 vP; void main(){vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+        fragmentShader: `varying vec3 vP; uniform vec3 uC; void main(){ float r=length(vP.xy); float t=fract(r*1.3); float a=(0.35+0.35*sin(r*5.0)*sin(r*13.0))*smoothstep(0.0,0.15,t)*smoothstep(1.0,0.85,t); gl_FragColor=vec4(uC*(0.8+0.2*sin(r*9.0)), clamp(a,0.0,0.7)); }` });
+      const ring = new THREE.Mesh(new THREE.RingGeometry(size * 1.3, size * 2.0, 96), ringMat); ring.rotation.x = -Math.PI / 2 + 0.4; holder.add(ring);
+    }
+    // the planet's shadow pool on the board
+    const shadow = flat(new THREE.Mesh(new THREE.CircleGeometry(size * 1.05, 48), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false })), 0.15); shadow.position.x = x + 1; shadow.position.z = z + 1; scene.add(shadow);
+    // building slots: triangular pads on the board, on the crown side of the planet
+    const n = SLOTS[c][k], tang = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a));
+    for (let s = 0; s < n; s++) {
+      const off = (s - (n - 1) / 2) * 4.2, [px, pz] = pos(deg, r - size - 3.2);
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 0.35, 3), new THREE.MeshStandardMaterial({ color: 0x14121c, roughness: 0.7, emissive: 0x0a0910 }));
+      pad.position.set(px + tang.x * off, 0.3, pz + tang.z * off); pad.rotation.y = -a + Math.PI / 2; scene.add(pad);
+      const rim = new THREE.LineLoop(new THREE.CircleGeometry(2.0, 3).toNonIndexed ? new THREE.BufferGeometry().setFromPoints([0, 1, 2].map((i) => new THREE.Vector3(Math.cos(i * 2.094) * 2.05, 0, Math.sin(i * 2.094) * 2.05))) : null, new THREE.LineBasicMaterial({ color: 0xece6d6 }));
+      rim.position.copy(pad.position).setY(0.5); rim.rotation.y = -a + Math.PI / 2 + Math.PI / 2; scene.add(rim);
+      slotPads.push({ id, pos: pad.position.clone() });
+    }
+    // resource token beside the planet
+    const tok = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.5, 24), new THREE.MeshStandardMaterial({ color: new THREE.Color(...res.a), roughness: 0.5, metalness: 0.2 }));
+    const [tx, tz] = pos(deg + 9, r + size * 0.6); tok.position.set(tx, 0.35, tz); scene.add(tok);
+    planets.push({ mesh, speed: 0.06 + ((c + k) % 4) * 0.02 });
+  }
+}
+
+// ---------------- sample pieces ----------------
+const pieces = new THREE.Group(); scene.add(pieces);
+const PCOL = [0x3f86ff, 0xff6f61, 0x42c57a, 0xf0c050];
+const slotOf = (id, i = 0) => slotPads.filter((s) => s.id === id)[i].pos;
+function city(color, at) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 1.6, 2.4, 3), new THREE.MeshStandardMaterial({ color, roughness: 0.5 })); m.position.copy(at).setY(1.5); pieces.add(m); }
+function port(color, at) { const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.6, 1.2, 3), new THREE.MeshStandardMaterial({ color, roughness: 0.5 })); const t = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.18, 8, 20), new THREE.MeshStandardMaterial({ color, metalness: 0.5 })); t.position.y = 1.1; t.rotation.x = Math.PI / 2; g.add(b, t); g.position.copy(at).setY(0.9); pieces.add(g); }
+function ships(color, x, z, n) { for (let i = 0; i < n; i++) { const m = new THREE.Mesh(new THREE.ConeGeometry(0.55, 2.2, 5), new THREE.MeshStandardMaterial({ color, metalness: 0.3, roughness: 0.4, emissive: color, emissiveIntensity: 0.12 })); m.rotation.x = Math.PI / 2; m.position.set(x + (i % 3) * 1.4 - 1.4, 0.9 + Math.floor(i / 3) * 0.9, z + Math.floor(i / 3) * 1.2); pieces.add(m); } }
+function imperial(x, z, n = 1) { for (let i = 0; i < n; i++) { const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.9), new THREE.MeshStandardMaterial({ color: 0xb07ce0, emissive: 0x5a2f90, emissiveIntensity: 0.5, metalness: 0.4 })); m.position.set(x + i * 2, 1.2, z); pieces.add(m); } }
+function blight(x, z, fresh) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1.1, 1), new THREE.MeshStandardMaterial({ color: 0x3d9a6a, emissive: 0x1f6a3e, emissiveIntensity: fresh ? 0.8 : 0.2, roughness: 0.9, flatShading: true })); m.position.set(x, 1.1, z); m.userData.blight = true; pieces.add(m); }
+const nearP = (id, dr = -14, dd = 0) => { const c = +id[1], k = +id.slice(-1) - 1, deg = (c - 1) * 60 - 20 + k * 20 + dd, a = ang(deg), e = edgeDist(a), r = Math.max(35, Math.min(e - 9, 34 + (e - 34) * 0.45)); return pos(deg, r + dr); };
+city(PCOL[0], slotOf('c1-p1')); ships(PCOL[0], ...nearP('c1-p1', -15, 4), 3);
+port(PCOL[0], slotOf('c1-p2')); imperial(...nearP('c1-p2', -15, 3));
+city(PCOL[1], slotOf('c2-p1')); city(0xd7dae5, slotOf('c2-p3')); ships(PCOL[1], ...nearP('c2-p1', -15, 4), 2); imperial(...nearP('c2-p3', -15, -3), 1);
+port(PCOL[2], slotOf('c3-p3', 0)); ships(PCOL[2], ...nearP('c3-p2', -15, 0), 4);
+city(PCOL[3], slotOf('c4-p1')); ships(PCOL[3], ...nearP('c4-p2', -15, 0), 3);
+blight(...nearP('c2-p2', -15), true); blight(...nearP('c4-p3', -15), false); blight(...nearP('c5-p1', -15), false); blight(...nearP('c6-p2', -15), true);
+[[0, 'imp'], [2, 'ships'], [3, 'blight'], [5, 'blight']].forEach(([i, t]) => { const [x, z] = pos(i * 60, R_OUT + 5.5); if (t === 'imp') imperial(x - 1, z, 2); else if (t === 'ships') ships(PCOL[2], x, z, 2); else blight(x, z, false); });
+
+// ---------------- hover tips ----------------
+const tip = document.getElementById('tip'), ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+const pickables = planets.map((p) => p.mesh).concat(gateHits);
+renderer.domElement.addEventListener('pointermove', (e) => {
+  mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects(pickables, false)[0];
+  if (hit) { tip.hidden = false; tip.textContent = hit.object.userData.tip; tip.style.left = e.clientX + 14 + 'px'; tip.style.top = e.clientY + 12 + 'px'; } else tip.hidden = true;
+});
+
+// ---------------- controls ----------------
+let spin = !reduceMotion;
+const press = (id, on) => document.getElementById(id).setAttribute('aria-pressed', String(on));
+press('bSpin', spin);
+document.getElementById('bTop').onclick = viewTop;
+document.getElementById('bTilt').onclick = viewTilt;
+document.getElementById('bSpin').onclick = () => { spin = !spin; press('bSpin', spin); };
+document.getElementById('bPieces').onclick = () => { pieces.visible = !pieces.visible; press('bPieces', pieces.visible); };
+
+// ---------------- loop ----------------
+const clock = new THREE.Clock();
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime, k = reduceMotion ? 0.15 : 1;
+  holeMat.uniforms.uTime.value = t * k; crownMat.uniforms.uTime.value = t;
+  lightView.copy(sun.position).normalize().transformDirection(camera.matrixWorldInverse);
+  for (const p of planets) { if (spin) p.mesh.rotation.y += p.speed * dt; p.mesh.material.uniforms.uTime.value = t; p.mesh.material.uniforms.uLight.value.copy(lightView); }
+  let flash = 0;
+  for (const b of bolts) {
+    if (b.life > 0) { b.life -= dt; b.line.material.opacity = Math.max(0, Math.min(1, b.life * 6)) * (0.55 + Math.random() * 0.45); flash = Math.max(flash, b.line.material.opacity); }
+    else { b.line.material.opacity = 0; if (!reduceMotion && Math.random() < dt * 1.8) strike(b); }
+  }
+  flashDisk.material.opacity = flash * 0.22; coreLight.intensity = 0.5 + flash * 2.5;
+  pieces.children.forEach((m) => { if (m.userData.blight) m.rotation.y += dt * 0.25; });
+  controls.update(); renderer.render(scene, camera); requestAnimationFrame(frame);
+}
+frame();
+})();
+</script>

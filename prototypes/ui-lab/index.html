@@ -1,0 +1,638 @@
+<!-- PROTOTYPE - NOT FOR PRODUCTION: movable UI layout lab for the online game screen. -->
+<meta charset="utf-8">
+<title>Tavolo di prova</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a 1600×900 game table scaled to the window; the map fills it, every panel is a movable widget over it. */
+:root {
+  --bg: #0b0e16; --panel: #141926; --panel-2: #1b2131; --line: #2a3147; --fg: #e8eaf2; --muted: #9aa1b6; --faint: #646b82;
+  --gold: #f2b544; --gold-ink: #1a1406; --gold-soft: #2a2210;
+  --p0: #4a8cff; --p1: #ff6f61; --p2: #46c27c; --p3: #f0c050;
+  --imperial: #b07ce0; --blight: #3d9a6a; --free: #d7dae5;
+  --r-material: #a07a45; --r-fuel: #d98a2b; --r-weapons: #c24b44; --r-relic: #2f9a8e; --r-psionic: #8f62d6;
+  --s-construction: #e0742c; --s-administration: #9aa0ad; --s-aggression: #d33a35; --s-mobilization: #2f97b8;
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); overflow: hidden; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+#viewport { position: fixed; inset: 0 0 52px 0; display: flex; align-items: center; justify-content: center; padding-left: max(0px, env(safe-area-inset-left, 0px)); padding-right: max(0px, env(safe-area-inset-right, 0px)); }
+#stage { position: relative; width: 1600px; height: 900px; transform-origin: center center; background: radial-gradient(ellipse at 50% 50%, #18203a 0%, #0d111c 62%, #090b12 100%); border-radius: 6px; overflow: hidden; flex: none; }
+
+/* map */
+#map { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+#map.dragging { cursor: grabbing; }
+.wedge { stroke: rgba(255,255,255,.08); stroke-width: 1; }
+.link { stroke: rgba(210,215,235,.22); stroke-width: 2; }
+.link.path { stroke: var(--gold); stroke-dasharray: 8 6; stroke-width: 2.5; opacity: .7; }
+.sys { cursor: pointer; }
+.sys:hover .body { stroke: var(--gold); stroke-width: 3; }
+.gate-body { fill: #0e121d; stroke: rgba(230,232,245,.65); stroke-width: 2; }
+.planet-body { stroke: rgba(255,255,255,.35); stroke-width: 1.5; }
+.ctrl { fill: none; stroke-width: 4; }
+.lbl { font: 600 11px var(--font-body); fill: rgba(232,234,242,.75); text-anchor: middle; pointer-events: none; }
+.cnt { font: 700 12px var(--font-display); fill: #0b0e16; text-anchor: middle; pointer-events: none; }
+.cnt-light { fill: #fff; }
+
+/* widgets */
+.w { position: absolute; background: rgba(20,25,38,.94); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 6px 22px rgba(0,0,0,.35); }
+.w.bare { background: transparent; border-color: transparent; box-shadow: none; }
+.w-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 8px 10px; }
+.w-head { display: none; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; background: var(--gold); color: var(--gold-ink); font: 700 12px var(--font-display); cursor: move; user-select: none; }
+.w-head span { flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w-head button { border: 0; background: rgba(0,0,0,.15); border-radius: 4px; width: 24px; height: 22px; font-size: 13px; }
+.w-resize { display: none; position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; background: linear-gradient(135deg, transparent 50%, var(--gold) 50%); }
+.editing .w { outline: 2px dashed rgba(242,181,68,.7); }
+.editing .w-head { display: flex; }
+.editing .w-resize { display: block; }
+.editing .w-body { pointer-events: none; }
+.editing #map { pointer-events: none; opacity: .55; }
+
+.click { cursor: pointer; border-radius: 6px; }
+.click:hover { background: rgba(242,181,68,.1); }
+.h { font: 700 13px var(--font-display); letter-spacing: .02em; margin: 0 0 6px; color: var(--fg); }
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+.row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.num { font-variant-numeric: tabular-nums; }
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px; background: var(--panel-2); font-size: 11px; font-weight: 600; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.res { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font: 700 10px var(--font-body); color: #fff; flex: none; }
+.slot { width: 30px; height: 30px; border-radius: 50%; border: 2px dashed #3a4157; display: inline-flex; align-items: center; justify-content: center; position: relative; flex: none; }
+.slot .k { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); font: 700 9px var(--font-body); color: var(--gold); background: var(--bg); padding: 0 3px; border-radius: 3px; }
+.slot.covered { border-style: solid; border-color: #2a3046; background: repeating-linear-gradient(45deg, #1a1f2d 0 4px, #222838 4px 8px); }
+.mini { width: 34px; height: 46px; border-radius: 4px; object-fit: cover; border: 1px solid var(--line); }
+.stat { display: inline-flex; gap: 3px; align-items: baseline; font-size: 12px; }
+.stat b { font: 700 14px var(--font-display); }
+
+.acard { width: 62px; height: 88px; border-radius: 7px; background: #f6f4ee; color: #222; position: relative; display: flex; flex-direction: column; padding: 4px 5px; border: 2px solid transparent; flex: none; }
+.acard .n { font: 700 22px/1 var(--font-display); }
+.acard .p { font-size: 9px; letter-spacing: 1px; }
+.acard .s { position: absolute; left: 4px; bottom: 16px; font: 700 7px var(--font-body); letter-spacing: .05em; writing-mode: vertical-rl; transform: rotate(180deg); }
+.acard .a { position: absolute; right: 4px; bottom: 3px; font: 700 8px var(--font-body); color: #555; }
+.acard.sel { border-color: var(--gold); transform: translateY(-8px); box-shadow: 0 8px 16px rgba(0,0,0,.4); }
+.acard.dim { opacity: .45; }
+.acard.event { background: #fff; color: #111; }
+.acard:hover { transform: translateY(-4px); }
+
+.btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 7px; padding: 6px 10px; font-weight: 600; font-size: 12px; }
+.btn.primary { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); }
+.btn:hover { border-color: var(--gold); }
+
+/* modal */
+#modal { position: absolute; inset: 0; background: rgba(5,7,12,.72); display: flex; align-items: center; justify-content: center; z-index: 50; }
+#modal .box { width: min(1040px, 92%); max-height: 86%; overflow: auto; background: #151a27; border: 1px solid #4a4330; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+#modal .bh { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+#modal .bh h2 { margin: 0; font: 700 20px var(--font-display); letter-spacing: .04em; flex: 1 1 auto; text-wrap: balance; }
+#modal .bb { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; font-size: 13px; line-height: 1.5; }
+.grid { display: grid; gap: 12px; }
+
+/* lab bar */
+#lab { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(10px, env(safe-area-inset-bottom, 0px)); z-index: 100; display: flex; gap: 6px; align-items: center; padding: 6px 8px; border-radius: 12px; background: rgba(12,14,22,.92); border: 1px solid #3a3424; box-shadow: 0 8px 26px rgba(0,0,0,.5); font-size: 12px; flex-wrap: nowrap; max-width: calc(100% - 32px); overflow-x: auto; }
+#lab .btn { padding: 5px 9px; }
+#lab .btn[aria-pressed="true"] { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); }
+#lab select, #lab input { background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font: 12px var(--font-body); }
+#lab .msg { color: var(--muted); min-width: 0; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#hiddenList { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 101; background: #151a27; border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; min-width: 260px; }
+@media (prefers-reduced-motion: no-preference) { .acard { transition: transform .12s; } }
+</style>
+
+<div id="viewport"><div id="stage">
+  <svg id="map" viewBox="0 0 1600 900" role="group" aria-label="Mappa: clicca un sistema per i dettagli, trascina per spostarla, rotella per lo zoom"></svg>
+  <div id="widgets"></div>
+  <div id="modal" hidden></div>
+</div></div>
+
+<div id="lab" role="toolbar" aria-label="Laboratorio interfaccia">
+  <b style="font-family: var(--font-display); color: var(--gold);">Laboratorio</b>
+  <button type="button" class="btn" id="btnEdit" aria-pressed="false">Modifica layout</button>
+  <button type="button" class="btn" id="btnHidden">Elementi nascosti (0)</button>
+  <input id="layoutName" type="text" value="mio layout" size="10" aria-label="Nome del layout">
+  <button type="button" class="btn primary" id="btnSave">Salva</button>
+  <select id="layoutPick" aria-label="Layout salvati"><option value="">Layout salvati…</option></select>
+  <button type="button" class="btn" id="btnReset">Ripristina</button>
+  <button type="button" class="btn" id="btnExport">Copia JSON</button>
+  <span class="msg" id="labMsg" aria-live="polite"></span>
+</div>
+<div id="hiddenList" hidden></div>
+
+<script>
+// ---------------- sample game state (campaign, Act I, chapter 2) ----------------
+const PC = ['var(--p0)', 'var(--p1)', 'var(--p2)', 'var(--p3)'];
+const RES = { material: ['Material', 'var(--r-material)', 'M'], fuel: ['Fuel', 'var(--r-fuel)', 'F'], weapons: ['Weapons', 'var(--r-weapons)', 'W'], relic: ['Relics', 'var(--r-relic)', 'R'], psionic: ['Psionics', 'var(--r-psionic)', 'P'] };
+const SUIT = { construction: ['COSTRUZIONE', 'var(--s-construction)', 'Costruisci o Ripara'], administration: ['AMMINISTRAZIONE', 'var(--s-administration)', 'Tassa, Ripara o Influenza'], aggression: ['AGGRESSIONE', 'var(--s-aggression)', 'Battaglia, Muovi o Secure'], mobilization: ['MOBILITAZIONE', 'var(--s-mobilization)', 'Muovi o Influenza'] };
+const AMB = { 2: 'Tycoon', 3: 'Tyrant', 4: 'Warlord', 5: 'Keeper', 6: 'Empath' };
+const G = {
+  act: 'I', chapter: 2, round: 3,
+  supply: { material: 1, fuel: 4, weapons: 2, relic: 4, psionic: 3 },
+  prompt: 'Tocca a te: scegli un\'azione', sub: 'Hai superato con Costruzione 6: 2 azioni. Prelude aperto.',
+  lead: { n: 4, suit: 'construction', pips: 3, declared: 'Warlord' }, seizedBy: null,
+  players: [
+    { name: 'Tu', title: 'Regent', fate: 'fate-01', fateLabel: 'Fate A · 01', power: 12, objective: { at: 11, start: 17, text: 'Vinci ambizioni mentre sei First Regent' },
+      slots: ['material', 'relic', null, null, 'c', 'c'], keys: [3, 1, 1, 2, 1, 3], cityBonus: [0, 0], outrage: ['fuel'],
+      captives: 0, trophies: 1, favors: [1, 2], cards: ['court-cc-01', 'court-cc-05'], hand: 6, agents: 7, ships: 9, starports: 4, cities: 2, flagship: false },
+    { name: 'Bea', title: 'Regent', first: true, fate: 'fate-03', fateLabel: 'Fate A · 03', power: 14, objective: { at: 8, start: 15, text: 'Obiettivo segreto fino alla rivelazione' },
+      slots: ['weapons', 'fuel', 'fuel', null, null, 'c'], keys: [3, 1, 1, 2, 1, 3], cityBonus: [2, 0], outrage: [],
+      captives: 1, trophies: 3, favors: [0], cards: ['court-cc-04', 'court-cc-09'], hand: 5, agents: 8, ships: 6, starports: 4, cities: 1, flagship: false },
+    { name: 'Ciro', title: 'Outlaw', fate: 'fate-06', fateLabel: 'Fate A · 06', power: 9, objective: { at: 6, start: 12, text: 'Obiettivo segreto fino alla rivelazione' },
+      slots: ['material', 'relic', null, 'c', 'c', 'c'], keys: [3, 1, 1, 2, 1, 3], cityBonus: [0, 0], outrage: ['fuel'],
+      captives: 0, trophies: 1, favors: [], cards: ['court-cc-03'], hand: 6, agents: 10, ships: 11, starports: 4, cities: 3, flagship: false },
+    { name: 'Dora', title: 'Regent', fate: 'fate-07', fateLabel: 'Fate A · 07', power: 11, objective: { at: 9, start: 13, text: 'Obiettivo segreto fino alla rivelazione' },
+      slots: ['psionic', 'psionic', 'fuel', null, 'c', 'c'], keys: [3, 1, 1, 2, 1, 3], cityBonus: [0, 0], outrage: [],
+      captives: 2, trophies: 0, favors: [], cards: ['court-cc-02'], hand: 5, agents: 6, ships: 9, starports: 5, cities: 5, flagship: true },
+  ],
+  hand: [
+    { n: 6, suit: 'construction', pips: 2, sel: true }, { n: 2, suit: 'administration', pips: 4 }, { n: 5, suit: 'aggression', pips: 2 },
+    { n: 3, suit: 'mobilization', pips: 3 }, { event: true }, { n: 4, suit: 'aggression', pips: 2 },
+  ],
+  played: { n: 6, suit: 'construction', pips: 2, mode: 'Superata', actions: ['Costruisci', 'Ripara', 'Nuova azione (Costruisci) — court-cc-01'], left: 2 },
+  ambitions: [
+    { n: 2, name: 'Tycoon', markers: ['3/2'], counts: [2, 3, 1, 1] },
+    { n: 3, name: 'Tyrant', markers: [], counts: [0, 1, 0, 2] },
+    { n: 4, name: 'Warlord', markers: ['5/3'], counts: [1, 3, 1, 0] },
+    { n: 5, name: 'Keeper', markers: [], counts: [1, 1, 1, 0] },
+    { n: 6, name: 'Empath', markers: [], counts: [0, 0, 0, 2] },
+  ],
+  available: ['2/0'],
+  court: [
+    { id: 'council-in-session', label: 'Imperial Council · In Session', kind: 'Council', agents: [1, 2, 0, 0] },
+    { id: 'court-cc-02', label: 'court-cc-02', kind: 'Guild · Material · 2 chiavi', agents: [2, 0, 1, 0] },
+    { id: 'court-cc-07', label: 'court-cc-07', kind: 'Guild · Psionics · 2 chiavi', agents: [0, 0, 0, 0], attached: 'lore-05' },
+    { id: 'court-cc-11', label: 'court-cc-11', kind: 'Vox · Crisi', agents: [0, 0, 0, 1] },
+    { id: 'court-cc-03', label: 'court-cc-03', kind: 'Guild · Fuel · 2 chiavi', agents: [0, 1, 0, 0] },
+  ],
+  courtDeck: 6, courtDiscard: 2,
+  trust: ['relic', 'psionic'],
+  booklet: [{ id: 'edict-03', label: 'Policy in vigore: Guerra', text: 'Richiesta: un trofeo o un prigioniero da ogni Regent. Azione: 1 Weapons a ogni Regent.' }],
+  log: ['Dora guida Costruzione 4 e dichiara Warlord', 'Dora costruisce un porto (danneggiato: sistema dell\'Impero)', 'Ciro pivot Aggressione 3: muove 3 navi', 'Bea gioca un Evento: 3 azioni di Costruzione', 'Tu superi con Costruzione 6'],
+  roundPlays: [{ p: 3, what: 'guida Costr. 4 (0)' }, { p: 2, what: 'pivot Aggr. 3' }, { p: 1, what: 'Evento' }, { p: 0, what: 'supera Costr. 6' }],
+};
+
+// ---------------- map data (structure only) ----------------
+const CLUSTERS = 6;
+const PLANET_RES = { 1: ['weapons', 'fuel', 'material'], 2: ['psionic', 'weapons', 'relic'], 3: ['material', 'fuel', 'weapons'], 4: ['relic', 'fuel', 'material'], 5: ['weapons', 'relic', 'psionic'], 6: ['material', 'fuel', 'psionic'] };
+const SLOTS = { 1: [2, 1, 2], 2: [1, 1, 2], 3: [1, 1, 2], 4: [2, 2, 1], 5: [1, 1, 2], 6: [1, 2, 1] };
+const ID_SYM = ['▲', '☾', '⬢'];
+// pieces per system: ships [player, fresh, damaged], imperial, blight ('B' fresh/'b' damaged), buildings [owner|'free', 'city'|'port', damaged]
+const PIECES = {
+  'c1-gate': { imperial: 1, ships: [[0, 2, 0]] }, 'c1-p1': { ships: [[0, 3, 0]], bld: [[0, 'city', 0]] }, 'c1-p2': { imperial: 1, ships: [[0, 1, 0]], bld: [[0, 'port', 0]] }, 'c1-p3': { blight: 'b' },
+  'c2-gate': { imperial: 2, ships: [[1, 2, 0]] }, 'c2-p1': { imperial: 1, ships: [[1, 3, 0]], bld: [[1, 'city', 0], ['free', 'city', 0]] }, 'c2-p2': { blight: 'B' }, 'c2-p3': { imperial: 1, bld: [[1, 'port', 0]] },
+  'c3-gate': { ships: [[2, 4, 1]] }, 'c3-p1': { ships: [[2, 2, 0]], bld: [[2, 'city', 0]] }, 'c3-p2': { blight: 'b', bld: [['free', 'city', 0]] }, 'c3-p3': { ships: [[2, 1, 0]], bld: [[2, 'port', 0]] },
+  'c4-gate': { blight: 'b' }, 'c4-p1': { ships: [[3, 2, 0], [0, 1, 0]], bld: [[3, 'city', 0]] }, 'c4-p2': { flagship: 3, ships: [[3, 3, 0]] }, 'c4-p3': { blight: 'B' },
+  'c5-gate': { ships: [[3, 2, 0]] }, 'c5-p1': { blight: 'b', bld: [['free', 'port', 0]] }, 'c5-p2': { ships: [[1, 1, 1]] }, 'c5-p3': { blight: 'b' },
+  'c6-gate': { blight: 'b' }, 'c6-p1': { ships: [[0, 2, 0]] }, 'c6-p2': { blight: 'b', bld: [['free', 'city', 0]] }, 'c6-p3': { ships: [[2, 1, 0]] },
+};
+const CONTROL = { 'c1-gate': 'imperial', 'c1-p2': 'imperial', 'c2-gate': 'imperial', 'c2-p1': 'imperial', 'c2-p3': 'imperial', 'c3-gate': 2, 'c3-p1': 2, 'c3-p3': 2, 'c4-p1': 3, 'c4-p2': 3, 'c5-gate': 3, 'c1-p1': 0, 'c6-p1': 0, 'c6-p3': 2 };
+
+// ---------------- helpers ----------------
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const resDot = (r, size = 22) => `<span class="res" title="${RES[r][0]}" style="background:${RES[r][1]};width:${size}px;height:${size}px">${RES[r][2]}</span>`;
+const pColor = (i) => PC[i];
+const pName = (i) => G.players[i].name;
+const img = (id) => `img/${id}.png`;
+
+// ---------------- map drawing ----------------
+const NS = 'http://www.w3.org/2000/svg';
+const CX = 800, CY = 450;
+const sysPos = {};
+function polar(r, deg) { const a = (deg * Math.PI) / 180; return [CX + r * Math.cos(a), CY + r * Math.sin(a)]; }
+function el(tag, attrs, parent, text) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
+function drawMap() {
+  const svg = $('#map'); svg.textContent = '';
+  const g = el('g', { id: 'mapRoot' }, svg);
+  for (let c = 1; c <= CLUSTERS; c++) {
+    const base = -90 + (c - 1) * 60;
+    const [x1, y1] = polar(1200, base - 30), [x2, y2] = polar(1200, base + 30), [i1x, i1y] = polar(120, base - 30), [i2x, i2y] = polar(120, base + 30);
+    el('path', { d: `M${i1x} ${i1y} L${x1} ${y1} L${x2} ${y2} L${i2x} ${i2y} Z`, class: 'wedge', fill: c % 2 ? 'rgba(80,60,120,.10)' : 'rgba(40,70,120,.10)' }, g);
+    sysPos[`c${c}-gate`] = polar(175, base);
+    [-17, 0, 17].forEach((d, k) => { sysPos[`c${c}-p${k + 1}`] = polar(c % 2 ? 340 : 350, base + d); });
+  }
+  el('circle', { cx: CX, cy: CY, r: 118, fill: '#0b0e18', stroke: 'rgba(255,255,255,.12)' }, g);
+  el('text', { x: CX, y: CY + 6, class: 'lbl', style: 'font: 700 20px var(--font-display); fill: rgba(232,234,242,.25)' }, g, 'RIFLETTI');
+  const links = el('g', {}, g);
+  const line = (a, b, cls = 'link') => { const [x1, y1] = sysPos[a], [x2, y2] = sysPos[b]; el('line', { x1, y1, x2, y2, class: cls }, links); };
+  for (let c = 1; c <= CLUSTERS; c++) {
+    for (let k = 1; k <= 3; k++) line(`c${c}-gate`, `c${c}-p${k}`);
+    line(`c${c}-p1`, `c${c}-p2`); line(`c${c}-p2`, `c${c}-p3`);
+    line(`c${c}-gate`, `c${c % 6 + 1}-gate`);
+  }
+  line('c2-p3', 'c3-p1'); line('c5-p3', 'c6-p1');
+  for (const id of Object.keys(sysPos)) drawSystem(g, id);
+  applyView();
+}
+function drawSystem(g, id) {
+  const [x, y] = sysPos[id]; const gate = id.endsWith('gate'); const c = +id[1]; const k = gate ? 0 : +id.slice(-1);
+  const s = el('g', { class: 'sys', tabindex: 0, role: 'button', 'aria-label': `Sistema ${id}` }, g);
+  const ctrl = CONTROL[id];
+  if (ctrl !== undefined) el('circle', { cx: x, cy: y, r: gate ? 33 : 50, class: 'ctrl', stroke: ctrl === 'imperial' ? 'var(--imperial)' : pColor(ctrl), opacity: .9 }, s);
+  if (gate) {
+    el('circle', { cx: x, cy: y, r: 27, class: 'body gate-body' }, s);
+    el('text', { x, y: y + 5, class: 'lbl', style: 'font: 700 15px var(--font-display)' }, s, String(c));
+  } else {
+    const r = PLANET_RES[c][k - 1];
+    el('circle', { cx: x, cy: y, r: 44, class: 'body planet-body', fill: RES[r][1], 'fill-opacity': .35 }, s);
+    el('text', { x, y: y - 30, class: 'lbl' }, s, `${ID_SYM[k - 1]} ${RES[r][0]} · ${SLOTS[c][k - 1]}`);
+  }
+  const P = PIECES[id] || {};
+  let items = [];
+  (P.bld || []).forEach((b) => items.push({ t: 'bld', b }));
+  if (P.imperial) items.push({ t: 'imp', n: P.imperial });
+  if (P.flagship !== undefined) items.push({ t: 'flag', p: P.flagship });
+  (P.ships || []).forEach((sh) => items.push({ t: 'ship', sh }));
+  if (P.blight) items.push({ t: 'blight', v: P.blight });
+  const per = 3, sp = 22;
+  items.forEach((it, i) => {
+    const row = Math.floor(i / per), col = i % per, n = Math.min(per, items.length - row * per);
+    const ix = x + (col - (n - 1) / 2) * sp, iy = y + (gate ? -2 : 2) + row * 22 - (items.length > per ? 10 : 0);
+    if (it.t === 'bld') {
+      const [o, type, dmg] = it.b; const fill = o === 'free' ? 'var(--free)' : pColor(o);
+      el('path', { d: `M${ix} ${iy - 10} L${ix + 10} ${iy + 8} L${ix - 10} ${iy + 8} Z`, fill, stroke: '#0b0e16', 'stroke-width': 1.5, opacity: dmg ? .5 : 1 }, s);
+      el('text', { x: ix, y: iy + 6, class: 'cnt', style: 'font-size:9px' }, s, type === 'city' ? 'C' : 'S');
+    } else if (it.t === 'imp') {
+      el('rect', { x: ix - 10, y: iy - 9, width: 20, height: 18, rx: 4, fill: 'var(--imperial)', stroke: '#0b0e16' }, s);
+      el('text', { x: ix, y: iy + 4, class: 'cnt' }, s, String(it.n));
+    } else if (it.t === 'flag') {
+      el('path', { d: `M${ix} ${iy - 12} L${ix + 9} ${iy + 9} L${ix - 9} ${iy + 9} Z`, fill: pColor(it.p), stroke: '#fff', 'stroke-width': 1.5 }, s);
+      el('text', { x: ix, y: iy + 6, class: 'cnt cnt-light', style: 'font-size:8px' }, s, 'F');
+    } else if (it.t === 'ship') {
+      const [p, f, d] = it.sh;
+      el('circle', { cx: ix, cy: iy, r: 10, fill: pColor(p), stroke: '#0b0e16', 'stroke-width': 1.5 }, s);
+      el('text', { x: ix, y: iy + 4, class: 'cnt' }, s, String(f + d));
+      if (d) el('circle', { cx: ix + 8, cy: iy - 8, r: 5, fill: '#0b0e16', stroke: pColor(p) }, s);
+    } else {
+      const fresh = it.v === 'B';
+      el('circle', { cx: ix, cy: iy, r: 10, fill: 'var(--blight)', stroke: fresh ? '#d9f5e4' : '#0b0e16', 'stroke-width': fresh ? 2 : 1.5, opacity: fresh ? 1 : .7 }, s);
+      el('text', { x: ix, y: iy + 4, class: 'cnt cnt-light' }, s, fresh ? '3' : '1');
+    }
+  });
+  s.addEventListener('click', (e) => { if (!editing && !moved) openSystem(id); });
+  s.addEventListener('keydown', (e) => { if (e.key === 'Enter') openSystem(id); });
+}
+
+// pan & zoom
+let view = { x: 0, y: 0, w: 1600, h: 900 }, moved = false;
+function applyView() { $('#map').setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }
+(function panZoom() {
+  const svg = $('#map'); let start = null;
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const r = svg.getBoundingClientRect(); const fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+    const k = e.deltaY > 0 ? 1.12 : 1 / 1.12; const nw = Math.min(1600, Math.max(420, view.w * k)), nh = nw * 900 / 1600;
+    view.x += (view.w - nw) * fx; view.y += (view.h - nh) * fy; view.w = nw; view.h = nh; applyView();
+  }, { passive: false });
+  svg.addEventListener('pointerdown', (e) => { start = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }; moved = false; });
+  addEventListener('pointermove', (e) => {
+    if (!start) return; const r = svg.getBoundingClientRect(); const dx = (e.clientX - start.x) * view.w / r.width, dy = (e.clientY - start.y) * view.h / r.height;
+    if (Math.abs(dx) + Math.abs(dy) > 4) { moved = true; svg.classList.add('dragging'); }
+    view.x = start.vx - dx; view.y = start.vy - dy; applyView();
+  });
+  addEventListener('pointerup', () => { start = null; svg.classList.remove('dragging'); setTimeout(() => (moved = false), 0); });
+})();
+
+// ---------------- widgets ----------------
+const WIDGETS = {
+  supply: { title: 'Capitolo e riserva', bare: true, r: [10, 10, 360, 52], render: wSupply },
+  prompt: { title: 'Cosa fare adesso', bare: true, r: [520, 10, 560, 70], render: wPrompt },
+  round: { title: 'Round in corso', r: [380, 10, 130, 150], render: wRound },
+  topbtns: { title: 'Menu', bare: true, r: [1340, 10, 250, 46], render: wTop },
+  'rival-1': { title: 'Avversario 1', r: [10, 72, 300, 178], render: () => wRival(1) },
+  'rival-2': { title: 'Avversario 2', r: [10, 258, 300, 178], render: () => wRival(2) },
+  'rival-3': { title: 'Avversario 3', r: [10, 444, 300, 178], render: () => wRival(3) },
+  fate: { title: 'Il tuo Fate', r: [10, 630, 300, 66], render: wFate },
+  me: { title: 'La tua plancia', r: [10, 704, 440, 186], render: wMe },
+  played: { title: 'Carta giocata e azioni', r: [460, 734, 420, 156], render: wPlayed },
+  hand: { title: 'La tua mano', bare: true, r: [890, 770, 470, 120], render: wHand },
+  confirm: { title: 'Annulla / Conferma', bare: true, r: [1480, 830, 110, 60], render: wConfirm },
+  ambitions: { title: 'Ambizioni', r: [1340, 62, 250, 350], render: wAmbitions },
+  court: { title: 'Corte', r: [1340, 420, 250, 400], render: wCourt },
+  trust: { title: 'First Regent e Trust', r: [1170, 62, 160, 110], render: wTrust },
+  booklet: { title: 'Regole in vigore', r: [1170, 180, 160, 92], render: wBooklet },
+};
+let layout = defaultLayout();
+let editing = false;
+function defaultLayout() { const l = {}; for (const id in WIDGETS) { const [x, y, w, h] = WIDGETS[id].r; l[id] = { x, y, w, h, hidden: false }; } return l; }
+
+function renderWidgets() {
+  const host = $('#widgets'); host.textContent = '';
+  for (const id in WIDGETS) {
+    const W = WIDGETS[id], L = layout[id] || (layout[id] = { ...defaultLayout()[id] });
+    const d = document.createElement('section');
+    d.className = 'w' + (W.bare ? ' bare' : ''); d.dataset.id = id; d.hidden = !!L.hidden;
+    d.setAttribute('aria-label', W.title);
+    Object.assign(d.style, { left: L.x + 'px', top: L.y + 'px', width: L.w + 'px', height: L.h + 'px' });
+    d.innerHTML = `<div class="w-head"><span>${esc(W.title)}</span><button type="button" data-hide aria-label="Nascondi ${esc(W.title)}">✕</button></div><div class="w-body">${W.render()}</div><div class="w-resize" aria-hidden="true"></div>`;
+    host.appendChild(d);
+  }
+  bindClicks(); updateHiddenCount();
+}
+
+// --- widget contents ---
+function wSupply() {
+  return `<div class="row" style="gap:10px;height:100%">
+    <div class="click" data-open="chapter" title="Atto e capitolo" style="width:46px;height:46px;border-radius:50%;border:2px solid var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-display);line-height:1"><b style="font-size:18px">${G.chapter}</b><span style="font-size:9px;color:var(--gold)">ATTO ${G.act}</span></div>
+    <div class="row click" data-open="supply" title="Riserva generale" style="padding:6px 10px;border:1px solid #4a4330;border-radius:8px;background:rgba(20,25,38,.9);gap:10px">
+      ${Object.entries(G.supply).map(([r, n]) => `<span class="row" style="gap:3px">${resDot(r, 20)}<b class="num" style="font-family:var(--font-display)">${n}</b></span>`).join('')}
+    </div></div>`;
+}
+function wPrompt() {
+  return `<div style="text-align:center;display:flex;flex-direction:column;gap:2px;padding-top:4px">
+    <div style="font:700 21px var(--font-display);color:var(--gold);letter-spacing:.02em">${esc(G.prompt)}</div>
+    <div class="muted" style="font-size:12px">${esc(G.sub)}</div></div>`;
+}
+function wRound() {
+  return `<div class="h">Round ${G.round}</div><div class="click" data-open="round" style="display:flex;flex-direction:column;gap:3px;font-size:11px">
+    ${G.roundPlays.map((r) => `<span class="row" style="gap:5px"><span class="dot" style="background:${pColor(r.p)}"></span>${esc(r.what)}</span>`).join('')}
+    <span class="faint">Seize: ${G.seizedBy === null ? '—' : pName(G.seizedBy)}</span></div>`;
+}
+function wTop() {
+  return `<div class="row" style="justify-content:flex-end;gap:6px">
+    <button type="button" class="btn" data-open="log">Registro</button>
+    <button type="button" class="btn" data-open="booklet">Regole</button>
+    <button type="button" class="btn" data-open="settings" aria-label="Impostazioni">⚙</button></div>`;
+}
+function slotsHtml(p, size = 26) {
+  return p.slots.map((s, i) => {
+    const k = `<span class="k">${'⚷'.repeat(p.keys[i])}</span>`;
+    if (s === 'c') return `<span class="slot covered" style="width:${size}px;height:${size}px" title="Coperto da una città non costruita">${k}</span>`;
+    if (!s) return `<span class="slot" style="width:${size}px;height:${size}px">${k}</span>`;
+    return `<span class="slot" style="border:0;width:${size}px;height:${size}px">${k}${resDot(s, size)}</span>`;
+  }).join('');
+}
+function titleChip(p) {
+  const out = p.title === 'Outlaw';
+  return `<span class="pill" style="background:${out ? '#3a1d1b' : '#2a2140'};color:${out ? '#ff9b8f' : '#d3b2ff'}">${p.first ? 'First Regent' : p.title}</span>`;
+}
+function wRival(i) {
+  const p = G.players[i];
+  return `<div class="click" data-open="player:${i}" style="display:flex;flex-direction:column;gap:6px;height:100%">
+    <div class="row" style="gap:8px;align-items:flex-start">
+      <img src="img/${p.fate}.jpg" alt="Fate di ${esc(p.name)}" style="width:40px;height:52px;object-fit:cover;object-position:top;border-radius:5px;border:2px solid ${pColor(i)}">
+      <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:3px;min-width:0">
+        <div class="row" style="justify-content:space-between"><b style="color:${pColor(i)};font-size:14px">${esc(p.name)}</b>
+        <span style="font:700 20px var(--font-display)" class="num">${p.power}</span></div>
+        <div class="row">${titleChip(p)}${p.flagship ? '<span class="pill">Flagship</span>' : ''}${p.outrage.length ? `<span class="pill" style="color:#ff9b8f">Outrage ${p.outrage.map((r) => RES[r][2]).join('')}</span>` : ''}</div>
+      </div>
+    </div>
+    <div class="row" style="gap:7px">${slotsHtml(p, 22)}</div>
+    <div class="row" style="justify-content:space-between;font-size:12px">
+      <span class="stat" title="Prigionieri">⛓<b>${p.captives}</b></span><span class="stat" title="Trofei">✦<b>${p.trophies}</b></span><span class="stat" title="Favori">♦<b>${p.favors.length}</b></span>
+      <span class="stat" title="Carte in mano">🂠<b>${p.hand}</b></span><span class="stat" title="Navi">⛵<b>${p.ships}</b></span><span class="stat" title="Agenti">♟<b>${p.agents}</b></span>
+    </div>
+    <div class="row" style="gap:4px">${p.cards.map((c) => `<img class="mini" src="${img(c)}" alt="${c}">`).join('')}</div>
+  </div>`;
+}
+function wFate() {
+  const p = G.players[0], o = p.objective, pct = Math.round(((o.start - o.at) / o.start) * 100);
+  return `<div class="click" data-open="fate" style="display:flex;gap:8px;align-items:center;height:100%">
+    <img src="img/${p.fate}.jpg" alt="Il tuo Fate" style="width:34px;height:46px;object-fit:cover;object-position:top;border-radius:4px">
+    <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:4px;min-width:0">
+      <div class="row" style="justify-content:space-between;font-size:12px"><b>${esc(p.fateLabel)}</b><span class="muted num">obiettivo ${o.at} → 0</span></div>
+      <div style="height:7px;border-radius:4px;background:#262b3b"><div style="width:${pct}%;height:7px;border-radius:4px;background:var(--gold)"></div></div>
+    </div></div>`;
+}
+function wMe() {
+  const p = G.players[0];
+  return `<div style="display:flex;flex-direction:column;gap:8px;height:100%">
+    <div class="row" style="justify-content:space-between">
+      <div class="row"><b style="color:${pColor(0)};font-size:15px">${esc(p.name)}</b>${titleChip(p)}${p.outrage.length ? `<span class="pill click" data-open="outrage" style="color:#ff9b8f">Outrage: ${p.outrage.map((r) => RES[r][0]).join(', ')}</span>` : ''}</div>
+      <span style="font:700 24px var(--font-display)" class="num">${p.power}</span>
+    </div>
+    <div class="row click" data-open="board" style="gap:9px;padding:8px 4px 2px">${slotsHtml(p, 32)}
+      <span class="faint" style="font-size:11px">+2 / +3 coperti</span></div>
+    <div class="row" style="justify-content:space-between;font-size:12px">
+      <span class="stat click" data-open="captives" title="Prigionieri">⛓ Prig. <b>${p.captives}</b></span><span class="stat click" data-open="trophies" title="Trofei">✦ Trofei <b>${p.trophies}</b></span><span class="stat click" data-open="favors" title="Favori">♦ Favori <b>${p.favors.length}</b></span>
+      <span class="stat">⛵ <b>${p.ships}</b></span><span class="stat">♟ <b>${p.agents}</b></span><span class="stat">S <b>${p.starports}</b></span><span class="stat">C <b>${p.cities}</b></span>
+    </div>
+    <div class="row" style="gap:5px">${p.cards.map((c) => `<img class="mini click" data-open="card:${c}" src="${img(c)}" alt="${c}">`).join('')}</div>
+  </div>`;
+}
+function acard(c, extra = '') {
+  if (c.event) return `<div class="acard event ${extra}" title="Evento"><span class="n">!</span><span class="p">EVENTO</span><span class="a">come la testa</span></div>`;
+  const s = SUIT[c.suit];
+  return `<div class="acard ${extra}" style="color:${s[1]}" title="${s[0]} ${c.n}"><span class="n">${c.n}</span><span class="p">${'◆'.repeat(c.pips)}</span><span class="s">${s[0]}</span><span class="a">${AMB[c.n] || (c.n === 7 ? 'qualsiasi' : '')}</span></div>`;
+}
+function wPlayed() {
+  const c = G.played;
+  return `<div style="display:flex;gap:12px;height:100%;align-items:center">
+    ${acard(c, 'sel')}
+    <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:6px;min-width:0">
+      <div class="row" style="justify-content:space-between;font-size:12px"><b>${c.mode} · ${c.left} azioni</b><span class="muted">${SUIT[c.suit][2]}</span></div>
+      <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">
+        ${c.actions.map((a, i) => `<button type="button" class="btn" data-open="action:${i}" style="text-align:left;font-size:12px">${esc(a)}</button>`).join('')}
+        <button type="button" class="btn" data-open="prelude" style="font-size:12px;border-color:#4a4330">Spendi una risorsa</button>
+      </div></div></div>`;
+}
+function wHand() {
+  return `<div class="row" style="gap:-10px;align-items:flex-end;height:100%;justify-content:center">${G.hand.map((c, i) => `<div class="click" data-open="hand:${i}" style="margin-left:${i ? -12 : 0}px">${acard(c, c.sel ? 'sel' : '')}</div>`).join('')}</div>`;
+}
+function wConfirm() {
+  return `<div class="row" style="justify-content:flex-end;height:100%;gap:8px">
+    <button type="button" class="btn" data-open="undo" aria-label="Annulla l'ultima mossa" style="width:44px;height:44px;font-size:18px">↶</button>
+    <button type="button" class="btn primary" data-open="confirm" aria-label="Conferma il turno" style="width:44px;height:44px;font-size:18px">✓</button></div>`;
+}
+function wAmbitions() {
+  return `<div class="h">Ambizioni</div>
+    <div class="row" style="margin-bottom:6px;gap:5px"><span class="faint" style="font-size:11px">Liberi:</span>${G.available.map((m) => `<span class="pill" style="background:#1e3b4a;color:#9fe0f0">${m}</span>`).join('')}</div>
+    <div style="display:flex;flex-direction:column;gap:5px">${G.ambitions.map((a, ai) => {
+      const order = a.counts.map((v, i) => [v, i]).sort((x, y) => y[0] - x[0]);
+      return `<div class="click" data-open="amb:${ai}" style="padding:6px;border-radius:7px;background:${a.markers.length ? 'var(--gold-soft)' : 'var(--panel-2)'};display:flex;flex-direction:column;gap:4px">
+        <div class="row" style="justify-content:space-between"><b style="font-size:12px"><span class="faint">${a.n}</span> ${a.name}</b><span class="row" style="gap:3px">${a.markers.map((m) => `<span class="pill" style="background:#1e3b4a;color:#9fe0f0">${m}</span>`).join('') || '<span class="faint" style="font-size:11px">—</span>'}</span></div>
+        <div class="row" style="gap:8px;font-size:11px">${order.map(([v, i]) => `<span class="row num" style="gap:3px"><span class="dot" style="background:${pColor(i)}"></span>${v}</span>`).join('')}</div></div>`;
+    }).join('')}</div>`;
+}
+function wCourt() {
+  return `<div class="row" style="justify-content:space-between"><div class="h">Corte</div><span class="faint" style="font-size:11px">mazzo ${G.courtDeck} · scarti ${G.courtDiscard}</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px">${G.court.map((c, i) => `<div class="click row" data-open="court:${i}" style="gap:8px;align-items:center;padding:3px">
+      <img src="${img(c.id)}" alt="${esc(c.label)}" style="width:44px;height:60px;object-fit:cover;object-position:top;border-radius:5px;border:1px solid var(--line)">
+      <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px"><b style="font-size:11px">${esc(c.label)}</b><span class="faint" style="font-size:10px">${esc(c.kind)}${c.attached ? ' · + carta attaccata' : ''}</span>
+      <span class="row" style="gap:3px">${c.agents.map((n, p) => (n ? `<span class="pill" style="background:${pColor(p)};color:#0b0e16">♟${n}</span>` : '')).join('') || '<span class="faint" style="font-size:10px">nessun agente</span>'}</span></div></div>`).join('')}</div>`;
+}
+function wTrust() {
+  const fr = G.players.findIndex((p) => p.first);
+  return `<div class="click" data-open="trust" style="display:flex;flex-direction:column;gap:6px;height:100%">
+    <div class="h" style="margin:0">First Regent</div>
+    <span class="row" style="gap:5px"><span class="dot" style="background:${pColor(fr)}"></span><b style="font-size:13px">${esc(pName(fr))}</b></span>
+    <span class="faint" style="font-size:11px">Imperial Trust (congelate)</span><span class="row">${G.trust.map((r) => resDot(r, 20)).join('')}</span></div>`;
+}
+function wBooklet() {
+  return `<div class="click" data-open="booklet" style="display:flex;flex-direction:column;gap:4px;height:100%">
+    <div class="h" style="margin:0">Regole in vigore</div>${G.booklet.map((b) => `<span style="font-size:11px">${esc(b.label)}</span>`).join('')}<span class="faint" style="font-size:10px">clicca per il libretto</span></div>`;
+}
+
+// ---------------- modal windows ----------------
+function openModal(title, body, side = '') {
+  const m = $('#modal'); m.hidden = false;
+  m.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="bh"><h2>${esc(title)}</h2>${side}<button type="button" class="btn" id="mClose">Chiudi</button></div><div class="bb">${body}</div></div>`;
+  $('#mClose').focus();
+  $('#mClose').onclick = closeModal;
+  m.onclick = (e) => { if (e.target === m) closeModal(); };
+  m.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => open(b.dataset.open)));
+}
+function closeModal() { $('#modal').hidden = true; $('#modal').innerHTML = ''; }
+addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+function playerDetail(i) {
+  const p = G.players[i];
+  return `<div class="grid" style="grid-template-columns:200px minmax(0,1fr)">
+    <img src="img/${p.fate}.jpg" alt="Fate di ${esc(p.name)}" style="width:200px;border-radius:10px">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="row">${titleChip(p)}<span class="pill">${esc(p.fateLabel)}</span><span class="pill">Potere ${p.power}</span>${p.flagship ? '<span class="pill">Flagship</span>' : ''}</div>
+      <div><div class="h">Risorse negli slot (costo raid sopra)</div><div class="row" style="gap:10px;padding-top:8px">${slotsHtml(p, 34)}</div></div>
+      <div class="grid" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+        <div><div class="faint">Prigionieri</div><b>${p.captives}</b></div><div><div class="faint">Trofei</div><b>${p.trophies}</b></div>
+        <div><div class="faint">Favori</div><b>${p.favors.map((f) => pName(f)).join(', ') || '—'}</b></div><div><div class="faint">Outrage</div><b>${p.outrage.map((r) => RES[r][0]).join(', ') || '—'}</b></div>
+        <div><div class="faint">Carte in mano</div><b>${p.hand}</b></div><div><div class="faint">Navi in riserva</div><b>${p.ships}</b></div><div><div class="faint">Agenti</div><b>${p.agents}</b></div><div><div class="faint">Città / Porti</div><b>${p.cities} / ${p.starports}</b></div>
+      </div>
+      <div><div class="h">Obiettivo</div><span class="muted">${esc(p.objective.text)} · segnalino su ${p.objective.at}</span></div>
+      <div><div class="h">Carte possedute</div><div class="row" style="gap:10px">${p.cards.map((c) => `<img src="${img(c)}" alt="${c}" class="click" data-open="card:${c}" style="width:120px;border-radius:8px">`).join('')}</div></div>
+    </div></div>`;
+}
+function cardDetail(id, extra = '') {
+  return `<div class="grid" style="grid-template-columns:260px minmax(0,1fr);align-items:start">
+    <img src="${img(id)}" alt="${id}" style="width:260px;border-radius:12px">
+    <div style="display:flex;flex-direction:column;gap:10px"><div class="h" style="font-size:16px">${id}</div>${extra}
+    <div style="padding:10px;border-radius:8px;background:var(--panel-2)"><b>Effetto</b><div class="muted">Riassunto dell'effetto e FAQ della carta (dal file degli effetti).</div></div></div></div>`;
+}
+function open(key) {
+  const [k, arg] = key.split(':');
+  const i = Number(arg);
+  if (k === 'player') return openModal(`${pName(i)}`, playerDetail(i));
+  if (k === 'board' || k === 'captives' || k === 'trophies' || k === 'favors' || k === 'outrage') return openModal('La tua plancia', playerDetail(0));
+  if (k === 'card') return openModal(arg, cardDetail(arg));
+  if (k === 'court') {
+    const c = G.court[i];
+    const ag = c.agents.map((n, p) => `<span class="pill" style="background:${pColor(p)};color:#0b0e16">${pName(p)} ♟${n}</span>`).join(' ');
+    const can = c.agents[0] > Math.max(...c.agents.slice(1)) ? '<div style="padding:10px;border-radius:8px;background:var(--gold-soft)">Hai la maggioranza degli agenti: puoi prenderla con <b>Secure</b>.</div>' : '';
+    const att = c.attached ? `<div><div class="h">Carta attaccata</div><img src="${img(c.attached)}" alt="${c.attached}" style="width:150px;border-radius:8px"></div>` : '';
+    return openModal(c.label, cardDetail(c.id, `<div class="muted">${esc(c.kind)}</div><div class="row">${ag}</div>${can}${att}<div class="row"><button type="button" class="btn">Influenza</button><button type="button" class="btn primary">Secure</button></div>`));
+  }
+  if (k === 'amb') {
+    const a = G.ambitions[i];
+    const order = a.counts.map((v, p) => [v, p]).sort((x, y) => y[0] - x[0]);
+    return openModal(`${a.name}`, `<div class="muted">Dichiarata con: ${a.markers.join(', ') || 'non dichiarata'}. Valori di ogni giocatore adesso:</div>
+      <div style="display:flex;flex-direction:column;gap:6px">${order.map(([v, p], r) => `<div class="row" style="justify-content:space-between;padding:8px;border-radius:8px;background:var(--panel-2)"><span class="row"><span class="dot" style="background:${pColor(p)}"></span><b>${pName(p)}</b></span><span class="num">${v} ${r === 0 && v > (order[1] || [0])[0] ? '· 1° posto' : ''}</span></div>`).join('')}</div>
+      <div class="faint">Con i segnalini attuali: 1° posto ${a.markers.length ? a.markers.map((m) => m.split('/')[0]).reduce((x, y) => +x + +y, 0) : 0} Potere, 2° ${a.markers.length ? a.markers.map((m) => m.split('/')[1]).reduce((x, y) => +x + +y, 0) : 0}. Parità al 1° = tutti 2°.</div>`);
+  }
+  if (k === 'trust') return openModal('First Regent e Imperial Trust', `<div class="grid" style="grid-template-columns:220px minmax(0,1fr)"><img src="img/title-regent.png" alt="Titolo Regent" style="width:220px;border-radius:10px"><div style="display:flex;flex-direction:column;gap:8px"><b>${esc(pName(G.players.findIndex((p) => p.first)))} è First Regent</b><div class="row">${G.trust.map((r) => resDot(r, 30)).join('')}</div><span class="muted">Le risorse del Trust sono congelate: non si spendono né si cedono, ma contano per le ambizioni di chi ha la tessera. Un Outlaw può rubarle prendendo l'Imperial Council.</span></div></div>`);
+  if (k === 'booklet') return openModal('Libretto delle regole', G.booklet.map((b) => `<div class="grid" style="grid-template-columns:200px minmax(0,1fr)"><img src="img/${b.id}.png" alt="${b.id}" style="width:200px;border-radius:10px"><div><b>${esc(b.label)}</b><div class="muted">${esc(b.text)}</div></div></div>`).join('') + '<div class="faint">Qui compaiono editti, leggi e carte Summit aggiunte dai Fate.</div>');
+  if (k === 'fate') return openModal('Il tuo Fate', playerDetail(0));
+  if (k === 'supply') return openModal('Riserva generale', `<div class="row" style="gap:18px">${Object.entries(G.supply).map(([r, n]) => `<span class="row" style="gap:6px">${resDot(r, 34)}<b style="font-size:18px">${n}</b> ${RES[r][0]}</span>`).join('')}</div><div class="muted">Risorse ancora disponibili su 5 per tipo. Senza gettoni di un tipo, tassare non dà nulla.</div>`);
+  if (k === 'chapter') return openModal(`Atto ${G.act} · Capitolo ${G.chapter}`, `<div class="muted">Atti I e II durano 3 capitoli, l'atto III ne dura 4. Alla fine degli atti I e II c'è l'Intermission.</div>`);
+  if (k === 'round') return openModal(`Round ${G.round}`, `<div style="display:flex;flex-direction:column;gap:6px">${G.roundPlays.map((r) => `<span class="row"><span class="dot" style="background:${pColor(r.p)}"></span><b>${pName(r.p)}</b> ${esc(r.what)}</span>`).join('')}</div><div class="muted">Carta di testa: ${SUIT[G.lead.suit][0]} ${G.lead.n} (vale 0: dichiarato ${G.lead.declared}). Initiative prevista a fine round: Tu.</div>`);
+  if (k === 'log') return openModal('Registro', `<ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px">${G.log.map((l) => `<li>${esc(l)}</li>`).join('')}</ol>`);
+  if (k === 'settings') return openModal('Impostazioni', '<div class="muted">Audio, lingua, animazioni, colori dei giocatori.</div>');
+  if (k === 'action') return openModal(G.played.actions[i], '<div class="muted">Qui parte l\'azione a passi: la mappa evidenzia le scelte valide (sistemi, slot liberi, città tassabili) e la banda in alto spiega il passo.</div>');
+  if (k === 'prelude') return openModal('Prelude: spendi una risorsa', `<div class="row" style="gap:10px">${G.players[0].slots.filter((s) => s && s !== 'c').map((r) => `<button type="button" class="btn" style="display:flex;gap:8px;align-items:center">${resDot(r, 24)} ${RES[r][0]}</button>`).join('')}</div><div class="muted">Le risorse con Outrage non si possono spendere nel prelude.</div>`);
+  if (k === 'hand') { const c = G.hand[i]; return openModal(c.event ? 'Evento' : `${SUIT[c.suit][0]} ${c.n}`, `<div class="row" style="gap:20px;align-items:flex-start">${acard(c)}<div class="muted">${c.event ? 'Dà le stesse azioni della carta di testa, se nessun rivale ha già giocato un Evento o preso il Council in questo round.' : `Supera: ${c.pips} azioni. Pivot: 1 azione (${SUIT[c.suit][2]}). Copia: 1 azione del seme di testa.`}</div></div><div class="row"><button type="button" class="btn primary">Supera</button><button type="button" class="btn">Pivot</button><button type="button" class="btn">Copia</button><button type="button" class="btn">Seize con questa</button></div>`); }
+  if (k === 'undo' || k === 'confirm') return openModal(k === 'undo' ? 'Annulla' : 'Conferma il turno', `<div class="muted">${k === 'undo' ? 'Annulla l\'ultima azione del turno, finché non confermi.' : 'Invia il turno al server: da quel momento le mosse sono definitive e gli altri le vedono.'}</div>`);
+}
+function openSystem(id) {
+  const P = PIECES[id] || {}; const gate = id.endsWith('gate'); const c = +id[1], k = +id.slice(-1);
+  const ctrl = CONTROL[id];
+  const rows = [];
+  (P.ships || []).forEach(([p, f, d]) => rows.push(`<span class="row"><span class="dot" style="background:${pColor(p)}"></span>${pName(p)}: ${f} navi integre${d ? `, ${d} danneggiate` : ''}</span>`));
+  if (P.imperial) rows.push(`<span class="row"><span class="dot" style="background:var(--imperial)"></span>${P.imperial} navi Imperiali</span>`);
+  if (P.flagship !== undefined) rows.push(`<span class="row"><span class="dot" style="background:${pColor(P.flagship)}"></span>Flagship di ${pName(P.flagship)}</span>`);
+  (P.bld || []).forEach(([o, t, d]) => rows.push(`<span>${t === 'city' ? 'Città' : 'Porto stellare'} ${o === 'free' ? 'Free' : 'di ' + pName(o)}${d ? ' (danneggiato)' : ''}</span>`));
+  if (P.blight) rows.push(`<span class="row"><span class="dot" style="background:var(--blight)"></span>Blight ${P.blight === 'B' ? 'integro (3 colpi nelle Crisi)' : 'danneggiato (1 colpo)'}</span>`);
+  const head = gate ? `Gate del cluster ${c}` : `Pianeta ${id} · ${RES[PLANET_RES[c][k - 1]][0]} · ${ID_SYM[k - 1]} · ${SLOTS[c][k - 1]} slot`;
+  openModal(head, `<div style="display:flex;flex-direction:column;gap:6px">${rows.join('') || '<span class="muted">Vuoto</span>'}</div>
+    <div class="muted">Controllo: <b>${ctrl === undefined ? 'nessuno' : ctrl === 'imperial' ? 'Impero (nel turno di un Regent con pezzi qui, quel Regent)' : pName(ctrl)}</b></div>
+    <div class="row"><button type="button" class="btn">Muovi da qui</button><button type="button" class="btn">Battaglia qui</button><button type="button" class="btn">Costruisci qui</button></div>`);
+}
+function bindClicks() {
+  document.querySelectorAll('#widgets [data-open]').forEach((b) => b.addEventListener('click', (e) => { if (editing) return; e.stopPropagation(); open(b.dataset.open); }));
+}
+
+// ---------------- layout editing ----------------
+const SNAP = 5;
+const snap = (v) => Math.round(v / SNAP) * SNAP;
+function stageScale() { return $('#stage').getBoundingClientRect().width / 1600; }
+let drag = null;
+$('#widgets').addEventListener('pointerdown', (e) => {
+  if (!editing) return;
+  const w = e.target.closest('.w'); if (!w) return;
+  const id = w.dataset.id;
+  if (e.target.closest('[data-hide]')) { layout[id].hidden = true; w.hidden = true; updateHiddenCount(); note('Nascosto: ' + WIDGETS[id].title); return; }
+  const mode = e.target.closest('.w-resize') ? 'resize' : e.target.closest('.w-head') ? 'move' : null;
+  if (!mode) return;
+  e.preventDefault();
+  w.parentNode.appendChild(w);
+  drag = { id, w, mode, sx: e.clientX, sy: e.clientY, L: { ...layout[id] }, k: stageScale() };
+});
+addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const dx = (e.clientX - drag.sx) / drag.k, dy = (e.clientY - drag.sy) / drag.k; const L = layout[drag.id];
+  if (drag.mode === 'move') { L.x = Math.max(0, Math.min(1600 - L.w, snap(drag.L.x + dx))); L.y = Math.max(0, Math.min(900 - 24, snap(drag.L.y + dy))); }
+  else { L.w = Math.max(80, Math.min(1600 - L.x, snap(drag.L.w + dx))); L.h = Math.max(40, Math.min(900 - L.y, snap(drag.L.h + dy))); }
+  Object.assign(drag.w.style, { left: L.x + 'px', top: L.y + 'px', width: L.w + 'px', height: L.h + 'px' });
+});
+addEventListener('pointerup', () => { if (drag) { drag = null; persistLocal(); } });
+
+function setEditing(on) {
+  editing = on; $('#stage').classList.toggle('editing', on);
+  $('#btnEdit').setAttribute('aria-pressed', String(on));
+  $('#btnEdit').textContent = on ? 'Fine modifica' : 'Modifica layout';
+  note(on ? 'Trascina la barra gialla per spostare, l\'angolo per ridimensionare, ✕ per nascondere.' : '');
+  closeModal();
+}
+$('#btnEdit').onclick = () => setEditing(!editing);
+function updateHiddenCount() {
+  const hidden = Object.keys(WIDGETS).filter((id) => layout[id] && layout[id].hidden);
+  $('#btnHidden').textContent = `Elementi nascosti (${hidden.length})`;
+  const list = $('#hiddenList');
+  list.innerHTML = hidden.length ? `<b>Rimetti sul tavolo</b>${hidden.map((id) => `<button type="button" class="btn" data-show="${id}">${esc(WIDGETS[id].title)}</button>`).join('')}` : '<span class="muted">Nessun elemento nascosto</span>';
+  list.querySelectorAll('[data-show]').forEach((b) => (b.onclick = () => { layout[b.dataset.show].hidden = false; renderWidgets(); persistLocal(); }));
+}
+$('#btnHidden').onclick = () => { $('#hiddenList').hidden = !$('#hiddenList').hidden; };
+$('#btnReset').onclick = () => { layout = defaultLayout(); renderWidgets(); persistLocal(); note('Layout iniziale ripristinato'); };
+$('#btnExport').onclick = () => {
+  const text = JSON.stringify({ name: $('#layoutName').value, stage: [1600, 900], widgets: layout }, null, 1);
+  try { navigator.clipboard.writeText(text).then(() => note('JSON copiato'), () => showJson(text)); } catch (e) { showJson(text); }
+};
+function showJson(text) { openModal('Layout in JSON', `<textarea id="jsonOut" rows="16" style="width:100%;background:var(--panel-2);color:var(--fg);border:1px solid var(--line);border-radius:8px;font:12px ui-monospace,Consolas,monospace">${esc(text)}</textarea>`); $('#jsonOut').select(); }
+function note(t) { $('#labMsg').textContent = t; }
+function persistLocal() { try { localStorage.setItem('tavolo-layout', JSON.stringify(layout)); } catch (e) {} }
+function loadLocal() { try { const v = JSON.parse(localStorage.getItem('tavolo-layout') || 'null'); if (v) layout = { ...defaultLayout(), ...v }; } catch (e) {} }
+
+// shared saves (artifact db): Claude reads them back to build the real UI
+let db = null;
+const slug = (s) => (s || 'layout').toLowerCase().replace(/[^a-z0-9_.~:@+-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'layout';
+$('#btnSave').onclick = async () => {
+  persistLocal();
+  const name = $('#layoutName').value.trim() || 'mio layout';
+  if (!db) { note('Salvato solo in questo browser'); return; }
+  note('Salvataggio…');
+  try { await db.doc('layouts/' + slug(name)).set({ name, stage: [1600, 900], widgets: JSON.parse(JSON.stringify(layout)), savedAt: new Date().toISOString() }); note('Salvato: ' + name); }
+  catch (e) { note(e && e.code === 'invalid_argument' ? 'Non hai i permessi per salvare qui' : 'Salvataggio non riuscito, riprova'); }
+};
+$('#layoutPick').onchange = (e) => {
+  const v = e.target.value; if (!v) return; const doc = savedLayouts[v]; if (!doc) return;
+  layout = { ...defaultLayout(), ...doc.widgets }; $('#layoutName').value = doc.name; renderWidgets(); persistLocal(); note('Caricato: ' + doc.name);
+};
+let savedLayouts = {};
+function fillPick() {
+  const sel = $('#layoutPick'); const cur = sel.value;
+  sel.innerHTML = '<option value="">Layout salvati…</option>' + Object.entries(savedLayouts).map(([id, d]) => `<option value="${esc(id)}">${esc(d.name)}</option>`).join('');
+  sel.value = cur;
+}
+
+// ---------------- scale & boot ----------------
+function fit() { const k = Math.min(innerWidth / 1600, (innerHeight - 56) / 900); $('#stage').style.transform = `scale(${k})`; }
+addEventListener('resize', fit);
+loadLocal(); drawMap(); renderWidgets(); fit();
+(async () => {
+  try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { db = null; }
+  if (!db) { note('I layout restano in questo browser'); return; }
+  db.collection('layouts').onSnapshot((snap) => { savedLayouts = {}; snap.docs.forEach((d) => { const v = d.data(); if (v && v.widgets) savedLayouts[d.id] = v; }); fillPick(); }, () => note('Layout salvati non raggiungibili'));
+})();
+</script>

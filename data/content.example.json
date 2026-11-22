@@ -1,0 +1,1056 @@
+{
+ "_comment": "PLACEHOLDER content with invented values. Copy to data/content.json and fill in from your own copy of the game.",
+ "handSize": 6,
+ "chapters": 5,
+ "powerToWin": {
+  "2": 33,
+  "3": 30,
+  "4": 27
+ },
+ "playerBoard": {
+  "slotKeys": [
+   3,
+   1,
+   1,
+   2,
+   1,
+   3
+  ],
+  "baseSlots": [
+   0,
+   1
+  ],
+  "cityUnlocks": [
+   [
+    2
+   ],
+   [
+    3
+   ],
+   [
+    4,
+    5
+   ],
+   [],
+   []
+  ],
+  "cityBonusPower": [
+   0,
+   0,
+   0,
+   2,
+   3
+  ],
+  "bonusMode": "sum",
+  "cityReturnResource": "move"
+ },
+ "agentsPerPlayer": 10,
+ "shipsPerPlayer": 15,
+ "citiesPerPlayer": 5,
+ "starportsPerPlayer": 5,
+ "courtSize": {
+  "2": 3,
+  "3": 4,
+  "4": 4
+ },
+ "suits": {
+  "suitA": [
+   "tax",
+   "repair",
+   "influence"
+  ],
+  "suitB": [
+   "battle",
+   "move",
+   "secure"
+  ],
+  "suitC": [
+   "build",
+   "repair"
+  ],
+  "suitD": [
+   "move",
+   "influence"
+  ]
+ },
+ "actionCards": [
+  {
+   "id": "suitA-1",
+   "suit": "suitA",
+   "number": 1,
+   "pips": 4,
+   "minPlayers": 4
+  },
+  {
+   "id": "suitA-2",
+   "suit": "suitA",
+   "number": 2,
+   "pips": 4
+  },
+  {
+   "id": "suitA-3",
+   "suit": "suitA",
+   "number": 3,
+   "pips": 3
+  },
+  {
+   "id": "suitA-4",
+   "suit": "suitA",
+   "number": 4,
+   "pips": 3
+  },
+  {
+   "id": "suitA-5",
+   "suit": "suitA",
+   "number": 5,
+   "pips": 2
+  },
+  {
+   "id": "suitA-6",
+   "suit": "suitA",
+   "number": 6,
+   "pips": 2
+  },
+  {
+   "id": "suitA-7",
+   "suit": "suitA",
+   "number": 7,
+   "pips": 1,
+   "minPlayers": 4
+  },
+  {
+   "id": "suitB-1",
+   "suit": "suitB",
+   "number": 1,
+   "pips": 4,
+   "minPlayers": 4
+  },
+  {
+   "id": "suitB-2",
+   "suit": "suitB",
+   "number": 2,
+   "pips": 4
+  },
+  {
+   "id": "suitB-3",
+   "suit": "suitB",
+   "number": 3,
+   "pips": 3
+  },
+  {
+   "id": "suitB-4",
+   "suit": "suitB",
+   "number": 4,
+   "pips": 3
+  },
+  {
+   "id": "suitB-5",
+   "suit": "suitB",
+   "number": 5,
+   "pips": 2
+  },
+  {
+   "id": "suitB-6",
+   "suit": "suitB",
+   "number": 6,
+   "pips": 2
+  },
+  {
+   "id": "suitB-7",
+   "suit": "suitB",
+   "number": 7,
+   "pips": 1,
+   "minPlayers": 4
+  },
+  {
+   "id": "suitC-1",
+   "suit": "suitC",
+   "number": 1,
+   "pips": 4,
+   "minPlayers": 4
+  },
+  {
+   "id": "suitC-2",
+   "suit": "suitC",
+   "number": 2,
+   "pips": 4
+  },
+  {
+   "id": "suitC-3",
+   "suit": "suitC",
+   "number": 3,
+   "pips": 3
+  },
+  {
+   "id": "suitC-4",
+   "suit": "suitC",
+   "number": 4,
+   "pips": 3
+  },
+  {
+   "id": "suitC-5",
+   "suit": "suitC",
+   "number": 5,
+   "pips": 2
+  },
+  {
+   "id": "suitC-6",
+   "suit": "suitC",
+   "number": 6,
+   "pips": 2
+  },
+  {
+   "id": "suitC-7",
+   "suit": "suitC",
+   "number": 7,
+   "pips": 1,
+   "minPlayers": 4
+  },
+  {
+   "id": "suitD-1",
+   "suit": "suitD",
+   "number": 1,
+   "pips": 4,
+   "minPlayers": 4
+  },
+  {
+   "id": "suitD-2",
+   "suit": "suitD",
+   "number": 2,
+   "pips": 4
+  },
+  {
+   "id": "suitD-3",
+   "suit": "suitD",
+   "number": 3,
+   "pips": 3
+  },
+  {
+   "id": "suitD-4",
+   "suit": "suitD",
+   "number": 4,
+   "pips": 3
+  },
+  {
+   "id": "suitD-5",
+   "suit": "suitD",
+   "number": 5,
+   "pips": 2
+  },
+  {
+   "id": "suitD-6",
+   "suit": "suitD",
+   "number": 6,
+   "pips": 2
+  },
+  {
+   "id": "suitD-7",
+   "suit": "suitD",
+   "number": 7,
+   "pips": 1,
+   "minPlayers": 4
+  }
+ ],
+ "courtCards": [
+  {
+   "id": "faction-1",
+   "kind": "faction",
+   "resource": "fuel"
+  },
+  {
+   "id": "faction-2",
+   "kind": "faction",
+   "resource": "weapons"
+  },
+  {
+   "id": "faction-3",
+   "kind": "faction",
+   "resource": "relic"
+  },
+  {
+   "id": "faction-4",
+   "kind": "faction",
+   "resource": "psionic"
+  },
+  {
+   "id": "faction-5",
+   "kind": "faction",
+   "resource": "material"
+  },
+  {
+   "id": "faction-6",
+   "kind": "faction",
+   "resource": "fuel"
+  },
+  {
+   "id": "faction-7",
+   "kind": "faction",
+   "resource": "weapons"
+  },
+  {
+   "id": "faction-8",
+   "kind": "faction",
+   "resource": "relic"
+  },
+  {
+   "id": "faction-9",
+   "kind": "faction",
+   "resource": "psionic"
+  },
+  {
+   "id": "faction-10",
+   "kind": "faction",
+   "resource": "material"
+  },
+  {
+   "id": "faction-11",
+   "kind": "faction",
+   "resource": "fuel"
+  },
+  {
+   "id": "faction-12",
+   "kind": "faction",
+   "resource": "weapons"
+  },
+  {
+   "id": "decree-1",
+   "kind": "decree",
+   "effect": "decree-1"
+  },
+  {
+   "id": "decree-2",
+   "kind": "decree",
+   "effect": "decree-2"
+  },
+  {
+   "id": "decree-3",
+   "kind": "decree",
+   "effect": "decree-3"
+  },
+  {
+   "id": "decree-4",
+   "kind": "decree",
+   "effect": "decree-4"
+  }
+ ],
+ "declareByNumber": {
+  "2": "wealth",
+  "3": "captives",
+  "4": "trophies",
+  "5": "relics",
+  "6": "psionics"
+ },
+ "ambitionMetrics": {
+  "wealth": {
+   "kind": "resources",
+   "resources": [
+    "material",
+    "fuel"
+   ]
+  },
+  "captives": {
+   "kind": "captives"
+  },
+  "trophies": {
+   "kind": "trophies"
+  },
+  "relics": {
+   "kind": "resources",
+   "resources": [
+    "relic"
+   ]
+  },
+  "psionics": {
+   "kind": "resources",
+   "resources": [
+    "psionic"
+   ]
+  }
+ },
+ "ambitionMarkers": [
+  {
+   "id": "m-low",
+   "sides": [
+    {
+     "first": 2,
+     "second": 0
+    },
+    {
+     "first": 4,
+     "second": 2
+    }
+   ],
+   "flipAfterChapter": 1
+  },
+  {
+   "id": "m-mid",
+   "sides": [
+    {
+     "first": 3,
+     "second": 2
+    },
+    {
+     "first": 6,
+     "second": 3
+    }
+   ],
+   "flipAfterChapter": 2
+  },
+  {
+   "id": "m-high",
+   "sides": [
+    {
+     "first": 5,
+     "second": 3
+    },
+    {
+     "first": 9,
+     "second": 4
+    }
+   ],
+   "flipAfterChapter": 3
+  }
+ ],
+ "maxDeclarationsPerRound": 1,
+ "ties": {
+  "firstTieDropsToSecond": true,
+  "secondTieAwardsNone": true
+ },
+ "gameEndTieBreak": "turnOrder",
+ "resourceActions": {
+  "material": {
+   "actions": [
+    "build",
+    "repair"
+   ]
+  },
+  "fuel": {
+   "actions": [
+    "move"
+   ]
+  },
+  "weapons": {
+   "grantKind": "battle"
+  },
+  "relic": {
+   "actions": [
+    "secure"
+   ]
+  },
+  "psionic": {
+   "leadSuit": true
+  }
+ },
+ "rivalTax": {
+  "allowed": true,
+  "effect": "takeCaptive"
+ },
+ "dice": {
+  "skirmish": [
+   {
+    "hit": 1
+   },
+   {
+    "hit": 1
+   },
+   {
+    "hit": 1
+   },
+   {},
+   {},
+   {}
+  ],
+  "assault": [
+   {
+    "hit": 2
+   },
+   {
+    "hit": 1,
+    "selfHit": 1
+   },
+   {
+    "hit": 2,
+    "selfHit": 1
+   },
+   {
+    "hit": 1
+   },
+   {},
+   {
+    "hit": 1,
+    "intercept": 1
+   }
+  ],
+  "raid": [
+   {
+    "key": 1
+   },
+   {
+    "buildingHit": 1
+   },
+   {
+    "key": 1,
+    "selfHit": 1
+   },
+   {
+    "buildingHit": 1,
+    "intercept": 1
+   },
+   {
+    "intercept": 1
+   },
+   {
+    "key": 2
+   }
+  ]
+ },
+ "map": {
+  "systems": [
+   {
+    "id": "c1-gate",
+    "cluster": "c1",
+    "kind": "gate"
+   },
+   {
+    "id": "c1-p1",
+    "cluster": "c1",
+    "kind": "planet",
+    "resource": "weapons"
+   },
+   {
+    "id": "c1-p2",
+    "cluster": "c1",
+    "kind": "planet",
+    "resource": "relic"
+   },
+   {
+    "id": "c1-p3",
+    "cluster": "c1",
+    "kind": "planet",
+    "resource": "psionic"
+   },
+   {
+    "id": "c2-gate",
+    "cluster": "c2",
+    "kind": "gate"
+   },
+   {
+    "id": "c2-p1",
+    "cluster": "c2",
+    "kind": "planet",
+    "resource": "relic"
+   },
+   {
+    "id": "c2-p2",
+    "cluster": "c2",
+    "kind": "planet",
+    "resource": "psionic"
+   },
+   {
+    "id": "c2-p3",
+    "cluster": "c2",
+    "kind": "planet",
+    "resource": "material"
+   },
+   {
+    "id": "c3-gate",
+    "cluster": "c3",
+    "kind": "gate"
+   },
+   {
+    "id": "c3-p1",
+    "cluster": "c3",
+    "kind": "planet",
+    "resource": "psionic"
+   },
+   {
+    "id": "c3-p2",
+    "cluster": "c3",
+    "kind": "planet",
+    "resource": "material"
+   },
+   {
+    "id": "c3-p3",
+    "cluster": "c3",
+    "kind": "planet",
+    "resource": "fuel"
+   },
+   {
+    "id": "c4-gate",
+    "cluster": "c4",
+    "kind": "gate"
+   },
+   {
+    "id": "c4-p1",
+    "cluster": "c4",
+    "kind": "planet",
+    "resource": "material"
+   },
+   {
+    "id": "c4-p2",
+    "cluster": "c4",
+    "kind": "planet",
+    "resource": "fuel"
+   },
+   {
+    "id": "c4-p3",
+    "cluster": "c4",
+    "kind": "planet",
+    "resource": "weapons"
+   },
+   {
+    "id": "c5-gate",
+    "cluster": "c5",
+    "kind": "gate"
+   },
+   {
+    "id": "c5-p1",
+    "cluster": "c5",
+    "kind": "planet",
+    "resource": "fuel"
+   },
+   {
+    "id": "c5-p2",
+    "cluster": "c5",
+    "kind": "planet",
+    "resource": "weapons"
+   },
+   {
+    "id": "c5-p3",
+    "cluster": "c5",
+    "kind": "planet",
+    "resource": "relic"
+   },
+   {
+    "id": "c6-gate",
+    "cluster": "c6",
+    "kind": "gate"
+   },
+   {
+    "id": "c6-p1",
+    "cluster": "c6",
+    "kind": "planet",
+    "resource": "weapons"
+   },
+   {
+    "id": "c6-p2",
+    "cluster": "c6",
+    "kind": "planet",
+    "resource": "relic"
+   },
+   {
+    "id": "c6-p3",
+    "cluster": "c6",
+    "kind": "planet",
+    "resource": "psionic"
+   }
+  ],
+  "links": [
+   [
+    "c1-gate",
+    "c1-p1"
+   ],
+   [
+    "c1-gate",
+    "c1-p2"
+   ],
+   [
+    "c1-gate",
+    "c1-p3"
+   ],
+   [
+    "c1-p1",
+    "c1-p2"
+   ],
+   [
+    "c1-p2",
+    "c1-p3"
+   ],
+   [
+    "c1-gate",
+    "c2-gate"
+   ],
+   [
+    "c2-gate",
+    "c2-p1"
+   ],
+   [
+    "c2-gate",
+    "c2-p2"
+   ],
+   [
+    "c2-gate",
+    "c2-p3"
+   ],
+   [
+    "c2-p1",
+    "c2-p2"
+   ],
+   [
+    "c2-p2",
+    "c2-p3"
+   ],
+   [
+    "c2-gate",
+    "c3-gate"
+   ],
+   [
+    "c3-gate",
+    "c3-p1"
+   ],
+   [
+    "c3-gate",
+    "c3-p2"
+   ],
+   [
+    "c3-gate",
+    "c3-p3"
+   ],
+   [
+    "c3-p1",
+    "c3-p2"
+   ],
+   [
+    "c3-p2",
+    "c3-p3"
+   ],
+   [
+    "c3-gate",
+    "c4-gate"
+   ],
+   [
+    "c4-gate",
+    "c4-p1"
+   ],
+   [
+    "c4-gate",
+    "c4-p2"
+   ],
+   [
+    "c4-gate",
+    "c4-p3"
+   ],
+   [
+    "c4-p1",
+    "c4-p2"
+   ],
+   [
+    "c4-p2",
+    "c4-p3"
+   ],
+   [
+    "c4-gate",
+    "c5-gate"
+   ],
+   [
+    "c5-gate",
+    "c5-p1"
+   ],
+   [
+    "c5-gate",
+    "c5-p2"
+   ],
+   [
+    "c5-gate",
+    "c5-p3"
+   ],
+   [
+    "c5-p1",
+    "c5-p2"
+   ],
+   [
+    "c5-p2",
+    "c5-p3"
+   ],
+   [
+    "c5-gate",
+    "c6-gate"
+   ],
+   [
+    "c6-gate",
+    "c6-p1"
+   ],
+   [
+    "c6-gate",
+    "c6-p2"
+   ],
+   [
+    "c6-gate",
+    "c6-p3"
+   ],
+   [
+    "c6-p1",
+    "c6-p2"
+   ],
+   [
+    "c6-p2",
+    "c6-p3"
+   ],
+   [
+    "c6-gate",
+    "c1-gate"
+   ]
+  ],
+  "exclusions": {
+   "2": {
+    "clusters": [
+     "c5",
+     "c6"
+    ]
+   },
+   "3": {
+    "clusters": [
+     "c6"
+    ],
+    "links": [
+     [
+      "c4-gate",
+      "c5-gate"
+     ]
+    ]
+   }
+  }
+ },
+ "setupCards": [
+  {
+   "id": "setup-2a",
+   "playerCount": 2,
+   "seats": [
+    [
+     {
+      "system": "c1-p1",
+      "ships": 3,
+      "building": "city"
+     },
+     {
+      "system": "c1-p2",
+      "ships": 2,
+      "building": "starport"
+     },
+     {
+      "system": "c1-gate",
+      "ships": 1
+     }
+    ],
+    [
+     {
+      "system": "c3-p1",
+      "ships": 3,
+      "building": "city"
+     },
+     {
+      "system": "c3-p2",
+      "ships": 2,
+      "building": "starport"
+     },
+     {
+      "system": "c3-gate",
+      "ships": 1
+     }
+    ]
+   ]
+  },
+  {
+   "id": "setup-2b",
+   "playerCount": 2,
+   "seats": [
+    [
+     {
+      "system": "c2-p1",
+      "ships": 3,
+      "building": "city"
+     },
+     {
+      "system": "c2-p2",
+      "ships": 2,
+      "building": "starport"
+     },
+     {
+      "system": "c2-gate",
+      "ships": 1
+     }
+    ],
+    [
+     {
+      "system": "c4-p1",
+      "ships": 3,
+      "building": "city"
+     },
+     {
+      "system": "c4-p2",
+      "ships": 2,
+      "building": "starport"
+     },
+     {
+      "system": "c4-gate",
+      "ships": 1
+     }
+    ]
+   ]
+  },
+  {
+   "id": "setup-3a",
+   "playerCount": 3,
+   "seats": [
+    [
+     {
+      "system": "c1-p1",
+      "ships": 3,
+      "building": "city"
+     },
+     {
+      "system": "c1-p2",
+      "ships": 2,
+      "building": "starport"
+     },
+     {
+      "system": "c1-gate",
+      "ships": 1
+     }
+    ],
+    [
+     {
+      "system": "c3-p1",
+      "ships": 3,
+      "building": "city"
+     },
+     {
+      "system": "c3-p2",
+      "ships": 2,
+      "building": "starport"
+     },
+     {
+      "system": "c3-gate",
+      "ships": 1
+     }
+    ],
+    [
+     {
+      "system": "c5-p1",
+      "ships": 3,
+      "building": "city"
+     },
+     {
+      "system": "c5-p2",
+      "ships": 2,
+      "building": "starport"
+     },
+     {
+      "system": "c5-gate",
+      "ships": 1
+     }
+    ]
+   ],
+   "exclusions": {
+    "systems": [
+     "c2-p3"
+    ]
+   }
+  },
+  {
+   "id": "setup-4a",
+   "playerCount": 4,
+   "seats": [
+    [
+     {
+      "system": "c1-p1",
+      "ships": 3,
+      "building": "city"
+     },
+     {
+      "system": "c1-p2",
+      "ships": 2,
+      "building": "starport"
+     },
+     {
+      "system": "c1-gate",
+      "ships": 1
+     }
+    ],
+    [
+     {
+      "system": "c2-p1",
+      "ships": 3,
+      "building": "city"
+     },
+     {
+      "system": "c2-p2",
+      "ships": 2,
+      "building": "starport"
+     },
+     {
+      "system": "c2-gate",
+      "ships": 1
+     }
+    ],
+    [
+     {
+      "system": "c4-p1",
+      "ships": 3,
+      "building": "city"
+     },
+     {
+      "system": "c4-p2",
+      "ships": 2,
+      "building": "starport"
+     },
+     {
+      "system": "c4-gate",
+      "ships": 1
+     }
+    ],
+    [
+     {
+      "system": "c5-p1",
+      "ships": 3,
+      "building": "city"
+     },
+     {
+      "system": "c5-p2",
+      "ships": 2,
+      "building": "starport"
+     },
+     {
+      "system": "c5-gate",
+      "ships": 1
+     }
+    ]
+   ]
+  }
+ ],
+ "maxDicePerType": 6,
+ "baseSetupPieces": {
+  "A": {
+   "ships": 3,
+   "buildings": [
+    "city"
+   ]
+  },
+  "B": {
+   "ships": 3,
+   "buildings": [
+    "starport"
+   ]
+  },
+  "C": {
+   "ships": 2
+  }
+ },
+ "resourceSupply": {
+  "material": 5,
+  "fuel": 5,
+  "weapons": 5,
+  "relic": 5,
+  "psionic": 5
+ },
+ "twoPlayerAmbitionBoxes": {
+  "material": "wealth",
+  "fuel": "wealth",
+  "weapons": "trophies",
+  "relic": "relics",
+  "psionic": "psionics"
+ },
+ "seizeOnSurpassNumber": 7,
+ "loreCards": [],
+ "rescueShips": 3
+}

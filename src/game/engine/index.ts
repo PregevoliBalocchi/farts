@@ -1,0 +1,22 @@
+// Public API of the rules engine. UI code imports from here only.
+export * from './types';
+export { indexContent, newGame, finishSetup } from './setup';
+export type { ContentIndex, NewGameOptions } from './setup';
+export { dispatch, activePlayer, roundWinner, gameWinners } from './chapter';
+export { effectOf, hasPassive, isDeclared, ownedEffects } from './effects';
+export type { CardAction, CardEffect, EffectContext, EffectHandler, EffectRegistry, PreludeAbility, RerollAbility } from './effects';
+export * from './ops';
+export { HANDLERS, actionKindOf, currentBudget, takeCourtCard, collectAndRoll, finalizeBattle, rerollDice } from './actions';
+export { discardOwnCard } from './chapter';
+export { afterDeclare, payDeclareCost } from './declare';
+export type { DeclareGift } from './declare';
+export { receiveCourtCard } from './actions';
+export type { MovePayload } from './actions';
+export type { Command } from './chapter';
+export { RuleError, adjacent, applyAllocation, controls, destroyCityConsequences } from './actions';
+export type { ActionPayload, ActionResult, Allocation, HitTarget, PendingBattle, RaidTake, ShipHit } from './actions';
+export { rankAmbition, ambitionMetric, boxMetric, scoreAmbitions, markerValues, emptyAmbitionBoard } from './ambitions';
+export { rollDice, totalFaces } from './dice';
+export { citiesBuilt, cityBonusPower, gainFromSupply, gainResource, heldResources, onCityReturned, openSlots, returnToSupply, slotKeys } from './board';
+export type { DicePool, DiceTotals, RollResult } from './dice';
+export { shuffle } from './rng';
