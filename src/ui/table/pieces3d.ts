@@ -10,7 +10,7 @@ import * as THREE from 'three';
 export type PieceKind = 'ship' | 'flagship' | 'agent' | 'city' | 'starport';
 
 /** Seat paint colours (same hues as the table's --seat-N tokens). */
-export const SEAT_PAINT = ['#f2a93b', '#2ec4b6', '#a68bff', '#ff6f91'] as const;
+export const SEAT_PAINT = ['#f8b010', '#1090a8', '#e05038', '#f4f4f0'] as const;
 
 // ---- wood ----
 

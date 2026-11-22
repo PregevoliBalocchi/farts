@@ -1,17 +1,20 @@
 // The page: mounts the debug UI on the rules engine (src/game/engine), or the
 // table screen with ?view=table, and exposes it to automated checks as
-// window.game (see hook.ts). ?view=pieces shows the 3D piece models only.
+// window.game (see hook.ts). ?view=pieces shows the 3D piece models only,
+// ?view=cards every action card.
 
 import { install } from './hook';
 import { mountDebug } from './ui/debug';
+import { mountCards } from './ui/table/cardsheet';
 import { mountPieces } from './ui/table/showcase';
 import { mountTable } from './ui/table/table';
 
 const root = document.querySelector<HTMLElement>('#app')!;
 const asked = new URLSearchParams(location.search).get('view');
 if (asked === 'pieces') mountPieces(root);
+if (asked === 'cards') mountCards(root);
 const view = asked === 'table' ? 'table' : 'debug';
-const app = asked === 'pieces' ? null : view === 'table' ? mountTable(root) : mountDebug(root);
+const app = asked === 'pieces' || asked === 'cards' ? null : view === 'table' ? mountTable(root) : mountDebug(root);
 
 if (app) install({
   scene: view,

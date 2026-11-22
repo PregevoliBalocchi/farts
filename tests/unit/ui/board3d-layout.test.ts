@@ -2,7 +2,7 @@
 // mapping, schematic fallback, and how ship stacks are laid out.
 import { describe, expect, it } from 'vitest';
 import {
-  BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pictureToWorld, schematicToWorld, stackCentres, stackSpots, systemSpots, worldToPicture,
+  BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pictureToWorld, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
 } from '../../../src/ui/table/board3d-layout';
 
 const PICTURE = { width: 4000, height: 2000 };
@@ -63,5 +63,34 @@ describe('stack and building spots', () => {
 
   it('puts buildings below the system centre (toward the viewer)', () => {
     for (const b of buildingSpots(3)) expect(b.z).toBeGreaterThan(0);
+  });
+});
+
+describe('slotSpots', () => {
+  const calib = { ...PICTURE, systems: { a: { x: 2000, y: 1000, slots: [{ x: 0, y: 0 }, { x: 4000, y: 2000 }] }, b: { x: 10, y: 10 } } };
+
+  it('gives the calibrated building slots as table points, in slot order', () => {
+    expect(slotSpots(calib, 'a')).toEqual([pictureToWorld(PICTURE, 0, 0), pictureToWorld(PICTURE, 4000, 2000)]);
+  });
+
+  it('gives null without a calibration, for an unknown system, or one without slots', () => {
+    expect(slotSpots(null, 'a')).toBeNull();
+    expect(slotSpots(calib, 'zz')).toBeNull();
+    expect(slotSpots(calib, 'b')).toBeNull();
+  });
+});
+
+describe('tiltForZoom', () => {
+  it('leans the camera when close and looks straight down when far', () => {
+    expect(tiltForZoom(2, 2, 10)).toBe(TILT_NEAR);
+    expect(tiltForZoom(1, 2, 10)).toBe(TILT_NEAR);
+    expect(tiltForZoom(10, 2, 10)).toBe(TILT_FAR);
+    expect(tiltForZoom(25, 2, 10)).toBe(TILT_FAR);
+  });
+
+  it('rises steadily as the camera moves away', () => {
+    const tilts = [2, 4, 6, 8, 10].map((d) => tiltForZoom(d, 2, 10));
+    expect(tilts).toEqual([...tilts].sort((a, b) => a - b));
+    expect(tiltForZoom(6, 2, 10)).toBeCloseTo((TILT_NEAR + TILT_FAR) / 2);
   });
 });

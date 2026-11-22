@@ -1,0 +1,55 @@
+// ?view=cards: every action card of the content file side by side, to check
+// numbers, actions (stars), suit actions and declarable ambitions against the
+// printed cards. Two campaign examples show how a card with unusual values
+// draws. Display only, no game.
+
+import { BASE_EFFECTS } from '../../game/cards/base';
+import { indexContent } from '../../game/engine';
+import type { ActionKind } from '../../game/engine/types';
+import { pickLang, translator } from '../../i18n';
+import { loadContent } from '../content';
+import { icon } from './assets';
+import type { IconName } from './assets';
+import { actionCard, esc, suitClass, suitName } from './render';
+import type { ActionCardView } from './view';
+import './table.css';
+
+/** Mounts the check sheet into `root`. */
+export function mountCards(root: HTMLElement): void {
+  const t = translator(pickLang(location.search, navigator.language));
+  const ix = indexContent(loadContent().content, BASE_EFFECTS);
+  const { suits, actionCards, declareByNumber } = ix.content;
+
+  const figure = (card: string, caption: string) => `<figure>${card}<figcaption>${caption}</figcaption></figure>`;
+  const rows = Object.entries(suits)
+    .map(([suit, kinds]) => {
+      const cards = actionCards
+        .filter((c) => c.suit === suit)
+        .sort((a, b) => a.number - b.number)
+        .map((c) => {
+          const view: ActionCardView = { card: c.id, suit, number: c.number, pips: c.pips, kinds };
+          const amb = declareByNumber[String(c.number)];
+          const lines = [
+            `<b>${esc(c.id)}</b>`,
+            esc(t('cards.caption', { n: c.pips })),
+            esc(amb ? t(`ambition.${amb}`) : t('cards.noAmbition')),
+            (c.minPlayers ?? 2) >= 4 ? esc(t('cards.only4')) : '',
+          ];
+          return figure(actionCard(ix, view, t), lines.filter(Boolean).join('<br>'));
+        })
+        .join('');
+      const legend = kinds.map((k) => `${icon(k as IconName)} ${esc(t(`action.${k}`))}`).join(' · ');
+      return `<h2 class="${suitClass(ix, suit)}" style="color:var(--suit)">${esc(suitName(t, suit))}<small>${legend}</small></h2><div class="row">${cards}</div>`;
+    })
+    .join('');
+
+  // Campaign examples: not real values, only how such a card is drawn.
+  const event: ActionCardView = { card: 'event-01', suit: 'event', number: 0, pips: 0, kinds: [] };
+  const fateKinds: ActionKind[] = ['build', 'move', 'secure'];
+  const fate: ActionCardView = { card: 'fate-example', suit: 'fate', number: 8, pips: 2, kinds: fateKinds };
+  const special = `<h2>${esc(t('cards.special'))}</h2><div class="row">
+    ${figure(actionCard(ix, event, t, '', t('cards.event')), `<b>event-01</b><br>${esc(t('cards.eventNote'))}`)}
+    ${figure(actionCard(ix, fate, t, '', 'F'), esc(t('cards.fateNote')))}</div>`;
+
+  root.innerHTML = `<div class="tbl card-sheet"><h1>${esc(t('cards.title'))}</h1><p>${esc(t('cards.intro'))}</p>${rows}${special}</div>`;
+}

@@ -203,3 +203,6 @@ functions/
 .firebase/
 firebase-debug.log
 firestore-debug.log
+
+# Screenshots that show the kit and board pictures: local only
+production/qa/evidence/table-ui/local/
