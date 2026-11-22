@@ -1,13 +1,17 @@
-// The page: mounts the debug UI on the rules engine (src/game/engine) and
-// exposes it to automated checks as window.game (see hook.ts).
+// The page: mounts the debug UI on the rules engine (src/game/engine), or the
+// table screen with ?view=table, and exposes it to automated checks as
+// window.game (see hook.ts).
 
 import { install } from './hook';
 import { mountDebug } from './ui/debug';
+import { mountTable } from './ui/table/table';
 
-const app = mountDebug(document.querySelector<HTMLElement>('#app')!);
+const root = document.querySelector<HTMLElement>('#app')!;
+const view = new URLSearchParams(location.search).get('view') === 'table' ? 'table' : 'debug';
+const app = view === 'table' ? mountTable(root) : mountDebug(root);
 
 install({
-  scene: 'debug',
+  scene: view,
   get state() {
     return app.state;
   },
