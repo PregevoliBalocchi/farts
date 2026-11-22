@@ -711,3 +711,19 @@ button.supply:hover { border-color: var(--rule-hi); }
 .board .name-bar .pow { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: calc(34 * var(--u)); height: calc(34 * var(--u)); border-radius: 50%; display: grid; place-items: center;
   background: radial-gradient(circle, #5a3a1a 55%, #8a5a26 58%, #3a2410 70%); border: 2px solid var(--gold); color: var(--gold-hi); font-size: calc(17 * var(--u)); box-shadow: 0 0 0 2px #000a; }
 
+/* Move box beside the destination on the 3D map */
+.tbl-stage .move-pop { position: absolute; z-index: 60; padding: 10px 12px; display: grid; gap: 8px; border-color: var(--rule-hi); box-shadow: 0 0 0 1px var(--rule-hi), 0 8px 24px #000a; }
+.tbl-stage .move-pop .btn-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Battle window: the 3D battle over the map, the hits left, the raid and the buttons */
+.tbl-stage .battle-win { position: absolute; left: 50%; top: 112px; transform: translateX(-50%); z-index: 70; padding: 12px 14px; display: grid; gap: 8px; width: max-content;
+  border-color: var(--rule-hi); box-shadow: 0 0 0 1px var(--rule-hi), 0 20px 60px #000c; }
+.battle-win .b-head { display: flex; align-items: center; gap: 14px; }
+.battle-win .b-counts { display: flex; gap: 8px; margin-left: auto; }
+.battle-win .b-chip { padding: 3px 10px; border-radius: 12px; background: #3a1414; border: 1px solid var(--danger); font-weight: 700; }
+.battle-win .b-chip.done { background: #10301f; border-color: #3fae6a; color: #9fe3b8; }
+.battle-win .battle-slot { border-radius: 8px; overflow: hidden; background: #07080d; }
+.battle-win .battle-3d { display: block; width: 100%; height: 100%; }
+.battle-win .b-foot { display: grid; gap: 8px; }
+.battle-win .b-foot .btn-grid { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+

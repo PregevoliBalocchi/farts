@@ -12,8 +12,12 @@ import { LANGS, pickLang, translator } from '../../i18n';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
 import { assetUrl, icon } from './assets';
-import { defaultAllocation } from './battle';
+import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, hitsLeft } from './battle';
+import type { BattlePick } from './battle';
+import { BATTLE_VIEW, BattleView3D } from './battleview3d';
 import { createBoard3D } from './board3d';
+import type { ShipGlow } from './board3d';
+import type { Allocation, BattleRef } from '../../game/engine';
 import { AGENTS_VIEW, CourtAgents3D } from './courtagents3d';
 
 /** How far the agents' view rises over the bottom of the zoomed card, in pixels. */
@@ -90,6 +94,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let seizePick = false;
   /** Allocating: what the rolled keys steal, in order. */
   let raid: RaidTake[] = [];
+  /** The hits the attacker has placed so far in the battle view, for the battle `battleKey`. */
+  let placed: Allocation | null = null;
+  let battleKey = '';
   let intent: Intent = IDLE;
   /** The move being Catapulted further, kept while the next system is picked. */
   let pendingMove: Extract<Intent, { step: 'move' }> | null = null;
@@ -201,6 +208,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     seizeWith = null;
     seizePick = false;
     raid = [];
+    placed = null;
+    battleKey = '';
     pendingMove = null;
     intent = IDLE;
   }
@@ -217,10 +226,27 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     return { type: 'follow', player: local(), card, mode, ...(seizeWith && seizeWith !== card ? { seizeWith } : {}) };
   }
 
-  /** The proposed allocation for the pending battle, with the chosen raid. */
-  function allocation() {
+  /** Identity of the pending battle's roll: a new battle or a reroll changes it (and throws the dice again). */
+  function rollKeyOf(b: BattleRef): string {
+    return `${b.system}:${b.attacker}:${b.target}:${JSON.stringify(b.faces ?? [])}:${(b.rerolls ?? []).join(',')}`;
+  }
+
+  /**
+   * The allocation for the pending battle: with the 3D battle view, the hits
+   * placed one click at a time (none to start with); else the proposal. The
+   * chosen raid either way.
+   */
+  function allocation(): Allocation | null {
     if (state.phase.type !== 'allocate') return null;
-    return { ...defaultAllocation(state, state.phase.battle), raid: [...raid] };
+    const b = state.phase.battle;
+    const proposal = defaultAllocation(state, b);
+    if (!board3d) return { ...proposal, raid: [...raid] };
+    const key = rollKeyOf(b);
+    if (key !== battleKey || !placed) {
+      battleKey = key;
+      placed = emptyAllocation(proposal);
+    }
+    return { ...placed, raid: [...raid] };
   }
 
   /** A part of a Decision answer as text. */
@@ -373,6 +399,131 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     return myTurn() && hasPowers(v) ? button('powers-open', t('powers.open'), { cls: 'powers-btn', title: t('powers.title') }) : '';
   }
 
+  /** What the rolled keys can steal from the defender (resources and Guild cards), as toggles; '' without keys. */
+  function raidChoices(b: BattleRef): string {
+    if (b.totals.key <= 0) return '';
+    const def = state.players[b.target];
+    const on = (x: RaidTake) => raid.some((r) => ('resource' in r && 'resource' in x && r.resource === x.resource) || ('card' in r && 'card' in x && r.card === x.card));
+    const res = def.resources
+      .map((r, i) => (r ? button('raid', `${t(`resource.${r}`)} · ${t('card.keys', { n: content.playerBoard.slotKeys[i] ?? 1 })}`, { args: { res: i }, cls: on({ resource: i }) ? 'on' : '' }) : ''))
+      .join('');
+    const cards = def.court
+      .filter((c) => ix.courtCards.get(c)?.kind === 'faction')
+      .map((c) => button('raid', `${c} · ${t('card.keys', { n: ix.courtCards.get(c)?.keys ?? 1 })}`, { args: { card: c }, cls: on({ card: c }) ? 'on' : '' }))
+      .join('');
+    return `<div class="hint">${esc(t('battle.raid', { n: b.totals.key }))}</div><div class="opt-row wrap">${res}${cards}</div>`;
+  }
+
+  /**
+   * The battle window (3D map only): who fights where, the 3D scene (filled in
+   * after rendering), the hits still to place, the raid, and the buttons.
+   * Watchers see it without the controls.
+   */
+  function battleWindow(v: TableView): string {
+    if (!board3d || v.phase !== 'allocate' || !v.battle) return '';
+    const b = v.battle;
+    const me = local();
+    const mine = myTurn() && b.attacker === me;
+    const al = allocation();
+    const left = al ? hitsLeft(b, al) : { hits: 0, buildingHits: 0, selfHits: 0 };
+    const ok = mine && al !== null && can({ type: 'allocate', player: me, allocation: al });
+    const chip = (key: string, n: number, total: number) => (total > 0 ? `<span class="b-chip${n === 0 ? ' done' : ''}">${esc(t(key, { n, total }))}</span>` : '');
+    const counts = `${chip('battle.left.hits', left.hits, b.totals.hit)}${chip('battle.left.building', left.buildingHits, b.totals.buildingHit)}${chip('battle.left.self', left.selfHits, b.totals.selfHit + b.interceptHits)}`;
+    const controls = mine
+      ? `<div class="b-foot">${raidChoices(b)}<div class="btn-grid">${button('battle-auto', t('battle.auto'))}${button('battle-reset', t('battle.reset'))}${powersButton(v)}${button('allocate', t('battle.confirm'), { cls: 'primary', disabled: !ok })}</div></div>`
+      : `<div class="b-foot"><div class="hint">${esc(t('battle.watching', { who: playerName(t, b.attacker) }))}</div></div>`;
+    const title = t('battle.title', { system: b.system, a: playerName(t, b.attacker), d: playerName(t, b.target) });
+    return `<div class="battle-win glass" role="dialog" aria-label="${esc(title)}">
+      <div class="b-head"><span class="ctx-title">${esc(title)}</span><span class="b-counts">${counts || esc(t('battle.noHits'))}</span></div>
+      <div class="battle-slot" style="width:${BATTLE_VIEW.w}px;height:${BATTLE_VIEW.h}px"></div>
+      ${mine ? `<div class="hint small">${esc(t('battle.howTo'))}</div>` : ''}
+      ${controls}
+    </div>`;
+  }
+
+  /** Puts the 3D battle scene into the battle window, or stops it when there is no battle. */
+  let battle3d: BattleView3D | null | undefined;
+  function mountBattle(): void {
+    const slot = stage.querySelector<HTMLElement>('.battle-slot');
+    if (!slot || state.phase.type !== 'allocate') {
+      battle3d?.hide();
+      return;
+    }
+    if (battle3d === undefined) {
+      try {
+        battle3d = new BattleView3D(params.get('motion') !== 'off');
+      } catch {
+        battle3d = null;
+      }
+    }
+    if (!battle3d) return;
+    const pb = state.phase.battle;
+    const forces = battleForces(state, pb);
+    const al = allocation()!;
+    const mine = myTurn() && pb.attacker === local();
+    slot.appendChild(battle3d.canvas);
+    battle3d.onPick = (p: BattlePick) => {
+      const next = addHit(forces, pb, allocation()!, p);
+      if (!next) return;
+      placed = { ...next, raid: [] };
+      render();
+    };
+    battle3d.update({
+      attackerSeat: pb.attacker,
+      defenderSeat: pb.target,
+      after: battleAfter(forces, al),
+      buildings: forces.buildings.map((x) => ({ owner: x.owner, type: x.type })),
+      dice: (pb.faces ?? []).map((f) => ({ type: f.type, faces: content.dice[f.type], index: faceIndex(content.dice[f.type], f.face) })),
+      rollKey: rollKeyOf(pb),
+      canPick: mine ? (p) => addHit(forces, pb, al, p) !== null : null,
+    });
+  }
+
+  /** How many ships to move (fresh, damaged, dropped on the way), and confirm, go further or cancel. */
+  function movePanel(v: TableView, i: Extract<Intent, { step: 'move' }>): string {
+    const ok = can(act(movePayload(i), i.prelude));
+    const path = [i.from, ...i.via, i.to].join(' → ');
+    const drops = i.via.map((at) => stepper(`drop:${at}`, t('move.drop', { at }), i.drop[at] ?? 0)).join('');
+    const further = moveTargets(v, i.from, [...i.via, i.to], i.prelude).size > 0;
+    return `<div class="hint">${esc(`${t('action.move')} · ${path}`)}</div>
+      <div class="opt-row wrap">${stepper('ships', t('move.ships'), i.ships)}${stepper('damaged', t('move.damaged'), i.damaged)}${drops}</div>
+      <div class="btn-grid">${button('do-move', t('btn.confirm'), { cls: 'primary', disabled: !ok })}${further ? button('catapult', t('move.further')) : ''}${button('cancel', t('btn.cancel'))}</div>`;
+  }
+
+  /** The move's choices in a small box beside the destination on the 3D map ('' when not moving or not on screen). */
+  function movePopover(v: TableView): string {
+    if (!board3d || intent.step !== 'move') return '';
+    const at = board3d.screenOf(intent.to);
+    if (!at) return '';
+    const r = stage.getBoundingClientRect();
+    const x = (at.x - r.left) / scale;
+    const y = (at.y - r.top) / scale;
+    const W = 330;
+    const left = Math.max(8, Math.min(STAGE.w - W - 8, x + 40));
+    const top = Math.max(8, Math.min(STAGE.h - 200, y - 90));
+    return `<div class="move-pop glass" role="group" aria-label="${esc(t('action.move'))}" style="left:${left}px;top:${top}px;width:${W}px">${movePanel(v, intent)}</div>`;
+  }
+
+  /** Whether the local player may start a move now (Move is one of the card's actions and one is left). */
+  function canStartMove(v: TableView): boolean {
+    return myTurn() && v.phase === 'actions' && !!v.budget && v.budget.remaining > 0 && v.budget.kinds.includes('move');
+  }
+
+  /** Systems holding local ships that can go somewhere now. */
+  function movableFrom(v: TableView): Set<string> {
+    const me = local();
+    return new Set(v.systems.filter((s) => s.inPlay && s.ships.some((x) => x.player === me) && moveTargets(v, s.id, []).size > 0).map((s) => s.id));
+  }
+
+  /** The local ship groups to light up on the 3D map: the ones that can move, or the ones moving. */
+  function shipGlow(v: TableView, valid: ReadonlySet<string>): ShipGlow | null {
+    const me = local();
+    if (intent.step === 'to' || intent.step === 'move') return { player: me, systems: new Set([intent.from]), chosen: intent.from };
+    if (intent.step === 'from') return { player: me, systems: valid };
+    if (intent.step === 'idle' && canStartMove(v)) return { player: me, systems: movableFrom(v) };
+    return null;
+  }
+
   function stepper(name: string, label: string, value: number): string {
     return `<span class="stepper"><span>${esc(label)}</span>${button('step', '−', { args: { name, d: -1 } })}<span class="num">${value}</span>${button('step', '+', { args: { name, d: 1 } })}</span>`;
   }
@@ -439,25 +590,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       return h + '</div>';
     }
 
+    if (v.phase === 'allocate' && v.battle && board3d) return '';
     if (v.phase === 'allocate' && v.battle) {
       const b = v.battle;
       const summary = t('battle.summary', { hit: b.totals.hit, buildingHit: b.totals.buildingHit, selfHit: b.totals.selfHit, intercept: b.interceptHits, key: b.totals.key });
       const al = allocation();
       const ok = al !== null && can({ type: 'allocate', player: me, allocation: al });
-      let takes = '';
-      if (b.totals.key > 0) {
-        const def = state.players[b.target];
-        const on = (x: RaidTake) => raid.some((r) => ('resource' in r && 'resource' in x && r.resource === x.resource) || ('card' in r && 'card' in x && r.card === x.card));
-        const res = def.resources
-          .map((r, i) => (r ? button('raid', `${t(`resource.${r}`)} · ${t('card.keys', { n: content.playerBoard.slotKeys[i] ?? 1 })}`, { args: { res: i }, cls: on({ resource: i }) ? 'on' : '' }) : ''))
-          .join('');
-        const cards = def.court
-          .filter((c) => ix.courtCards.get(c)?.kind === 'faction')
-          .map((c) => button('raid', `${c} · ${t('card.keys', { n: ix.courtCards.get(c)?.keys ?? 1 })}`, { args: { card: c }, cls: on({ card: c }) ? 'on' : '' }))
-          .join('');
-        takes = `<div class="hint">${esc(t('battle.raid', { n: b.totals.key }))}</div><div class="opt-row wrap">${res}${cards}</div>`;
-      }
-      return `<div class="ctx-head"><span class="ctx-title">${esc(`${b.system}: ${playerName(t, b.attacker)} → ${playerName(t, b.target)}`)}</span></div><div class="hint">${esc(summary)}</div>${takes}<div class="btn-grid">${button('allocate', t('battle.assign'), { cls: 'primary', disabled: !ok })}${powersButton(v)}</div>`;
+      return `<div class="ctx-head"><span class="ctx-title">${esc(`${b.system}: ${playerName(t, b.attacker)} → ${playerName(t, b.target)}`)}</span></div><div class="hint">${esc(summary)}</div>${raidChoices(b)}<div class="btn-grid">${button('allocate', t('battle.assign'), { cls: 'primary', disabled: !ok })}${powersButton(v)}</div>`;
     }
 
     if (v.phase === 'decide' && v.decision) {
@@ -503,15 +642,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           .join('');
         return `<div class="hint">${esc(`${t('action.tax')} · ${i.system}`)}</div><div class="btn-grid">${opts}${cancel}</div>`;
       }
-      case 'move': {
-        const ok = can(act(movePayload(i), i.prelude));
-        const path = [i.from, ...i.via, i.to].join(' → ');
-        const drops = i.via.map((at) => stepper(`drop:${at}`, t('move.drop', { at }), i.drop[at] ?? 0)).join('');
-        const further = moveTargets(v, i.from, [...i.via, i.to], i.prelude).size > 0;
-        return `<div class="hint">${esc(`${t('action.move')} · ${path}`)}</div>
-          <div class="opt-row wrap">${stepper('ships', t('move.ships'), i.ships)}${stepper('damaged', t('move.damaged'), i.damaged)}${drops}</div>
-          <div class="btn-grid">${button('do-move', t('btn.confirm'), { cls: 'primary', disabled: !ok })}${further ? button('catapult', t('move.further')) : ''}${cancel}</div>`;
-      }
+      case 'move':
+        // On the 3D map the choice sits beside the destination (movePopover).
+        return board3d ? '' : movePanel(v, i);
       case 'battle': {
         const targets = rivalsIn(v, i.system)
           .map((r) => button('target', playerName(t, r), { args: { player: r }, cls: i.target === r ? 'on' : '' }))
@@ -716,7 +849,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       ${modalHtml(v)}
       ${toast ? `<div class="toast" role="alert">${esc(toast)}</div>` : ''}
       <div class="card-zoom" aria-hidden="true" hidden></div>`;
-    board3d?.update(v, valid, chosen);
+    board3d?.update(v, valid, chosen, shipGlow(v, valid));
+    // The move box needs the map drawn to know where the destination is on screen.
+    const pop = movePopover(v);
+    if (pop) stage.insertAdjacentHTML('beforeend', pop);
+    const war = battleWindow(v);
+    if (war) stage.insertAdjacentHTML('beforeend', war);
+    mountBattle();
     restoreFocus(key);
     const dialog = stage.querySelector('.modal');
     if (dialog && !dialog.contains(document.activeElement)) {
@@ -727,6 +866,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   // ---- input ----
   function pickSystem(id: string): void {
     const v = tableView(ix, state, local());
+    // Clicking your own ships while you may move starts a move from there.
+    if (intent.step === 'idle' && !modal && canStartMove(v) && movableFrom(v).has(id)) {
+      pendingMove = null;
+      intent = { step: 'to', from: id, via: [] };
+      render();
+      return;
+    }
     if (!validSystems(v).has(id)) {
       // Not a choice for the current step: outside a step, the click opens the system's details.
       if (intent.step === 'idle' && !modal) {
@@ -891,6 +1037,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           if (p) send(act(p, intent.prelude));
         }
         return;
+      case 'battle-auto':
+        if (state.phase.type === 'allocate') placed = { ...defaultAllocation(state, state.phase.battle), raid: [] };
+        break;
+      case 'battle-reset':
+        if (placed) placed = emptyAllocation(placed);
+        break;
       case 'allocate':
         {
           const al = allocation();
