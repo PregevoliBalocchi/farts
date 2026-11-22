@@ -1,5 +1,5 @@
 // Asset manifest (docs/ui/UI_SPEC.md §13): every picture the table shows goes
-// through here. An image in assets/ui/ (git-ignored, local only) replaces the
+// through here. An image in assets/ui/ (committed, see docs/ui-assets.md) replaces the
 // placeholder drawn in code. Folders become dots in the key:
 //   assets/ui/card/<card id>.png     Court card art (picker, Court row, held cards)
 //   assets/ui/icon/<glyph>.png       a glyph: material, fuel, weapons, relic, psionic,

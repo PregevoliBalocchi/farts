@@ -1,13 +1,14 @@
 # Pictures for the table screen
 
-The table screen draws with whatever it finds in `assets/ui/`. That folder is
-**git-ignored**: nothing in it is ever committed, so every machine that builds
-or deploys the site has to fill it once. Without it the game still runs, with
-our own schematic board, shapes and glyphs.
+The table screen draws with whatever it finds in `assets/ui/`. The folder is
+**committed**: a fresh clone has every picture, and a deploy needs nothing
+else. Without a picture the game falls back to our own schematic board, shapes
+and glyphs.
 
-Owner's decision (2026-11): the invite-only beta may use the publisher's
-development kit and the board picture. The site is not open to the public.
-The pictures still stay out of the repository.
+Owner's decision (2026-11): the repository is private and the site is an
+invite-only beta, so the publisher's development kit pictures and the board
+picture are kept in the repository. Card images and card texts are not: they
+stay local or in Firestore, as before.
 
 ## 1. The development kit
 
@@ -18,6 +19,8 @@ npm run assets:kit
 `tools/fetch-kit.mjs` downloads the publisher's development kit, and copies the
 pictures the screen uses into `assets/ui/` under the names the code reads
 (`node tools/fetch-kit.mjs <kit.zip>` installs from a zip already downloaded).
+The pictures are already in the repository: run it only to refresh them when
+the kit changes, then commit the result.
 
 | Folder | What | Used for |
 |---|---|---|
@@ -45,8 +48,6 @@ card areas) at:
 assets/ui/map/board.png
 ```
 
-It is passed by hand between the two of us, like the other private files.
-
 `src/ui/table/board.default.json` (committed: numbers only) says where each
 system and each building slot is on that picture, for a 1470×1010 crop. For a
 different picture, write your own `assets/ui/map/board.json` in the same
@@ -70,13 +71,8 @@ slots are added by hand.
 
 ## 3. Before a deploy
 
-Everything in `assets/ui/` goes into `dist-online/`. Before
-`npm run deploy:online`, on the machine that deploys:
-
-1. `npm run assets:kit`
-2. copy `board.png` into `assets/ui/map/`
-
-Otherwise the published site shows the schematic board and our own shapes.
+Nothing to do: everything in `assets/ui/` is in the repository and goes into
+`dist-online/` with `npm run deploy:online`.
 
 ## The map on screen
 
