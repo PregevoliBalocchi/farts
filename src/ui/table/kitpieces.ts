@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { assetUrl } from './assets';
 import { largestBlob, simplifyOutline, traceOutline } from './outline';
+import { modelPiece } from './models3d';
 import { makePiece, paintedWood, SEAT_PAINT, woodGrain } from './pieces3d';
 import type { PieceKind } from './pieces3d';
 
@@ -118,11 +119,13 @@ export function loadKitPieces(): Promise<boolean> {
 }
 
 /**
- * A piece for a seat: the kit's shape when its picture is installed and
- * loaded, else pieces3d's own. `lying`: a damaged ship or flagship on its
+ * A piece for a seat: the owner's 3D model when loaded (models3d), else the
+ * kit's shape when its picture is installed and loaded, else pieces3d's own. `lying`: a damaged ship or flagship on its
  * side; `damaged`: a building tile with its damaged side up.
  */
 export function piece(kind: PieceKind, seat: number, opts: { lying?: boolean; damaged?: boolean } = {}): THREE.Object3D {
+  const model = modelPiece(kind, seat, opts);
+  if (model) return model;
   const s = seat % SEAT_PAINT.length;
   const tile = TILES.has(kind);
   const c = (tile && opts.damaged ? cuts.get(`${kind}-back-${s}`) : undefined) ?? cuts.get(`${kind}-${s}`);
