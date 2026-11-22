@@ -606,7 +606,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .board .slot .keys { position: static; background: none; border: 0; padding: 0; justify-content: center; color: var(--gold); gap: 0; font-size: 11px; }
 .board .slot .keys .ic { width: 9px; height: 9px; }
 .board .slot .keys.plus { color: var(--gold-hi); }
-.board .slot .well { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 7px; background: #070b17; border: 1px solid #3a4468; box-shadow: inset 0 2px 6px #000a; }
+.board .slot .well { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: #070b17; border: 1px solid #3a4468; box-shadow: inset 0 2px 6px #000a; }
 .board .slot.locked { background: none; }
 .board .slot.locked .well { background: repeating-linear-gradient(45deg, #0a0f1e 0 5px, #151d33 5px 10px); color: var(--text-faint); font-size: 16px; }
 .board .slot .on-city .pc { width: 34px; height: 34px; }
@@ -614,11 +614,18 @@ button.supply:hover { border-color: var(--rule-hi); }
 .board .slot.spend { cursor: pointer; box-shadow: none; }
 .board .slot.spend .well { border-color: var(--rule-hi); box-shadow: 0 0 10px rgba(95, 212, 230, .55); }
 .board .slot.chosen .well { box-shadow: var(--select); }
-.board .slot.outraged::after { inset: 17px 0 0; }
+.board .slot.outraged::after { inset: 17px 0 0; border-radius: 50%; }
 .board .slot-sep { width: 1px; align-self: stretch; background: #ffffff22; margin: 0 2px; }
-.board .outrage { display: flex; gap: 6px; align-items: center; }
-.board .outrage .out { position: relative; font-size: 20px; display: inline-flex; }
-.board .outrage .out::after { content: ""; position: absolute; left: -3px; right: -3px; top: 50%; height: 2px; background: var(--danger); transform: rotate(-35deg); }
+.board .outrage { display: flex; gap: 5px; align-items: center; }
+.board .o-space { position: relative; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #070b17; border: 1px solid #3a4468; box-shadow: inset 0 2px 5px #000a; }
+.board .o-space .o-res { display: inline-flex; font-size: 16px; opacity: .55; filter: grayscale(.4); }
+.board .o-space.on { border-color: var(--danger); }
+.board .o-space .o-agent { position: absolute; inset: -3px; display: grid; place-items: center; }
+.board .o-space .o-agent .pc { width: 24px; height: 24px; object-fit: contain; filter: drop-shadow(0 2px 2px #000c); }
+.board.rival .outrage { gap: 3px; padding: 2px 0 1px; }
+.board.rival .o-space { width: 18px; height: 18px; }
+.board.rival .o-space .o-res { font-size: 11px; }
+.board.rival .o-space .o-agent .pc { width: 17px; height: 17px; }
 .tbl-stage .rivals .board.rival { width: 318px; height: 158px; flex: none; cursor: pointer; padding: 6px 8px 0; gap: 3px; }
 .board.rival .portrait { width: 40px; height: 40px; font-size: 20px; }
 .board.rival .held { display: grid; grid-template-columns: repeat(3, auto); gap: 1px 14px; font-size: .9em; }

@@ -93,6 +93,7 @@
   "slot.empty": "Slot vuoto",
   "initiative": "Iniziativa",
   "outraged": "Oltraggio: {list}",
+  "outrage.row": "Oltraggio",
   "prompt.lead": "Guida con una carta, o passa l'iniziativa.",
   "prompt.follow": "Tocca a te: segui, pivot o copia.",
   "prompt.actions": "Fai un'azione. Ne restano {n}.",

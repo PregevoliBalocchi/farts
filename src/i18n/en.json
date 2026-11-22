@@ -93,6 +93,7 @@
   "slot.empty": "Empty slot",
   "initiative": "Initiative",
   "outraged": "Outraged: {list}",
+  "outrage.row": "Outrage",
   "prompt.lead": "Lead a card, or pass the initiative.",
   "prompt.follow": "Follow: surpass, pivot or copy.",
   "prompt.actions": "Take an action. {n} left.",

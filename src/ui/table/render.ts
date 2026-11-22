@@ -156,10 +156,22 @@ function heldCounts(p: PlayerView, t: Translate): string {
     .join('')}</div>`;
 }
 
-/** Outraged resource types, as crossed tokens (empty when none). */
+/**
+ * The Outrage row of a seat board, as on the physical one: a round space per
+ * resource type with its icon printed faint; an Outraged type is covered by
+ * one of the seat's agents.
+ */
 function outrage(p: PlayerView, t: Translate): string {
-  if (!p.outraged.length) return '';
-  return `<div class="outrage" title="${esc(t('outraged', { list: p.outraged.map((r) => t(`resource.${r}`)).join(', ') }))}">${p.outraged.map((r) => `<span class="out">${resIcon(r, t)}</span>`).join('')}</div>`;
+  const agent = pieceIcon('agent', p.id, t('stat.agents'));
+  const spaces = p.held
+    .map((h) => {
+      const label = t(`resource.${h.resource}`);
+      const on = p.outraged.includes(h.resource);
+      const title = on ? t('outraged', { list: label }) : label;
+      return `<span class="o-space${on ? ' on' : ''}" title="${esc(title)}"><span class="o-res">${resIcon(h.resource, t)}</span>${on ? `<span class="o-agent">${agent}</span>` : ''}</span>`;
+    })
+    .join('');
+  return `<div class="outrage" aria-label="${esc(t('outrage.row'))}">${spaces}</div>`;
 }
 
 function miniCards(cards: string[], max: number): string {
@@ -201,6 +213,7 @@ export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Tra
   return `<div class="rival-wrap"><button type="button" class="board rival s-${p.id % 4}${p.isActive ? ' active' : ''}" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">
     <div class="b-top">${portrait(p.id)}${heldCounts(p, t)}</div>
     <div class="b-mid">${spoils(p, t)}${miniCards(p.court, 5)}</div>
+    ${outrage(p, t)}
     ${stats(p, t, true)}
     ${nameBar(p, t)}
   </button>${playedCard(ix, v, t, p.id)}</div>`;
