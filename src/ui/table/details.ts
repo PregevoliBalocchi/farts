@@ -6,7 +6,7 @@ import type { ContentIndex } from '../../game/engine';
 import type { Translate } from '../../i18n';
 import { icon, seatColor, seatIcon } from './assets';
 import { faceOf } from './cardface';
-import { button, cardLabel, courtFace, esc, playerName } from './render';
+import { button, cardLabel, courtFace, esc, playerName, systemName, systemTag } from './render';
 import type { AmbitionRowView, PlayerView, SystemView, TableView } from './view';
 
 /** What a detail window shows. */
@@ -59,11 +59,11 @@ function seatDetail(ix: ContentIndex, v: TableView, p: PlayerView, t: Translate)
     <div class="modal-foot">${button('close-modal', t('btn.back'))}${p.court.length ? button('seat-cards', t('btn.court'), { args: { player: p.id } }) : '<span></span>'}</div>`;
 }
 
-function systemDetail(s: SystemView, t: Translate): string {
+function systemDetail(v: TableView, s: SystemView, t: Translate): string {
   const ships = s.ships.map((x) => `${seatTag(t, x.player)} ${icon('ship')} ${x.fresh}${x.damaged ? ` · ${esc(t('detail.damaged', { n: x.damaged }))}` : ''}`).join('<br>');
   const blds = s.buildings.map((b) => `${seatTag(t, b.owner)} ${icon(b.type)} ${esc(t(`build.${b.type}`))}${b.damaged ? ` (${esc(t('detail.damagedOne'))})` : ''}`).join('<br>');
-  const near = s.neighbors.map((n) => button('detail-system', n, { args: { id: n }, cls: 'chip-btn' })).join(' ');
-  return `<h2 id="modal-title">${esc(s.id)}</h2>
+  const near = s.neighbors.map((n) => button('detail-system', systemName(v.systems.find((x) => x.id === n), t, n), { args: { id: n }, cls: 'chip-btn' })).join(' ');
+  return `<h2 id="modal-title">${systemTag(s, t)}</h2>
     <div class="detail-sub">${esc(t(`detail.kind.${s.kind}`))}${s.resource ? ` · <span class="r-${s.resource}">${icon(s.resource)}</span> ${esc(t(`resource.${s.resource}`))}` : ''}${s.slots ? ` · ${esc(t('detail.slots', { n: s.slots }))}` : ''}${s.inPlay ? '' : ` · ${esc(t('detail.outOfPlay'))}`}</div>
     <div class="modal-body detail-grid"><dl>
       ${row(t('detail.controller'), s.controller !== null ? seatTag(t, s.controller) : esc(t('detail.nobody')))}
@@ -108,7 +108,7 @@ export function detailHtml(ix: ContentIndex, v: TableView, d: DetailTarget, t: T
     }
     case 'system': {
       const s = v.systems.find((x) => x.id === d.id);
-      return s ? systemDetail(s, t) : null;
+      return s ? systemDetail(v, s, t) : null;
     }
     case 'ambition': {
       const a = v.ambitions.find((x) => x.id === d.id);

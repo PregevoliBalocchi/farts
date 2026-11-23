@@ -186,6 +186,16 @@ export function legal(ix: ContentIndex, state: GameState, cmd: Command): boolean
   }
 }
 
+/** Why `cmd` is not legal now (the engine's message, untranslated), or null when it is. */
+export function whyNot(ix: ContentIndex, state: GameState, cmd: Command): string | null {
+  try {
+    dispatch(ix, state, cmd);
+    return null;
+  } catch (e) {
+    return (e as Error).message;
+  }
+}
+
 /** Seats clockwise from `local`, without it. */
 export function rivalsOf(playerCount: number, local: PlayerId): PlayerId[] {
   return Array.from({ length: playerCount - 1 }, (_, i) => (local + 1 + i) % playerCount);
