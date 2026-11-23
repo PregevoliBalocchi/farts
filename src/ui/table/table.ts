@@ -11,7 +11,7 @@ import { BASE_EFFECTS } from '../../game/cards/base';
 import { LANGS, pickLang, translator } from '../../i18n';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
-import { assetUrl, icon, seatIcon } from './assets';
+import { assetUrl, cardArt, icon, seatIcon } from './assets';
 import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, hitsLeft } from './battle';
 import type { BattlePick } from './battle';
 import { BATTLE_VIEW, BattleView3D } from './battleview3d';
@@ -86,7 +86,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   let players = Number(params.get('players') ?? 3) as PlayerCount;
   let seed = Number(params.get('seed') ?? 1) || 1;
-  let state: GameState = online ? online.state : newGame(ix, { playerCount: players, seed, variant: 'base' });
+  /** Locally, ?variant=leaders starts the Leaders & Lore variant (with its draft). */
+  const variant = params.get('variant') === 'leaders' ? 'leaders' : 'base';
+  let state: GameState = online ? online.state : newGame(ix, { playerCount: players, seed, variant });
   let history: GameState[] = [];
   // Online the seat is fixed; locally the view follows the active seat unless ?seat= pins it.
   // Hotseat: a shared game whose seat is null, or locally ?hotseat=1 (to try the hand-over screen).
@@ -224,7 +226,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   }
 
   function restart(): void {
-    state = newGame(ix, { playerCount: players, seed, variant: 'base' });
+    state = newGame(ix, { playerCount: players, seed, variant });
     history = [];
     resetChoices();
     modal = null;
@@ -393,7 +395,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'decide':
         return t('prompt.decide');
       default:
-        return t('prompt.draft');
+        return myTurn() ? t('draft.yoursShort') : t('prompt.draft');
     }
   }
 
@@ -447,6 +449,49 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="battle-slot" style="width:${BATTLE_VIEW.w}px;height:${BATTLE_VIEW.h}px"></div>
       ${mine ? `<div class="hint small">${esc(t('battle.howTo'))}</div>` : ''}
       ${controls}
+    </div>`;
+  }
+
+  /**
+   * The Leaders & Lore draft window: the face-up leaders and lore cards (hover
+   * zooms, a click takes one when it is your pick), who picks now and after,
+   * and what each seat has taken so far. Watchers see it without the clicks.
+   */
+  function draftWindow(): string {
+    const d = state.draft;
+    if (state.phase.type !== 'draft' || !d) return '';
+    const me = local();
+    const mine = myTurn();
+    const card = (id: string) => {
+      const art = cardArt(id);
+      const ok = mine && can({ type: 'draft', player: me, card: id });
+      const face = art ? `<img src="${esc(art)}" alt="">` : `<span class="dr-ph">${esc(id)}</span>`;
+      return ok
+        ? `<button type="button" class="dr-card pickable" data-act="draft-pick" data-card="${esc(id)}" data-zoom="${esc(id)}" aria-label="${esc(t('draft.take', { card: id }))}">${face}</button>`
+        : `<span class="dr-card" data-zoom="${esc(id)}">${face}</span>`;
+    };
+    const order = d.order
+      .slice(0, 8)
+      .map((p, i) => `<span class="dr-turn s-${p % 4}${i === 0 ? ' now' : ''}" title="${esc(playerName(t, p))}">${icon(seatIcon(p))}</span>`)
+      .join('');
+    const taken = state.players
+      .map((p) => {
+        const got = [p.leader, ...p.lore].filter((x): x is string => !!x).map((id) => {
+          const art = cardArt(id);
+          return `<span class="dr-mini" data-zoom="${esc(id)}">${art ? `<img src="${esc(art)}" alt="">` : esc(id)}</span>`;
+        });
+        return `<div class="dr-seat s-${p.id % 4}"><span class="seat-c">${icon(seatIcon(p.id))}</span><span class="nm">${esc(playerName(t, p.id))}</span>${got.join('') || `<span class="dr-none">${esc(t('draft.none'))}</span>`}</div>`;
+      })
+      .join('');
+    const now = d.order[0];
+    const head = mine ? t('draft.yours', { n: d.lorePerPlayer }) : t('draft.waiting', { name: playerName(t, now) });
+    return `<div class="draft-win" role="dialog" aria-labelledby="draft-title">
+      <div class="dr-head"><h2 id="draft-title">${esc(t('draft.title'))}</h2><span class="dr-order" aria-label="${esc(t('draft.order'))}">${order}</span></div>
+      <p class="dr-hint">${esc(head)}</p>
+      <div class="dr-label">${esc(t('draft.leaders'))}</div>
+      <div class="dr-row">${d.leaders.map(card).join('')}</div>
+      ${d.lore.length || d.lorePerPlayer ? `<div class="dr-label">${esc(t('draft.lore'))}</div><div class="dr-row">${d.lore.map(card).join('')}</div>` : ''}
+      <div class="dr-taken">${taken}</div>
     </div>`;
   }
 
@@ -894,6 +939,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (pop) stage.insertAdjacentHTML('beforeend', pop);
     const war = battleWindow(v);
     if (war) stage.insertAdjacentHTML('beforeend', war);
+    const pick = draftWindow();
+    if (pick) stage.insertAdjacentHTML('beforeend', pick);
     mountBattle();
     restoreFocus(key);
     const dialog = stage.querySelector('.modal');
@@ -1075,6 +1122,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           const p = battlePayload(intent);
           if (p) send(act(p, intent.prelude));
         }
+        return;
+      case 'draft-pick':
+        if (d.card) send({ type: 'draft', player: me, card: d.card });
         return;
       case 'battle-auto':
         if (state.phase.type === 'allocate') placed = { ...defaultAllocation(state, state.phase.battle), raid: [] };

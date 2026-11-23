@@ -76,3 +76,17 @@ test('hotseat covers the screen between players until the next one is ready', as
   await expect(page.locator('.hs-curtain')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('the Leaders and Lore draft gives every player a leader and a lore card', async ({ page }) => {
+  const errors = await open(page, '&players=3&variant=leaders');
+  // The game opens on the draft window, not on the hand.
+  await expect(page.locator('.draft-win')).toBeVisible();
+  expect(await phase(page)).toBe('draft');
+  // Each seat takes one card per turn until everyone has a leader and a lore card.
+  for (let i = 0; i < 6; i++) await page.locator('[data-act="draft-pick"]').first().click();
+  await expect(page.locator('.draft-win')).toHaveCount(0);
+  expect(await phase(page)).toBe('lead');
+  const players = await page.evaluate(() => (window.game!.state as { players: { leader?: string; lore: string[] }[] }).players);
+  expect(players.every((p) => !!p.leader && p.lore.length === 1)).toBe(true);
+  expect(errors).toEqual([]);
+});

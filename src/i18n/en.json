@@ -272,5 +272,14 @@
   "online.notYours": "This is not your seat: only your own turn can be played here",
   "hotseat.turn": "{name}'s turn",
   "hotseat.pass": "Hand the computer to {name}. Everyone else look away: their hand will show.",
-  "hotseat.ready": "I'm ready"
+  "hotseat.ready": "I'm ready",
+  "draft.title": "Leaders and lore",
+  "draft.take": "Take {card}",
+  "draft.none": "no cards",
+  "draft.yours": "Your pick: take a leader or a lore card (each player ends with one leader and {n} lore).",
+  "draft.yoursShort": "Take a leader or a lore card.",
+  "draft.waiting": "{name} is choosing.",
+  "draft.order": "Pick order",
+  "draft.leaders": "Leaders",
+  "draft.lore": "Lore"
 }
