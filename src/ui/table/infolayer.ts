@@ -28,9 +28,11 @@ export interface BoardLines {
   /**
    * Where pieces go in each system, inside its zone and clear of the planet,
    * lines, slots and icons: one ship spot per seat, and spots for tokens
-   * (campaign markers and the like), as [x, y] picture pixels.
+   * (campaign markers and the like), as [x, y] picture pixels; `layouts`: where
+   * the ships stand when 1, 2, 3 or 4 seats have ships there, centred in the
+   * zone's free room (tools/board-trace/6-centred-spots.py).
    */
-  spots?: Record<string, { ships: number[][]; tokens: number[][] }>;
+  spots?: Record<string, { ships: number[][]; tokens: number[][]; layouts?: number[][][] }>;
 }
 
 /**
@@ -43,7 +45,13 @@ export function withLayerSpots(calib: BoardCalibration, lines: Pick<BoardLines, 
   const systems: BoardCalibration['systems'] = {};
   for (const [id, sys] of Object.entries(calib.systems)) {
     const ships = lines.spots[id]?.ships;
-    systems[id] = ships?.length ? { ...sys, ships: ships.map(([x, y]) => ({ x, y })) } : sys;
+    const layouts = lines.spots[id]?.layouts;
+    const at = ([x, y]: number[]) => ({ x, y });
+    systems[id] = {
+      ...sys,
+      ...(ships?.length ? { ships: ships.map(at) } : {}),
+      ...(layouts?.length ? { layouts: layouts.map((fig) => fig.map(at)) } : {}),
+    };
   }
   return { ...calib, systems };
 }
@@ -457,6 +465,15 @@ export function drawInfoLayer(cv: HTMLCanvasElement, lines: BoardLines, calib: B
       });
       g.strokeStyle = '#ff7ef0';
       for (const [x, y] of sp.tokens) g.strokeRect(x - 10, y - 10, 20, 20);
+      // The centred places for 1–4 seats: one colour per seat count.
+      (sp.layouts ?? []).forEach((fig, n) => {
+        g.strokeStyle = ['#ffffff', '#ffd84a', '#7dff8a', '#ff9a4a'][n];
+        for (const [x, y] of fig) {
+          g.beginPath();
+          g.arc(x, y, 6 + 4 * n, 0, Math.PI * 2);
+          g.stroke();
+        }
+      });
     }
   }
 

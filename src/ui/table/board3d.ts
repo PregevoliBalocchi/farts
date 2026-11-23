@@ -15,11 +15,12 @@ import type { ContentIndex } from '../../game/engine';
 import { layout } from '../map';
 import { assetUrl, seatColor } from './assets';
 import defaultCalibration from './board.default.json';
-import { BOARD_DEPTH, boardWidth, buildingSpots, headingJitter, isCalibration, MAX_SHOWN, pictureToWorld, shipGroups, shipSpot, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
+import { BOARD_DEPTH, boardWidth, buildingSpots, headingJitter, isCalibration, MAX_SHOWN, pictureToWorld, shipGroups, shipPlace, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
 import type { BoardCalibration, Spot } from './board3d-layout';
 import { loadKitPieces, piece } from './kitpieces';
 import { faceEnemies, flightPhase, headingTowards, planMoves, routeSystems, turnBetween } from './model-fx';
 import type { ShipGroupAt } from './model-fx';
+import { disposeRoute, holoMaterial, routeArrow, routeCurve, routeMark, toHologram } from './route3d';
 import modelConfig from './models.json';
 import { engineTrail, fxTime, fxViewHeight, hasModels, loadModels, seatGlow } from './models3d';
 import type { EngineTrail } from './models3d';
@@ -98,6 +99,20 @@ export interface ShipGlow {
   chosen?: string;
 }
 
+/**
+ * A move being planned (table.ts): the arrow along `path` (from where the ships
+ * stand, through every system passed, to the end) and holograms of the ships
+ * at each stop. `open`: the route may go on, to any of `targets` (hovering one
+ * shows that next step); else the ships must stop at the end.
+ */
+export interface RoutePreview {
+  seat: number;
+  path: string[];
+  stops: { system: string; fresh: number; damaged: number }[];
+  open: boolean;
+  targets: ReadonlySet<string>;
+}
+
 /** A ship group flying to its new system: its course, how it turns at both ends, and its engine trail. */
 interface Flight {
   o: THREE.Object3D;
@@ -137,6 +152,14 @@ export class Board3D {
   private glow: ShipGlow | null = null;
   /** Ship groups flying from one system to another: start time set on the first frame. */
   private flights: Flight[] = [];
+  /** The move being planned, drawn over the map: its arrow, marks and holograms. */
+  private route: RoutePreview | null = null;
+  private routeKey = '';
+  private readonly routeGroup = new THREE.Group();
+  /** The faint next step towards the system under the pointer, while a route may go on. */
+  private readonly nextGroup = new THREE.Group();
+  private nextId: string | null = null;
+  private holoMats = new Map<number, THREE.ShaderMaterial>();
   /** Glowing engine trails, kept after their ship lands until they fade out. */
   private trails: EngineTrail[] = [];
   private framed = false;
@@ -211,7 +234,7 @@ export class Board3D {
     this.board.position.y = -0.01;
     this.board.receiveShadow = !this.space;
     if (this.space) this.board.renderOrder = 2;
-    this.scene.add(this.board, this.shades, this.pieces, this.rings, this.discs);
+    this.scene.add(this.board, this.shades, this.pieces, this.rings, this.discs, this.routeGroup, this.nextGroup);
 
     this.controls = new OrbitControls(this.camera, this.canvas);
     this.controls.enableDamping = false;
@@ -247,6 +270,8 @@ export class Board3D {
       if (!any) return;
       this.piecesKey = '';
       if (this.last) this.buildPieces(this.last, false);
+      this.routeKey = '';
+      this.buildRoute();
       this.dirty = true;
     });
     void loadKitPieces().then((any) => {
@@ -254,6 +279,8 @@ export class Board3D {
       if (!any) return;
       this.piecesKey = '';
       if (this.last) this.buildPieces(this.last, false);
+      this.routeKey = '';
+      this.buildRoute();
       this.dirty = true;
     });
   }
@@ -349,7 +376,7 @@ export class Board3D {
    * `ships`: a seat's ship groups to light up under the models, in the given
    * systems (`chosen` drawn as picked): the ships the local player can move.
    */
-  update(v: TableView, valid: ReadonlySet<string>, chosen: ReadonlySet<string>, ships: ShipGlow | null = null): void {
+  update(v: TableView, valid: ReadonlySet<string>, chosen: ReadonlySet<string>, ships: ShipGlow | null = null, route: RoutePreview | null = null): void {
     this.last = v;
     const key = v.systems.map((s) => (s.inPlay ? '1' : '0')).join('');
     if (key !== this.boardKey) {
@@ -374,7 +401,111 @@ export class Board3D {
     }
     this.glow = ships;
     this.buildRings(v, valid, chosen);
+    this.route = route;
+    this.buildRoute();
     this.dirty = true;
+  }
+
+  // ---- the move being planned ----
+
+  /** Where seat `seat`'s ships would stand in system `id`, with the seats already there. */
+  private placeFor(id: string, seat: number): Spot | null {
+    const s = this.last?.systems.find((x) => x.id === id);
+    const seats = [...new Set([...(s?.ships.filter((x) => x.fresh + x.damaged > 0).map((x) => x.player) ?? []), seat])].sort((a, b) => a - b);
+    return shipPlace(this.calib, id, seat, seats) ?? this.spots[id] ?? null;
+  }
+
+  /** The route's points: the moving ships where they stand, then each system's place along the way. */
+  private routePoints(r: RoutePreview): Spot[] | null {
+    const mine = this.shipsAt.filter((g) => g.player === r.seat && g.system === r.path[0]);
+    const start = mine.find((g) => !g.damaged) ?? mine[0] ?? this.placeFor(r.path[0], r.seat);
+    const rest = r.path.slice(1).map((id) => this.placeFor(id, r.seat));
+    if (!start || rest.some((p) => !p)) return null;
+    return [start, ...(rest as Spot[])];
+  }
+
+  private holoFor(seat: number): THREE.ShaderMaterial {
+    let m = this.holoMats.get(seat);
+    if (!m) {
+      m = holoMaterial(seatGlow(seatColor(seat)));
+      this.holoMats.set(seat, m);
+    }
+    return m;
+  }
+
+  private clearRoute(g: THREE.Group): void {
+    disposeRoute(g, new Set(this.holoMats.values()));
+    g.clear();
+  }
+
+  /** Draws the planned route (or clears it): the arrow, a mark on each system passed through, the holograms. */
+  private buildRoute(): void {
+    const r = this.route;
+    const key = r ? JSON.stringify([r.seat, r.path, r.stops, r.open, this.piecesKey]) : '';
+    if (key === this.routeKey) return;
+    this.routeKey = key;
+    this.clearRoute(this.routeGroup);
+    this.showNext(null);
+    if (!r || r.path.length < 2) return;
+    const pts = this.routePoints(r);
+    if (!pts) return;
+    const color = seatGlow(seatColor(r.seat));
+    const cfg = modelConfig.route;
+    const curve = routeCurve(pts);
+    this.routeGroup.add(routeArrow(curve, color, cfg.startGap, cfg.endGap));
+    // Systems passed through without leaving ships there: a small mark.
+    const stopAt = new Map(r.stops.map((s) => [s.system, s]));
+    r.path.slice(1, -1).forEach((id, i) => {
+      if (!stopAt.has(id)) this.routeGroup.add(routeMark(pts[i + 1], color));
+    });
+    if (!r.open) this.routeGroup.add(routeMark(pts[pts.length - 1], color, true));
+    // The ships as they will stand: holograms at each stop.
+    for (const s of r.stops) {
+      const k = r.path.indexOf(s.system);
+      if (k < 1) continue;
+      this.addHolograms(r.seat, s, pts[k], pts[k - 1]);
+    }
+  }
+
+  /** Hologram ships of `seat` at `at` (one per group, as the real ones stand), facing rivals there or the way they came. */
+  private addHolograms(seat: number, s: { system: string; fresh: number; damaged: number }, place: Spot, came: Spot): void {
+    // Where the seat already has ships, the newcomers show beside them, on the side they come from.
+    let at = place;
+    if (this.shipsAt.some((g) => g.system === s.system && g.player === seat)) {
+      const dx = came.x - place.x;
+      const dz = came.z - place.z;
+      const l = Math.hypot(dx, dz) || 1;
+      at = { x: place.x + (dx / l) * modelConfig.route.beside, z: place.z + (dz / l) * modelConfig.route.beside };
+    }
+    const foes = this.shipsAt.filter((g) => g.system === s.system && g.player !== seat);
+    const heading = foes.length
+      ? headingTowards(at, { x: foes.reduce((a, g) => a + g.x, 0) / foes.length, z: foes.reduce((a, g) => a + g.z, 0) / foes.length })
+      : headingTowards(came, at);
+    const mat = this.holoFor(seat);
+    for (const g of shipGroups(s.fresh, s.damaged)) {
+      const o = toHologram(piece('ship', seat, { lying: g.lying }), mat);
+      o.position.set(at.x + g.dx, 0, at.z + g.dz);
+      o.rotation.y = heading;
+      if (!o.userData.model) o.scale.setScalar((o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE) * ZONE_SHIP_SCALE);
+      this.routeGroup.add(o);
+      if (g.count > 1) this.routeGroup.add(countTag(g.count, at.x + g.dx, at.z + g.dz, 'small', o.userData.model ? 0.5 : 0.3));
+    }
+  }
+
+  /** Shows the faint next step to system `id` (null: none). */
+  private showNext(id: string | null): void {
+    if (id === this.nextId) return;
+    this.nextId = id;
+    this.clearRoute(this.nextGroup);
+    this.dirty = true;
+    const r = this.route;
+    if (!id || !r || !r.open) return;
+    const pts = this.routePoints(r);
+    const to = this.placeFor(id, r.seat);
+    if (!pts || !to) return;
+    const cfg = modelConfig.route;
+    const from = pts[pts.length - 1];
+    this.nextGroup.add(routeArrow(routeCurve([from, to]), seatGlow(seatColor(r.seat)), cfg.endGap, cfg.endGap, cfg.hover));
   }
 
   private loadBoard(inPlay: ReadonlyMap<string, boolean>, links: [string, string][]): void {
@@ -540,12 +671,14 @@ export class Board3D {
       if (!p) continue;
       const slots = slotSpots(this.calib, s.id);
       const centres = stackCentres(s.ships.length, slots ? 0.7 : 0.75);
+      // The seats with ships here, in order: they stand in a figure centred in the system.
+      const seats = s.ships.filter((x) => x.fresh + x.damaged > 0).map((x) => x.player);
       s.ships.forEach((st, i) => {
         // On the owner's picture each seat has its own spot in the system's
         // ship zone (clear of the slots, inside the planet): one model for its
         // fresh ships and one for its damaged ones, each with how many it
         // stands for. Elsewhere the stacks ring the system point.
-        const zone = shipSpot(this.calib, s.id, st.player);
+        const zone = shipPlace(this.calib, s.id, st.player, seats);
         const c = zone ? { x: zone.x - p.x, z: zone.z - p.z } : centres[i];
         const at = (dx: number, dz: number) => ({ x: p.x + c.x + dx, z: p.z + c.z + dz });
         if (zone) {
@@ -632,7 +765,7 @@ export class Board3D {
       const startHeading = before.get(`${m.fromSystem}:${m.player}:${m.damaged ? 1 : 0}`) ?? SHIP_HEADING;
       const move = modelConfig.move;
       const duration = Math.min(move.maxDuration, move.duration + move.perJump * Math.max(0, route.length - 2));
-      const trail = m.damaged ? null : engineTrail(seatGlow(m.player));
+      const trail = m.damaged ? null : engineTrail(seatGlow(seatColor(m.player)));
       if (trail) {
         this.pieces.add(trail.object);
         this.trails.push(trail);
@@ -706,6 +839,11 @@ export class Board3D {
     }
     if (hasModels() && this.opts.motion && this.pieces.children.length) {
       this.animatePieces(t / 1000);
+      this.dirty = true;
+    }
+    if (this.route && this.opts.motion) {
+      // The arrow's chevrons flow and the holograms flicker.
+      fxTime.value = t / 1000;
       this.dirty = true;
     }
     if (this.pulsing && this.opts.motion) {
@@ -815,6 +953,8 @@ export class Board3D {
     const id = this.hit(e);
     this.canvas.style.cursor = id ? 'pointer' : 'grab';
     this.canvas.title = id ?? '';
+    // Planning a route: the system under the pointer, if the route may go on there, shows that step.
+    this.showNext(id && this.route?.open && this.route.targets.has(id) ? id : null);
   }
 }
 

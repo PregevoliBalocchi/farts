@@ -152,6 +152,22 @@ describe('where pieces go', () => {
     }
   });
 
+  it('gives every system a centred figure for 1 to 4 seats, inside its zone, off the planet, the seats apart', () => {
+    for (const [id, sys] of Object.entries(calibration.systems)) {
+      const layouts = spots[id].layouts!;
+      expect(layouts.map((f) => f.length)).toEqual([1, 2, 3, 4]);
+      const disc = (sys as { disc?: { x: number; y: number; r: number } }).disc;
+      for (const fig of layouts) {
+        for (const [x, y] of fig) {
+          expect(inside(lines.sectors[id], x, y)).toBe(true);
+          if (disc) expect(Math.hypot(x - disc.x, y - disc.y)).toBeGreaterThan(disc.r);
+        }
+        for (let i = 0; i < fig.length; i++)
+          for (let j = i + 1; j < fig.length; j++) expect(Math.hypot(fig[i][0] - fig[j][0], fig[i][1] - fig[j][1])).toBeGreaterThan(40);
+      }
+    }
+  });
+
   it('keeps ships and tokens off the planet', () => {
     for (const [id, sys] of Object.entries(calibration.systems)) {
       const disc = (sys as { disc?: { x: number; y: number; r: number } }).disc;
@@ -164,6 +180,7 @@ describe('where pieces go', () => {
     const c = withLayerSpots(calibration, lines);
     expect(c.systems['c1-p1'].ships).toEqual(spots['c1-p1'].ships.map(([x, y]) => ({ x, y })));
     expect(c.systems['c1-p1'].slots).toEqual(calibration.systems['c1-p1'].slots);
+    expect(c.systems['c1-p1'].layouts?.[1]).toEqual(spots['c1-p1'].layouts![1].map(([x, y]) => ({ x, y })));
     expect(withLayerSpots(calibration, {})).toBe(calibration);
   });
 

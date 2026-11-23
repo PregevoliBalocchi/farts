@@ -92,5 +92,18 @@
     "size": 0.13,
     "back": 0.2,
     "height": 0.17
+  },
+  "route": {
+    "width": 0.2,
+    "height": 0.04,
+    "headLength": 0.34,
+    "headWidth": 0.46,
+    "speed": 0.9,
+    "spacing": 0.34,
+    "holo": 1.35,
+    "startGap": 0.2,
+    "endGap": 0.26,
+    "hover": 0.45,
+    "beside": 0.34
   }
 }

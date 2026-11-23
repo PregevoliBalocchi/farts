@@ -3,7 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import { dispatch } from '../../../src/game/engine';
 import { decisionOptions } from '../../../src/ui/table/decide';
-import { movePayload } from '../../../src/ui/table/intent';
+import { cutRoute, extendRoute, fitDrops, movePayload, routeOf, routeStops, setDrop } from '../../../src/ui/table/intent';
+import type { MoveIntent } from '../../../src/ui/table/intent';
 import { cardsIndex, runAll, start } from '../cards/fixture';
 
 describe('decisionOptions', () => {
@@ -59,5 +60,39 @@ describe('movePayload', () => {
   it('leaves via and drop out of a plain move', () => {
     const p = movePayload({ step: 'move', from: 'a', via: [], to: 'b', ships: 2, damaged: 1, drop: {} });
     expect(p).toEqual({ kind: 'move', from: 'a', to: 'b', ships: 2, damaged: 1 });
+  });
+});
+
+describe('route planning', () => {
+  const plan = (over: Partial<MoveIntent> = {}): MoveIntent => ({ step: 'move', from: 'a', via: [], to: 'b', ships: 4, damaged: 1, drop: {}, ...over });
+
+  it('carries the route on one step at a time', () => {
+    const r = extendRoute(extendRoute(plan(), 'c'), 'd');
+    expect(routeOf(r)).toEqual(['a', 'b', 'c', 'd']);
+  });
+
+  it('cuts the route back to a system it passes through, forgetting what was planned after', () => {
+    const r = plan({ via: ['b', 'c'], to: 'd', drop: { b: 1, c: 2 } });
+    const cut = cutRoute(r, 'c')!;
+    expect(routeOf(cut)).toEqual(['a', 'b', 'c']);
+    expect(cut.drop).toEqual({ b: 1 });
+    expect(cutRoute(r, 'a')).toBeNull();
+    expect(cutRoute(r, 'd')).toBeNull();
+  });
+
+  it('lists the ships left on the way and the rest at the end', () => {
+    const r = plan({ via: ['b', 'c'], to: 'd', drop: { b: 1 }, dropDamaged: { c: 1 } });
+    expect(routeStops(r)).toEqual([
+      { system: 'b', fresh: 1, damaged: 0, last: false },
+      { system: 'c', fresh: 0, damaged: 1, last: false },
+      { system: 'd', fresh: 3, damaged: 0, last: true },
+    ]);
+    expect(movePayload(r)).toEqual({ kind: 'move', from: 'a', to: 'd', ships: 4, damaged: 1, via: ['b', 'c'], drop: [{ at: 'b', ships: 1 }, { at: 'c', ships: 0, damaged: 1 }] });
+  });
+
+  it('keeps the ships left behind within the ships still moving', () => {
+    const r = setDrop(setDrop(plan({ via: ['b', 'c'], to: 'd' }), 'b', 3), 'c', 5);
+    expect(r.drop).toEqual({ b: 3, c: 1 });
+    expect(fitDrops({ ...r, ships: 2 }).drop).toEqual({ b: 2, c: 0 });
   });
 });

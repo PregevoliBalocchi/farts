@@ -215,8 +215,6 @@
   "play.seize": "Seize the initiative…",
   "play.seizePick": "Pick the card to discard",
   "play.seizeWith": "Initiative: discard {card}",
-  "move.drop": "Drop at {at}",
-  "move.further": "Go on (Catapult)",
   "battle.raid": "Raid: {n} keys. Choose what to steal (in order).",
   "decide.choose": "Choose",
   "decide.what": "{card} · {effect}",
@@ -288,5 +286,17 @@
   "word.weapons": "Weapons",
   "keep.title": "Keep {n} cards",
   "keep.hint": "{card}: click the cards to keep; the others go back to the box.",
-  "keep.count": "Chosen: {n} of {of}"
+  "keep.count": "Chosen: {n} of {of}",
+  "move.leave": "Leaving",
+  "move.dropHere": "Leave here",
+  "move.arrive": "{n} arrive",
+  "move.arriveDamaged": "{n} damaged",
+  "move.goOn": "Click a lit system to go on with a Catapult, or a system on the route to stop there.",
+  "move.stopPlanet": "Ships stop at a planet.",
+  "move.stopRival": "A rival controls this system: ships stop here.",
+  "move.stopHere": "The ships cannot go further from here.",
+  "move.oneStep": "Without a Loyal starport ships take one step.",
+  "move.back": "One step back",
+  "move.sysGate": "Gate {n}",
+  "move.sysPlanet": "{res} {n}"
 }
