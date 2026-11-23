@@ -272,5 +272,14 @@
   "online.notYours": "Non è il tuo posto: qui si gioca solo il tuo turno",
   "hotseat.turn": "Tocca a {name}",
   "hotseat.pass": "Passa il computer a {name}. Gli altri non guardino: si vedrà la sua mano.",
-  "hotseat.ready": "Sono pronto"
+  "hotseat.ready": "Sono pronto",
+  "draft.title": "Scelta di leader e lore",
+  "draft.take": "Prendi {card}",
+  "draft.none": "nessuna carta",
+  "draft.yours": "Tocca a te: prendi un leader oppure una lore (ognuno avrà un leader e {n} lore).",
+  "draft.yoursShort": "Scegli un leader o una lore.",
+  "draft.waiting": "Sta scegliendo {name}.",
+  "draft.order": "Ordine di scelta",
+  "draft.leaders": "Leader",
+  "draft.lore": "Lore"
 }
