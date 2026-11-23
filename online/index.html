@@ -3,103 +3,55 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>Accesso</title>
-<style>
-  :root {
-    --bg: #f2f3f7; --panel: #fff; --fg: #1b1e2b; --muted: #5d6275; --line: #cfd2dc;
-    --accent: #2f5be0; --err: #b3261e; --ok: #1d6b3a;
-    font: 15px/1.5 "Segoe UI", system-ui, sans-serif;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #12141c; --panel: #1b1e2a; --fg: #e8e9f0; --muted: #9a9fb4; --line: #3a3f55;
-      --accent: #7d9bff; --err: #ff8a80; --ok: #7fe0a6; color-scheme: dark; }
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--fg); }
-  main { max-width: 760px; margin: 0 auto; padding: 32px 16px; display: flex; flex-direction: column; gap: 16px; }
-  h1 { margin: 0; font-size: 24px; }
-  h2 { margin: 0 0 8px; font-size: 18px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
-  .muted { color: var(--muted); }
-  .err { color: var(--err); }
-  .ok { color: var(--ok); }
-  button, select, input { font: inherit; min-height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); padding: 0 12px; }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  button:disabled { opacity: .5; }
-  form { display: flex; gap: 8px; flex-wrap: wrap; }
-  form input { flex: 1 1 240px; }
-  table { width: 100%; border-collapse: collapse; }
-  td, th { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-  td.actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
-  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-  [hidden] { display: none !important; }
-</style>
+<!-- Styles: src/web/lobby.css (imported by src/web/lobby.ts), the table's dark gold look. -->
+<style>body { margin: 0; background: #070504; color: #efe6d2; }</style>
 </head>
-<body>
+<body class="lobby-page lobby">
 <main>
-  <h1>Accesso al gioco</h1>
+  <header class="lb-title">
+    <h1>Accesso al gioco</h1>
+    <div class="row" id="signed-in" hidden>
+      <span id="who"></span>
+      <button id="sign-out" class="btn small" type="button">Esci</button>
+    </div>
+  </header>
   <p id="status" class="muted" role="status">Caricamento…</p>
 
-  <section id="signed-out" class="card" hidden>
+  <section id="signed-out" class="frame" hidden>
     <p>Si entra solo su invito, con un account Google.</p>
-    <button id="sign-in" class="primary" type="button">Accedi con Google</button>
+    <button id="sign-in" class="btn primary" type="button">Accedi con Google</button>
   </section>
 
-  <section id="signed-in" class="card" hidden>
-    <div class="row">
-      <span id="who"></span>
-      <button id="sign-out" type="button">Esci</button>
+  <section id="lobby" hidden>
+    <div class="frame" style="margin-bottom:22px">
+      <h2>Le tue partite</h2>
+      <ul id="games" class="games"></ul>
+      <p id="games-msg" class="muted" role="status"></p>
+    </div>
+    <div class="frame">
+      <h2>Nuova partita</h2>
+      <div id="new-game"></div>
     </div>
   </section>
 
-  <section id="lobby" class="card" hidden>
-    <h2>Le tue partite</h2>
-    <ul id="games"></ul>
-    <h2>Nuova partita</h2>
-    <form id="new-game">
-      <input id="new-players" type="text" placeholder="indirizzi degli altri giocatori, separati da virgola" required autocomplete="off">
-      <select id="new-variant" aria-label="Variante">
-        <option value="base">base</option>
-        <option value="leaders">personaggi e lore</option>
-      </select>
-      <button class="primary" type="submit">Crea</button>
-    </form>
-    <p class="muted">Da 2 a 4 giocatori, tu compreso; devono essere tutti invitati. L'ordine dei posti segue l'elenco.</p>
-    <p id="game-msg" class="muted" role="status"></p>
-    <h2>Su questo computer (hotseat)</h2>
-    <p id="hotseat-resume"></p>
-    <form id="hotseat-game">
-      <select id="hotseat-players" aria-label="Giocatori">
-        <option value="2">2 giocatori</option>
-        <option value="3" selected>3 giocatori</option>
-        <option value="4">4 giocatori</option>
-      </select>
-      <select id="hotseat-variant" aria-label="Variante">
-        <option value="base">base</option>
-        <option value="leaders">personaggi e lore</option>
-      </select>
-      <button class="primary" type="submit">Inizia</button>
-    </form>
-    <p class="muted">Tutti i posti si giocano a turno su questo computer: tra un giocatore e l'altro lo schermo si copre finché il successivo non è pronto. La partita resta salvata solo in questo browser.</p>
-    <p id="hotseat-msg" class="muted" role="status"></p>
-  </section>
-
-  <section id="content-admin" class="card" hidden>
+  <section id="content-admin" class="frame" hidden>
     <h2>Contenuti del gioco</h2>
     <p class="muted">Carica il file <code>data/content.json</code>: resta nel database, leggibile solo dagli invitati.</p>
     <input id="content-file" type="file" accept="application/json,.json">
     <p id="content-msg" class="muted" role="status"></p>
   </section>
 
-  <section id="admin" class="card" hidden>
+  <section id="admin" class="frame" hidden>
     <h2>Amministrazione</h2>
-    <form id="invite">
+    <form id="invite" class="inline">
       <input id="invite-email" type="email" placeholder="indirizzo Google da invitare" required autocomplete="off">
       <select id="invite-role" aria-label="Ruolo">
         <option value="player">giocatore</option>
         <option value="admin">amministratore</option>
       </select>
-      <button class="primary" type="submit">Invita</button>
+      <button class="btn primary" type="submit">Invita</button>
     </form>
     <p id="admin-msg" class="muted" role="status"></p>
     <table>

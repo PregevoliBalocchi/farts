@@ -82,7 +82,11 @@ service cloud.firestore {
       allow read: if signedIn() && me() in resource.data.players;
 
       allow create: if isMember()
-        && request.resource.data.keys().hasOnly(['players', 'createdBy', 'createdAt', 'variant', 'status', 'version', 'state', 'updatedAt', 'updatedBy'])
+        && request.resource.data.keys().hasOnly(['players', 'colors', 'createdBy', 'createdAt', 'variant', 'status', 'version', 'state', 'updatedAt', 'updatedBy'])
+        && (!('colors' in request.resource.data)
+            || (request.resource.data.colors is list
+                && request.resource.data.colors.size() == request.resource.data.players.size()
+                && request.resource.data.colors.hasOnly([0, 1, 2, 3])))
         && request.resource.data.createdBy == me()
         && request.resource.data.updatedBy == me()
         && me() in request.resource.data.players
