@@ -53,11 +53,22 @@ test('leading a card and ending the turn passes play to the next seat', async ({
   expect(errors).toEqual([]);
 });
 
-test('the court picker opens and closes with Escape', async ({ page }) => {
+test('the settings window and the log drop-down open and close with Escape', async ({ page }) => {
   await open(page);
-  await page.getByRole('button', { name: 'Court cards' }).click();
+  await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.locator('[data-act="log"]').click();
+  await expect(page.locator('.drop-win')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.drop-win')).toHaveCount(0);
+});
+
+test('hovering a rival board shows its hover card, with no window to close', async ({ page }) => {
+  await open(page);
+  await page.locator('.board.rival').first().hover();
+  await expect(page.locator('.hover-tip')).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 

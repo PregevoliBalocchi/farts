@@ -59,12 +59,6 @@ function resIcon(r: Resource, t: Translate, cls = ''): string {
   return `<span class="r-${r} ${cls}">${icon(r as IconName, '', t(`resource.${r}`))}</span>`;
 }
 
-/**
- * The top strip, as on the digital table: the chapter in a ring and the
- * general supply (left); the prompt over a thin gold line, with the round's
- * lead and seize under it (centre); the menu buttons (right).
- */
-/** `control`: whether the map shows who controls each sector (null: the map has no such layer). */
 /** Simple line glyphs for the action kinds (24×24, currentColor). */
 const ACTION_GLYPHS: Record<string, string> = {
   influence: '<circle cx="12" cy="6.5" r="3.5"/><path d="M6 21c0-5 2.5-9 6-9s6 4 6 9z"/>',
@@ -94,7 +88,14 @@ export function systemTag(s: { id: string; cluster?: string; kind?: string; reso
   return `<span class="sys-tag">${r}${esc(systemName(s, t))}</span>`;
 }
 
-export function header(v: TableView, t: Translate, exampleContent: boolean, promptText: string, control: boolean | null = null): string {
+/**
+ * The top strip, as on the digital table: the chapter in a ring and the
+ * general supply (left); the prompt over a thin gold line, with the round's
+ * lead and seize under it (centre); the menu buttons (right). `control`:
+ * whether the map shows who controls each sector (null: the map has no such
+ * layer); `open`: the drop-down open under its button (log or help).
+ */
+export function header(v: TableView, t: Translate, exampleContent: boolean, promptText: string, control: boolean | null = null, open: 'log' | 'help' | null = null): string {
   const supply = v.supply.map((s) => `<span title="${esc(t(`resource.${s.resource}`))}">${resIcon(s.resource, t)}<b class="num">${s.count}</b></span>`).join('');
   const declared = v.ambitions.filter((a) => a.markers.length).map((a) => t(`ambition.${a.id}`));
   const lead = v.lead ? t('header.lead', { card: cardLabel(t, v.lead) }) : '';
@@ -105,20 +106,19 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, prom
   const last = v.recent[0] ?? t('empty');
   const round = `${t('chapter', { n: v.chapter })} · ${t('header.deck', { deck: v.deck, discard: v.discard })}`;
   return `<div class="hd round-c" title="${esc(round)}" aria-label="${esc(round)}"><span class="num">${v.chapter}</span></div>
-    <button type="button" class="hd supply" data-act="supply-detail" aria-label="${esc(t('supply'))}">${supply}</button>
+    <div class="hd supply" role="group" aria-label="${esc(t('supply'))}">${supply}</div>
     <div class="hd prompt"><span class="pr-text">${esc(promptText)}</span>${notes.length ? `<span class="pr-notes">${esc(notes.join(' · '))}</span>` : ''}</div>
     <div class="hd tools">
       ${exampleContent ? `<span class="content-note">${esc(t('content.example'))}</span>` : ''}
-      ${button('court-view', '', { cls: 'icon sq', title: t('btn.court'), html: icon('court') })}
-      <span data-region="recent">${button('log', '', { cls: 'icon sq', title: `${t('btn.log')} · ${t('recent.last')} ${last}`, html: icon('log') })}</span>
+      <span data-region="recent">${button('log', '', { cls: `icon sq${open === 'log' ? ' on' : ''}`, title: `${t('btn.log')} · ${t('recent.last')} ${last}`, html: icon('log') })}</span>
       ${control !== null ? `<button type="button" class="btn icon sq${control ? ' on' : ''}" data-act="map-control" title="${esc(t('btn.control'))}" aria-label="${esc(t('btn.control'))}" aria-pressed="${control}">${icon('control')}</button>` : ''}
-      ${button('help', '', { cls: 'icon sq', title: t('btn.help'), html: icon('anyAmbition') })}
+      ${button('help', '', { cls: `icon sq${open === 'help' ? ' on' : ''}`, title: t('btn.help'), html: icon('anyAmbition') })}
       ${button('settings', '', { cls: 'icon sq', title: t('btn.settings'), html: icon('settings') })}
     </div>`;
 }
 
 /** A game piece of a seat as a small picture (the kit's piece image), else its glyph in the seat colour. */
-function pieceIcon(kind: 'ship' | 'agent' | 'city' | 'starport', seat: number, label?: string): string {
+export function pieceIcon(kind: 'ship' | 'agent' | 'city' | 'starport', seat: number, label?: string): string {
   const url = assetUrl(`piece.${kind}-${seatColor(seat)}`);
   const alt = label ? `alt="${esc(label)}"` : 'alt="" aria-hidden="true"';
   return url ? `<img class="ic pc pc-${kind}" src="${esc(url)}" ${alt}>` : `<span class="seat-c">${icon(kind, '', label)}</span>`;
@@ -233,8 +233,9 @@ export interface PreludeCard {
 }
 
 /**
- * The cards with a prelude power as round buttons (lit ones open the powers
- * window): the tab on a seat board, or (`row`) the row over the local hand.
+ * The cards with a prelude power as round buttons (a lit one uses its power,
+ * or offers its choices beside it): the tab on a seat board, or (`row`) the
+ * row in the action box.
  */
 export function preludeTab(cards: readonly PreludeCard[], t: Translate, row = false): string {
   if (!cards.length) return '';
@@ -243,7 +244,7 @@ export function preludeTab(cards: readonly PreludeCard[], t: Translate, row = fa
       const art = cardCut(c.card) ?? cardArt(c.card);
       const face = art ? `<img src="${esc(art)}" alt="">` : icon('court');
       return c.lit
-        ? `<button type="button" class="pre lit" data-act="powers-open" data-zoom="${esc(c.card)}" title="${esc(t('powers.title'))}">${face}</button>`
+        ? `<button type="button" class="pre lit" data-act="power-card" data-card="${esc(c.card)}" data-zoom="${esc(c.card)}" title="${esc(t('powers.title'))}">${face}</button>`
         : `<span class="pre" data-zoom="${esc(c.card)}" title="${esc(c.card)}">${face}</span>`;
     })
     .join('');
@@ -301,13 +302,14 @@ export function playedCard(ix: ContentIndex, v: TableView, t: Translate, player:
 }
 
 /**
- * One rival's board (click opens their details), drawn like the local one
- * but smaller. The card they played sits beside it.
+ * One rival's board, drawn like the local one but smaller (hovering it shows
+ * what the board does not: trophies, captives, all their cards). The card they
+ * played sits beside it.
  */
 export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Translate): string {
-  return `<div class="rival-wrap"><button type="button" class="board pb rival s-${seatColor(p.id)}${p.isActive ? ' active' : ''}" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">
+  return `<div class="rival-wrap"><div class="board pb rival s-${seatColor(p.id)}${p.isActive ? ' active' : ''}" data-tip="seat:${p.id}" tabindex="0" role="group" aria-label="${esc(playerName(t, p.id))}">
     ${seatBoard(p, t, { spendable: new Set(), chosen: null, preludes: [], maxCards: 6, head: leaderPortrait(p) })}
-  </button>${playedCard(ix, v, t, p.id)}</div>`;
+  </div>${playedCard(ix, v, t, p.id)}</div>`;
 }
 
 /**
@@ -317,7 +319,7 @@ export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Tra
  * frame (the table's bottom bar, which shows those cards in their own panel).
  */
 export function localPanel(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, preludes: readonly PreludeCard[] = [], slim = false): string {
-  const head = `<button type="button" class="portrait-btn" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">${leaderPortrait(p)}</button>`;
+  const head = leaderPortrait(p);
   return `<div class="board pb local${slim ? ' slim' : ''} s-${seatColor(p.id)}${p.isActive ? ' active' : ''}">
     ${seatBoard(p, t, { spendable, chosen, preludes, maxCards: slim ? 0 : 9, head })}
   </div>`;
@@ -343,14 +345,22 @@ export function sortCourt<T extends { kind?: string | null; resource?: string | 
  * The local player's own Court at the right end of the bar: their guild and
  * lore cards as small faces (hover shows the whole card), with buttons to
  * order them. `data` reads a card's type and resource; `width`: the panel's
- * inner width in stage pixels, to size the cards so that two rows hold them all.
+ * inner width in stage pixels, to size the cards so that two rows hold them all;
+ * `lit`: the cards whose power can be used now (they glow and use it on a click).
  */
-export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data: (id: string) => CourtFaceData, width: number): string {
+export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data: (id: string) => CourtFaceData, width: number, lit: ReadonlySet<string> = new Set()): string {
   const cards = sortCourt([...p.court, ...p.lore].map(data), sort);
   const perRow = Math.max(1, cards.length > 5 ? Math.ceil(cards.length / 2) : cards.length);
   const w = Math.max(30, Math.min(72, Math.floor((width - (perRow - 1) * 6) / perRow)));
   const sorts = COURT_SORTS.map((k) => `<button type="button" class="cs-btn${k === sort ? ' on' : ''}" data-act="court-sort" data-sort="${k}" aria-pressed="${k === sort}">${esc(t(`mine.sort.${k}`))}</button>`).join('');
-  const faces = cards.map((c) => `<div class="mine-card k-${esc(c.kind ?? 'none')}" data-zoom="${esc(c.card)}" tabindex="0">${cardFaceById(c.card)}</div>`).join('');
+  // A card whose power can be used now glows and uses it on a click.
+  const faces = cards
+    .map((c) =>
+      lit.has(c.card)
+        ? `<button type="button" class="mine-card lit k-${esc(c.kind ?? 'none')}" data-act="power-card" data-card="${esc(c.card)}" data-zoom="${esc(c.card)}" title="${esc(t('powers.title'))}">${cardFaceById(c.card)}</button>`
+        : `<div class="mine-card k-${esc(c.kind ?? 'none')}" data-zoom="${esc(c.card)}" tabindex="0">${cardFaceById(c.card)}</div>`,
+    )
+    .join('');
   return `<div class="mine-head"><span class="mine-title">${esc(t('mine.title'))}</span><span class="mine-n num">${cards.length}</span>${sorts}</div>
     <div class="mine-cards" style="--w:${w}px">${faces || `<span class="mine-empty">${esc(t('mine.empty'))}</span>`}</div>`;
 }
@@ -412,10 +422,10 @@ export function ambitionsStrip(ix: ContentIndex, v: TableView, t: Translate): st
         .join('');
       const box = a.box ? `<span class="box num" title="${esc(t('amb.box'))}">▣${a.box}</span>` : '';
       const name = t(`ambition.${a.id}`);
-      return `<button type="button" class="amb-row${a.markers.length ? ' declared' : ''}" data-act="amb-detail" data-id="${a.id}" title="${esc(name)}" aria-label="${esc(name)}">
+      return `<div class="amb-row${a.markers.length ? ' declared' : ''}" data-tip="amb:${a.id}" tabindex="0" role="group" aria-label="${esc(name)}">
         <span class="amb-head">${n ? `<span class="amb-n num">${n}</span>` : ''}<span class="amb-g">${glyphs}</span></span>
         <span class="amb-m">${a.markers.map((m) => hexMarker(m, t)).join('')}${box}</span>
-        <span class="amb-t">${tallies}</span></button>`;
+        <span class="amb-t">${tallies}</span></div>`;
     })
     .join('');
   const left = v.markersLeft.map((m) => hexMarker(m, t)).join('');

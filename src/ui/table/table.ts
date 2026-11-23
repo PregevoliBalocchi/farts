@@ -29,28 +29,25 @@ const AGENTS_OVERLAP = 118;
 import { cardPowers, decisionOptions } from './decide';
 import type { PowerOption } from './decide';
 import type { DecisionOption, DecisionPart } from './decide';
-import { detailHtml } from './details';
-import type { DetailTarget } from './details';
-import { actionCommand, battlePayload, clamp, cutRoute, extendRoute, fitDrops, IDLE, movePayload, routeOf, routeStops, setDrop, startAction } from './intent';
+import { parseTip, tipHtml } from './tips';
+import { actionCommand, battlePayload, battleProbe, clamp, cutRoute, extendRoute, fitDrops, IDLE, MAX_STEPPER_DICE, movePayload, routeOf, routeStops, setDrop, startAction } from './intent';
 import type { Intent, MoveIntent } from './intent';
 import { place, REGIONS, setStage, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  actionCard, button, cardLabel, playedCard, playedText, cardPicker, courtFace, courtPanel, COURT_SORTS, type CourtSort, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, PICKER_PAGE, playerName, preludeTab, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon,
+  actionCard, button, cardLabel, playedCard, playedText, courtPanel, COURT_SORTS, type CourtSort, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, preludeTab, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon,
 } from './render';
-import type { PickerGroup, PickerState } from './render';
 import { legal, othersTurn, tableView, whyNot } from './view';
 import type { TableView } from './view';
 
-type CourtPick = { kind: 'influence' | 'secure'; prelude?: Resource };
+/** The windows that still dim the table: the settings and a card's choice. */
+type Modal = { type: 'settings' } | { type: 'decide'; options: DecisionOption[]; chosen?: string[] };
 
-type Modal =
-  | { type: 'picker'; picker: PickerState; court?: CourtPick }
-  | { type: 'log' }
-  | { type: 'settings' }
-  | { type: 'detail'; target: DetailTarget }
-  | { type: 'decide'; args: string; options: DecisionOption[]; chosen?: string[] }
-  | { type: 'powers'; options: PowerOption[] };
+/** A drop-down under its header button: the log or the map help. */
+type Drop = 'log' | 'help';
+
+/** Lines of the log the drop-down shows (the latest; it fits under the header with no scroll bar). */
+const LOG_LINES = 14;
 
 /** Handle returned to main.ts (and window.game for automated checks). */
 export interface TableHandle {
@@ -154,6 +151,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** The system the map was last panned to show, so it is not pulled back while the player looks elsewhere. */
   let shownSystem: string | null = null;
   let modal: Modal | null = null;
+  /** The drop-down open under the header (log or help), and the choices of a card power open over its card. */
+  let drop: Drop | null = null;
+  let powerMenu: { card: string; options: PowerOption[] } | null = null;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
   let controlLayer = false;
   /** How the local player's own Court cards are ordered in the bar. */
@@ -226,6 +226,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         picture: params.get('map') === 'picture',
         showSpots: params.get('debug') === 'spots',
         onPick: (id, shipOf) => pickSystem(id, shipOf),
+        onHover: (id, x, y) => (id ? showTip(`sys:${id}`, { x, y }) : hideTip()),
         onView: () => placeMenu(),
         ...(calibrating
           ? {
@@ -272,7 +273,6 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       if (!online || hotseat) history.push(state);
       state = next;
       resetChoices();
-      if (modal?.type === 'picker' && modal.court) modal = null;
       render();
       if (online)
         online.commit(next, cmd).catch((e: Error) => {
@@ -305,6 +305,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     history = [];
     resetChoices();
     modal = null;
+    drop = null;
   }
 
   /** The follow command for the selected card, with the seize card when one is chosen. */
@@ -352,30 +353,29 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
    */
   function preludeCards(v: TableView): PreludeCard[] {
     const pl = state.players[local()];
-    const live = myTurn() && hasPowers(v);
+    // Lit: the card has a use the engine accepts right now.
+    const usable = new Set(hasPowers(v) ? powersNow().map((o) => o.card) : []);
     return [...pl.court, ...pl.lore, ...(pl.leader ? [pl.leader] : [])]
       .filter((c) => {
         const e = effectOf(ix, c);
         return !!(e?.prelude || e?.actions || e?.reroll);
       })
-      .map((card) => {
-        const e = effectOf(ix, card);
-        const now = v.phase === 'actions' ? !!(e?.prelude || e?.actions) : v.phase === 'allocate' ? !!e?.reroll : false;
-        return { card, lit: live && now };
-      });
+      .map((card) => ({ card, lit: usable.has(card) }));
   }
 
   function partText(p: DecisionPart): string {
     const label = t(`decide.key.${p.key}`);
     const v = p.value;
+    const sys = (id: string) => systemName(ix.content.map.systems.find((x) => x.id === id), t, id);
     const value =
       p.kind === 'player' ? playerName(t, v as number)
+      : p.kind === 'system' ? sys(v as string)
       : p.kind === 'resource' ? t(`resource.${v}`)
       : p.kind === 'ambition' ? t(`ambition.${v}`)
-      : p.kind === 'court' ? (Array.isArray(v) ? v : [v]).map((i) => state.court[i as number]?.card ?? '?').join(', ')
-      : p.kind === 'cards' ? (v as string[]).join(', ')
+      : p.kind === 'court' ? (Array.isArray(v) ? v : [v]).map((i) => cardName(state.court[i as number]?.card ?? '?')).join(', ')
+      : p.kind === 'cards' ? (v as string[]).map(cardName).join(', ')
       : p.kind === 'index' ? `#${(v as number) + 1}`
-      : p.kind === 'ships' ? (v as { from: string; ships: number }[]).map((m) => t('decide.shipsFrom', { n: m.ships, from: m.from })).join(', ')
+      : p.kind === 'ships' ? (v as { from: string; ships: number }[]).map((m) => t('decide.shipsFrom', { n: m.ships, from: sys(m.from) })).join(', ')
       : p.kind === 'flag' ? ''
       : p.kind === 'slot' ? `#${(v as number) + 1}`
       : p.kind === 'resources' ? (v as string[]).map((r) => t(`resource.${r}`)).join(', ')
@@ -416,7 +416,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           i.kind === 'tax' ? s.buildings.some((b) => b.type === 'city') && [...new Set(s.buildings.map((b) => b.owner))].some((o) => can(act({ kind: 'tax', system: s.id, cityOwner: o }, i.prelude)))
           : i.kind === 'build' ? (['ship', 'city', 'starport'] as const).some((what) => can(act({ kind: 'build', system: s.id, what }, i.prelude)))
           : i.kind === 'repair' ? (['ship', 'building'] as const).some((target) => can(act({ kind: 'repair', system: s.id, target }, i.prelude)))
-          : s.ships.some((x) => x.player === me) && rivalsIn(v, s.id).some((r) => can(act({ kind: 'battle', system: s.id, target: r, dice: { skirmish: 1 } }, i.prelude)));
+          : s.ships.some((x) => x.player === me) && rivalsIn(v, s.id).some((r) => battleProbe((dice) => can(act({ kind: 'battle', system: s.id, target: r, dice }, i.prelude))) !== null);
         if (ok) out.add(s.id);
       }
     } else if (i.step === 'from') {
@@ -533,7 +533,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         const owners = [...new Set(s.buildings.filter((b) => b.type === 'city').map((b) => b.owner))];
         opts = owners.map((o) => ({ kind, label: o === me ? t('menu.taxOwn') : t('menu.taxRival', { name: playerName(t, o) }), pic: pic('city', o), why: why({ kind: 'tax', system: id, cityOwner: o }), args: { owner: o } }));
       } else if (kind === 'battle') {
-        opts = rivalsIn(v, id).map((r) => ({ kind, label: playerName(t, r), pic: pic('ship', r), why: why({ kind: 'battle', system: id, target: r, dice: { skirmish: 1 } }), args: { target: r } }));
+        opts = rivalsIn(v, id).map((r) => ({ kind, label: playerName(t, r), pic: pic('ship', r), why: why({ kind: 'battle', system: id, target: r, dice: battleProbe((dice) => can(act({ kind: 'battle', system: id, target: r, dice }, prelude))) ?? { skirmish: 1 } }), args: { target: r } }));
       } else if (kind === 'move' && s.ships.some((x) => x.player === me) && moveTargets(v, id, [], prelude).size > 0) {
         opts = [{ kind, label: t('menu.moveFrom'), pic: pic('ship', me), why: null, args: {} }];
       }
@@ -589,9 +589,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     el.style.top = `${top}px`;
   }
 
-  /** The button opening the powers of the local player's cards, when one can be used in this phase. */
-  function powersButton(v: TableView): string {
-    return myTurn() && hasPowers(v) ? button('powers-open', t('powers.open'), { cls: 'powers-btn', title: t('powers.title') }) : '';
+  /** The local cards whose power can be used now, as lit round buttons (a battle window or box without the prelude row). */
+  function powersRow(v: TableView): string {
+    return preludeTab(preludeCards(v).filter((c) => c.lit), t, true);
   }
 
   /** What the rolled keys can steal from the defender (resources and Guild cards), as toggles; '' without keys. */
@@ -625,7 +625,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const chip = (key: string, n: number, total: number) => (total > 0 ? `<span class="b-chip${n === 0 ? ' done' : ''}">${esc(t(key, { n, total }))}</span>` : '');
     const counts = `${chip('battle.left.hits', left.hits, b.totals.hit)}${chip('battle.left.building', left.buildingHits, b.totals.buildingHit)}${chip('battle.left.self', left.selfHits, b.totals.selfHit + b.interceptHits)}`;
     const controls = mine
-      ? `<div class="b-foot">${raidChoices(b)}<div class="btn-grid">${button('battle-auto', t('battle.auto'))}${button('battle-reset', t('battle.reset'))}${powersButton(v)}${button('allocate', t('battle.confirm'), { cls: 'primary', disabled: !ok })}</div></div>`
+      ? `<div class="b-foot">${raidChoices(b)}<div class="btn-grid">${button('battle-auto', t('battle.auto'))}${button('battle-reset', t('battle.reset'))}${button('allocate', t('battle.confirm'), { cls: 'primary', disabled: !ok })}</div></div>`
       : `<div class="b-foot"><div class="hint">${esc(t('battle.watching', { who: playerName(t, b.attacker) }))}</div></div>`;
     const title = t('battle.title', { system: systemName(ix.content.map.systems.find((s) => s.id === b.system), t, b.system), a: playerName(t, b.attacker), d: playerName(t, b.target) });
     return `<div class="battle-win glass" role="dialog" aria-label="${esc(title)}">
@@ -881,7 +881,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="hint">${esc(doing)}</div>
       ${live ? `<ol class="live-list" aria-live="polite">${live}</ol>` : ''}
       <div class="hint">${esc(facts)}</div>
-      <div class="btn-grid wait"><span class="wait-label">${esc(t('others.whileWaiting'))}</span>${button('court-view', t('court'))}${button('log', t('btn.log'))}</div>`;
+      <div class="btn-grid wait"><span class="wait-label">${esc(t('others.whileWaiting'))}</span>${button('log', t('btn.log'))}</div>`;
   }
 
   function actionsPanel(v: TableView): string {
@@ -928,7 +928,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       const summary = t('battle.summary', { hit: b.totals.hit, buildingHit: b.totals.buildingHit, selfHit: b.totals.selfHit, intercept: b.interceptHits, key: b.totals.key });
       const al = allocation();
       const ok = al !== null && can({ type: 'allocate', player: me, allocation: al });
-      return `<div class="ctx-head"><span class="ctx-title">${esc(`${systemLabel(v, b.system)}: ${playerName(t, b.attacker)} → ${playerName(t, b.target)}`)}</span></div><div class="hint">${esc(summary)}</div>${raidChoices(b)}<div class="btn-grid">${button('allocate', t('battle.assign'), { cls: 'primary', disabled: !ok })}${powersButton(v)}</div>`;
+      return `<div class="ctx-head"><span class="ctx-title">${esc(`${systemLabel(v, b.system)}: ${playerName(t, b.attacker)} → ${playerName(t, b.target)}`)}</span></div><div class="hint">${esc(summary)}</div>${raidChoices(b)}<div class="btn-grid">${button('allocate', t('battle.assign'), { cls: 'primary', disabled: !ok })}</div>${powersRow(v)}`;
     }
 
     if (v.phase === 'decide' && v.decision) {
@@ -941,18 +941,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const i = intent;
     switch (i.step) {
       case 'idle': {
-        const powers0 = powersButton(v);
         if (b.remaining === 0) {
-          // Nothing left to do with the card: the turn ends here (a card power may still be used first).
+          // Nothing left to do with the card: the turn ends here (a lit card power, in the row under, may still be used first).
           return `<div class="ctx-head"><span class="ctx-title">${esc(t('play.actionsDone'))}</span></div>
-            <div class="btn-grid one">${button('end-turn', t('play.endTurn'), { cls: 'primary end-big', disabled: !can({ type: 'endTurn', player: me }) })}</div>${powers0 ? `<div class="ctx-foot">${powers0}</div>` : ''}`;
+            <div class="btn-grid one">${button('end-turn', t('play.endTurn'), { cls: 'primary end-big', disabled: !can({ type: 'endTurn', player: me }) })}</div>`;
         }
         // Actions left as stars; the suit's actions as buttons; prelude by clicking a resource on the board.
         const stars = `<span class="ctx-pips" title="${esc(prompt(v))}">${Array.from({ length: b.remaining }, () => icon('pip')).join('')}</span>`;
         const prelude = b.preludeOpen && v.players[me].slots.some((s) => s.resource && !s.locked) ? `<div class="hint small">${esc(t('play.preludeShort'))}</div>` : '';
-        // Ending the turn is the confirm button in the bottom-right corner.
-        const powers = powersButton(v);
-        return `<div class="ctx-head">${stars}${prelude}</div><div class="btn-grid kind-row">${kindButtons(v, b.kinds, undefined, b.remaining > 0)}</div>${powers ? `<div class="ctx-foot">${powers}</div>` : ''}`;
+        // Ending the turn is the confirm button in the bottom-right corner; card powers are the lit row under the buttons.
+        return `<div class="ctx-head">${stars}${prelude}</div><div class="btn-grid kind-row">${kindButtons(v, b.kinds, undefined, b.remaining > 0)}</div>`;
       }
       case 'choose':
         return `<div class="ctx-head"><span class="ctx-title">${esc(t('play.preludeWith', { res: t(`resource.${i.prelude}`) }))}</span></div><div class="btn-grid kind-row">${kindButtons(v, i.kinds, i.prelude, true)}${cancel}</div>`;
@@ -978,59 +976,82 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
   }
 
-  // ---- modals ----
-  function courtGroups(v: TableView): PickerGroup[] {
-    const def = (id: string) => faceOf(ix, id, lang);
-    return [
-      { owner: null, label: t('court'), cards: v.court.map((c) => ({ ...def(c.card), agents: c.agents })) },
-      ...v.players.map((p) => ({ owner: p.id, label: playerName(t, p.id), cards: p.court.map(def) })),
-    ];
+  // ---- windows, drop-downs and hover cards ----
+  /** Card powers usable now, worked out once per game state (trying every use is costly). */
+  let powersCache: { state: GameState; seat: PlayerId; options: PowerOption[] } | null = null;
+  function powersNow(): PowerOption[] {
+    const me = local();
+    if (!myTurn()) return [];
+    if (powersCache?.state !== state || powersCache.seat !== me) powersCache = { state, seat: me, options: cardPowers(ix, state, me) };
+    return powersCache.options;
   }
 
-  function openPicker(v: TableView, title: string, active: number, opts: Partial<PickerState> = {}, court?: CourtPick): void {
-    modal = {
-      type: 'picker',
-      court,
-      picker: { title, actor: null, groups: courtGroups(v), active, page: 0, selectable: null, selected: null, allowDiscard: false, ...opts },
-    };
+  /** The log or the map help, dropped under its header button; a click anywhere else closes it. */
+  function dropHtml(): string {
+    if (!drop) return '';
+    const lines = state.log
+      .slice(-LOG_LINES)
+      .reverse()
+      .map((l) => `<li><span class="num">${l.chapter}</span>${esc(say(l.text))}</li>`)
+      .join('');
+    const body = drop === 'log' ? `<ol class="drop-log">${lines || `<li>${esc(t('empty'))}</li>`}</ol>` : `<p class="drop-help">${esc(t('map3d.hint'))}</p>`;
+    const title = drop === 'log' ? t('log.title') : t('btn.help');
+    return `<div class="drop-shade" data-act="drop-close"></div><div class="drop-win d-${drop}" role="dialog" aria-label="${esc(title)}"><div class="drop-title">${esc(title)}</div>${body}</div>`;
+  }
+
+  /** The choices of a lit card power with more than one use, beside the card. */
+  function powerMenuHtml(): string {
+    if (!powerMenu) return '';
+    const name = cardName(powerMenu.card);
+    const opts = powerMenu.options
+      .map((o, i) => {
+        const ability = t(`power.${o.ability}`) === `power.${o.ability}` ? o.ability : t(`power.${o.ability}`);
+        const what = o.parts.length ? o.parts.map(partText).join(' · ') : t('powers.use');
+        return button('power-pick', what, { args: { i }, cls: 'menu-line', html: `<span class="ml-k">${esc(ability)}</span><span>${esc(what)}</span>` });
+      })
+      .join('');
+    const close = button('power-close', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
+    return `<div class="sys-menu power-menu" role="dialog" aria-label="${esc(name)}"><div class="menu-head"><span>${esc(name)}</span>${close}</div><div class="menu-lines">${opts}</div></div>`;
+  }
+
+  /** Puts the power menu over the card it belongs to. */
+  function placePowerMenu(): void {
+    const el = stage.querySelector<HTMLElement>('.power-menu');
+    if (!el || !powerMenu) return;
+    const card = stage.querySelector<HTMLElement>(`[data-act="power-card"][data-card="${CSS.escape(powerMenu.card)}"]`);
+    const r = stage.getBoundingClientRect();
+    const c = card?.getBoundingClientRect();
+    const x = c ? (c.left + c.width / 2 - r.left) / scale : STAGE.w / 2;
+    // Over the card, and never down over the bar.
+    const y = Math.min(c ? (c.top - r.top) / scale : REGIONS.bar.y, REGIONS.bar.y);
+    el.style.left = `${Math.max(8, Math.min(STAGE.w - el.offsetWidth - 8, x - el.offsetWidth / 2))}px`;
+    el.style.top = `${Math.max(8, y - el.offsetHeight - 12)}px`;
   }
 
   function modalHtml(v: TableView): string {
     if (!modal) return '';
     let inner = '';
-    if (modal.type === 'picker') inner = cardPicker(modal.picker, t);
-    else if (modal.type === 'detail') {
-      const html = detailHtml(ix, v, modal.target, t);
-      if (html === null) {
-        modal = null;
-        return '';
-      }
-      inner = html;
-    } else if (modal.type === 'log') {
-      const items = state.log.slice(-120).reverse().map((l) => `<li>[${l.chapter}] ${esc(say(l.text))}</li>`).join('');
-      inner = `<h2 id="modal-title">${esc(t('log.title'))}</h2><div></div><div class="modal-body"><ol class="log-list" reversed>${items}</ol></div><div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`;
-    } else if (modal.type === 'settings') {
+    let size = 's';
+    if (modal.type === 'settings') {
       const seatOpts = v.players.map((p) => `<option value="${p.id}"${seatChoice === p.id ? ' selected' : ''}>${esc(playerName(t, p.id))}</option>`).join('');
       const countOpts = [2, 3, 4].map((n) => `<option${players === n ? ' selected' : ''}>${n}</option>`).join('');
       const langOpts = LANGS.map((l) => `<option${lang === l ? ' selected' : ''}>${l}</option>`).join('');
       // Online the seat, players and seed belong to the shared game: only the language can change.
       inner = online
-        ? `<h2 id="modal-title">${esc(t('settings.title'))}</h2><div></div>
+        ? `<h2 id="modal-title">${esc(t('settings.title'))}</h2>
         <div class="settings-grid">
           <label for="set-lang">${esc(t('settings.lang'))}</label><select id="set-lang" data-set="lang">${langOpts}</select>
         </div>
         <div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`
-        : `<h2 id="modal-title">${esc(t('settings.title'))}</h2><div></div>
+        : `<h2 id="modal-title">${esc(t('settings.title'))}</h2>
         <div class="settings-grid">
-          <label for="set-follow">${esc(t('settings.follow'))}</label><input id="set-follow" type="checkbox" data-set="follow"${follow ? ' checked' : ''}>
+          <label for="set-follow">${esc(t('settings.follow'))}</label><input id="set-follow" type="checkbox" class="sw" data-set="follow"${follow ? ' checked' : ''}>
           <label for="set-seat">${esc(t('settings.view'))}</label><select id="set-seat" data-set="seat"${follow ? ' disabled' : ''}>${seatOpts}</select>
           <label for="set-lang">${esc(t('settings.lang'))}</label><select id="set-lang" data-set="lang">${langOpts}</select>
           <label for="set-players">${esc(t('settings.players'))}</label><select id="set-players" data-set="players">${countOpts}</select>
           <label for="set-seed">${esc(t('settings.seed'))}</label><input id="set-seed" type="number" min="1" value="${seed}" data-set="seed">
-          <span></span><span>${button('new-game', t('settings.newGame'), { cls: 'primary' })}</span>
-          <span></span><a href="?">${esc(t('settings.debug'))}</a>
         </div>
-        <div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`;
+        <div class="modal-foot">${button('close-modal', t('btn.back'))}${button('new-game', t('settings.newGame'), { cls: 'primary' })}</div>`;
     } else if (modal.type === 'decide' && v.decision && keepChoice(v.decision)) {
       // Keep N of the cards drawn: the cards themselves, clicked to choose.
       const { cards, keep } = keepChoice(v.decision)!;
@@ -1042,7 +1063,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           return `<button type="button" class="dr-card pickable k-${kind}${on ? ' chosen' : ''}" data-act="keep-toggle" data-card="${esc(id)}" data-zoom="${esc(id)}" aria-pressed="${on}" aria-label="${esc(id)}">${face}</button>`;
         })
         .join('');
-      inner = `<h2 id="modal-title">${esc(t('keep.title', { n: keep }))}</h2><div></div>
+      size = 'l';
+      inner = `<h2 id="modal-title">${esc(t('keep.title', { n: keep }))}</h2>
         <div class="modal-body keep-cards">
           <p class="hint">${esc(t('keep.hint', { n: keep, card: cardName(v.decision.card) }))}</p>
           <div class="dr-row">${faces}</div>
@@ -1054,44 +1076,19 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         .map((o, i) => (o.parts.length ? button('decide-pick', o.parts.map(partText).join(' · '), { args: { i }, cls: 'decide-opt' }) : ''))
         .join('');
       const declinable = modal.options.some((o) => !o.parts.length);
-      inner = `<h2 id="modal-title">${esc(t('decide.title'))}</h2><div></div>
+      size = 'm';
+      inner = `<h2 id="modal-title">${esc(t('decide.title'))}</h2>
         <div class="modal-body">
           <p class="hint">${esc(t('decide.what', { card: cardName(v.decision.card), effect: t(`decide.effect.${v.decision.effect}`) }))}</p>
           <div class="decide-list">${opts || `<p class="hint">${esc(t('decide.none'))}</p>`}</div>
-          <details class="decide-adv"><summary>${esc(t('decide.advanced'))}</summary>
-            <pre>${esc(JSON.stringify(v.decision, null, 1))}</pre><p>${esc(t('decide.args'))}</p><textarea data-set="decide-args">${esc(modal.args)}</textarea>
-            <div>${button('decide-send', t('decide.send'))}</div>
-          </details>
         </div>
         <div class="modal-foot">${button('close-modal', t('btn.back'))}${declinable ? button('decline', t('decide.decline')) : ''}</div>`;
+    } else {
+      modal = null;
+      return '';
     }
-    if (modal.type === 'powers') {
-      const groups = new Map<string, { i: number; o: PowerOption }[]>();
-      modal.options.forEach((o, i) => groups.set(o.card, [...(groups.get(o.card) ?? []), { i, o }]));
-      const rows = [...groups.entries()]
-        .map(([card, list]) => {
-          const face = courtFace(faceOf(ix, card, lang), t);
-          const byAbility = new Map<string, { i: number; o: PowerOption }[]>();
-          for (const x of list) byAbility.set(x.o.ability, [...(byAbility.get(x.o.ability) ?? []), x]);
-          const abilities = [...byAbility.entries()]
-            .map(([ability, xs]) => {
-              const kind = xs[0].o.kind;
-              const name = t(`power.${ability}`) === `power.${ability}` ? ability : t(`power.${ability}`);
-              const btns = xs.map(({ i, o }) => button('power-pick', o.parts.length ? o.parts.map(partText).join(' · ') : t('powers.use'), { args: { i }, cls: 'decide-opt' })).join('');
-              return `<div class="power-ab"><div class="power-name"><span class="tag">${esc(t(`powers.kind.${kind}`))}</span> ${esc(name)}</div><div class="decide-list">${btns}</div></div>`;
-            })
-            .join('');
-          return `<div class="power-card"><span class="court-face" data-zoom="${esc(card)}">${face}</span><div class="power-abs"><b>${esc(card)}</b>${abilities}</div></div>`;
-        })
-        .join('');
-      inner = `<h2 id="modal-title">${esc(t('powers.title'))}</h2><div></div>
-        <div class="modal-body"><p class="hint">${esc(t('powers.hint'))}</p>${rows || `<p class="hint">${esc(t('powers.none'))}</p>`}</div>
-        <div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`;
-    }
-    const box = modal.type === 'detail'
-      ? `left:${REGIONS.detail.x}px;top:${REGIONS.detail.y}px;width:${REGIONS.detail.w}px;max-height:${REGIONS.detail.h}px`
-      : place(REGIONS.modal);
-    return `<div class="overlay" data-act="close-modal"></div><div class="glass modal${modal.type === 'detail' ? ' detail' : ''}" role="dialog" aria-modal="true" aria-labelledby="modal-title" style="${box}">${inner}</div>`;
+    // Centred and as tall as its content (the content is sized to fit the screen: no scroll bar).
+    return `<div class="overlay" data-act="close-modal"></div><div class="glass modal fit m-${size}" role="dialog" aria-modal="true" aria-labelledby="modal-title" style="max-height:${STAGE.h - 80}px">${inner}</div>`;
   }
 
   /**
@@ -1103,8 +1100,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const keys = v.systems
       .filter((s) => s.inPlay)
       .map((s) => {
-        const label = `${s.id}${s.resource ? ' · ' + t(`resource.${s.resource}`) : ''}`;
-        return `<span role="button" tabindex="0" class="sys-key${valid.has(s.id) ? ' valid' : ''}" data-sys="${esc(s.id)}" aria-label="${esc(label)}">${esc(s.id)}</span>`;
+        const label = systemName(s, t);
+        return `<span role="button" tabindex="0" class="sys-key${valid.has(s.id) ? ' valid' : ''}" data-sys="${esc(s.id)}" data-tip="sys:${esc(s.id)}" aria-label="${esc(label)}">${esc(s.id)}</span>`;
       })
       .join('');
     let cal = '';
@@ -1208,7 +1205,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const preludes = preludeCards(v);
 
     stage.innerHTML = `<div class="tbl-stars"></div>
-      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', prompt(v), board3d?.hasInfoLayer ? controlLayer : null)}</div>
+      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', prompt(v), board3d?.hasInfoLayer ? controlLayer : null, drop)}</div>
       <div class="map-area${board3d ? '' : ' glass'}" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
       <div class="region court" data-region="court" style="${place(REGIONS.court)}">${courtPanel(v, t, courtPickable(intent))}</div>
@@ -1216,15 +1213,17 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="region bar" aria-hidden="true" style="${place(REGIONS.bar)}"></div>
       <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, [], true)}</div>
       <div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>
-      <div class="region mine" data-region="mine" style="${place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 26)}</div>
+      <div class="region mine" data-region="mine" style="${place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 26, new Set(preludes.filter((c) => c.lit).map((c) => c.card)))}</div>
       <div class="region hand" data-region="hand" style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>
       <div class="region confirm" data-region="confirm" style="${place(REGIONS.confirm)}">${turnButtons}</div>
       ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div>${preludeTab(preludes, t, true)}</div>` : ''}
       <div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>
       ${modalHtml(v)}
+      ${dropHtml()}
       ${curtainFor !== null ? handOver(curtainFor) : ''}
       ${toast ? `<div class="toast" role="alert">${esc(toast)}</div>` : ''}
-      <div class="card-zoom" aria-hidden="true" hidden></div>`;
+      <div class="card-zoom" aria-hidden="true" hidden></div>
+      <div class="hover-tip" aria-hidden="true" hidden></div>`;
     board3d?.update(v, valid, chosen, shipGlow(v, valid), routePreview(v), actionable(v));
     const menu = sysMenuHtml(v);
     if (menu) stage.insertAdjacentHTML('beforeend', menu);
@@ -1235,12 +1234,14 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       if (focus) board3d?.ensureVisible(focus);
     }
     placeMenu();
+    const powers = powerMenuHtml();
+    if (powers) stage.insertAdjacentHTML('beforeend', powers);
+    placePowerMenu();
     const war = battleWindow(v);
     if (war) stage.insertAdjacentHTML('beforeend', war);
     const pick = draftWindow();
     if (pick) stage.insertAdjacentHTML('beforeend', pick);
     mountBattle();
-    agentsInPicker();
     restoreFocus(key);
     const dialog = stage.querySelector('.modal');
     if (dialog && !dialog.contains(document.activeElement)) {
@@ -1281,14 +1282,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         return;
       }
     }
-    if (!validSystems(v).has(id)) {
-      // Not a choice for the current step: outside a step, the click opens the system's details.
-      if (intent.step === 'idle' && !modal) {
-        modal = { type: 'detail', target: { kind: 'system', id } };
-        render();
-      }
-      return;
-    }
+    // Not a choice for the current step: nothing to do (hovering the system shows what is in it).
+    if (!validSystems(v).has(id)) return;
     const i = intent;
     if (i.step === 'system') {
       // The action was picked first: its choices in the menu beside the system.
@@ -1304,24 +1299,6 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       intent = extendRoute(i, id);
     }
     render();
-  }
-
-  /** Moves the picker by `dir` pages, staying within the active tab's pages. */
-  function turnPage(dir: number): void {
-    if (modal?.type !== 'picker') return;
-    const m = modal.picker;
-    const last = Math.max(0, Math.ceil(m.groups[m.active].cards.length / PICKER_PAGE) - 1);
-    modal.picker = { ...m, page: Math.max(0, Math.min(last, m.page + dir)) };
-  }
-
-  function confirmPick(): void {
-    if (modal?.type !== 'picker' || !modal.court || !modal.picker.selected) return;
-    const card = modal.picker.selected;
-    const { kind, prelude } = modal.court;
-    modal = null;
-    const slot = state.court.findIndex((c) => c.card === card);
-    if (slot >= 0) send(act({ kind, courtSlot: slot }, prelude));
-    else render();
   }
 
   function onAct(el: HTMLElement): void {
@@ -1382,7 +1359,6 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'cancel':
         intent = IDLE;
         sysMenu = null;
-        if (modal?.type === 'picker' && modal.court) modal = null;
         break;
       case 'menu-close':
         sysMenu = null;
@@ -1406,7 +1382,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         const n = Number(d.d);
         if (intent.step === 'battle') {
           const die = d.name as 'skirmish' | 'assault' | 'raid';
-          intent = { ...intent, dice: { ...intent.dice, [die]: clamp(intent.dice[die] + n, 9) } };
+          intent = { ...intent, dice: { ...intent.dice, [die]: clamp(intent.dice[die] + n, MAX_STEPPER_DICE) } };
         }
         break;
       }
@@ -1459,18 +1435,24 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           if (al) send({ type: 'allocate', player: me, allocation: al });
         }
         return;
-      case 'powers-open':
-        modal = { type: 'powers', options: cardPowers(ix, state, me) };
+      case 'power-card': {
+        // A lit card: its one use at once, or its choices beside it.
+        const options = powersNow().filter((o) => o.card === d.card);
+        if (options.length === 1) return void send(options[0].cmd);
+        powerMenu = options.length ? { card: d.card!, options } : null;
         break;
-      case 'power-pick':
-        if (modal?.type === 'powers') {
-          const o = modal.options[Number(d.i)];
-          modal = null;
-          if (o) send(o.cmd);
-        }
-        return;
+      }
+      case 'power-pick': {
+        const o = powerMenu?.options[Number(d.i)];
+        powerMenu = null;
+        if (o) return void send(o.cmd);
+        break;
+      }
+      case 'power-close':
+        powerMenu = null;
+        break;
       case 'decide-open':
-        modal = { type: 'decide', args: '{}', options: decisionOptions(ix, state, me) };
+        modal = { type: 'decide', options: decisionOptions(ix, state, me) };
         break;
       case 'keep-toggle':
         if (modal?.type === 'decide' && d.card && state.phase.type === 'decide') {
@@ -1497,18 +1479,6 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         modal = null;
         send({ type: 'decide', player: me, args: {} });
         return;
-      case 'decide-send':
-        if (modal?.type === 'decide') {
-          try {
-            const args = JSON.parse(modal.args) as Record<string, unknown>;
-            modal = null;
-            send({ type: 'decide', player: me, args });
-          } catch (e) {
-            showToast(t('error', { msg: say((e as Error).message) }));
-            render();
-          }
-        }
-        return;
       case 'end-turn':
         send({ type: 'endTurn', player: me });
         return;
@@ -1526,53 +1496,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       }
       case 'court': {
         const slot = Number(d.slot);
+        // A Court card acts only while Influence or Secure picks one; hovering shows it large.
         if (courtPickable(intent).has(slot) && intent.step === 'court') return void send(act({ kind: intent.kind, courtSlot: slot }, intent.prelude));
-        openPicker(v, t('modal.courtTitle'), 0, { page: Math.floor(slot / PICKER_PAGE) });
-        break;
+        return;
       }
-      case 'court-view':
-        openPicker(v, t('modal.courtTitle'), 0);
-        break;
-      case 'seat-cards':
-        openPicker(v, t('modal.ownedTitle'), 1 + Number(d.player));
-        break;
-      case 'seat-detail':
-        modal = { type: 'detail', target: { kind: 'seat', player: Number(d.player) } };
-        break;
-      case 'detail-system':
-        modal = { type: 'detail', target: { kind: 'system', id: d.id! } };
-        break;
-      case 'amb-detail':
-        modal = { type: 'detail', target: { kind: 'ambition', id: d.id! } };
-        break;
-      case 'supply-detail':
-        modal = { type: 'detail', target: { kind: 'supply' } };
-        break;
-      case 'tab':
-        if (modal?.type === 'picker') modal.picker = { ...modal.picker, active: Number(d.tab), page: 0 };
-        break;
-      case 'page':
-        turnPage(Number(d.dir));
-        break;
-      case 'pick':
-        if (modal?.type === 'picker' && modal.picker.selectable?.has(d.card!)) {
-          const again = modal.picker.selected === d.card;
-          modal.picker = { ...modal.picker, selected: d.card! };
-          if (again) return confirmPick();
-          // Only the choice changes: mark it in place instead of drawing the window again.
-          for (const slot of stage.querySelectorAll<HTMLElement>('.modal .pick-slot')) {
-            const on = slot.dataset.card === d.card;
-            slot.classList.toggle('chosen', on);
-            const card = slot.querySelector<HTMLElement>('.lcard');
-            card?.classList.toggle('selected', on);
-            card?.setAttribute('aria-pressed', String(on));
-          }
-          stage.querySelector<HTMLElement>('.modal .pick-slot.chosen .pick-go')?.focus({ preventScroll: true });
-          return;
-        }
-        break;
-      case 'pick-confirm':
-        return confirmPick();
       case 'court-sort':
         courtSort = COURT_SORTS.includes(el.dataset.sort as CourtSort) ? (el.dataset.sort as CourtSort) : 'got';
         break;
@@ -1586,10 +1513,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         board3d?.setSectorMode(controlLayer ? 'control' : 'resource');
         break;
       case 'help':
-        showToast(t('map3d.hint'));
-        break;
       case 'log':
-        modal = { type: 'log' };
+        drop = drop === d.act ? null : (d.act as Drop);
+        break;
+      case 'drop-close':
+        drop = null;
         break;
       case 'calib-skip':
         calib.i = Math.min(calib.order.length, calib.i + 1);
@@ -1609,7 +1537,6 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         restart();
         break;
       case 'close-modal':
-        if (modal?.type === 'picker' && modal.court) intent = IDLE;
         modal = null;
         break;
       default:
@@ -1639,41 +1566,6 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
     return agents3d;
   }
-  // The Court picker shows the agents on each card as still pictures of the 3D agents (one renderer, cached per group).
-  let stills: CourtAgents3D | null | undefined;
-  const stillCache = new Map<string, Promise<string | null>>();
-  function agentsInPicker(): void {
-    const slots = stage.querySelectorAll<HTMLElement>('.modal .pick-agents[data-agents]');
-    if (!slots.length) return;
-    if (stills === undefined) {
-      try {
-        stills = new CourtAgents3D(false);
-      } catch {
-        stills = null;
-      }
-    }
-    const view = stills;
-    if (!view) return;
-    let queue = Promise.resolve();
-    for (const slot of slots) {
-      const key = slot.dataset.agents!;
-      slot.classList.add('loading');
-      if (!stillCache.has(key)) {
-        const onCard = key.split(',').map((x) => x.split(':').map(Number)).map(([player, count]) => ({ player, count }));
-        // One at a time: the renderer is shared.
-        const shot = queue.then(() => view.snapshot(onCard)).catch(() => null);
-        queue = shot.then(() => undefined);
-        stillCache.set(key, shot);
-      }
-      void stillCache.get(key)!.then((url) => {
-        slot.classList.remove('loading');
-        if (!url || !slot.isConnected) return;
-        slot.classList.add('three');
-        slot.innerHTML = `<img class="pick-3d" src="${url}" alt="">`;
-      });
-    }
-  }
-
   function showZoom(el: HTMLElement): void {
     const zoom = stage.querySelector<HTMLElement>('.card-zoom');
     const id = el.dataset.zoom;
@@ -1724,6 +1616,55 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (zoomTarget(e)) hideZoom();
   });
 
+  // ---- hover cards: a rival's board, an ambition row, a map system ----
+  /** Shows the hover card for `raw` ("seat:1", "amb:tyrant", "sys:c2-p1") beside the element or the point. */
+  function showTip(raw: string, at: HTMLElement | { x: number; y: number }): void {
+    const tip = stage.querySelector<HTMLElement>('.hover-tip');
+    const target = parseTip(raw);
+    if (!tip || !target) return;
+    // Nothing over an open menu, window or drop-down.
+    if (sysMenu || modal || drop || powerMenu) return hideTip();
+    const key = `${raw}|${state.log.length}`;
+    if (tip.dataset.key !== key) {
+      const html = tipHtml(ix, withSay(tableView(ix, state, local(), lang)), target, t);
+      if (!html) return hideTip();
+      tip.innerHTML = html;
+      tip.dataset.key = key;
+    }
+    tip.hidden = false;
+    const s = stage.getBoundingClientRect();
+    const r = at instanceof HTMLElement ? at.getBoundingClientRect() : { left: at.x, top: at.y, width: 0, height: 0 };
+    const x = (r.left - s.left) / scale;
+    const y = (r.top - s.top) / scale;
+    const w = r.width / scale;
+    const tw = tip.offsetWidth;
+    const th = tip.offsetHeight;
+    const GAP = at instanceof HTMLElement ? 12 : 24;
+    // Beside it, on the side with room; kept inside the screen.
+    const left = x + w / 2 > STAGE.w / 2 ? x - tw - GAP : x + w + GAP;
+    tip.style.left = `${Math.max(8, Math.min(STAGE.w - tw - 8, left))}px`;
+    tip.style.top = `${Math.max(8, Math.min(STAGE.h - th - 8, y + (r.height / scale) / 2 - th / 2))}px`;
+  }
+  function hideTip(): void {
+    const tip = stage.querySelector<HTMLElement>('.hover-tip');
+    if (tip) tip.hidden = true;
+  }
+  const tipTarget = (e: Event) => {
+    const el = e.target as Element;
+    // A card inside the element shows itself large instead.
+    return el.closest('[data-zoom]') ? null : el.closest<HTMLElement>('[data-tip]');
+  };
+  stage.addEventListener('mouseover', (e) => {
+    const el = tipTarget(e);
+    if (el) showTip(el.dataset.tip!, el);
+    else if (!(e.target as Element).closest('canvas')) hideTip();
+  });
+  stage.addEventListener('focusin', (e) => {
+    const el = tipTarget(e);
+    if (el) showTip(el.dataset.tip!, el);
+  });
+  stage.addEventListener('focusout', () => hideTip());
+
   stage.addEventListener('keydown', (e) => {
     const el = e.target as HTMLElement;
     if ((e.key === 'Enter' || e.key === ' ') && el.dataset.sys) {
@@ -1758,33 +1699,19 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     render();
   });
 
-  stage.addEventListener('input', (e) => {
-    const el = e.target as HTMLTextAreaElement;
-    if (el.dataset.set === 'decide-args' && modal?.type === 'decide') modal.args = el.value;
-  });
-
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (sysMenu) {
+      if (powerMenu) powerMenu = null;
+      else if (drop) drop = null;
+      else if (sysMenu) {
         sysMenu = null;
         if (intent.step === 'system') intent = IDLE;
-      } else if (modal) {
-        if (modal.type === 'picker' && modal.court) intent = IDLE;
-        modal = null;
-      } else if (intent.step !== 'idle') intent = IDLE;
+      } else if (modal) modal = null;
+      else if (intent.step !== 'idle') intent = IDLE;
       else selected = null;
-      render();
-    } else if (modal?.type === 'picker' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-      turnPage(e.key === 'ArrowLeft' ? -1 : 1);
       render();
     }
   });
-
-  stage.addEventListener('wheel', (e) => {
-    if (modal?.type !== 'picker') return;
-    turnPage(e.deltaY > 0 ? 1 : -1);
-    render();
-  }, { passive: true });
 
   render();
   mounted = true;
@@ -1805,7 +1732,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       state = next;
       history = [];
       resetChoices();
-      if (modal?.type !== 'log' && modal?.type !== 'settings') modal = null;
+      if (modal?.type !== 'settings') modal = null;
+      powerMenu = null;
       render();
     },
   };
