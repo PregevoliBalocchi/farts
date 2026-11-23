@@ -1441,7 +1441,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const zoom = stage.querySelector<HTMLElement>('.card-zoom');
     const id = el.dataset.zoom;
     if (!zoom || !id) return;
-    zoom.innerHTML = largeCard(faceOf(ix, id, lang), t, { selected: false, disabled: false });
+    const face = faceOf(ix, id, lang);
+    zoom.innerHTML = largeCard(face, t, { selected: false, disabled: false });
     const onCard = (el.dataset.agents ?? '')
       .split(',')
       .filter(Boolean)
@@ -1457,7 +1458,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const x = (r.left - s.left) / scale;
     const y = (r.top - s.top) / scale;
     const w = r.width / scale;
-    const ZW = 300, ZH = 416 + (view ? AGENTS_VIEW.h - AGENTS_OVERLAP : 0), GAP = 14;
+    // A leader card is tarot size: taller than the others at the same width.
+    const ZW = 300, ZH = (face.kind === 'leader' ? Math.round((ZW * 305) / 173) : 416) + (view ? AGENTS_VIEW.h - AGENTS_OVERLAP : 0), GAP = 14;
     const left = x + w / 2 > STAGE.w / 2 ? x - ZW - GAP : x + w + GAP;
     const top = Math.max(8, Math.min(STAGE.h - ZH - 8, y + (r.height / scale) / 2 - ZH / 2));
     zoom.style.left = `${left}px`;
