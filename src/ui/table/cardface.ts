@@ -1,36 +1,55 @@
-// Court cards drawn from scratch with the publisher's development kit
-// (assets/ui/cardkit/, from tools/fetch-kit.mjs): the kit's frame, footer and
-// key-cost tab over the illustration cut from the owner's card picture, with
-// the name and rules text from the owner's content (never from code). A card
-// without a transcribed name, or without the kit, keeps its plain picture.
+// Court, Lore and Leader cards drawn from scratch with the publisher's
+// development kit (assets/ui/cardkit/, from tools/fetch-kit.mjs): the kit's
+// frame, footer and key-cost tab over the illustration cut from the owner's
+// card picture, with the name and rules text from the owner's content (never
+// from code). A card without a transcribed name, or without the kit, keeps
+// its plain picture.
 
-import type { CardWords, ContentIndex, CourtCardDef } from '../../game/engine';
+import type { CardWords, ContentIndex, CourtKind, PrintedWords } from '../../game/engine';
 import { assetUrl, cardArt } from './assets';
 import type { CourtCardView } from './view';
 
-/** What a card face needs. */
-export type CourtFaceData = Pick<CourtCardView, 'card' | 'kind' | 'resource' | 'keys' | 'name' | 'text' | 'crisis' | 'set' | 'focus'>;
+/** What a card face needs: a Court card, or a Lore or Leader card (Leaders & Lore). */
+export type CourtFaceData = Omit<Pick<CourtCardView, 'card' | 'kind' | 'resource' | 'keys' | 'name' | 'text' | 'crisis' | 'set' | 'focus'>, 'kind'> & {
+  kind: CourtKind | 'lore' | 'leader' | null;
+};
 
 /** A card's printed words in `lang`: the translation where the content has one, else the original. */
-export function cardWords(d: CourtCardDef | undefined, lang: string): CardWords {
+export function cardWords(d: (PrintedWords & { crisis?: string }) | undefined, lang: string): CardWords {
   const tr = lang === 'en' ? undefined : d?.i18n?.[lang];
   return { name: tr?.name ?? d?.name, text: tr?.text ?? d?.text, crisis: tr?.crisis ?? d?.crisis };
 }
 
-/** A Court card's face data from the content, its words in `lang`. */
+/** A card's face data from the content (Court, Lore or Leader card), its words in `lang`. */
 export function faceOf(ix: ContentIndex, id: string, lang = 'en'): CourtFaceData {
   const d = ix.courtCards.get(id);
+  if (!d) {
+    const lore = ix.content.loreCards?.find((c) => c.id === id);
+    const leader = lore ? undefined : ix.content.leaders?.find((c) => c.id === id);
+    const w = lore ?? leader;
+    if (w) {
+      const { name, text } = cardWords(w, lang);
+      return { card: id, kind: lore ? 'lore' : 'leader', resource: null, keys: 0, name, text, set: lore?.set };
+    }
+  }
   return { card: id, kind: d?.kind ?? null, resource: d?.resource ?? null, keys: Number(d?.keys ?? 0), ...cardWords(d, lang), set: d?.set, focus: d?.artFocus };
 }
 
 const esc = (v: unknown) => String(v).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 
+/** Icons a rules text may name in braces: {key}, {hit}, {intercept}; the fallback when the picture is missing. */
+const TEXT_ICONS: Record<string, string> = { key: '⚷', hit: '✸', intercept: '⊘' };
+
 /**
  * Rules text markup to HTML: one paragraph per line, ***bold italic***,
- * **bold**, *italic*, {key} for the key icon. Everything else is escaped.
+ * **bold**, *italic*, {key} / {hit} / {intercept} for their icons. Everything
+ * else is escaped.
  */
 export function rulesHtml(text: string): string {
-  const key = assetUrl('icon.key');
+  const glyph = (name: string) => {
+    const url = assetUrl(`icon.${name}`);
+    return url ? `<img class="cf-ic ic-${name}" src="${esc(url)}" alt="${name}">` : TEXT_ICONS[name];
+  };
   return text
     .split('\n')
     .filter((p) => p.trim())
@@ -39,7 +58,7 @@ export function rulesHtml(text: string): string {
         .replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>')
         .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
         .replace(/\*(.+?)\*/g, '<i>$1</i>')
-        .replace(/\{key\}/g, key ? `<img class="cf-ic" src="${esc(key)}" alt="key">` : '⚷');
+        .replace(/\{(key|hit|intercept)\}/g, (_, name: string) => glyph(name));
       return `<p>${html}</p>`;
     })
     .join('');
@@ -57,6 +76,8 @@ const titleFit = (name: string) => (name.length > 18 ? ' t-3' : name.length > 14
 /** True when the card can be drawn from the kit (its name is transcribed and the kit pictures are installed). */
 export function hasKitFace(c: CourtFaceData): boolean {
   if (!c.name || !cardArt(c.card)) return false;
+  if (c.kind === 'leader') return true;
+  if (c.kind === 'lore') return !!assetUrl('cardkit.lore') && !!assetUrl('cardkit.footer');
   return c.kind === 'decree' ? !!assetUrl('cardkit.vox') : !!(c.resource && assetUrl(`cardkit.guild-${c.resource}`));
 }
 
@@ -70,6 +91,17 @@ export function courtCardFace(c: CourtFaceData): string {
   };
   const { code, n } = cardNumber(c.card, c.set);
   const text = c.text ?? '';
+  if (c.kind === 'leader') {
+    // The printed card is the base (illustration, number, resources and A/B/C setup row); a fresh
+    // panel covers its name and text box with the content's words.
+    return `<div class="cface leader"><img class="cf-art" src="${esc(art!)}" alt="">
+      <div class="cf-panel"></div><div class="cf-title${titleFit(c.name ?? '')}">${esc(c.name)}</div><div class="cf-text cf-fit">${rulesHtml(text)}</div></div>`;
+  }
+  if (c.kind === 'lore') {
+    return `<div class="cface lore"><img class="cf-art" src="${esc(art!)}" alt="">${kit('lore')}${kit('footer')}
+      <div class="cf-title${titleFit(c.name ?? '')}">${esc(c.name)}</div><div class="cf-text cf-fit">${rulesHtml(text)}</div>
+      <div class="cf-foot"><span>L</span><span>LORE</span><span>${esc(n)}</span></div></div>`;
+  }
   const foot = `<div class="cf-foot"><span>${code}</span><span>${c.kind === 'decree' ? 'VOX' : 'GUILD'}</span><span>${esc(n)}</span></div>`;
   if (c.kind === 'decree') {
     const crisis = c.crisis ? `<div class="cf-crisis">${rulesHtml(`**Crisis:** ${c.crisis}`)}</div>` : '';

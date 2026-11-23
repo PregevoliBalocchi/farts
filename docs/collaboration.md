@@ -21,19 +21,23 @@ npm run test:unit                                  # must pass before you start
 npm run dev                                        # debug UI on http://localhost:5173
 ```
 
-## 2. Owner content stays out of git
+## 2. Owner content: what is in git
 
-The game's real data is the owner's and is **git-ignored on purpose**:
+The game's data, `data/content.json` (map, setup cards, leaders, cards and
+their texts, campaign data), **is committed**: owner's decision, 2026-11-23.
+The repository is private and the publisher offers the card data for free
+download. A clone plays with the real content and runs the content tests.
+
+The rest of the owner's material is still **git-ignored on purpose**:
 
 | Path | What |
 |---|---|
-| `data/content.json` | map, setup cards, leaders, cards, campaign data |
 | `data/*.local.md` | mechanics summaries of the cards |
 | `assets/cards/campaign/`, `assets/cards/setup/`, `assets/map/` | other card and board images (the card faces the table shows are committed) |
 | `PG/` | campaign Fate transcriptions |
 | `prototypes/ui-lab/img/` | images used by the UI test table |
 
-Without them everything still builds and runs on the placeholder
+Without `data/content.json` everything still builds and runs on the placeholder
 `data/content.example.json`, and the content tests are skipped. To play or
 check the real content, get these files **privately from the owner** (never
 through the repo, issues or pull requests) and copy them to the same paths.
@@ -43,11 +47,12 @@ original game. One exception, decided by the owner (2026-11): the pictures in
 `assets/ui/` (the publisher's development kit and the board picture) are
 committed, and so are the card pictures the table shows (`assets/cards/court/`,
 `court-campaign/`, `lore/`, `leaders/`), see `docs/ui-assets.md`. Card texts
-are not: they stay out of code, tests and docs. Cards are named by neutral ids (`court-01`, `lore-01`,
+live only in `data/content.json` (committed, see above): never in code, tests
+or docs. Cards are named by neutral ids (`court-01`, `lore-01`,
 `leader-01`, `court-cc-01`, `fate-a-01`); rules are summarised in our own
 words. The publisher's online card library (FAQ, errata) is the reference
-for rulings: https://cards.buriedgiant.com/search?q=game:arcs — read it,
-never copy its texts into the repo. Site numbering matches our ids
+for rulings: https://cards.buriedgiant.com/search?q=game:arcs — its card
+texts may go into `data/content.json`, nowhere else. Site numbering matches our ids
 (`BCnn` = `court-nn`, `Lnn` = `lore-nn`, `LEADnn` = `leader-nn`).
 
 ## 3. Project decisions to keep

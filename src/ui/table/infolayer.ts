@@ -390,6 +390,14 @@ export function drawInfoLayer(cv: HTMLCanvasElement, lines: BoardLines, calib: B
     g.restore();
   }
 
+  // The map has no hard edge: its colours and lines fade out towards the
+  // picture's borders. What players read or use (symbols, gate numbers, slots,
+  // resource icons, arrows) comes after, so it never fades.
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  fadeEdges(g, cv.width, cv.height, (EDGE_FADE * cv.width) / lines.width);
+  g.restore();
+
   // Each planet's symbol: a tab on the ring's outer edge, pointing out.
   for (const sym of lines.symbols) if (!out(sym.system)) symbolTab(g, sym.x, sym.y, sym.angle, sym.shape);
 
@@ -458,9 +466,6 @@ export function drawInfoLayer(cv: HTMLCanvasElement, lines: BoardLines, calib: B
     if (pts) bridgeArrow(g, pts);
   }
 
-  // The map has no hard edge: everything fades out towards the picture's borders.
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  fadeEdges(g, cv.width, cv.height, (EDGE_FADE * cv.width) / lines.width);
 }
 
 /** Width of the fade at the map's borders, in picture pixels. */

@@ -35,6 +35,13 @@ export interface CardWords {
   crisis?: string;
 }
 
+/** Presentation only (owner content): a card's printed name and rules text, and their translations by language code. */
+export interface PrintedWords {
+  name?: string;
+  text?: string;
+  i18n?: Record<string, CardWords>;
+}
+
 export interface CourtCardDef {
   id: string;
   kind: CourtKind;
@@ -100,7 +107,7 @@ export interface Placement {
 }
 
 /** A character card drawn at setup; it decides what goes on A, B and C. */
-export interface LeaderDef {
+export interface LeaderDef extends PrintedWords {
   id: string;
   setup: Record<SetupSlot, SetupPieces>;
   /** Extra starting resources, if the leader grants any. */
@@ -217,14 +224,14 @@ export interface GameContent {
   /** Leaders & Lore: leader cards. */
   leaders?: LeaderDef[];
   /** Leaders & Lore: lore cards (persistent powers resolved through the effect registry). */
-  loreCards?: {
+  loreCards?: (PrintedWords & {
     id: string;
     effect?: string;
     /** Which box the card comes from (e.g. base game or an expansion pack). */
     set?: string;
     /** The card holds resources: slots on it and their raid cost. */
     holds?: { resourceSlots: number; keys: number };
-  }[];
+  })[];
   /** Base game: pieces placed on A, B and C (the leaders variant uses each character card instead). */
   baseSetupPieces?: Record<SetupSlot, SetupPieces>;
   /** Resource tokens in the general supply, per type. */

@@ -1,6 +1,6 @@
 # Runs the type check and the unit tests on every push and pull request
-# (docs/collaboration.md). Owner content is not in the repo: the tests use
-# data/content.example.json and skip the content checks. The browser tests
+# (docs/collaboration.md). data/content.json is committed, so the content
+# checks run here too. The browser tests
 # (npm run test:e2e) run locally.
 name: tests
 

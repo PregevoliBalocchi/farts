@@ -285,5 +285,8 @@
   "draft.lore": "Lore",
   "word.fresh": "integra",
   "word.damaged": "danneggiata",
-  "word.weapons": "Armi"
+  "word.weapons": "Armi",
+  "keep.title": "Tieni {n} carte",
+  "keep.hint": "{card}: clicca le carte da tenere; le altre tornano nella scatola.",
+  "keep.count": "Scelte: {n} su {of}"
 }

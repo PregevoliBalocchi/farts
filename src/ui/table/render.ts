@@ -416,7 +416,7 @@ export function largeCard(c: CourtFaceData, t: Translate, state: { selected: boo
   const cls = `lcard${state.selected ? ' selected' : ''}${state.disabled ? ' disabled' : ''}${art ? ' full-art' : ''}`;
   const attrs = `data-act="pick" data-card="${esc(c.card)}"${state.disabled ? ' aria-disabled="true"' : ''} aria-pressed="${state.selected}" aria-label="${esc(c.card)}"`;
   // Drawn from the kit when the card's text is known, else the picture is the whole card face.
-  if (hasKitFace(c)) return `<button type="button" class="${cls} kit" ${attrs}>${courtCardFace(c)}</button>`;
+  if (hasKitFace(c)) return `<button type="button" class="${cls} kit k-${c.kind}" ${attrs}>${courtCardFace(c)}</button>`;
   if (art) return `<button type="button" class="${cls}" ${attrs}><img class="lcard-img" src="${esc(art)}" alt=""></button>`;
   return `<button type="button" class="${cls}" ${attrs}>
     <div class="lcard-top"><span class="lcard-keys">${keys}</span>${c.resource ? `<span class="lcard-res">${resIcon(c.resource, t)}</span>` : ''}</div>

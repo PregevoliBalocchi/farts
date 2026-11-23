@@ -998,7 +998,7 @@ button.supply:hover { border-color: var(--rule-hi); }
    (408x555), so they are drawn larger and shifted out by the bleed. Sizes in cqw
    follow the card's width. */
 .cface { position: relative; width: 100%; aspect-ratio: 372 / 519; overflow: hidden; container-type: inline-size; border-radius: 4.2% / 3%;
-  color: #1c140c; font-family: "Arcs Card Text", "Jost", "Futura", "Century Gothic", sans-serif; text-align: left; line-height: 1.2; }
+  color: #1c140c; font-family: "Arcs Card Text", "Jost", "Futura", "Century Gothic", sans-serif; font-weight: 400; text-align: left; line-height: 1.2; }
 .cface .cf-art, .cface .cf-sketch { position: absolute; inset: 0; width: 100%; height: 100%; }
 .cface .cf-kit { position: absolute; left: -4.84%; top: -3.47%; width: 109.68%; height: 106.94%; pointer-events: none; }
 .cface .cf-sketch { mix-blend-mode: multiply; filter: brightness(1.1) contrast(1.15); z-index: 1;
@@ -1027,8 +1027,29 @@ button.supply:hover { border-color: var(--rule-hi); }
 .cface .cf-foot span:nth-child(2) { color: #f7e6c4; letter-spacing: .06em; }
 .cf-plain { display: block; width: 100%; height: 100%; object-fit: cover; }
 
+/* Lore cards: the owner's picture under the kit's Lore frame (its paper hides the printed words),
+   the title between the gold band and the rule, the text below it, the kit footer. */
+.cface.lore .cf-art { object-fit: cover; }
+.cface.lore .cf-title { top: 53.7%; font-size: calc(7.6cqw * var(--k, 1)); }
+.cface.lore .cf-text { top: 64.6%; bottom: 11%; }
+/* Leader cards (tarot size, 70x120 mm): the printed card is the base; a fresh panel with the card's
+   black rule covers the printed name and text box, between the illustration and the setup row. */
+.cface.leader { aspect-ratio: 173 / 305; border-radius: 4.5% / 2.6%; background: #000; }
+.cface.leader .cf-art { object-fit: fill; }
+.cface.leader .cf-panel { position: absolute; left: 3.5%; right: 3.5%; top: 47.4%; bottom: 14.4%; z-index: 1; background: #fbf8f2;
+  box-shadow: inset 0 0 0 .7cqw #111; }
+.cface.leader .cf-title { top: 48.6%; font-size: calc(9cqw * var(--k, 1)); }
+.cface.leader .cf-text { top: 55.6%; bottom: 15.4%; left: 7%; right: 7%; font-size: calc(4.9cqw * var(--k, 1)); }
+.cface.leader .cf-text p { margin-bottom: .45em; }
+
 .lcard.kit { display: block; padding: 0; border: 0; background: transparent; border-radius: 10px; }
 .lcard.kit .cface { height: 100%; }
+.lcard.kit.k-leader { height: auto; }
+.lcard.kit.k-leader .cface { height: auto; }
+.tbl-stage .draft-win .dr-card.k-leader { height: 264px; }
+.tbl-stage .keep-cards .dr-card.k-leader { height: 300px; }
+.tbl-stage .dr-card .cface { width: 100%; height: 100%; }
+.tbl-stage .dr-card .cface.leader { height: auto; }
 
 /* ==== Court column as card banners (owner's review 2026-11-23): picture strip, kit resource badge,
    name on a white band; the agents sit outside the card on its right, one row per seat ==== */
@@ -1101,3 +1122,14 @@ button.supply:hover { border-color: var(--rule-hi); }
 .board .slot .keys.kit { width: calc(32 * var(--u)); height: calc(36 * var(--u)); min-width: 0; padding: 0; border-radius: 0;
   background-color: transparent; background-repeat: no-repeat; background-size: 544% auto; background-position: 8.41% 0;
   filter: drop-shadow(0 1px 2px #000a); }
+
+/* Keep N of the cards drawn (leader-09's setup lore): the cards to click. */
+.tbl-stage .keep-cards .dr-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin: 18px 0; }
+.tbl-stage .keep-cards .dr-card { width: 170px; height: 236px; padding: 0; border: 0; border-radius: 9px; overflow: hidden; background: #0b0806; display: grid; place-items: center; cursor: pointer;
+  box-shadow: 0 0 0 2px #000, 0 0 0 3px #6b5733, 0 8px 18px #000c; transition: transform .15s, box-shadow .15s, filter .15s; filter: saturate(.8) brightness(.8); }
+.tbl-stage .keep-cards .dr-card img { width: 100%; height: 100%; object-fit: cover; }
+.tbl-stage .keep-cards .dr-card .dr-ph { padding: 8px; font: 700 13px var(--font-num); color: var(--dg-text); }
+.tbl-stage .keep-cards .dr-card:hover, .tbl-stage .keep-cards .dr-card:focus-visible { transform: translateY(-4px); filter: none; }
+.tbl-stage .keep-cards .dr-card.chosen { transform: translateY(-8px) scale(1.04); filter: none; box-shadow: 0 0 0 2px #000, 0 0 0 4px #ffcf6e, 0 0 26px rgba(255, 170, 60, .9), 0 12px 22px #000c; }
+.tbl-stage .keep-cards .keep-count { text-align: center; font: 600 15px var(--font-ui, inherit); color: var(--dg-text, #e8dcc4); }
+@media (prefers-reduced-motion: reduce) { .tbl-stage .keep-cards .dr-card { transition: none; } }

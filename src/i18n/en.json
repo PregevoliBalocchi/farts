@@ -285,5 +285,8 @@
   "draft.lore": "Lore",
   "word.fresh": "fresh",
   "word.damaged": "damaged",
-  "word.weapons": "Weapons"
+  "word.weapons": "Weapons",
+  "keep.title": "Keep {n} cards",
+  "keep.hint": "{card}: click the cards to keep; the others go back to the box.",
+  "keep.count": "Chosen: {n} of {of}"
 }

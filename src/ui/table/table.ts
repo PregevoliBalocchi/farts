@@ -13,7 +13,7 @@ import { messageTranslator } from '../../i18n/messages';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
 import { assetUrl, cardArt, icon, seatColor, seatIcon, setSeatColors } from './assets';
-import { cardWords, faceOf, fitCardText } from './cardface';
+import { cardWords, courtCardFace, faceOf, fitCardText, hasKitFace } from './cardface';
 import { loadCardFonts } from './cardfonts';
 import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, hitsLeft } from './battle';
 import type { BattlePick } from './battle';
@@ -48,7 +48,7 @@ type Modal =
   | { type: 'log' }
   | { type: 'settings' }
   | { type: 'detail'; target: DetailTarget }
-  | { type: 'decide'; args: string; options: DecisionOption[] }
+  | { type: 'decide'; args: string; options: DecisionOption[]; chosen?: string[] }
   | { type: 'powers'; options: PowerOption[] };
 
 /** Handle returned to main.ts (and window.game for automated checks). */
@@ -510,6 +510,21 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     </div>`;
   }
 
+  /** A decision that asks to keep some of the cards drawn (its data lists them), or null. */
+  function keepChoice(dec: { data?: Record<string, unknown> }): { cards: string[]; keep: number } | null {
+    const cards = dec.data?.cards;
+    const keep = dec.data?.keep;
+    return Array.isArray(cards) && typeof keep === 'number' && keep > 0 ? { cards: cards as string[], keep: Math.min(keep, cards.length) } : null;
+  }
+
+  /** A Lore, Leader or Court card at full size: drawn from the kit when it can be, else its picture, else its id. */
+  function drawnCard(id: string): { face: string; kind: string } {
+    const f = faceOf(ix, id, lang);
+    if (hasKitFace(f)) return { face: courtCardFace(f), kind: f.kind ?? 'card' };
+    const art = cardArt(id);
+    return { face: art ? `<img src="${esc(art)}" alt="">` : `<span class="dr-ph">${esc(id)}</span>`, kind: f.kind ?? 'card' };
+  }
+
   /**
    * The Leaders & Lore draft window: the face-up leaders and lore cards (hover
    * zooms, a click takes one when it is your pick), who picks now and after,
@@ -521,12 +536,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const me = local();
     const mine = myTurn();
     const card = (id: string) => {
-      const art = cardArt(id);
       const ok = mine && can({ type: 'draft', player: me, card: id });
-      const face = art ? `<img src="${esc(art)}" alt="">` : `<span class="dr-ph">${esc(id)}</span>`;
+      const { face, kind } = drawnCard(id);
       return ok
-        ? `<button type="button" class="dr-card pickable" data-act="draft-pick" data-card="${esc(id)}" data-zoom="${esc(id)}" aria-label="${esc(t('draft.take', { card: id }))}">${face}</button>`
-        : `<span class="dr-card" data-zoom="${esc(id)}">${face}</span>`;
+        ? `<button type="button" class="dr-card pickable k-${kind}" data-act="draft-pick" data-card="${esc(id)}" data-zoom="${esc(id)}" aria-label="${esc(t('draft.take', { card: id }))}">${face}</button>`
+        : `<span class="dr-card k-${kind}" data-zoom="${esc(id)}">${face}</span>`;
     };
     const order = d.order
       .slice(0, 8)
@@ -824,6 +838,24 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           <span></span><a href="?">${esc(t('settings.debug'))}</a>
         </div>
         <div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`;
+    } else if (modal.type === 'decide' && v.decision && keepChoice(v.decision)) {
+      // Keep N of the cards drawn: the cards themselves, clicked to choose.
+      const { cards, keep } = keepChoice(v.decision)!;
+      const chosen = modal.chosen ?? [];
+      const faces = cards
+        .map((id) => {
+          const on = chosen.includes(id);
+          const { face, kind } = drawnCard(id);
+          return `<button type="button" class="dr-card pickable k-${kind}${on ? ' chosen' : ''}" data-act="keep-toggle" data-card="${esc(id)}" data-zoom="${esc(id)}" aria-pressed="${on}" aria-label="${esc(id)}">${face}</button>`;
+        })
+        .join('');
+      inner = `<h2 id="modal-title">${esc(t('keep.title', { n: keep }))}</h2><div></div>
+        <div class="modal-body keep-cards">
+          <p class="hint">${esc(t('keep.hint', { n: keep, card: v.decision.card }))}</p>
+          <div class="dr-row">${faces}</div>
+          <p class="keep-count">${esc(t('keep.count', { n: chosen.length, of: keep }))}</p>
+        </div>
+        <div class="modal-foot">${button('close-modal', t('btn.back'))}${chosen.length === keep ? button('keep-confirm', t('btn.confirm'), { cls: 'primary' }) : ''}</div>`;
     } else if (modal.type === 'decide' && v.decision) {
       const opts = modal.options
         .map((o, i) => (o.parts.length ? button('decide-pick', o.parts.map(partText).join(' · '), { args: { i }, cls: 'decide-opt' }) : ''))
@@ -1206,6 +1238,20 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'decide-open':
         modal = { type: 'decide', args: '{}', options: decisionOptions(ix, state, me) };
         break;
+      case 'keep-toggle':
+        if (modal?.type === 'decide' && d.card && state.phase.type === 'decide') {
+          const keep = keepChoice(state.phase.decision)?.keep ?? 0;
+          const chosen = modal.chosen ?? [];
+          modal.chosen = chosen.includes(d.card) ? chosen.filter((c) => c !== d.card) : chosen.length < keep ? [...chosen, d.card] : chosen;
+        }
+        break;
+      case 'keep-confirm':
+        if (modal?.type === 'decide' && modal.chosen) {
+          const keep = modal.chosen;
+          modal = null;
+          send({ type: 'decide', player: me, args: { keep } });
+        }
+        return;
       case 'decide-pick':
         if (modal?.type === 'decide') {
           const o = modal.options[Number(d.i)];
