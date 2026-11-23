@@ -186,3 +186,84 @@ export function addHit(f: BattleForces, b: BattleRef, al: Allocation, pick: Batt
 export function emptyAllocation(al: Allocation): Allocation {
   return { ...al, selfHits: [], hits: [], buildingHits: [] };
 }
+
+// ---- the battle's animation: shots from the rolled dice, explosions from the hits placed ----
+
+/** A weapon drawn in the battle view: a laser bolt, a missile, or a tractor beam (keys: no explosion). */
+export type Weapon = 'laser' | 'missile' | 'tractor';
+
+/** One shot of the opening volley: when (seconds after the roll), who fires, what with, at what, and whether it lands. */
+export interface Shot {
+  delay: number;
+  die: number;
+  from: 'attacker' | 'defender';
+  weapon: Weapon;
+  at: 'ship' | 'building';
+  hit: boolean;
+}
+
+/** Timing of the opening volley: first shot, gap between dice, gap between one die's shots (seconds). */
+export const VOLLEY = { start: 0.25, dieGap: 0.32, shotGap: 0.12 } as const;
+
+/**
+ * The opening volley for the rolled dice, one die after the other: each hit is
+ * a shot at the defender's ships (lasers from skirmish dice, missiles from
+ * assault dice), each building hit a missile at a building, each key a tractor
+ * beam, each self-hit or intercept return fire at the attacker; a blank face
+ * is one shot that misses.
+ */
+export function volleyPlan(dice: readonly { type: DieType; face: DieFace }[]): Shot[] {
+  const shots: Shot[] = [];
+  dice.forEach((d, die) => {
+    const t0 = VOLLEY.start + die * VOLLEY.dieGap;
+    let k = 0;
+    const add = (n: number, s: Omit<Shot, 'delay' | 'die'>) => {
+      for (let j = 0; j < n; j++) shots.push({ ...s, delay: t0 + k++ * VOLLEY.shotGap, die });
+    };
+    const f = d.face;
+    const gun: Weapon = d.type === 'skirmish' ? 'laser' : 'missile';
+    add(f.hit ?? 0, { from: 'attacker', weapon: gun, at: 'ship', hit: true });
+    add(f.buildingHit ?? 0, { from: 'attacker', weapon: 'missile', at: 'building', hit: true });
+    add(f.key ?? 0, { from: 'attacker', weapon: 'tractor', at: 'building', hit: false });
+    add((f.selfHit ?? 0) + (f.intercept ?? 0), { from: 'defender', weapon: 'laser', at: 'ship', hit: true });
+    if (k === 0) add(1, { from: 'attacker', weapon: gun, at: 'ship', hit: false });
+  });
+  return shots;
+}
+
+/**
+ * A piece hit by the latest placed hits, and what it became. A damaged ship is
+ * found by its index among its side's damaged ships after the hits; a destroyed
+ * one by `was` and its index among that kind of ship before them (it is gone
+ * after). A building by its index.
+ */
+export interface HitEvent {
+  piece: 'attacker' | 'defender' | 'building';
+  index: number;
+  to: 'damaged' | 'destroyed';
+  was?: 'fresh' | 'damaged';
+}
+
+/** What changed from `prev` to `next` as more hits were placed; nothing when hits were taken back. */
+export function hitEvents(prev: BattleAfter, next: BattleAfter): HitEvent[] {
+  const out: HitEvent[] = [];
+  for (const side of ['attacker', 'defender'] as const) {
+    const a = prev[side];
+    const b = next[side];
+    if (b.destroyed < a.destroyed || b.fresh > a.fresh) return [];
+    const lost = b.destroyed - a.destroyed;
+    // Destroyed ships were damaged ones first; past those, fresh ships hit twice.
+    for (let j = 0; j < lost; j++)
+      out.push(j < a.damaged ? { piece: side, index: a.damaged - 1 - j, to: 'destroyed', was: 'damaged' } : { piece: side, index: a.fresh - 1 - (j - a.damaged), to: 'destroyed', was: 'fresh' });
+    const twice = Math.max(0, lost - a.damaged);
+    for (let j = 0; j < a.fresh - b.fresh - twice; j++) out.push({ piece: side, index: b.damaged - 1 - j, to: 'damaged' });
+  }
+  const rank = { ok: 0, damaged: 1, destroyed: 2 } as const;
+  for (let i = 0; i < next.buildings.length; i++) {
+    const was = prev.buildings[i] ?? 'ok';
+    const now = next.buildings[i];
+    if (rank[now] < rank[was]) return [];
+    if (now !== was) out.push({ piece: 'building', index: i, to: now === 'destroyed' ? 'destroyed' : 'damaged' });
+  }
+  return out;
+}

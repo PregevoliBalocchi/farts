@@ -313,5 +313,6 @@
   "menu.taxOwn": "Your cities",
   "menu.taxRival": "{name}'s cities",
   "menu.moveFrom": "Move from here",
-  "prompt.pick.menu": "Choose what to do at {system}, in the menu beside it."
+  "prompt.pick.menu": "Choose what to do at {system}, in the menu beside it.",
+  "battle.diceRolled": "Dice rolled"
 }

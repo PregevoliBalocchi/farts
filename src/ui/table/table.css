@@ -1241,3 +1241,18 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .sys-menu .mo-pic img { max-height: 44px; max-width: 70px; object-fit: contain; }
 .tbl-stage .sys-menu .mo-name { font-size: 13px; font-weight: 700; text-align: center; }
 .tbl-stage .sys-menu .mo-why { font-size: 10.5px; line-height: 1.15; color: #e7b48a; text-align: center; }
+
+/* Battle window: the rolled dice, as the official faces, tumbling in one by one as each fires its volley */
+.battle-win .b-dice { display: flex; gap: 8px; align-items: center; min-height: 46px; }
+.battle-win .b-die { width: 42px; height: 42px; border-radius: 8px; overflow: hidden; display: grid; place-items: center; box-shadow: 0 2px 8px #000a, 0 0 0 1px #0008; font: 700 10px var(--ui-font, sans-serif); color: #fff; }
+.battle-win .b-die img { width: 100%; height: 100%; display: block; }
+.battle-win .b-die.d-skirmish { background: #11a3c8; }
+.battle-win .b-die.d-assault { background: #a82a2a; }
+.battle-win .b-die.d-raid { background: #e0702a; }
+.battle-win .b-dice.rolling .b-die { animation: b-die-in 0.5s cubic-bezier(.2, .9, .3, 1.2) both; animation-delay: calc(0.05s + var(--i) * 0.32s); }
+@keyframes b-die-in {
+  0% { opacity: 0; transform: translateY(-26px) rotate(-200deg) scale(.4); }
+  70% { opacity: 1; transform: translateY(3px) rotate(12deg) scale(1.08); }
+  100% { opacity: 1; transform: none; }
+}
+.no-motion .battle-win .b-dice.rolling .b-die { animation: none; }

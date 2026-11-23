@@ -1,5 +1,5 @@
 {
-  "_comment": "Procedural planets of the 3D map (planets3d.ts): one recipe per planet, read from its illustration on the board. style: the surface pattern; extras: ring, moons, network, asteroids, shards, blocks. Colours come from the planet's resource (palette). size scales the board's disc; spin is turns per minute.",
+  "_comment": "Procedural planets of the 3D map (planets3d.ts): one recipe per planet, drawn after its illustration on the board and seen from above, as the map shows it. style: the surface drawing (planets3d.ts STYLES); extras: ring, moons, network, asteroids, shards, blocks, debris. Colours come from the planet's resource (palette), or from colors when given. size scales the board's disc; spin is turns per minute; craterScale and param tune a style; bite [x, y, z, depth] cuts a chunk out of the planet towards that direction (depth: 0..1 of the radius); atmosphere: a glow at the rim, of the palette's line or accent colour.",
   "palette": {
     "weapons": { "base": "#5a2412", "line": "#ff9a52", "accent": "#ffd07a" },
     "fuel": { "base": "#463d12", "line": "#e8d35a", "accent": "#fff0a0" },
@@ -9,23 +9,23 @@
   },
   "defaults": { "size": 0.92, "spin": 0.9, "tilt": 0.35 },
   "planets": {
-    "c1-p1": { "style": "terrain", "extras": ["shards"], "size": 0.78 },
-    "c1-p2": { "style": "machine" },
-    "c1-p3": { "style": "cratered" },
-    "c2-p1": { "style": "banded", "extras": ["moons"] },
-    "c2-p2": { "style": "cratered", "craterScale": 1.6 },
-    "c2-p3": { "style": "veined", "extras": ["ring"] },
-    "c3-p1": { "style": "patched" },
-    "c3-p2": { "style": "veined" },
-    "c3-p3": { "style": "terrain" },
-    "c4-p1": { "style": "machine" },
+    "c1-p1": { "style": "shattered", "extras": ["shards"], "size": 0.8, "bite": [0.55, 0.55, -0.62, 0.42] },
+    "c1-p2": { "style": "plated", "extras": ["debris"] },
+    "c1-p3": { "style": "eroded", "bite": [0.62, 0.5, -0.6, 0.36] },
+    "c2-p1": { "style": "striated", "extras": ["moons"], "atmosphere": { "color": "line", "strength": 0.9 } },
+    "c2-p2": { "style": "cratered" },
+    "c2-p3": { "style": "marbled", "extras": ["ring"], "atmosphere": { "color": "accent", "strength": 0.6 } },
+    "c3-p1": { "style": "blotched" },
+    "c3-p2": { "style": "scratched", "atmosphere": { "color": "line", "strength": 0.45 } },
+    "c3-p3": { "style": "terrain", "param": 1, "bite": [-0.5, 0.55, -0.66, 0.3] },
+    "c4-p1": { "style": "tech", "atmosphere": { "color": "line", "strength": 0.6 } },
     "c4-p2": { "style": "terrain" },
-    "c4-p3": { "style": "swirled" },
-    "c5-p1": { "style": "cracked" },
-    "c5-p2": { "style": "icy" },
-    "c5-p3": { "style": "swirled", "extras": ["asteroids"], "size": 0.55 },
-    "c6-p1": { "style": "patched", "extras": ["blocks"], "size": 0.7 },
-    "c6-p2": { "style": "terrain" },
-    "c6-p3": { "style": "banded", "extras": ["network"], "size": 0.62 }
+    "c4-p3": { "style": "spirals" },
+    "c5-p1": { "style": "rifted", "colors": { "base": "#2c0a07", "line": "#ff3d1f", "accent": "#ffb36a" } },
+    "c5-p2": { "style": "icy", "atmosphere": { "color": "line", "strength": 0.9 } },
+    "c5-p3": { "style": "rocky", "extras": ["asteroids"], "size": 0.55 },
+    "c6-p1": { "style": "pixel", "extras": ["blocks"], "size": 0.72, "bite": [0.55, 0.5, 0.67, 0.4] },
+    "c6-p2": { "style": "terrain", "param": 2, "atmosphere": { "color": "line", "strength": 0.4 } },
+    "c6-p3": { "style": "molecule", "extras": ["network"], "size": 0.62 }
   }
 }
