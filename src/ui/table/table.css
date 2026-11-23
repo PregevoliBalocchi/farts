@@ -858,6 +858,8 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .region.confirm { display: flex; justify-content: flex-end; align-items: flex-end; gap: 10px; }
 .tbl-stage .btn.sq.big { width: 62px; height: 62px; }
 .tbl-stage .btn.sq.big .ic { width: 34px; height: 34px; }
+/* A switch that is on (the map's control layer): lit gold. */
+.tbl-stage .btn.sq[aria-pressed="true"] { color: #1a1208; background: linear-gradient(180deg, #ffd98a, #c8913a) padding-box, var(--dg-frame-gold) border-box; box-shadow: inset 0 0 0 1px #000c, 0 0 0 1px #000, 0 0 14px var(--dg-glow); }
 .tbl-stage .btn.sq.confirm:not(:disabled) { color: #f3c463; box-shadow: 0 0 14px rgba(240, 170, 60, .5); }
 
 /* ==== Ornate frames and glow (owner's review, 2026-11-22): gold bevelled borders with corner ornaments, glowing active parts ==== */

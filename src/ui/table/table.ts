@@ -121,6 +121,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** The move being Catapulted further, kept while the next system is picked. */
   let pendingMove: Extract<Intent, { step: 'move' }> | null = null;
   let modal: Modal | null = null;
+  /** The map's control layer (who controls each sector) is on; remembered in this browser. */
+  let controlLayer = false;
+  try {
+    controlLayer = localStorage.getItem('arcs.controlLayer') === '1';
+  } catch {
+    /* no storage: off */
+  }
   let toast: string | null = null;
   let toastTimer = 0;
 
@@ -181,6 +188,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     ? null
     : createBoard3D(ix, {
         motion: params.get('motion') !== 'off',
+        picture: params.get('map') === 'picture',
+        showSpots: params.get('debug') === 'spots',
         onPick: (id) => pickSystem(id),
         ...(calibrating
           ? {
@@ -196,6 +205,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           : {}),
       });
   if (board3d) {
+    board3d.setSectorMode(controlLayer ? 'control' : 'resource');
     // Behind the stage, as large as the window: the interface is drawn in front of it.
     shell.classList.add('has-3d');
     shell.insertBefore(board3d.canvas, stage);
@@ -944,7 +954,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         : '';
 
     stage.innerHTML = `<div class="tbl-stars"></div>
-      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', prompt(v))}</div>
+      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', prompt(v), board3d?.hasInfoLayer ? controlLayer : null)}</div>
       <div class="map-area${board3d ? '' : ' glass'}" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
       <div class="region side" data-region="side" style="${place(REGIONS.side)}">${sidePanel(ix, v, t, courtPickable(intent))}</div>
@@ -1263,6 +1273,15 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         break;
       case 'pick-confirm':
         return confirmPick();
+      case 'map-control':
+        controlLayer = !controlLayer;
+        try {
+          localStorage.setItem('arcs.controlLayer', controlLayer ? '1' : '0');
+        } catch {
+          /* not remembered */
+        }
+        board3d?.setSectorMode(controlLayer ? 'control' : 'resource');
+        break;
       case 'help':
         showToast(t('map3d.hint'));
         break;

@@ -96,6 +96,32 @@ Nothing to do: everything in `assets/ui/` is in the repository and goes into
 ## The map on screen
 
 The 3D map fills the whole window and the interface is drawn in front of it.
+It is a map in space: black, with far stars, a 3D planet under each planet of
+the board (procedural, one recipe each in `src/ui/table/planets.json`, coloured
+by resource and turning slowly), and over them a transparent glass carrying the
+information layer traced from the board picture: the ring of gates with its
+numbers, the cracks and lines between systems, each planet's symbol on the
+ring, the building slots (`src/ui/table/board.lines.json`, made by the scripts
+in `tools/board-trace/`, Python with opencv-python and scipy, run in order
+with a scratch folder as argument). The scripts split the board into one zone
+per system. Each edge of a crack or spike is then followed as a least-cost
+path along the bright line art, on its own side of the crack and outside the
+planets, so the edges stay continuous even where the drawing fades. A model in
+`assets/models/planets/<system id>.glb` replaces that planet's procedural one.
+Each planet's sector carries its resource's colour (from `planets.json`) as a
+faint nebula: soft clouds, seeded per system so they never change. Each planet also shows its resource icon (`assets/ui/icon/<resource>.*`)
+on the rim, on the side away from the ring. The flag button at the top right
+switches to the control layer: every sector takes its controller's seat
+colour, or a dark grey when nobody controls it. The browser remembers the
+choice.
+The systems the setup card leaves out are removed: their planets, lines,
+slots and gate number are gone. A curved two-headed arrow joins the two gates
+that the setup card links across them.
+The layer also says where pieces go. Each system has four ship spots (one per
+seat), beside the planet and clear of lines, slots and icons, plus four token
+spots for markers such as the campaign's. The fifth trace script computes them,
+and `?debug=spots` shows them.
+`?map=picture` shows the board picture on a table instead.
 Drag pans, the wheel zooms towards the pointer (zooming in leans the camera
 towards the pieces, zooming out looks straight down on the whole map), a
 double click goes back to the starting view. `?map=2d` shows the flat board.

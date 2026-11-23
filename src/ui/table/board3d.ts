@@ -13,9 +13,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { ContentIndex } from '../../game/engine';
 import { layout } from '../map';
-import { assetUrl } from './assets';
+import { assetUrl, seatColor } from './assets';
 import defaultCalibration from './board.default.json';
-import { BOARD_DEPTH, boardWidth, buildingSpots, headingJitter, isCalibration, MAX_SHOWN, shipGroups, shipSpot, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
+import { BOARD_DEPTH, boardWidth, buildingSpots, headingJitter, isCalibration, MAX_SHOWN, pictureToWorld, shipGroups, shipSpot, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
 import type { BoardCalibration, Spot } from './board3d-layout';
 import { loadKitPieces, piece } from './kitpieces';
 import { arcHeight, easeInOut, planMoves } from './model-fx';
@@ -23,6 +23,14 @@ import type { ShipGroupAt } from './model-fx';
 import modelConfig from './models.json';
 import { fxTime, fxViewHeight, hasModels, loadModels } from './models3d';
 import { boardImageSvg } from './mapview';
+import { loadCardFonts } from './cardfonts';
+import boardLinesData from './board.lines.json';
+import { drawInfoLayer, isBoardLines, resourceIconSpots, sectorTints, withLayerSpots } from './infolayer';
+import type { BoardLines, SectorMode } from './infolayer';
+import { SEAT_PAINT } from './pieces3d';
+import { buildPlanet, planetPalette, turnPlanets } from './planets3d';
+import type { Planet } from './planets3d';
+import { starfield } from './starfield';
 import type { TableView } from './view';
 
 const calibFiles = import.meta.glob('../../../assets/ui/map/board.json', { eager: true, import: 'default' }) as Record<string, unknown>;
@@ -53,7 +61,18 @@ export interface Board3DOptions {
   onPick(id: string): void;
   /** Calibration mode (?debug=calibrate): a click on the board reports where, as fractions (0..1) of the picture. */
   onCalibrate?(fx: number, fy: number): void;
+  /** ?map=picture: the board picture on a table instead of the map in space. */
+  picture?: boolean;
+  /** ?debug=spots: the information layer marks where pieces go. */
+  showSpots?: boolean;
 }
+
+/** The board's traced lines and zones (board.lines.json), or null when the file is not usable. */
+const BOARD_LINES: BoardLines | null = isBoardLines(boardLinesData) ? boardLinesData : null;
+/** Pixel width of the information layer's canvas. */
+const INFO_WIDTH = 4096;
+/** Font of the gate numbers on the information layer. */
+const NUMBER_FONT = '"Arcs Card Title", "Cinzel", Georgia, serif';
 
 /** Width / height of our schematic board picture. */
 const SCHEMATIC_ASPECT = 1.6;
@@ -110,6 +129,21 @@ export class Board3D {
   private focus: Rect = { x: 0, y: 0, w: 1, h: 1 };
   private down: { x: number; y: number } | null = null;
   private readonly topMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0 });
+  /** The map in space (default): planets under a glass carrying the information layer, stars below. */
+  private readonly space: boolean;
+  private readonly glassMaterial = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, toneMapped: false });
+  private infoCanvas: HTMLCanvasElement | null = null;
+  /** How the information layer colours the sectors. */
+  private sectorMode: SectorMode = 'resource';
+  /** What the layer's sector colours were last drawn from. */
+  private sectorKey = '';
+  /** The resource icons' pictures (assets/ui/icon/<resource>.*), once loaded. */
+  private readonly iconImages = new Map<string, HTMLImageElement>();
+  private inPlay: ReadonlyMap<string, boolean> = new Map();
+  /** Gates linked across systems out of play (the setup card's open links). */
+  private bridges: [string, string][] = [];
+  private readonly planetGroup = new THREE.Group();
+  private planets: Planet[] = [];
 
   constructor(private readonly ix: ContentIndex, private readonly opts: Board3DOptions, renderer: THREE.WebGLRenderer) {
     this.renderer = renderer;
@@ -118,9 +152,12 @@ export class Board3D {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.scene.background = new THREE.Color(SURROUND);
+    this.space = !opts.picture && !opts.onCalibrate && !!BOARD_LINES && !!boardCalibration();
+    this.scene.background = new THREE.Color(this.space ? '#000000' : SURROUND);
 
-    this.calib = assetUrl('map.board') ? boardCalibration() : null;
+    const calib = this.space || assetUrl('map.board') ? boardCalibration() : null;
+    // In space the ships stand where the information layer leaves room for them.
+    this.calib = calib && this.space && BOARD_LINES ? withLayerSpots(calib, BOARD_LINES) : calib;
 
     // Lights: an even sky so the board picture keeps its colours, a lamp for the pieces' shadows.
     this.scene.add(new THREE.HemisphereLight('#ffffff', '#3a3530', 1.9));
@@ -133,18 +170,30 @@ export class Board3D {
     lamp.shadow.bias = -0.0004;
     this.scene.add(lamp);
 
-    // The surface around the board: the same dark as the picture's edge, so the map seems to go on.
-    const table = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshStandardMaterial({ color: SURROUND, roughness: 1 }));
-    table.rotation.x = -Math.PI / 2;
-    table.position.y = -0.02;
-    table.receiveShadow = true;
-    this.scene.add(table);
+    if (this.space) {
+      // Space: stars far below, planets under the glass, the pieces' shadows on the glass.
+      this.scene.add(starfield(60, 44), this.planetGroup);
+      const catcher = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.ShadowMaterial({ opacity: 0.32, depthWrite: false }));
+      catcher.rotation.x = -Math.PI / 2;
+      catcher.position.y = 0.0005;
+      catcher.receiveShadow = true;
+      catcher.renderOrder = 1;
+      this.scene.add(catcher);
+    } else {
+      // The surface around the board: the same dark as the picture's edge, so the map seems to go on.
+      const table = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshStandardMaterial({ color: SURROUND, roughness: 1 }));
+      table.rotation.x = -Math.PI / 2;
+      table.position.y = -0.02;
+      table.receiveShadow = true;
+      this.scene.add(table);
+    }
 
-    // The board: a thin slab, the picture on its top face.
-    const side = new THREE.MeshStandardMaterial({ color: SURROUND, roughness: 1 });
-    this.board = new THREE.Mesh(new THREE.BoxGeometry(1, 0.02, 1), [side, side, this.topMaterial, side, side, side]);
+    // The board: a thin slab, the picture (or, in space, the information layer) on its top face.
+    const side = new THREE.MeshStandardMaterial({ color: SURROUND, roughness: 1, visible: !this.space });
+    this.board = new THREE.Mesh(new THREE.BoxGeometry(1, 0.02, 1), [side, side, this.space ? this.glassMaterial : this.topMaterial, side, side, side]);
     this.board.position.y = -0.01;
-    this.board.receiveShadow = true;
+    this.board.receiveShadow = !this.space;
+    if (this.space) this.board.renderOrder = 2;
     this.scene.add(this.board, this.shades, this.pieces, this.rings, this.discs);
 
     this.controls = new OrbitControls(this.camera, this.canvas);
@@ -237,12 +286,29 @@ export class Board3D {
     }
     const dist = hi;
     place(dist);
+    this.placePlanets();
     this.coverDist = dist;
     this.controls.minDistance = dist * 0.22;
     this.controls.maxDistance = dist * 1.3;
     this.controls.update();
     this.framed = true;
     this.dirty = true;
+  }
+
+  /**
+   * Sets each planet on the line from the default camera through its disc on
+   * the glass, at its depth: from the default view it shows right under its
+   * disc and slots (it is below the glass, so it would otherwise drift towards
+   * the middle of the screen and away from the viewer).
+   */
+  private placePlanets(): void {
+    const cam = this.camera.position;
+    for (const p of this.planets) {
+      const { gx, gz, depth } = p.holder.userData as { gx: number; gz: number; depth: number };
+      const t = (cam.y + depth) / cam.y;
+      p.holder.position.set(cam.x + (gx - cam.x) * t, -depth, cam.z + (gz - cam.z) * t);
+      p.holder.scale.setScalar(t);
+    }
   }
 
   /**
@@ -282,6 +348,13 @@ export class Board3D {
       this.piecesKey = pk;
       this.buildPieces(v);
     }
+    if (this.space) {
+      const sk = this.sectorMode + JSON.stringify(v.systems.map((s) => [s.controller, s.resource]));
+      if (sk !== this.sectorKey) {
+        this.sectorKey = sk;
+        this.drawInfo();
+      }
+    }
     this.glow = ships;
     this.buildRings(v, valid, chosen);
     this.dirty = true;
@@ -290,6 +363,16 @@ export class Board3D {
   private loadBoard(inPlay: ReadonlyMap<string, boolean>, links: [string, string][]): void {
     const c = this.calib;
     this.board.scale.set(c ? boardWidth(c.width, c.height) : BOARD_DEPTH * SCHEMATIC_ASPECT, 1, BOARD_DEPTH);
+    if (this.space && c && BOARD_LINES) {
+      this.inPlay = inPlay;
+      const base = this.ix.content.map.links;
+      const known = (a: string, b: string) => base.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+      this.bridges = links.filter(([a, b]) => a.endsWith('gate') && b.endsWith('gate') && !known(a, b));
+      if (!this.planets.length) this.buildPlanets(c);
+      for (const p of this.planets) p.holder.visible = inPlay.get(p.id) !== false;
+      this.drawInfo();
+      return;
+    }
     const own = assetUrl('map.board');
     if (own) {
       if (this.topMaterial.map) return;
@@ -322,6 +405,79 @@ export class Board3D {
     img.src = url;
   }
 
+  /** True when the map is the map in space, with its information layer. */
+  get hasInfoLayer(): boolean {
+    return this.space;
+  }
+
+  /** Colours the sectors by resource (default) or by who controls them. */
+  setSectorMode(mode: SectorMode): void {
+    if (mode === this.sectorMode) return;
+    this.sectorMode = mode;
+    this.sectorKey = '';
+    if (this.space) this.drawInfo();
+  }
+
+  /** The resource icon's picture, loading it (and redrawing the layer) the first time. */
+  private iconImage(resource: string): HTMLImageElement | null {
+    const have = this.iconImages.get(resource);
+    if (have) return have.complete && have.naturalWidth ? have : null;
+    const url = assetUrl(`icon.${resource}`);
+    if (!url) return null;
+    const img = new Image();
+    img.onload = () => this.drawInfo();
+    img.src = url;
+    this.iconImages.set(resource, img);
+    return null;
+  }
+
+  /** Draws the information layer onto the glass (again once the numbers' font has loaded). */
+  private drawInfo(): void {
+    const lines = BOARD_LINES;
+    if (!lines) return;
+    if (!this.infoCanvas) {
+      this.infoCanvas = document.createElement('canvas');
+      this.infoCanvas.width = INFO_WIDTH;
+      this.infoCanvas.height = Math.round((INFO_WIDTH * lines.height) / lines.width);
+      const tex = new THREE.CanvasTexture(this.infoCanvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+      this.glassMaterial.map = tex;
+      this.glassMaterial.needsUpdate = true;
+      void loadCardFonts().then(() => this.drawInfo());
+    }
+    const systems = this.last?.systems ?? [];
+    const tints = sectorTints(systems, this.sectorMode, (r) => planetPalette(r).line, (p) => SEAT_PAINT[seatColor(p)]);
+    const icons = [];
+    for (const spot of this.calib ? resourceIconSpots(this.calib, lines.ring, systems) : []) {
+      const image = this.iconImage(spot.resource);
+      if (image) icons.push({ ...spot, image, ring: planetPalette(spot.resource).line });
+    }
+    drawInfoLayer(this.infoCanvas, lines, this.calib, { inPlay: this.inPlay, numberFont: NUMBER_FONT, tints, icons, bridges: this.bridges, showSpots: this.opts.showSpots });
+    if (this.glassMaterial.map) this.glassMaterial.map.needsUpdate = true;
+    this.dirty = true;
+  }
+
+  /**
+   * One 3D planet under each planet system's disc on the board: as large as
+   * the disc, sunk just below the glass (placePlanets sets it under its disc).
+   */
+  private buildPlanets(c: BoardCalibration): void {
+    const unit = BOARD_DEPTH / c.height;
+    for (const s of this.ix.content.map.systems) {
+      const disc = c.systems[s.id]?.disc;
+      if (s.kind !== 'planet' || !disc) continue;
+      const p = buildPlanet(s.id, s.resource, disc.r * unit);
+      const top = new THREE.Box3().setFromObject(p.holder).max.y;
+      const depth = top + 0.06;
+      const at = pictureToWorld(c, disc.x, disc.y);
+      p.holder.userData = { gx: at.x, gz: at.z, depth };
+      p.holder.position.set(at.x, -depth, at.z);
+      this.planetGroup.add(p.holder);
+      this.planets.push(p);
+    }
+  }
+
   /** Invisible discs over each in-play system (what a click hits), and a shade over those out of play. */
   private buildDiscs(v: TableView): void {
     this.discs.clear();
@@ -339,7 +495,7 @@ export class Board3D {
       if (s.inPlay) {
         disc.userData.sys = s.id;
         this.discs.add(disc);
-      } else if (this.calib) this.shades.add(disc);
+      } else if (this.calib && !this.space) this.shades.add(disc);
     }
   }
 
@@ -483,6 +639,10 @@ export class Board3D {
   }
 
   private frame(t: number): void {
+    if (this.planets.length && this.opts.motion) {
+      turnPlanets(this.planets, t / 1000);
+      this.dirty = true;
+    }
     if (hasModels() && this.opts.motion && this.pieces.children.length) {
       this.animatePieces(t / 1000);
       this.dirty = true;
