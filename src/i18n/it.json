@@ -314,5 +314,11 @@
   "menu.taxRival": "Città di {name}",
   "menu.moveFrom": "Muovi da qui",
   "prompt.pick.menu": "Scegli cosa fare a {system}, nel menu accanto.",
-  "battle.diceRolled": "Dadi tirati"
+  "battle.diceRolled": "Dadi tirati",
+  "mine.title": "La tua corte",
+  "mine.sort.got": "Ordine",
+  "mine.sort.kind": "Tipo",
+  "mine.sort.resource": "Risorsa",
+  "mine.empty": "Nessuna carta",
+  "prelude.row": "Preludio"
 }

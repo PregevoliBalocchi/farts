@@ -398,6 +398,8 @@ export function drawInfoLayer(cv: HTMLCanvasElement, lines: BoardLines, calib: B
     g.restore();
   }
 
+  if (gone.length) jaggedEdges(g, lines, out);
+
   // The map has no hard edge: its colours and lines fade out towards the
   // picture's borders. What players read or use (symbols, gate numbers, slots,
   // resource icons, arrows) comes after, so it never fades.
@@ -483,6 +485,75 @@ export function drawInfoLayer(cv: HTMLCanvasElement, lines: BoardLines, calib: B
     if (pts) bridgeArrow(g, pts);
   }
 
+}
+
+/** The corners of a traced sector path ("M x,y L x,y … Z"). */
+function pathPoints(d: string): [number, number][] {
+  const n = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+  const pts: [number, number][] = [];
+  for (let i = 0; i + 1 < n.length; i += 2) pts.push([n[i], n[i + 1]]);
+  return pts;
+}
+
+/** Sides of a sector longer than this (picture pixels) are straight cuts, not traced cracks. */
+const STRAIGHT_SIDE = 70;
+/** A broken edge: a corner about every `step` pixels, bitten `min`..`max` pixels into the sector. */
+const JAG = { step: 24, min: 4, max: 20 } as const;
+
+/**
+ * Where a system in play borders one out of play along a straight side, the
+ * side is broken into a jagged edge (bitten into the system in play) and
+ * inked like the board's cracks, so the map ends on a torn edge everywhere.
+ */
+function jaggedEdges(g: CanvasRenderingContext2D, lines: BoardLines, out: (id: string) => boolean): void {
+  const probe = document.createElement('canvas').getContext('2d')!;
+  const gonePaths = Object.entries(lines.sectors).filter(([id]) => out(id)).map(([, d]) => new Path2D(d));
+  const inGone = (x: number, y: number) => gonePaths.some((p) => probe.isPointInPath(p, x, y));
+  for (const [id, d] of Object.entries(lines.sectors)) {
+    if (out(id)) continue;
+    const own = new Path2D(d);
+    const pts = pathPoints(d);
+    const rand = seeded(`edge:${id}`);
+    pts.forEach((a, i) => {
+      const b = pts[(i + 1) % pts.length];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (len < STRAIGHT_SIDE) return;
+      // The side's normal pointing into this sector.
+      let nx = -(b[1] - a[1]) / len;
+      let ny = (b[0] - a[0]) / len;
+      const mx = (a[0] + b[0]) / 2;
+      const my = (a[1] + b[1]) / 2;
+      if (!probe.isPointInPath(own, mx + nx * 4, my + ny * 4)) {
+        nx = -nx;
+        ny = -ny;
+      }
+      if (!inGone(mx - nx * 6, my - ny * 6)) return;
+      const n = Math.max(3, Math.round(len / JAG.step));
+      const jag: [number, number][] = [a];
+      for (let j = 1; j < n; j++) {
+        const t = (j + (rand() - 0.5) * 0.7) / n;
+        const bite = JAG.min + (JAG.max - JAG.min) * rand() * (j % 2 ? 1 : 0.45);
+        jag.push([a[0] + (b[0] - a[0]) * t + nx * bite, a[1] + (b[1] - a[1]) * t + ny * bite]);
+      }
+      jag.push(b);
+      const shape = new Path2D();
+      jag.forEach(([x, y], j) => (j ? shape.lineTo(x, y) : shape.moveTo(x, y)));
+      // Clear what lies between the straight side and the broken edge (a little beyond the side too).
+      const cut = new Path2D(shape);
+      cut.lineTo(b[0] - nx * 5, b[1] - ny * 5);
+      cut.lineTo(a[0] - nx * 5, a[1] - ny * 5);
+      cut.closePath();
+      g.save();
+      g.globalCompositeOperation = 'destination-out';
+      g.fill(cut);
+      g.restore();
+      g.strokeStyle = `rgba(${INK_RGB},0.9)`;
+      g.lineWidth = 2.4;
+      g.lineJoin = 'miter';
+      g.stroke(shape);
+    });
+  }
+  g.lineJoin = 'round';
 }
 
 /** Width of the fade at the map's borders, in picture pixels. */

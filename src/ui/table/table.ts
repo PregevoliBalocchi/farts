@@ -36,7 +36,7 @@ import type { Intent, MoveIntent } from './intent';
 import { place, REGIONS, setStage, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  actionCard, button, cardLabel, playedCard, playedText, cardPicker, courtFace, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, PICKER_PAGE, playerName, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon,
+  actionCard, button, cardLabel, playedCard, playedText, cardPicker, courtFace, courtPanel, COURT_SORTS, type CourtSort, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, PICKER_PAGE, playerName, preludeTab, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon,
 } from './render';
 import type { PickerGroup, PickerState } from './render';
 import { legal, othersTurn, tableView, whyNot } from './view';
@@ -156,6 +156,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let modal: Modal | null = null;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
   let controlLayer = false;
+  /** How the local player's own Court cards are ordered in the bar. */
+  let courtSort: CourtSort = 'got';
   try {
     controlLayer = localStorage.getItem('arcs.controlLayer') === '1';
   } catch {
@@ -1187,10 +1189,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       // With no actions left the box offers the end of the turn itself; before that, ending early is here.
       ending && (v.budget?.remaining ?? 0) > 0 ? button('end-turn', t('play.endTurn'), { cls: 'bar-btn primary end', disabled: !can({ type: 'endTurn', player: me }) }) : '',
     ].join('');
-    // The hand in one row: the cards side by side, overlapping only when they do not fit.
-    const handW = REGIONS.hand.w - 24;
+    // The hand held in a fan: the cards overlap a little, more when they would not fit.
+    const handW = REGIONS.hand.w - 60;
     const nCards = v.hand.length;
-    const handGap = nCards > 1 ? Math.min(10, (handW - nCards * 92) / (nCards - 1)) : 0;
+    const handGap = nCards > 1 ? Math.min(-22, (handW - nCards * 100) / (nCards - 1)) : 0;
     // The context box: only when there is something to choose (a picked card, the actions, a step, a battle).
     const ctx = actionsPanel(v);
     // Hotseat: when the screen turns to another seat, hide it until that player is ready.
@@ -1200,24 +1202,24 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const boxShown = !!ctx;
     const handMoved = boxShown !== lastHandAway;
     lastHandAway = boxShown;
-    // The action box shows the card being played on its left, as on the digital table.
+    // The card played this turn (or the one picked to play), beside the board.
     const picked = selected ? v.hand.find((h) => h.card === selected) : undefined;
-    const ownPlay = v.plays.some((x) => x.player === me)
-      ? `<div class="act-card">${playedCard(ix, v, t, me)}</div>`
-      : picked && ctx
-        ? `<div class="act-card"><div class="play">${actionCard(ix, picked, t)}</div></div>`
-        : '';
+    const ownPlay = v.plays.some((x) => x.player === me) || !(picked && ctx) ? playedCard(ix, v, t, me) : `<div class="play picking">${actionCard(ix, picked, t)}</div>`;
+    const preludes = preludeCards(v);
 
     stage.innerHTML = `<div class="tbl-stars"></div>
       <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', prompt(v), board3d?.hasInfoLayer ? controlLayer : null)}</div>
       <div class="map-area${board3d ? '' : ' glass'}" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
-      <div class="region side" data-region="side" style="${place(REGIONS.side)}">${sidePanel(ix, v, t, courtPickable(intent))}</div>
-      <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, preludeCards(v))}</div>
+      <div class="region court" data-region="court" style="${place(REGIONS.court)}">${courtPanel(v, t, courtPickable(intent))}</div>
+      <div class="region side" data-region="side" style="${place(REGIONS.side)}">${sidePanel(ix, v, t)}</div>
       <div class="region bar" aria-hidden="true" style="${place(REGIONS.bar)}"></div>
+      <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, [], true)}</div>
+      <div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>
+      <div class="region mine" data-region="mine" style="${place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 26)}</div>
       <div class="region hand" data-region="hand" style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>
       <div class="region confirm" data-region="confirm" style="${place(REGIONS.confirm)}">${turnButtons}</div>
-      ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ''}${ownPlay ? ' with-card' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}">${ownPlay}<div class="actions-body">${ctx}</div></div>` : ''}
+      ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div>${preludeTab(preludes, t, true)}</div>` : ''}
       <div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>
       ${modalHtml(v)}
       ${curtainFor !== null ? handOver(curtainFor) : ''}
@@ -1571,6 +1573,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         break;
       case 'pick-confirm':
         return confirmPick();
+      case 'court-sort':
+        courtSort = COURT_SORTS.includes(el.dataset.sort as CourtSort) ? (el.dataset.sort as CourtSort) : 'got';
+        break;
       case 'map-control':
         controlLayer = !controlLayer;
         try {

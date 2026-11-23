@@ -1256,3 +1256,63 @@ button.supply:hover { border-color: var(--rule-hi); }
   100% { opacity: 1; transform: none; }
 }
 .no-motion .battle-win .b-dice.rolling .b-die { animation: none; }
+
+/* ---- Layout v5: the Court in a row along the top, one player bar along the bottom ---- */
+/* The Court: banners side by side, the agents on each card under it. */
+.tbl-stage .region.court .court-row { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 10px; }
+.tbl-stage .region.court .court-slot { display: grid; grid-template-columns: 146px; grid-template-rows: 92px auto; gap: 4px; justify-items: center; align-items: start; }
+.tbl-stage .region.court .cb-agents { flex-direction: row; justify-content: center; align-items: center; gap: 8px; min-height: 26px; padding: 1px 10px; border-radius: 13px; background: #0b0806d9; border: 1px solid #7d5d2766; }
+.tbl-stage .region.court .cb-agents:empty { visibility: hidden; }
+.tbl-stage .region.court:has(.court-tile.pickable) .court-tile:not(.pickable) { opacity: .45; filter: grayscale(.6); }
+.tbl-stage .hd.prompt { top: 138px; }
+
+/* The bar: board, card played, hand in a fan, turn buttons, own Court. */
+.tbl-stage .region.played { display: grid; place-items: center; }
+.tbl-stage .region.played .play { margin: 0; }
+.tbl-stage .region.played .play .acard, .tbl-stage .region.played .play .facedown, .tbl-stage .region.played .play.none { width: 84px; height: 152px; }
+.tbl-stage .region.played .play.none { border: 1px dashed #7d5d2799; border-radius: 8px; background: #0006; }
+.tbl-stage .region.played .play .tags { display: none; }
+.tbl-stage .region.played .play.picking .acard { box-shadow: 0 0 0 2px #ffb347, 0 0 18px rgba(255, 150, 50, .8); }
+
+.tbl-stage .region.hand .hand-cards { justify-content: center; align-items: flex-end; height: 100%; padding: 0 12px 8px; }
+.tbl-stage .region.hand .hand-card { width: 100px; height: 164px; margin-left: var(--gap, -22px); transform-origin: 50% 100%; transform: translateY(var(--drop)) rotate(var(--fan)); transition: transform .14s; }
+.tbl-stage .region.hand .hand-card:first-child { margin-left: 0; }
+.tbl-stage .region.hand .hand-card:hover, .tbl-stage .region.hand .hand-card:focus-visible { transform: translateY(calc(var(--drop) - 30px)) rotate(var(--fan)) scale(1.07); z-index: 5; }
+.tbl-stage .region.hand .hand-card.selected { transform: translateY(calc(var(--drop) - 40px)) rotate(var(--fan)); z-index: 4; }
+
+/* The action box rises over the hand; the prelude powers sit under its buttons. */
+.tbl-stage .region.actions { flex-direction: column; width: 520px; min-height: 0; z-index: 22; }
+.tbl-stage .pre-row { display: flex; align-items: center; justify-content: center; gap: 8px; padding-top: 8px; border-top: 1px solid #7d5d2766; }
+.tbl-stage .pre-row .pre-label { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #c7b896; margin-right: 4px; }
+.tbl-stage .pre-row .pre { width: 42px; height: 42px; padding: 0; border-radius: 50%; overflow: hidden; border: 2px solid #6b5320; background: #070b17; display: grid; place-items: center; opacity: .5; filter: grayscale(.7); }
+.tbl-stage .pre-row .pre img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.8); transform-origin: 50% 32%; }
+.tbl-stage .pre-row .pre.lit { opacity: 1; filter: none; cursor: pointer; border-color: var(--dg-gold); box-shadow: 0 0 10px rgba(230, 181, 74, .7); }
+.tbl-stage .pre-row .pre.lit:hover { transform: translateY(-2px); }
+
+/* The local player's own Court cards. */
+.tbl-stage .region.mine { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 8px; padding: 10px 12px 10px 14px; border-left: 1px solid #7d5d2766; }
+.tbl-stage .mine-head { display: flex; align-items: center; gap: 6px; }
+.tbl-stage .mine-title { font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--dg-gold); }
+.tbl-stage .mine-n { flex: 1; font-size: 14px; color: #c7b896; }
+.tbl-stage .cs-btn { min-height: 26px; padding: 2px 10px; border-radius: 13px; font: 600 12px var(--font-ui, inherit); background: #0009; color: var(--dg-text); border: 1px solid #ffffff30; cursor: pointer; }
+.tbl-stage .cs-btn:hover { border-color: var(--dg-gold); }
+.tbl-stage .cs-btn.on { background: linear-gradient(180deg, #f3c463, #c8892a); color: var(--dg-ink); border-color: #6b4a14; }
+.tbl-stage .mine-cards { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; overflow: hidden; }
+.tbl-stage .mine-card { width: var(--w, 70px); aspect-ratio: 372 / 519; border-radius: 5px; overflow: hidden; background: #0b0a08; box-shadow: 0 2px 6px #000c; cursor: zoom-in; transition: transform .12s, box-shadow .12s; }
+.tbl-stage .mine-card:hover, .tbl-stage .mine-card:focus-visible { transform: translateY(-3px); box-shadow: 0 0 0 1px #000, 0 0 12px var(--dg-glow, rgba(255, 196, 100, .7)); }
+.tbl-stage .mine-card .cface, .tbl-stage .mine-card .cf-plain { width: 100%; height: 100%; }
+.tbl-stage .mine-card .cf-text, .tbl-stage .mine-card .cf-body, .tbl-stage .mine-card .cf-foot { visibility: hidden; }
+.tbl-stage .mine-empty { align-self: center; margin: auto; color: #8a7a58; font-size: 14px; }
+
+/* The local board in the bar: no guild cards (they are in the panel above), spoils beside the reserve. */
+.tbl-stage .board.local.slim { --u: 1.2px; }
+.tbl-stage .board.slim .pb-body { grid-template-rows: auto auto; align-content: space-evenly; }
+.tbl-stage .board.slim .spoils { grid-row: 2; grid-column: 1; grid-auto-flow: column; gap: calc(8 * var(--u)); padding: 0; }
+.tbl-stage .board.slim .pb-low { grid-row: 2; grid-column: 2; border-top: 0; padding-top: 0; }
+/* The leader as the seat's avatar: the character cut out, no frame, rising out of the board's top edge. */
+.tbl-stage .board .pb-face { overflow: visible; }
+.tbl-stage .board .portrait.leader.bust { position: relative; overflow: visible; background: none; border: 0; border-radius: 0; box-shadow: none; z-index: 3; }
+.tbl-stage .board .portrait.leader.bust img { position: absolute; left: 50%; bottom: calc(-4 * var(--u)); width: 140%; height: 175%; max-width: none; transform: translateX(-50%); object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 3px 5px #000d) drop-shadow(0 0 10px color-mix(in srgb, var(--seat) 45%, transparent)); transition: transform .15s; }
+.tbl-stage .board .portrait.leader.bust:hover img, .tbl-stage .board .portrait.leader.bust:focus-visible img { transform: translateX(-50%) scale(1.06); transform-origin: 50% 100%; }
+.tbl-stage .board.local.slim .pb-face { align-self: end; margin-top: 0; }
+.tbl-stage .board.local.slim .portrait.leader.bust img { width: 190%; height: 245%; }

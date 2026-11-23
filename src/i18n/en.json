@@ -314,5 +314,11 @@
   "menu.taxRival": "{name}'s cities",
   "menu.moveFrom": "Move from here",
   "prompt.pick.menu": "Choose what to do at {system}, in the menu beside it.",
-  "battle.diceRolled": "Dice rolled"
+  "battle.diceRolled": "Dice rolled",
+  "mine.title": "Your court",
+  "mine.sort.got": "Order",
+  "mine.sort.kind": "Type",
+  "mine.sort.resource": "Resource",
+  "mine.empty": "No cards",
+  "prelude.row": "Prelude"
 }

@@ -25,4 +25,24 @@ describe('elastic stage', () => {
     const local = REGIONS.local;
     expect(local.y + local.h).toBe(1536 - 10);
   });
+
+  it('centres the Court row at the top and ends the bar on the right edge', () => {
+    setStage(2560, 1080);
+    const court = REGIONS.court;
+    expect(court.x + court.w / 2).toBe(2560 / 2);
+    const bar = REGIONS.bar;
+    expect(bar.x + bar.w).toBe(2560 - 10);
+    const mine = REGIONS.mine;
+    expect(mine.x + mine.w).toBe(bar.x + bar.w);
+  });
+
+  it('lays the bar out left to right without overlaps: card played, hand, buttons, own Court', () => {
+    const parts = [REGIONS.local, REGIONS.played, REGIONS.hand, REGIONS.confirm, REGIONS.mine];
+    for (let i = 1; i < parts.length; i++) expect(parts[i].x).toBeGreaterThanOrEqual(parts[i - 1].x + parts[i - 1].w);
+    // The action box sits over the hand, centred on it.
+    const a = REGIONS.actions;
+    const h = REGIONS.hand;
+    expect(a.x + a.w / 2).toBeCloseTo(h.x + h.w / 2, 0);
+    expect(a.y + a.h).toBeLessThanOrEqual(h.y);
+  });
 });

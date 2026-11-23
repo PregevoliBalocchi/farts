@@ -198,6 +198,12 @@ describe('planet recipes', () => {
     expect(r.atmosphere).not.toBeNull();
   });
 
+  it('gives banded planets the axis their bands run around, and none to the others', () => {
+    expect(planetRecipe('c1-p2').axis).toEqual([1, 0.35, 0.25]);
+    expect(planetRecipe('c2-p3').axis?.[1]).toBeGreaterThan(0.9);
+    expect(planetRecipe('c4-p2').axis).toBeNull();
+  });
+
   it('falls back to the defaults for an unknown planet', () => {
     const r = planetRecipe('nowhere');
     expect(r.style).toBe('terrain');
