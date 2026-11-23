@@ -2,7 +2,7 @@
 // mapping, schematic fallback, and how ship stacks are laid out.
 import { describe, expect, it } from 'vitest';
 import {
-  BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pictureToWorld, GROUP_GAP, headingJitter, HEADING_SPREAD, shipGroups, shipSpot, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
+  BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pictureToWorld, GROUP_GAP, headingJitter, HEADING_SPREAD, shipGroups, shipPlace, shipSpot, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
 } from '../../../src/ui/table/board3d-layout';
 
 const PICTURE = { width: 4000, height: 2000 };
@@ -102,6 +102,17 @@ describe('ship zones', () => {
     expect(shipSpot(calib, 'a', 0)).toEqual(pictureToWorld(PICTURE, 10, 20));
     expect(shipSpot(calib, 'a', 1)).toEqual(pictureToWorld(PICTURE, 30, 40));
     expect(shipSpot(calib, 'a', 2)).toEqual(pictureToWorld(PICTURE, 10, 20));
+  });
+
+  it('stands the seats in the centred figure for how many seats are there', () => {
+    const fig = { ...calib, systems: { ...calib.systems, a: { ...calib.systems.a, layouts: [[{ x: 50, y: 50 }], [{ x: 40, y: 50 }, { x: 60, y: 50 }]] } } };
+    expect(shipPlace(fig, 'a', 2, [2])).toEqual(pictureToWorld(PICTURE, 50, 50));
+    expect(shipPlace(fig, 'a', 1, [1, 3])).toEqual(pictureToWorld(PICTURE, 40, 50));
+    expect(shipPlace(fig, 'a', 3, [1, 3])).toEqual(pictureToWorld(PICTURE, 60, 50));
+    // More seats than figures: the largest figure, round again.
+    expect(shipPlace(fig, 'a', 2, [0, 1, 2])).toEqual(pictureToWorld(PICTURE, 40, 50));
+    // No figures: the seat's own spot.
+    expect(shipPlace(calib, 'a', 1, [1])).toEqual(shipSpot(calib, 'a', 1));
   });
 
   it('has no zone without calibration or ship points', () => {

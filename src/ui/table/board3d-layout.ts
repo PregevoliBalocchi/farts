@@ -16,6 +16,8 @@ export interface BoardCalibration {
   /**
    * Each system's point; `slots`: the centres of its building slots, in slot
    * order; `ships`: where each seat's ships stand, by seat (tools/map-zones.mjs);
+   * `layouts`: where the ships stand when 1, 2, 3 or 4 seats have ships there,
+   * centred in the system's free room (tools/board-trace/6-centred-spots.py);
    * `disc`: the planet drawn on the picture (centre and radius), which the ship
    * points are kept inside.
    */
@@ -24,6 +26,7 @@ export interface BoardCalibration {
     y: number;
     slots?: { x: number; y: number }[];
     ships?: { x: number; y: number }[];
+    layouts?: { x: number; y: number }[][];
     disc?: { x: number; y: number; r: number };
   }>;
 }
@@ -90,6 +93,25 @@ export function shipSpot(calib: BoardCalibration | null, id: string, seat: numbe
   if (!calib || !ships?.length) return null;
   const p = ships[seat % ships.length];
   return pictureToWorld(calib, p.x, p.y);
+}
+
+/**
+ * Table point where seat `seat`'s ships stand in a system shared by `seats`
+ * (every seat with ships there, in order): its place in the centred figure
+ * for that many seats when the calibration has one, else the seat's own spot
+ * (shipSpot), else null.
+ */
+export function shipPlace(calib: BoardCalibration | null, id: string, seat: number, seats: readonly number[]): Spot | null {
+  const layouts = calib?.systems[id]?.layouts;
+  const i = seats.indexOf(seat);
+  if (calib && layouts?.length && i >= 0) {
+    const fig = layouts[Math.min(seats.length, layouts.length) - 1];
+    if (fig?.length) {
+      const p = fig[i % fig.length];
+      return pictureToWorld(calib, p.x, p.y);
+    }
+  }
+  return shipSpot(calib, id, seat);
 }
 
 /** One ship of a stack: offset from the stack centre, and whether it lies down (damaged). */

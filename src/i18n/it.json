@@ -215,8 +215,6 @@
   "play.seize": "Sottrai l'iniziativa…",
   "play.seizePick": "Scegli la carta da scartare",
   "play.seizeWith": "Iniziativa: scarti {card}",
-  "move.drop": "Lascia a {at}",
-  "move.further": "Prosegui (Fionda)",
   "battle.raid": "Razzia: {n} chiavi. Scegli cosa rubare (in ordine).",
   "decide.choose": "Scegli",
   "decide.what": "{card} · {effect}",
@@ -288,5 +286,17 @@
   "word.weapons": "Armi",
   "keep.title": "Tieni {n} carte",
   "keep.hint": "{card}: clicca le carte da tenere; le altre tornano nella scatola.",
-  "keep.count": "Scelte: {n} su {of}"
+  "keep.count": "Scelte: {n} su {of}",
+  "move.leave": "Partono",
+  "move.dropHere": "Lascia qui",
+  "move.arrive": "Arrivano {n}",
+  "move.arriveDamaged": "{n} danneggiate",
+  "move.goOn": "Clicca un sistema illuminato per proseguire con la Fionda, o un sistema del percorso per fermarti lì.",
+  "move.stopPlanet": "Su un pianeta le navi si fermano.",
+  "move.stopRival": "Un rivale controlla questo sistema: le navi si fermano.",
+  "move.stopHere": "Da qui le navi non possono proseguire.",
+  "move.oneStep": "Senza uno spazioporto leale le navi fanno un solo passo.",
+  "move.back": "Un passo indietro",
+  "move.sysGate": "Portale {n}",
+  "move.sysPlanet": "{res} {n}"
 }

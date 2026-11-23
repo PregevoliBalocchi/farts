@@ -19,7 +19,7 @@ import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, 
 import type { BattlePick } from './battle';
 import { BATTLE_VIEW, BattleView3D } from './battleview3d';
 import { createBoard3D } from './board3d';
-import type { ShipGlow } from './board3d';
+import type { RoutePreview, ShipGlow } from './board3d';
 import type { Allocation, BattleRef } from '../../game/engine';
 import { AGENTS_VIEW, CourtAgents3D } from './courtagents3d';
 
@@ -30,8 +30,8 @@ import type { PowerOption } from './decide';
 import type { DecisionOption, DecisionPart } from './decide';
 import { detailHtml } from './details';
 import type { DetailTarget } from './details';
-import { actionCommand, battlePayload, clamp, IDLE, movePayload, startAction } from './intent';
-import type { Intent } from './intent';
+import { actionCommand, battlePayload, clamp, cutRoute, extendRoute, fitDrops, IDLE, movePayload, routeOf, routeStops, setDrop, startAction } from './intent';
+import type { Intent, MoveIntent } from './intent';
 import { HAND_AWAY, place, REGIONS, setStage, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
@@ -140,8 +140,6 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let placed: Allocation | null = null;
   let battleKey = '';
   let intent: Intent = IDLE;
-  /** The move being Catapulted further, kept while the next system is picked. */
-  let pendingMove: Extract<Intent, { step: 'move' }> | null = null;
   let modal: Modal | null = null;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
   let controlLayer = false;
@@ -281,7 +279,6 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     raid = [];
     placed = null;
     battleKey = '';
-    pendingMove = null;
     intent = IDLE;
   }
 
@@ -409,6 +406,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       for (const s of live) if (s.ships.some((x) => x.player === me)) out.add(s.id);
     } else if (i.step === 'to') {
       for (const id of moveTargets(v, i.from, i.via, i.prelude)) out.add(id);
+    } else if (i.step === 'move') {
+      // A planned route goes on to any system the ships may still enter (a Catapult).
+      for (const id of moveTargets(v, i.from, [...i.via, i.to], i.prelude)) out.add(id);
     }
     return out;
   }
@@ -611,29 +611,76 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     });
   }
 
-  /** How many ships to move (fresh, damaged, dropped on the way), and confirm, go further or cancel. */
-  function movePanel(v: TableView, i: Extract<Intent, { step: 'move' }>): string {
-    const ok = can(act(movePayload(i), i.prelude));
-    const path = [i.from, ...i.via, i.to].join(' → ');
-    const drops = i.via.map((at) => stepper(`drop:${at}`, t('move.drop', { at }), i.drop[at] ?? 0)).join('');
-    const further = moveTargets(v, i.from, [...i.via, i.to], i.prelude).size > 0;
-    return `<div class="hint">${esc(`${t('action.move')} · ${path}`)}</div>
-      <div class="opt-row wrap">${stepper('ships', t('move.ships'), i.ships)}${stepper('damaged', t('move.damaged'), i.damaged)}${drops}</div>
-      <div class="btn-grid">${button('do-move', t('btn.confirm'), { cls: 'primary', disabled: !ok })}${further ? button('catapult', t('move.further')) : ''}${button('cancel', t('btn.cancel'))}</div>`;
+  /** A system as the move panel names it: its resource and cluster number, or "Gate n". */
+  function systemLabel(v: TableView, id: string): string {
+    const s = v.systems.find((x) => x.id === id);
+    const n = (s?.cluster ?? id).replace(/\D/g, '');
+    return s?.kind === 'planet' && s.resource ? t('move.sysPlanet', { res: t(`resource.${s.resource}`), n }) : t('move.sysGate', { n });
   }
 
-  /** The move's choices in a small box beside the destination on the 3D map ('' when not moving or not on screen). */
-  function movePopover(v: TableView): string {
-    if (!board3d || intent.step !== 'move') return '';
-    const at = board3d.screenOf(intent.to);
-    if (!at) return '';
-    const r = stage.getBoundingClientRect();
-    const x = (at.x - r.left) / scale;
-    const y = (at.y - r.top) / scale;
-    const W = 330;
-    const left = Math.max(8, Math.min(STAGE.w - W - 8, x + 40));
-    const top = Math.max(8, Math.min(STAGE.h - 200, y - 90));
-    return `<div class="move-pop glass" role="group" aria-label="${esc(t('action.move'))}" style="left:${left}px;top:${top}px;width:${W}px">${movePanel(v, intent)}</div>`;
+  /** Why a planned route cannot go on from its end. */
+  function stopReason(v: TableView, i: MoveIntent): string {
+    const end = v.systems.find((s) => s.id === i.to);
+    if (end?.kind === 'planet') return t('move.stopPlanet');
+    if (end && end.controller !== null && end.controller !== local()) return t('move.stopRival');
+    return i.via.length ? t('move.stopHere') : t('move.oneStep');
+  }
+
+  /**
+   * A row of ship pips, one per ship that could go: the first `value` lit.
+   * Clicking pip k sets the count to k (clicking the last lit one takes it back by one).
+   */
+  function pips(name: string, value: number, max: number, lying = false): string {
+    const url = assetUrl(`piece.ship-${seatColor(local())}`);
+    const pic = url ? `<img src="${esc(url)}" alt="" aria-hidden="true">` : icon('ship');
+    return Array.from({ length: max }, (_, k) =>
+      button('pip', '', { cls: `pip${k < value ? ' on' : ''}${lying ? ' lying' : ''}`, args: { name, n: k + 1 === value ? k : k + 1 }, html: pic, title: String(k + 1) }),
+    ).join('');
+  }
+
+  /**
+   * The planned move: the route (each system as a step), the ships leaving and
+   * where each is left on the way, where the rest arrive; then confirm, back or cancel.
+   * The route itself is drawn on the map (arrow and holograms) and extended there.
+   */
+  function movePanel(v: TableView, i: MoveIntent): string {
+    const me = local();
+    const ok = can(act(movePayload(i), i.prelude));
+    const src = v.systems.find((s) => s.id === i.from)?.ships.find((x) => x.player === me);
+    const open = moveTargets(v, i.from, [...i.via, i.to], i.prelude).size > 0;
+    const stops = routeStops(i);
+    const close = button('cancel', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
+    const head = `<div class="ctx-head mv-head"><span class="ctx-title">${esc(t('action.move'))}</span><span class="mv-count">${i.ships + i.damaged}</span>${close}</div>`;
+    const step = (cls: string, id: string, label: string, body: string) =>
+      `<li class="mv-step ${cls}"><span class="mv-dot" aria-hidden="true"></span><div class="mv-body"><div class="mv-line"><span class="mv-sys">${esc(systemLabel(v, id))}</span><span class="mv-lbl">${esc(label)}</span></div>${body ? `<div class="mv-pips">${body}</div>` : ''}</div></li>`;
+    // Ships still moving when the route reaches each system passed through.
+    let fresh = i.ships;
+    let damaged = i.damaged;
+    const passes = i.via.map((at) => {
+      const row = pips(`drop:${at}`, i.drop[at] ?? 0, fresh) + (damaged ? pips(`dropd:${at}`, i.dropDamaged?.[at] ?? 0, damaged, true) : '');
+      fresh -= Math.min(fresh, i.drop[at] ?? 0);
+      damaged -= Math.min(damaged, i.dropDamaged?.[at] ?? 0);
+      return step('pass', at, t('move.dropHere'), row);
+    });
+    const end = stops[stops.length - 1];
+    const arrive = t('move.arrive', { n: end.fresh }) + (end.damaged ? ` · ${t('move.arriveDamaged', { n: end.damaged })}` : '');
+    const leave = pips('ships', i.ships, src?.fresh ?? 0) + pips('damaged', i.damaged, src?.damaged ?? 0, true);
+    const note = open ? t('move.goOn') : stopReason(v, i);
+    const back = i.via.length ? button('route-back', t('move.back')) : '';
+    return `<div class="mv-plan s-${seatColor(me)}">${head}<ol class="mv-route">
+        ${step('from', i.from, t('move.leave'), leave)}
+        ${passes.join('')}
+        ${step(`end${open ? '' : ' stop'}`, i.to, arrive, '')}
+      </ol>
+      <div class="mv-note${open ? ' open' : ''}">${esc(note)}</div>
+      <div class="btn-grid mv-btns">${button('do-move', t('btn.confirm'), { cls: 'primary', disabled: !ok })}${back}</div></div>`;
+  }
+
+  /** The planned route for the 3D map: arrow, holograms at each stop, where it may go on. */
+  function routePreview(v: TableView): RoutePreview | null {
+    if (intent.step !== 'move') return null;
+    const targets = moveTargets(v, intent.from, [...intent.via, intent.to], intent.prelude);
+    return { seat: local(), path: routeOf(intent), stops: routeStops(intent), open: targets.size > 0, targets };
   }
 
   /** Whether the local player may start a move now (Move is one of the card's actions and one is left). */
@@ -775,8 +822,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         return `<div class="hint">${esc(`${t('action.tax')} · ${i.system}`)}</div><div class="btn-grid">${opts}${cancel}</div>`;
       }
       case 'move':
-        // On the 3D map the choice sits beside the destination (movePopover).
-        return board3d ? '' : movePanel(v, i);
+        return movePanel(v, i);
       case 'battle': {
         const targets = rivalsIn(v, i.system)
           .map((r) => button('target', playerName(t, r), { args: { player: r }, cls: i.target === r ? 'on' : '' }))
@@ -1025,10 +1071,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       ${curtainFor !== null ? handOver(curtainFor) : ''}
       ${toast ? `<div class="toast" role="alert">${esc(toast)}</div>` : ''}
       <div class="card-zoom" aria-hidden="true" hidden></div>`;
-    board3d?.update(v, valid, chosen, shipGlow(v, valid));
-    // The move box needs the map drawn to know where the destination is on screen.
-    const pop = movePopover(v);
-    if (pop) stage.insertAdjacentHTML('beforeend', pop);
+    board3d?.update(v, valid, chosen, shipGlow(v, valid), routePreview(v));
     const war = battleWindow(v);
     if (war) stage.insertAdjacentHTML('beforeend', war);
     const pick = draftWindow();
@@ -1047,10 +1090,18 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const v = withSay(tableView(ix, state, local(), lang));
     // Clicking your own ships while you may move starts a move from there.
     if (intent.step === 'idle' && !modal && canStartMove(v) && movableFrom(v).has(id)) {
-      pendingMove = null;
       intent = { step: 'to', from: id, via: [] };
       render();
       return;
+    }
+    // Planning a route: a system it passes through ends it there; its start drops the plan.
+    if (intent.step === 'move') {
+      const cut = cutRoute(intent, id);
+      if (cut || id === intent.from) {
+        intent = cut ?? { step: 'to', from: intent.from, via: [], prelude: intent.prelude };
+        render();
+        return;
+      }
     }
     if (!validSystems(v).has(id)) {
       // Not a choice for the current step: outside a step, the click opens the system's details.
@@ -1070,17 +1121,14 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         intent = { step: 'tax', system: id, prelude: i.prelude };
       } else intent = { step: i.kind, system: id, prelude: i.prelude };
     } else if (i.step === 'from') {
-      pendingMove = null;
       intent = { step: 'to', from: id, via: [], prelude: i.prelude };
-    }
-    else if (i.step === 'to') {
+    } else if (i.step === 'to') {
+      // The first step of the route: every ship there goes (fresh ones; damaged ones when there are no fresh).
       const mine = v.systems.find((s) => s.id === i.from)?.ships.find((x) => x.player === local());
-      // Catapulting on keeps the counts chosen so far; a first pick moves every ship there.
-      const prev = pendingMove;
-      pendingMove = null;
-      intent = prev && prev.from === i.from
-        ? { ...prev, via: i.via, to: id }
-        : { step: 'move', from: i.from, via: i.via, to: id, ships: mine?.fresh ?? 0, damaged: mine && mine.fresh === 0 ? mine.damaged : 0, drop: {}, prelude: i.prelude };
+      intent = { step: 'move', from: i.from, via: i.via, to: id, ships: mine?.fresh ?? 0, damaged: mine && mine.fresh === 0 ? mine.damaged : 0, drop: {}, prelude: i.prelude };
+    } else if (i.step === 'move') {
+      // The route goes on (a Catapult), keeping the ships chosen and those left so far.
+      intent = extendRoute(i, id);
     }
     render();
   }
@@ -1163,7 +1211,6 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       }
       case 'cancel':
         intent = IDLE;
-        pendingMove = null;
         if (modal?.type === 'picker' && modal.court) modal = null;
         break;
       case 'build':
@@ -1177,16 +1224,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         return;
       case 'step': {
         const n = Number(d.d);
-        if (intent.step === 'move' && d.name?.startsWith('drop:')) {
-          const at = d.name.slice(5);
-          intent = { ...intent, drop: { ...intent.drop, [at]: clamp((intent.drop[at] ?? 0) + n, intent.ships) } };
-        } else if (intent.step === 'move') {
-          const from = intent.from;
-          const mine = v.systems.find((s) => s.id === from)?.ships.find((x) => x.player === me);
-          intent = d.name === 'ships'
-            ? { ...intent, ships: clamp(intent.ships + n, mine?.fresh ?? 0) }
-            : { ...intent, damaged: clamp(intent.damaged + n, mine?.damaged ?? 0) };
-        } else if (intent.step === 'battle') {
+        if (intent.step === 'battle') {
           const die = d.name as 'skirmish' | 'assault' | 'raid';
           intent = { ...intent, dice: { ...intent.dice, [die]: clamp(intent.dice[die] + n, 9) } };
         }
@@ -1195,11 +1233,21 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'target':
         if (intent.step === 'battle') intent = { ...intent, target: Number(d.player) };
         break;
-      case 'catapult':
-        if (intent.step === 'move') {
-          pendingMove = intent;
-          intent = { step: 'to', from: intent.from, via: [...intent.via, intent.to], prelude: intent.prelude };
+      case 'pip':
+        // A ship pip of the move panel: how many leave, or are left at a system on the way.
+        if (intent.step === 'move' && d.name) {
+          const n = Number(d.n);
+          const from = intent.from;
+          const mine = v.systems.find((s) => s.id === from)?.ships.find((x) => x.player === me);
+          if (d.name === 'ships') intent = fitDrops({ ...intent, ships: clamp(n, mine?.fresh ?? 0) });
+          else if (d.name === 'damaged') intent = fitDrops({ ...intent, damaged: clamp(n, mine?.damaged ?? 0) });
+          else if (d.name.startsWith('drop:')) intent = setDrop(intent, d.name.slice(5), n);
+          else if (d.name.startsWith('dropd:')) intent = setDrop(intent, d.name.slice(6), n, true);
         }
+        break;
+      case 'route-back':
+        // One step back: the route ends at the last system it passed through.
+        if (intent.step === 'move' && intent.via.length) intent = cutRoute(intent, intent.via[intent.via.length - 1]) ?? intent;
         break;
       case 'raid': {
         const take: RaidTake = d.card !== undefined ? { card: d.card } : { resource: Number(d.res) };
