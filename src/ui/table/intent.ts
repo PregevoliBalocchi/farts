@@ -16,9 +16,6 @@ export type Intent =
   /** `via`: systems already passed through on a Catapult move. */
   | { step: 'to'; from: string; via: string[]; prelude?: Resource }
   | { step: 'court'; kind: 'influence' | 'secure'; prelude?: Resource }
-  | { step: 'build'; system: string; prelude?: Resource }
-  | { step: 'repair'; system: string; prelude?: Resource }
-  | { step: 'tax'; system: string; prelude?: Resource }
   /**
    * A planned route: `from`, through `via` (a Catapult), to `to`. `ships` and `damaged` leave `from`;
    * `drop` / `dropDamaged`: fresh / damaged ships left behind on the way, by system passed through.

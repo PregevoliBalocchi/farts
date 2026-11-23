@@ -5,8 +5,9 @@
 // chapter and the general supply (left), the prompt (centre) and the menu
 // buttons (right); rivals down the left, each with the card they played
 // beside it; down the right, the ambitions and then the Court; along the
-// bottom, the local board, the action box, the hand, and undo/confirm in the
-// corner. `?debug=layout` outlines these rectangles.
+// bottom, the local board, then one bar up to the Court column: the action box
+// (the card played, the actions left, the choices), the hand, and the turn's
+// buttons (undo, end turn, pass). `?debug=layout` outlines these rectangles.
 
 /** Smallest stage, in stage pixels: the layout was drawn for it. */
 export const MIN_STAGE = { w: 1920, h: 1080 } as const;
@@ -38,8 +39,9 @@ const LOCAL_H = 292;
 const RIVAL_H = 206;
 const bot = () => STAGE.h - G; // bottom edge of the bottom row
 
-/** How far the hand slides right to make room for the action box (its width plus a gutter). */
-export const HAND_AWAY = 450 + G;
+const BAR_H = 212; // the bottom bar beside the local board
+const ACT_W = 440; // its action box, on the left (grows upwards when it needs more room)
+const BTN_W = 150; // its turn buttons, on the right
 
 /** Region ids and rectangles, read from the current STAGE (left column on the left edge, right column on the right edge, bottom row on the bottom edge). */
 export const REGIONS = {
@@ -53,12 +55,14 @@ export const REGIONS = {
   get map(): Rect { return { x: 490, y: TOP + 8, w: STAGE.w - 490 - SIDE_R - G * 3, h: STAGE.h - TOP - LOCAL_H - 40 }; },
   /** Local seat board. */
   get local(): Rect { return { x: G, y: bot() - LOCAL_H, w: LOCAL_W, h: LOCAL_H }; },
-  /** Local hand, fanned, beside the local board; it slides right by HAND_AWAY while the action box is open. */
-  get hand(): Rect { return { x: LOCAL_W + G * 3, y: bot() - 226, w: 640, h: 226 }; },
-  /** Undo and confirm, bottom right. */
-  get confirm(): Rect { return { x: STAGE.w - 140 - G, y: bot() - 64, w: 140, h: 64 }; },
-  /** The action box: anchored at the bottom between the local board and the hand, grows upwards up to h. */
-  get actions(): Rect { return { x: LOCAL_W + G * 3, y: bot() - 440, w: 450, h: 440 }; },
+  /** The bottom bar: from the local board to the Court column. */
+  get bar(): Rect { const x = LOCAL_W + G * 3; return { x, y: bot() - BAR_H, w: STAGE.w - SIDE_R - G * 2 - x, h: BAR_H }; },
+  /** The local hand, in a row in the middle of the bar. */
+  get hand(): Rect { const b = REGIONS.bar; return { x: b.x + ACT_W + G, y: b.y, w: b.w - ACT_W - BTN_W - G * 2, h: b.h }; },
+  /** The turn's buttons (undo, end turn, pass), at the right end of the bar. */
+  get confirm(): Rect { const b = REGIONS.bar; return { x: b.x + b.w - BTN_W, y: b.y, w: BTN_W, h: b.h }; },
+  /** The action box, at the left end of the bar: anchored at its bottom, grows upwards up to h. */
+  get actions(): Rect { const b = REGIONS.bar; return { x: b.x, y: b.y + b.h - 440, w: ACT_W, h: 440 }; },
   /** Card picker and other dialogs, centred. */
   get modal(): Rect { return { x: (STAGE.w - 1600) / 2, y: (STAGE.h - 900) / 2, w: 1600, h: 900 }; },
   /** Detail windows (height grows with the content, up to h), centred. */

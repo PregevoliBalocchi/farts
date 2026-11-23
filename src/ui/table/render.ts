@@ -65,6 +65,35 @@ function resIcon(r: Resource, t: Translate, cls = ''): string {
  * lead and seize under it (centre); the menu buttons (right).
  */
 /** `control`: whether the map shows who controls each sector (null: the map has no such layer). */
+/** Simple line glyphs for the action kinds (24×24, currentColor). */
+const ACTION_GLYPHS: Record<string, string> = {
+  influence: '<circle cx="12" cy="6.5" r="3.5"/><path d="M6 21c0-5 2.5-9 6-9s6 4 6 9z"/>',
+  move: '<path d="M3 13l7-1 4-7 2 1-2 6 6 1 1 2-6 1 2 6-2 1-4-7-7-1z"/>',
+  build: '<path d="M3 21V11l5-3v3l5-3v3l5-3v13zM9 21v-4h3v4"/>',
+  repair: '<path d="M14.5 3.5a5 5 0 0 0-5.6 6.7L3 16.1 5.9 19l5.9-5.9a5 5 0 0 0 6.7-5.6l-3 3-2.8-.7-.7-2.8z"/>',
+  tax: '<ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 10v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-4M5 14v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-4"/>',
+  battle: '<path d="M4 3l9 9-2 2-9-9V3zM20 3v2l-9 9-2-2 9-9zM6 15l3 3-2 2-1-1-2 2-1-1 2-2-1-1zM18 15l-3 3 2 2 1-1 2 2 1-1-2-2 1-1z"/>',
+  secure: '<path d="M3 8l4.5 3.5L12 4l4.5 7.5L21 8l-2 10H5zM5 20h14"/>',
+};
+
+/** The glyph of action kind `kind`, as inline SVG. */
+export function actionIcon(kind: string): string {
+  const g = ACTION_GLYPHS[kind];
+  return g ? `<svg class="act-ic" viewBox="0 0 24 24" aria-hidden="true">${g}</svg>` : '';
+}
+
+/** A system as the table names it: its resource and cluster number ("Armi 4"), or "Gate 6". */
+export function systemName(s: { id: string; cluster?: string; kind?: string; resource?: string | null } | undefined, t: Translate, id = s?.id ?? ''): string {
+  const n = (s?.cluster ?? id).replace(/\D/g, '');
+  return s?.kind === 'planet' && s.resource ? t('move.sysPlanet', { res: t(`resource.${s.resource}`), n }) : t('move.sysGate', { n });
+}
+
+/** The system's name with its resource icon in front, as HTML. */
+export function systemTag(s: { id: string; cluster?: string; kind?: string; resource?: string | null } | undefined, t: Translate): string {
+  const r = s?.kind === 'planet' && s.resource ? `<span class="r-${s.resource}">${icon(s.resource as IconName)}</span> ` : '';
+  return `<span class="sys-tag">${r}${esc(systemName(s, t))}</span>`;
+}
+
 export function header(v: TableView, t: Translate, exampleContent: boolean, promptText: string, control: boolean | null = null): string {
   const supply = v.supply.map((s) => `<span title="${esc(t(`resource.${s.resource}`))}">${resIcon(s.resource, t)}<b class="num">${s.count}</b></span>`).join('');
   const declared = v.ambitions.filter((a) => a.markers.length).map((a) => t(`ambition.${a.id}`));
@@ -86,12 +115,6 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, prom
       ${button('help', '', { cls: 'icon sq', title: t('btn.help'), html: icon('anyAmbition') })}
       ${button('settings', '', { cls: 'icon sq', title: t('btn.settings'), html: icon('settings') })}
     </div>`;
-}
-
-/** Undo and confirm (end the turn) as the two square buttons in the bottom-right corner. */
-export function confirmButtons(t: Translate, undo: { show: boolean; enabled: boolean }, end: { show: boolean; enabled: boolean; ready: boolean }): string {
-  return `${undo.show ? button('undo', '', { cls: 'icon sq big', title: t('btn.undo'), html: icon('undo'), disabled: !undo.enabled }) : ''}${
-    end.show ? button('end-turn', '', { cls: `icon sq big confirm${end.ready ? ' pulse' : ''}`, title: t('play.endTurn'), html: icon('confirm'), disabled: !end.enabled }) : ''}`;
 }
 
 /** A game piece of a seat as a small picture (the kit's piece image), else its glyph in the seat colour. */

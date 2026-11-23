@@ -59,8 +59,10 @@ export interface Rect {
 export interface Board3DOptions {
   /** False with ?motion=off: no pulsing rings. */
   motion: boolean;
-  /** A system was clicked. */
-  onPick(id: string): void;
+  /** A system was clicked; `shipOf`: the seat whose ship model was clicked, if one was. */
+  onPick(id: string, shipOf?: number): void;
+  /** The view moved (pan or zoom): things placed over the map follow it. */
+  onView?(): void;
   /** Calibration mode (?debug=calibrate): a click on the board reports where, as fractions (0..1) of the picture. */
   onCalibrate?(fx: number, fy: number): void;
   /** ?map=picture: the board picture on a table instead of the map in space. */
@@ -167,6 +169,10 @@ export class Board3D {
   private coverDist = 1;
   private size2 = { w: 1, h: 1 };
   private focus: Rect = { x: 0, y: 0, w: 1, h: 1 };
+  /** A smooth pan under way (ensureVisible): the whole shift, how much is done, start time. */
+  private pan: { delta: THREE.Vector3; done: THREE.Vector3; t0: number | null } | null = null;
+  /** Systems where the local player can act now: a faint ring on each. */
+  private hints: ReadonlySet<string> = new Set();
   private down: { x: number; y: number } | null = null;
   private readonly topMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0 });
   /** The map in space (default): planets under a glass carrying the information layer, stars below. */
@@ -257,6 +263,7 @@ export class Board3D {
       this.camera.position.set(t.x, dist * Math.sin(tilt), t.z + dist * Math.cos(tilt));
       this.camera.lookAt(t);
       this.dirty = true;
+      this.opts.onView?.();
     });
 
     this.canvas.addEventListener('pointerdown', (e) => (this.down = { x: e.clientX, y: e.clientY }));
@@ -376,7 +383,8 @@ export class Board3D {
    * `ships`: a seat's ship groups to light up under the models, in the given
    * systems (`chosen` drawn as picked): the ships the local player can move.
    */
-  update(v: TableView, valid: ReadonlySet<string>, chosen: ReadonlySet<string>, ships: ShipGlow | null = null, route: RoutePreview | null = null): void {
+  update(v: TableView, valid: ReadonlySet<string>, chosen: ReadonlySet<string>, ships: ShipGlow | null = null, route: RoutePreview | null = null, hints: ReadonlySet<string> = new Set()): void {
+    this.hints = hints;
     this.last = v;
     const key = v.systems.map((s) => (s.inPlay ? '1' : '0')).join('');
     if (key !== this.boardKey) {
@@ -690,6 +698,7 @@ export class Board3D {
             o.rotation.y = SHIP_HEADING + headingJitter(`${s.id}:${st.player}:${g.lying ? 'd' : 'f'}`);
             if (!o.userData.model) o.scale.setScalar((o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE) * ZONE_SHIP_SCALE);
             o.userData.system = s.id;
+            o.userData.shipOf = st.player;
             this.pieces.add(o);
             keep(s.id, o, st.player);
             shipsAt.push({ player: st.player, damaged: g.lying, system: s.id, count: g.count, x: w.x, z: w.z });
@@ -710,6 +719,7 @@ export class Board3D {
           o.rotation.y = SHIP_HEADING;
           if (!o.userData.model) o.scale.setScalar(o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE);
           o.userData.system = s.id;
+          o.userData.shipOf = st.player;
           this.pieces.add(o);
           keep(s.id, o, st.player);
         }
@@ -801,6 +811,17 @@ export class Board3D {
       if (ring.userData.pulse) this.pulsing = true;
       this.rings.add(ring);
     }
+    // Systems where the local player can act now (the map menu): a faint, still ring.
+    for (const id of this.hints) {
+      const p = this.spots[id];
+      const s = v.systems.find((x) => x.id === id);
+      if (!p || !s || valid.has(id) || chosen.has(id)) continue;
+      const r = s.kind === 'gate' ? 0.5 : 0.85;
+      const ring = new THREE.Mesh(new THREE.RingGeometry(r, r + 0.035, 64), new THREE.MeshBasicMaterial({ color: VALID, transparent: true, opacity: 0.35, depthWrite: false }));
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(p.x, 0.011, p.z);
+      this.rings.add(ring);
+    }
     // The local player's movable ships: a small ring under each of their groups.
     const g = this.glow;
     if (!g) return;
@@ -832,7 +853,49 @@ export class Board3D {
     return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
   }
 
+  /** The point of the table under canvas pixel (x, y), or null when the ray misses it. */
+  private groundAt(x: number, y: number): THREE.Vector3 | null {
+    const r = this.canvas.getBoundingClientRect();
+    this.ray.setFromCamera(new THREE.Vector2(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1), this.camera);
+    return this.ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3());
+  }
+
+  /**
+   * Pans the map, smoothly, so system `id` sits inside the area the panels
+   * leave free (with a margin); nothing happens when it already does.
+   */
+  ensureVisible(id: string, margin = 110): void {
+    const at = this.screenOf(id);
+    if (!at) return;
+    const f = this.focus;
+    const tx = Math.max(f.x + margin, Math.min(f.x + f.w - margin, at.x));
+    const ty = Math.max(f.y + margin, Math.min(f.y + f.h - margin, at.y));
+    if (Math.abs(tx - at.x) < 2 && Math.abs(ty - at.y) < 2) return;
+    const a = this.groundAt(at.x, at.y);
+    const b = this.groundAt(tx, ty);
+    if (!a || !b) return;
+    this.pan = { delta: a.sub(b).setY(0), done: new THREE.Vector3(), t0: null };
+    this.dirty = true;
+  }
+
+  /** One frame of a pan: moves the camera and the point it looks at by the next share of the shift. */
+  private stepPan(t: number): void {
+    const pan = this.pan;
+    if (!pan) return;
+    pan.t0 ??= t;
+    const k = this.opts.motion ? Math.min(1, (t - pan.t0) / 380) : 1;
+    const e = k * k * (3 - 2 * k);
+    const step = pan.delta.clone().multiplyScalar(e).sub(pan.done);
+    pan.done.add(step);
+    this.controls.target.add(step);
+    this.camera.position.add(step);
+    this.controls.update();
+    if (k >= 1) this.pan = null;
+    this.dirty = true;
+  }
+
   private frame(t: number): void {
+    this.stepPan(t);
     if (this.planets.length && this.opts.motion) {
       turnPlanets(this.planets, t / 1000);
       this.dirty = true;
@@ -920,13 +983,20 @@ export class Board3D {
     return new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   }
 
+  /** Seat of the ship model under the last hit() pointer, if it was a ship. */
+  private hitShipOf: number | undefined;
+
   private hit(e: PointerEvent): string | null {
     this.ray.setFromCamera(this.pointer(e), this.camera);
+    this.hitShipOf = undefined;
     // A ship or building model picks its system; else the system's disc under the pointer.
     for (const h of this.ray.intersectObjects(this.pieces.children, true)) {
       if (!(h.object as THREE.Mesh).isMesh) continue;
       for (let o: THREE.Object3D | null = h.object; o; o = o.parent) {
-        if (o.userData.system) return o.userData.system as string;
+        if (o.userData.system) {
+          this.hitShipOf = o.userData.shipOf as number | undefined;
+          return o.userData.system as string;
+        }
       }
     }
     return (this.ray.intersectObjects(this.discs.children, false)[0]?.object.userData.sys as string | undefined) ?? null;
@@ -945,7 +1015,7 @@ export class Board3D {
       return;
     }
     const id = this.hit(e);
-    if (id) this.opts.onPick(id);
+    if (id) this.opts.onPick(id, this.hitShipOf);
   }
 
   private hover(e: PointerEvent): void {

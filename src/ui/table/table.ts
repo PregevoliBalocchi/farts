@@ -32,13 +32,13 @@ import { detailHtml } from './details';
 import type { DetailTarget } from './details';
 import { actionCommand, battlePayload, clamp, cutRoute, extendRoute, fitDrops, IDLE, movePayload, routeOf, routeStops, setDrop, startAction } from './intent';
 import type { Intent, MoveIntent } from './intent';
-import { HAND_AWAY, place, REGIONS, setStage, STAGE, placeUp } from './layout';
+import { place, REGIONS, setStage, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  actionCard, button, cardLabel, confirmButtons, playedCard, playedText, cardPicker, courtFace, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, PICKER_PAGE, playerName, rivalPanel, setSeatNames, sidePanel,
+  actionCard, button, cardLabel, playedCard, playedText, cardPicker, courtFace, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, PICKER_PAGE, playerName, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon,
 } from './render';
 import type { PickerGroup, PickerState } from './render';
-import { legal, othersTurn, tableView } from './view';
+import { legal, othersTurn, tableView, whyNot } from './view';
 import type { TableView } from './view';
 
 type CourtPick = { kind: 'influence' | 'secure'; prelude?: Resource };
@@ -95,6 +95,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     messageTranslator(lang, {
       player: (n) => playerName(t, n),
       word: (w) => {
+        const sys = ix.content.map.systems.find((s) => s.id === w);
+        if (sys) return systemName(sys, t);
         const court = ix.courtCards.get(w);
         if (court) return cardWords(court, lang).name;
         const action = ix.actionCards.get(w);
@@ -140,6 +142,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let placed: Allocation | null = null;
   let battleKey = '';
   let intent: Intent = IDLE;
+  /**
+   * The menu beside a system on the map: what the local player can do there,
+   * limited to `kinds` (the card's, a prelude's, or the one action picked first).
+   */
+  let sysMenu: { system: string; kinds: ActionKind[]; prelude?: Resource } | null = null;
+  /** The system the map was last panned to show, so it is not pulled back while the player looks elsewhere. */
+  let shownSystem: string | null = null;
   let modal: Modal | null = null;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
   let controlLayer = false;
@@ -210,7 +219,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         motion: params.get('motion') !== 'off',
         picture: params.get('map') === 'picture',
         showSpots: params.get('debug') === 'spots',
-        onPick: (id) => pickSystem(id),
+        onPick: (id, shipOf) => pickSystem(id, shipOf),
+        onView: () => placeMenu(),
         ...(calibrating
           ? {
               onCalibrate: (fx: number, fy: number) => {
@@ -273,6 +283,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   /** Clears every half-made choice (after a command, an undo or a new game). */
   function resetChoices(): void {
+    sysMenu = null;
     selected = null;
     seizeWith = null;
     seizePick = false;
@@ -387,12 +398,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     return [...new Set([...s.ships.map((x) => x.player), ...s.buildings.map((b) => b.owner)])].filter((p) => p !== me);
   }
 
-  function validSystems(v: TableView): Set<string> {
+  function validSystems(v: TableView, i: Intent = intent): Set<string> {
     const out = new Set<string>();
     if (!myTurn()) return out;
     const me = local();
     const live = v.systems.filter((s) => s.inPlay);
-    const i = intent;
     if (i.step === 'system') {
       for (const s of live) {
         const ok =
@@ -433,6 +443,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   function prompt(v: TableView): string {
     if (v.phase === 'gameOver') return t('prompt.gameOver', { list: v.winners.map((w) => playerName(t, w)).join(', ') });
     if (!myTurn() && v.active !== null) return t('prompt.waiting', { name: playerName(t, v.active) });
+    if (sysMenu) return t('prompt.pick.menu', { system: systemLabel(v, sysMenu.system) });
     switch (intent.step) {
       case 'system':
         return t('prompt.pick.system');
@@ -448,8 +459,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         return t('prompt.lead');
       case 'follow':
         return t('prompt.follow');
-      case 'actions':
-        return t('prompt.actions', { n: v.budget?.remaining ?? 0 });
+      case 'actions': {
+        const n = v.budget?.remaining ?? 0;
+        return n === 0 ? t('prompt.actionsDone') : n === 1 ? t('prompt.actionsOne') : t('prompt.actions', { n });
+      }
       case 'allocate':
         return t('prompt.allocate');
       case 'decide':
@@ -459,10 +472,114 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
   }
 
-  function kindButtons(kinds: ActionKind[], prelude: Resource | undefined, enabled: boolean): string {
+  /** Why action `kind` has nothing to act on now, or null when it has. */
+  function kindReason(v: TableView, kind: ActionKind, prelude?: Resource): string | null {
+    const start = startAction(kind, prelude);
+    const some = start.step === 'court' ? courtPickable(start).size > 0
+      : start.step === 'from' ? v.systems.some((s) => s.inPlay && s.ships.some((x) => x.player === local()) && moveTargets(v, s.id, [], prelude).size > 0)
+      : validSystems(v, start).size > 0;
+    return some ? null : t(`why.${kind}`);
+  }
+
+  /** The action kinds as buttons: glyph above the name; one with nothing to act on is off and says why. */
+  function kindButtons(v: TableView, kinds: ActionKind[], prelude: Resource | undefined, enabled: boolean): string {
     return kinds
-      .map((k) => button('kind', t(`action.${k}`), { args: { kind: k, ...(prelude ? { prelude } : {}) }, cls: 'kind-btn', disabled: !enabled }))
+      .map((k) => {
+        const why = enabled ? kindReason(v, k, prelude) : null;
+        const html = `${actionIcon(k)}<span class="kb-name">${esc(t(`action.${k}`))}</span>${why ? `<span class="kb-why">${esc(why)}</span>` : ''}`;
+        return button('kind', t(`action.${k}`), { args: { kind: k, ...(prelude ? { prelude } : {}) }, cls: 'kind-btn', disabled: !enabled || !!why, html, title: why ?? t(`action.${k}`) });
+      })
       .join('');
+  }
+
+  /** One thing the map menu offers: a piece picture, a label, and the command (or why it cannot be done). */
+  interface MenuOption {
+    kind: ActionKind;
+    label: string;
+    pic: string;
+    why: string | null;
+    args: Record<string, string | number>;
+  }
+
+  /** What the local player can do in system `id`, by action kind (only kinds with something possible there). */
+  function menuOptions(v: TableView, id: string, kinds: readonly ActionKind[], prelude?: Resource): MenuOption[][] {
+    const s = v.systems.find((x) => x.id === id);
+    if (!s || !s.inPlay || !myTurn()) return [];
+    const me = local();
+    const pic = (kind: string, seat: number) => {
+      const url = assetUrl(`piece.${kind}-${seatColor(seat)}`);
+      return url ? `<img src="${esc(url)}" alt="">` : icon(kind as 'ship');
+    };
+    const why = (payload: ActionPayload) => {
+      const w = whyNot(ix, state, act(payload, prelude));
+      return w === null ? null : say(w);
+    };
+    const out: MenuOption[][] = [];
+    for (const kind of kinds) {
+      let opts: MenuOption[] = [];
+      if (kind === 'build') {
+        opts = (['ship', 'city', 'starport'] as const).map((what) => ({ kind, label: t(`build.${what}`), pic: pic(what, me), why: why({ kind: 'build', system: id, what }), args: { what } }));
+      } else if (kind === 'repair') {
+        const dmgBuilding = s.buildings.find((b) => b.owner === me && b.damaged);
+        opts = (['ship', 'building'] as const).map((target) => ({ kind, label: t(`repair.${target}`), pic: pic(target === 'ship' ? 'ship' : (dmgBuilding?.type ?? 'city'), me), why: why({ kind: 'repair', system: id, target }), args: { target } }));
+      } else if (kind === 'tax') {
+        const owners = [...new Set(s.buildings.filter((b) => b.type === 'city').map((b) => b.owner))];
+        opts = owners.map((o) => ({ kind, label: o === me ? t('menu.taxOwn') : t('menu.taxRival', { name: playerName(t, o) }), pic: pic('city', o), why: why({ kind: 'tax', system: id, cityOwner: o }), args: { owner: o } }));
+      } else if (kind === 'battle') {
+        opts = rivalsIn(v, id).map((r) => ({ kind, label: playerName(t, r), pic: pic('ship', r), why: why({ kind: 'battle', system: id, target: r, dice: { skirmish: 1 } }), args: { target: r } }));
+      } else if (kind === 'move' && s.ships.some((x) => x.player === me) && moveTargets(v, id, [], prelude).size > 0) {
+        opts = [{ kind, label: t('menu.moveFrom'), pic: pic('ship', me), why: null, args: {} }];
+      }
+      if (opts.some((o) => o.why === null)) out.push(opts);
+    }
+    return out;
+  }
+
+  /** Systems where the menu has something to do now (outside a step, with actions left). */
+  function actionable(v: TableView): Set<string> {
+    const out = new Set<string>();
+    if (intent.step !== 'idle' || modal || !myTurn() || v.phase !== 'actions' || !v.budget || v.budget.remaining < 1) return out;
+    const kinds = v.budget.kinds.filter((k) => k !== 'move' && k !== 'influence' && k !== 'secure');
+    for (const s of v.systems) if (s.inPlay && menuOptions(v, s.id, kinds).length) out.add(s.id);
+    return out;
+  }
+
+  /** The menu beside the chosen system ('' when none). */
+  function sysMenuHtml(v: TableView): string {
+    const m = sysMenu;
+    if (!m) return '';
+    const sections = menuOptions(v, m.system, m.kinds, m.prelude);
+    if (!sections.length) return '';
+    const s = v.systems.find((x) => x.id === m.system);
+    const body = sections
+      .map((opts) => {
+        const kind = opts[0].kind;
+        const tiles = opts
+          .map((o) => button('menu-do', o.label, { args: { kind, ...o.args }, cls: 'menu-opt', disabled: o.why !== null, title: o.why ?? o.label, html: `<span class="mo-pic">${o.pic}</span><span class="mo-name">${esc(o.label)}</span>${o.why ? `<span class="mo-why">${esc(o.why)}</span>` : ''}` }))
+          .join('');
+        return `<div class="menu-sec"><div class="menu-kind">${actionIcon(kind)}<span>${esc(t(`action.${kind}`))}</span></div><div class="menu-opts">${tiles}</div></div>`;
+      })
+      .join('');
+    const close = button('menu-close', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
+    return `<div class="sys-menu s-${seatColor(local())}" role="dialog" aria-label="${esc(systemName(s, t, m.system))}"><div class="menu-head">${systemTag(s, t)}${close}</div>${body}</div>`;
+  }
+
+  /** Puts the map menu beside its system, following the view (called after each render and when the map moves). */
+  function placeMenu(): void {
+    const el = stage.querySelector<HTMLElement>('.sys-menu');
+    if (!el || !sysMenu) return;
+    const at = board3d?.screenOf(sysMenu.system);
+    const r = stage.getBoundingClientRect();
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const x = at ? (at.x - r.left) / scale : REGIONS.map.x + REGIONS.map.w / 2;
+    const y = at ? (at.y - r.top) / scale : REGIONS.map.y + REGIONS.map.h / 2;
+    // To the right of the system, or to its left when there is no room.
+    const right = x + 70 + w < REGIONS.map.x + REGIONS.map.w + 40;
+    const left = right ? x + 70 : x - 70 - w;
+    const top = Math.max(REGIONS.map.y, Math.min(REGIONS.map.y + REGIONS.map.h - h, y - h / 2));
+    el.style.left = `${Math.max(8, left)}px`;
+    el.style.top = `${top}px`;
   }
 
   /** The button opening the powers of the local player's cards, when one can be used in this phase. */
@@ -503,7 +620,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const controls = mine
       ? `<div class="b-foot">${raidChoices(b)}<div class="btn-grid">${button('battle-auto', t('battle.auto'))}${button('battle-reset', t('battle.reset'))}${powersButton(v)}${button('allocate', t('battle.confirm'), { cls: 'primary', disabled: !ok })}</div></div>`
       : `<div class="b-foot"><div class="hint">${esc(t('battle.watching', { who: playerName(t, b.attacker) }))}</div></div>`;
-    const title = t('battle.title', { system: b.system, a: playerName(t, b.attacker), d: playerName(t, b.target) });
+    const title = t('battle.title', { system: systemName(ix.content.map.systems.find((s) => s.id === b.system), t, b.system), a: playerName(t, b.attacker), d: playerName(t, b.target) });
     return `<div class="battle-win glass" role="dialog" aria-label="${esc(title)}">
       <div class="b-head"><span class="ctx-title">${esc(title)}</span><span class="b-counts">${counts || esc(t('battle.noHits'))}</span></div>
       <div class="battle-slot" style="width:${BATTLE_VIEW.w}px;height:${BATTLE_VIEW.h}px"></div>
@@ -613,9 +730,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   /** A system as the move panel names it: its resource and cluster number, or "Gate n". */
   function systemLabel(v: TableView, id: string): string {
-    const s = v.systems.find((x) => x.id === id);
-    const n = (s?.cluster ?? id).replace(/\D/g, '');
-    return s?.kind === 'planet' && s.resource ? t('move.sysPlanet', { res: t(`resource.${s.resource}`), n }) : t('move.sysGate', { n });
+    return systemName(v.systems.find((x) => x.id === id), t, id);
   }
 
   /** Why a planned route cannot go on from its end. */
@@ -750,11 +865,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         if (decl === 'any') {
           for (const a of AMBITIONS) {
             const glyphs = declareGlyphs(ix, Number(Object.entries(content.declareByNumber).find(([, x]) => x === a)?.[0] ?? 0)).map((g) => icon(g)).join('');
-            h += button('lead-declare', t('play.leadDeclare'), { args: { ambition: a }, title: `${t('play.leadDeclare')}: ${t(`ambition.${a}`)}`, html: `${esc(t('play.declareShort'))} ${glyphs}`, disabled: !can({ type: 'lead', player: me, card, declare: true, ambition: a }) });
+            h += button('lead-declare', t('play.leadDeclare'), { args: { ambition: a }, cls: 'declare', title: `${t('play.leadDeclare')}: ${t(`ambition.${a}`)}`, html: `<span class="dg">${glyphs}</span><span>${esc(t('play.declareAmb', { amb: t(`ambition.${a}`) }))}</span>`, disabled: !can({ type: 'lead', player: me, card, declare: true, ambition: a }) });
           }
         } else if (decl) {
           const glyphs = declareGlyphs(ix, chosenCard.number).map((g) => icon(g)).join('');
-          h += button('lead-declare', t('play.leadDeclare'), { title: `${t('play.leadDeclare')}: ${t(`ambition.${decl}`)}`, html: `${esc(t('play.leadDeclare'))} ${glyphs}`, disabled: !can({ type: 'lead', player: me, card, declare: true }) });
+          h += button('lead-declare', t('play.leadDeclare'), { cls: 'declare', title: `${t('play.leadDeclare')}: ${t(`ambition.${decl}`)}`, html: `<span class="dg">${glyphs}</span><span>${esc(t('play.declareAmb', { amb: t(`ambition.${decl}`) }))}</span>`, disabled: !can({ type: 'lead', player: me, card, declare: true }) });
         }
       } else {
         for (const mode of ['surpass', 'copy', 'pivot'] as const) {
@@ -775,7 +890,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       const summary = t('battle.summary', { hit: b.totals.hit, buildingHit: b.totals.buildingHit, selfHit: b.totals.selfHit, intercept: b.interceptHits, key: b.totals.key });
       const al = allocation();
       const ok = al !== null && can({ type: 'allocate', player: me, allocation: al });
-      return `<div class="ctx-head"><span class="ctx-title">${esc(`${b.system}: ${playerName(t, b.attacker)} → ${playerName(t, b.target)}`)}</span></div><div class="hint">${esc(summary)}</div>${raidChoices(b)}<div class="btn-grid">${button('allocate', t('battle.assign'), { cls: 'primary', disabled: !ok })}${powersButton(v)}</div>`;
+      return `<div class="ctx-head"><span class="ctx-title">${esc(`${systemLabel(v, b.system)}: ${playerName(t, b.attacker)} → ${playerName(t, b.target)}`)}</span></div><div class="hint">${esc(summary)}</div>${raidChoices(b)}<div class="btn-grid">${button('allocate', t('battle.assign'), { cls: 'primary', disabled: !ok })}${powersButton(v)}</div>`;
     }
 
     if (v.phase === 'decide' && v.decision) {
@@ -788,39 +903,27 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const i = intent;
     switch (i.step) {
       case 'idle': {
+        const powers0 = powersButton(v);
+        if (b.remaining === 0) {
+          // Nothing left to do with the card: the turn ends here (a card power may still be used first).
+          return `<div class="ctx-head"><span class="ctx-title">${esc(t('play.actionsDone'))}</span></div>
+            <div class="btn-grid one">${button('end-turn', t('play.endTurn'), { cls: 'primary end-big', disabled: !can({ type: 'endTurn', player: me }) })}</div>${powers0 ? `<div class="ctx-foot">${powers0}</div>` : ''}`;
+        }
         // Actions left as stars; the suit's actions as buttons; prelude by clicking a resource on the board.
-        const stars = `<span class="ctx-pips" title="${esc(t('prompt.actions', { n: b.remaining }))}">${Array.from({ length: b.remaining }, () => icon('pip')).join('') || '0'}</span>`;
+        const stars = `<span class="ctx-pips" title="${esc(prompt(v))}">${Array.from({ length: b.remaining }, () => icon('pip')).join('')}</span>`;
         const prelude = b.preludeOpen && v.players[me].slots.some((s) => s.resource && !s.locked) ? `<div class="hint small">${esc(t('play.preludeShort'))}</div>` : '';
         // Ending the turn is the confirm button in the bottom-right corner.
         const powers = powersButton(v);
-        return `<div class="ctx-head">${stars}${prelude}</div><div class="btn-grid kind-row">${kindButtons(b.kinds, undefined, b.remaining > 0)}</div>${powers ? `<div class="ctx-foot">${powers}</div>` : ''}`;
+        return `<div class="ctx-head">${stars}${prelude}</div><div class="btn-grid kind-row">${kindButtons(v, b.kinds, undefined, b.remaining > 0)}</div>${powers ? `<div class="ctx-foot">${powers}</div>` : ''}`;
       }
       case 'choose':
-        return `<div class="ctx-head"><span class="ctx-title">${esc(t('play.preludeWith', { res: t(`resource.${i.prelude}`) }))}</span></div><div class="btn-grid kind-row">${kindButtons(i.kinds, i.prelude, true)}${cancel}</div>`;
+        return `<div class="ctx-head"><span class="ctx-title">${esc(t('play.preludeWith', { res: t(`resource.${i.prelude}`) }))}</span></div><div class="btn-grid kind-row">${kindButtons(v, i.kinds, i.prelude, true)}${cancel}</div>`;
       case 'system':
       case 'from':
       case 'to':
       case 'court':
-        return `<div class="hint">${esc(prompt(v))}</div><div class="btn-grid">${cancel}</div>`;
-      case 'build': {
-        const opts = (['ship', 'city', 'starport'] as const)
-          .map((what) => button('build', t(`build.${what}`), { args: { what }, disabled: !can(act({ kind: 'build', system: i.system, what }, i.prelude)) }))
-          .join('');
-        return `<div class="hint">${esc(`${t('action.build')} · ${i.system}`)}</div><div class="btn-grid">${opts}${cancel}</div>`;
-      }
-      case 'repair': {
-        const opts = (['ship', 'building'] as const)
-          .map((target) => button('repair', t(`repair.${target}`), { args: { target }, disabled: !can(act({ kind: 'repair', system: i.system, target }, i.prelude)) }))
-          .join('');
-        return `<div class="hint">${esc(`${t('action.repair')} · ${i.system}`)}</div><div class="btn-grid">${opts}${cancel}</div>`;
-      }
-      case 'tax': {
-        const owners = [...new Set(v.systems.find((s) => s.id === i.system)?.buildings.filter((x) => x.type === 'city').map((x) => x.owner) ?? [])];
-        const opts = owners
-          .map((o) => button('tax', playerName(t, o), { args: { owner: o }, disabled: !can(act({ kind: 'tax', system: i.system, cityOwner: o }, i.prelude)) }))
-          .join('');
-        return `<div class="hint">${esc(`${t('action.tax')} · ${i.system}`)}</div><div class="btn-grid">${opts}${cancel}</div>`;
-      }
+        // The instruction is at the top of the screen; here only the way back.
+        return `<div class="btn-grid one">${cancel}</div>`;
       case 'move':
         return movePanel(v, i);
       case 'battle': {
@@ -829,7 +932,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           .join('');
         const payload = battlePayload(i);
         const ok = payload !== null && can(act(payload, i.prelude));
-        return `<div class="hint">${esc(`${t('action.battle')} · ${i.system} · ${t('battle.target')}`)}</div>
+        return `<div class="hint">${esc(`${t('action.battle')} · ${systemLabel(v, i.system)} · ${t('battle.target')}`)}</div>
           <div class="opt-row">${targets}</div>
           <div class="opt-row">${(['skirmish', 'assault', 'raid'] as const).map((d) => stepper(d, t(`battle.dice.${d}`), i.dice[d])).join('')}</div>
           <div class="btn-grid two">${button('do-battle', t('battle.go'), { cls: 'primary', disabled: !ok })}${cancel}</div>`;
@@ -1030,25 +1133,33 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       for (const id of intent.via) chosen.add(id);
     }
     if (intent.step === 'move') chosen.add(intent.to);
-    if (intent.step === 'build' || intent.step === 'repair' || intent.step === 'tax' || intent.step === 'battle') chosen.add(intent.system);
+    if (intent.step === 'battle') chosen.add(intent.system);
+    if (sysMenu) chosen.add(sysMenu.system);
 
     const rivals = v.rivals.map((r) => rivalPanel(ix, v, v.players[r], t)).join('');
     const ending = myTurn() && v.phase === 'actions' && intent.step === 'idle';
-    const corner = confirmButtons(t, { show: !online || hotseat, enabled: history.length > 0 }, { show: ending, enabled: ending && can({ type: 'endTurn', player: me }), ready: (v.budget?.remaining ?? 1) === 0 });
-    // Choosing a card: passing and redrawing the first hand sit by the hand's title.
     const choosing = myTurn() && (v.phase === 'lead' || v.phase === 'follow');
-    const handTools = myTurn() && v.phase === 'lead'
-      ? `${v.canMulligan ? button('mulligan', t('play.mulligan'), { cls: 'small' }) : ''}${button('pass', t('play.pass'), { cls: 'small', disabled: !can({ type: 'pass', player: me }) })}`
-      : '';
+    // The turn's buttons, always at the right end of the bar: pass or redraw (leading), undo, end turn.
+    const turnButtons = [
+      myTurn() && v.phase === 'lead' && v.canMulligan ? button('mulligan', t('play.mulligan'), { cls: 'bar-btn' }) : '',
+      myTurn() && v.phase === 'lead' ? button('pass', t('play.pass'), { cls: 'bar-btn', disabled: !can({ type: 'pass', player: me }) }) : '',
+      !online || hotseat ? button('undo', t('btn.undo'), { cls: 'bar-btn ghost', html: `${icon('undo')}<span>${esc(t('btn.undo'))}</span>`, disabled: history.length === 0 }) : '',
+      // With no actions left the box offers the end of the turn itself; before that, ending early is here.
+      ending && (v.budget?.remaining ?? 0) > 0 ? button('end-turn', t('play.endTurn'), { cls: 'bar-btn primary end', disabled: !can({ type: 'endTurn', player: me }) }) : '',
+    ].join('');
+    // The hand in one row: the cards side by side, overlapping only when they do not fit.
+    const handW = REGIONS.hand.w - 24;
+    const nCards = v.hand.length;
+    const handGap = nCards > 1 ? Math.min(10, (handW - nCards * 92) / (nCards - 1)) : 0;
     // The context box: only when there is something to choose (a picked card, the actions, a step, a battle).
     const ctx = actionsPanel(v);
     // Hotseat: when the screen turns to another seat, hide it until that player is ready.
     if (hotseat && v.phase !== 'gameOver' && me !== shownSeat) curtainFor = me;
     shownSeat = me;
-    // The hand sits beside the local board and slides away while the action box is open (animated only when that changes).
-    const handAway = !!ctx;
-    const handMoved = handAway !== lastHandAway;
-    lastHandAway = handAway;
+    // The action box rises in when it appears.
+    const boxShown = !!ctx;
+    const handMoved = boxShown !== lastHandAway;
+    lastHandAway = boxShown;
     // The action box shows the card being played on its left, as on the digital table.
     const picked = selected ? v.hand.find((h) => h.card === selected) : undefined;
     const ownPlay = v.plays.some((x) => x.player === me)
@@ -1063,15 +1174,25 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
       <div class="region side" data-region="side" style="${place(REGIONS.side)}">${sidePanel(ix, v, t, courtPickable(intent))}</div>
       <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, preludeCards(v))}</div>
-      <div class="region hand${handAway ? ' away' : ''}${handMoved ? (handAway ? ' slide-out' : ' slide-in') : ''}" data-region="hand" style="${place(REGIONS.hand)};--away:${HAND_AWAY}px">${handPanel(ix, v, t, selected, choosing, seizeWith, handTools)}</div>
-      <div class="region confirm" data-region="confirm" style="${place(REGIONS.confirm)}">${corner}</div>
+      <div class="region bar" aria-hidden="true" style="${place(REGIONS.bar)}"></div>
+      <div class="region hand" data-region="hand" style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>
+      <div class="region confirm" data-region="confirm" style="${place(REGIONS.confirm)}">${turnButtons}</div>
       ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ''}${ownPlay ? ' with-card' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}">${ownPlay}<div class="actions-body">${ctx}</div></div>` : ''}
       <div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>
       ${modalHtml(v)}
       ${curtainFor !== null ? handOver(curtainFor) : ''}
       ${toast ? `<div class="toast" role="alert">${esc(toast)}</div>` : ''}
       <div class="card-zoom" aria-hidden="true" hidden></div>`;
-    board3d?.update(v, valid, chosen, shipGlow(v, valid), routePreview(v));
+    board3d?.update(v, valid, chosen, shipGlow(v, valid), routePreview(v), actionable(v));
+    const menu = sysMenuHtml(v);
+    if (menu) stage.insertAdjacentHTML('beforeend', menu);
+    // The system being acted on stays in the free part of the screen (the map pans if a panel would hide it).
+    const focus = sysMenu?.system ?? (intent.step === 'move' ? intent.to : intent.step === 'battle' ? intent.system : null);
+    if (focus !== shownSystem) {
+      shownSystem = focus;
+      if (focus) board3d?.ensureVisible(focus);
+    }
+    placeMenu();
     const war = battleWindow(v);
     if (war) stage.insertAdjacentHTML('beforeend', war);
     const pick = draftWindow();
@@ -1086,13 +1207,28 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   }
 
   // ---- input ----
-  function pickSystem(id: string): void {
+  function pickSystem(id: string, shipOf?: number): void {
     const v = withSay(tableView(ix, state, local(), lang));
     // Clicking your own ships while you may move starts a move from there.
-    if (intent.step === 'idle' && !modal && canStartMove(v) && movableFrom(v).has(id)) {
+    if (intent.step === 'idle' && !modal && shipOf === local() && canStartMove(v) && movableFrom(v).has(id)) {
+      sysMenu = null;
       intent = { step: 'to', from: id, via: [] };
       render();
       return;
+    }
+    // Outside a step, with actions left: the menu of what can be done in that system.
+    if (intent.step === 'idle' && !modal && v.phase === 'actions' && v.budget && v.budget.remaining > 0 && myTurn()) {
+      const kinds = v.budget.kinds.filter((k) => k !== 'influence' && k !== 'secure');
+      if (menuOptions(v, id, kinds).length) {
+        sysMenu = { system: id, kinds };
+        render();
+        return;
+      }
+    }
+    if (sysMenu) {
+      // A click elsewhere on the map closes the menu (and opens another one where the step allows it below).
+      sysMenu = intent.step === 'system' ? sysMenu : null;
+      if (!sysMenu) return void render();
     }
     // Planning a route: a system it passes through ends it there; its start drops the plan.
     if (intent.step === 'move') {
@@ -1113,13 +1249,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
     const i = intent;
     if (i.step === 'system') {
-      if (i.kind === 'battle') {
-        intent = { step: 'battle', system: id, target: rivalsIn(v, id)[0] ?? null, dice: { skirmish: 0, assault: 0, raid: 0 }, prelude: i.prelude };
-      } else if (i.kind === 'tax') {
-        const owners = [...new Set(v.systems.find((s) => s.id === id)?.buildings.filter((b) => b.type === 'city').map((b) => b.owner))];
-        if (owners.length === 1) return void send(act({ kind: 'tax', system: id, cityOwner: owners[0] }, i.prelude));
-        intent = { step: 'tax', system: id, prelude: i.prelude };
-      } else intent = { step: i.kind, system: id, prelude: i.prelude };
+      // The action was picked first: its choices in the menu beside the system.
+      sysMenu = { system: id, kinds: [i.kind], prelude: i.prelude };
     } else if (i.step === 'from') {
       intent = { step: 'to', from: id, via: [], prelude: i.prelude };
     } else if (i.step === 'to') {
@@ -1193,11 +1324,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         return;
       case 'kind': {
         const next = startAction(d.kind as ActionKind, d.prelude as Resource | undefined);
+        // Influence and Secure: the Court cards that can be picked light up in the Court column.
         intent = next;
-        if (next.step === 'court') {
-          const ok = courtPickable(next);
-          openPicker(v, t('prompt.pick.court'), 0, { actor: me, selectable: new Set(v.court.filter((c) => ok.has(c.slot)).map((c) => c.card)) }, { kind: next.kind, prelude: next.prelude });
-        }
         break;
       }
       case 'spend': {
@@ -1211,17 +1339,27 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       }
       case 'cancel':
         intent = IDLE;
+        sysMenu = null;
         if (modal?.type === 'picker' && modal.court) modal = null;
         break;
-      case 'build':
-        if (intent.step === 'build') send(act({ kind: 'build', system: intent.system, what: d.what as 'ship' | 'city' | 'starport' }, intent.prelude));
-        return;
-      case 'repair':
-        if (intent.step === 'repair') send(act({ kind: 'repair', system: intent.system, target: d.target as 'ship' | 'building' }, intent.prelude));
-        return;
-      case 'tax':
-        if (intent.step === 'tax') send(act({ kind: 'tax', system: intent.system, cityOwner: Number(d.owner) }, intent.prelude));
-        return;
+      case 'menu-close':
+        sysMenu = null;
+        if (intent.step === 'system') intent = IDLE;
+        break;
+      case 'menu-do': {
+        // One choice of the map menu: done at once, except a battle (dice to choose) and a move (route to plan).
+        const m = sysMenu;
+        if (!m) break;
+        const system = m.system;
+        const pre = m.prelude;
+        sysMenu = null;
+        if (d.kind === 'build') return void send(act({ kind: 'build', system, what: d.what as 'ship' | 'city' | 'starport' }, pre));
+        if (d.kind === 'repair') return void send(act({ kind: 'repair', system, target: d.target as 'ship' | 'building' }, pre));
+        if (d.kind === 'tax') return void send(act({ kind: 'tax', system, cityOwner: Number(d.owner) }, pre));
+        if (d.kind === 'battle') intent = { step: 'battle', system, target: Number(d.target), dice: { skirmish: 0, assault: 0, raid: 0 }, prelude: pre };
+        else if (d.kind === 'move') intent = { step: 'to', from: system, via: [], prelude: pre };
+        break;
+      }
       case 'step': {
         const n = Number(d.d);
         if (intent.step === 'battle') {
@@ -1582,7 +1720,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (modal) {
+      if (sysMenu) {
+        sysMenu = null;
+        if (intent.step === 'system') intent = IDLE;
+      } else if (modal) {
         if (modal.type === 'picker' && modal.court) intent = IDLE;
         modal = null;
       } else if (intent.step !== 'idle') intent = IDLE;
