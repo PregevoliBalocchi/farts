@@ -4,6 +4,7 @@
 // so no rule is repeated here. Implements docs/ui/UI_SPEC.md §12 (data model),
 // adapted to the engine types of src/game/engine.
 
+import { cardWords } from './cardface';
 import {
   activePlayer,
   AMBITIONS,
@@ -279,7 +280,7 @@ export function othersTurn(s: GameState, maxLines = 5): OthersTurnView | null {
 }
 
 /** Builds the table view of `s` for the seat `local`. */
-export function tableView(ix: ContentIndex, s: GameState, local: PlayerId): TableView {
+export function tableView(ix: ContentIndex, s: GameState, local: PlayerId, lang = 'en'): TableView {
   const c = ix.content;
   const active = activePlayer(s);
   const leadPlay = s.round.plays.find((p) => p.mode === 'lead' && p.card);
@@ -337,9 +338,7 @@ export function tableView(ix: ContentIndex, s: GameState, local: PlayerId): Tabl
         kind: d?.kind ?? null,
         resource: d?.resource ?? null,
         keys: Number(d?.keys ?? 0),
-        name: d?.name,
-        text: d?.text,
-        crisis: d?.crisis,
+        ...cardWords(d, lang),
         focus: d?.artFocus,
         set: d?.set,
         agents: Object.entries(slot.agents)

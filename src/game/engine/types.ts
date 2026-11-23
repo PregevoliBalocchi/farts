@@ -28,6 +28,13 @@ export interface ActionCardDef {
 
 export type CourtKind = 'faction' | 'decree';
 
+/** A card's printed words in one language (owner content). */
+export interface CardWords {
+  name?: string;
+  text?: string;
+  crisis?: string;
+}
+
 export interface CourtCardDef {
   id: string;
   kind: CourtKind;
@@ -44,6 +51,8 @@ export interface CourtCardDef {
   text?: string;
   /** Presentation only: a Vox card's Crisis box. */
   crisis?: string;
+  /** Presentation only: the name, text and Crisis in other languages, by language code ("it"); missing parts fall back to the fields above. */
+  i18n?: Record<string, CardWords>;
   /** Presentation only: centre of the picture's main subject, [x, y] as fractions of the picture (crops keep it in view). */
   artFocus?: [number, number];
 }
