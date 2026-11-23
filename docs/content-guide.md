@@ -2,7 +2,8 @@
 
 Il motore non contiene nessun dato del gioco: tutto viene da `data/content.json`,
 che scrivi tu partendo da `data/content.example.json` (valori inventati).
-`data/content.json` e le cartelle `assets/cards/`, `assets/map/` sono in
+`data/content.json` è nel repository (decisione del proprietario, 23-11-2026);
+le parti di `assets/cards/` non mostrate al tavolo e `assets/map/` sono in
 `.gitignore`: restano solo sul tuo computer.
 
 Dopo ogni modifica:

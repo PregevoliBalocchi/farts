@@ -179,8 +179,8 @@ dist-single/
 .vitest/
 /playwright-report/
 
-# Owner's personal content transcribed from their physical copy: kept local, never committed.
-data/content.json
+# data/content.json (the game's data, card texts included) IS committed: owner's decision,
+# 2026-11-23 (docs/collaboration.md). The repository is private.
 # Card pictures: the ones the table shows (court, court-campaign, lore, leaders) are committed,
 # owner's decision 2026-11 (docs/ui-assets.md); the rest of assets/cards/ stays local.
 assets/cards/*

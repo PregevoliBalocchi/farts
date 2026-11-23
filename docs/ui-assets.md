@@ -30,7 +30,7 @@ the kit changes, then commit the result.
 | `token/` | resource, ambition and initiative tokens | reserved for the panels |
 | `dice/` | dice faces | reserved for battles |
 | `piece/` | ships, agents, flagships, cities, starports per seat | the 3D pieces |
-| `cardkit/` | Guild frames per resource, the Vox paper, the footer band, the key-cost tabs | Court cards drawn from the kit (`src/ui/table/cardface.ts`) |
+| `cardkit/` | Guild frames per resource, the Vox paper, the Lore frame, the footer band, the key-cost tabs | Court and Lore cards drawn from the kit (`src/ui/table/cardface.ts`) |
 
 Court cards are drawn from `cardkit/`: the illustration is the owner's card
 picture (`assets/cards/court*/`, not committed) seen through the kit frame's
@@ -40,6 +40,13 @@ arch, and the name and rules text come from the owner's content
 Translations sit beside them in `courtCards[].i18n.<lang>` (`name`, `text`,
 `crisis`); the table shows the one for its language and falls back to the
 original words (terms: `docs/translation-glossary.md`).
+Lore cards are drawn the same way: the owner's picture under the kit's Lore
+frame (`cardkit/lore`), whose paper hides the printed words, the content's
+`loreCards[].name` and `.text`, and the footer band. Leader cards (tarot size)
+keep the printed picture for the illustration and the resources and A/B/C
+setup row, and a fresh panel over the printed name and text box shows
+`leaders[].name` and `.text`. Both have `i18n.<lang>` translations. In rules
+texts `{hit}` and `{intercept}` stand for the dice icons, like `{key}`.
 A card without a transcribed name keeps its plain picture. Online the content
 is read from the database: upload `data/content.json` again after adding texts.
 

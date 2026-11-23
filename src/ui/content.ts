@@ -1,4 +1,4 @@
-// Loads the owner's data/content.json when present (it is git-ignored), else the
+// Loads the owner's data/content.json when present (it is committed), else the
 // placeholder data/content.example.json, so the page builds and runs either way.
 
 import example from '../../data/content.example.json';

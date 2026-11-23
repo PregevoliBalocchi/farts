@@ -97,6 +97,7 @@ for (const [from, to] of plan()) {
 const CARD_KIT = [
   ...Object.entries(RESOURCES).map(([id, kit]) => [`CardAsset-Frame-Guild-${kit[0].toUpperCase()}${kit.slice(1)}`, `cardkit/guild-${id}`]),
   ['CardAsset-Frame-Vox', 'cardkit/vox'],
+  ['CardAsset-Frame-Lore', 'cardkit/lore'],
   ['CardAsset-Footer-Paper', 'cardkit/footer'],
   ['CardAsset-Icon-Raid-Cost-1', 'cardkit/cost-1'],
   ['CardAsset-Icon-Raid-Cost-2', 'cardkit/cost-2'],

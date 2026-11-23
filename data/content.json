@@ -1,0 +1,3603 @@
+{
+  "_comment": "Contenuto del gioco (nel repository dal 2026-11-23). MAPPA, 12 CARTE DI SETUP e 16 PERSONAGGI (risorse iniziali e pezzi A/B/C) trascritti dal proprietario/dalle foto il 2026-11-21. CORTE: 31 carte (tipo, risorsa, chiavi) trascritte il 2026-11-21. Abilita dei personaggi non ancora implementate. Dadi e valori numerici ancora segnaposto. CARTE AZIONE confermate dallo schema di riferimento (2026-11-21). Corte: 3/4/4 carte scoperte, Guild e Vox mescolate insieme (confermato). DADI e riserve (15 navi, 10 agenti, 5 citta, 5 porti) trascritti il 2026-11-21. PLANCIA (slot, chiavi 3/1/1/2/1/3, citta che liberano gli slot) e azioni del prelude dalla plancia, 2026-11-21. FINE PARTITA (33/30/27, 5 capitoli, spareggio per ordine di turno) e MARKER (2/0>4/2, 3/2>6/3, 5/3>9/4, girati dopo i capitoli 1/2/3) confermati il 2026-11-21. SETUP dal regolamento (2026-11-21): gioco base con pezzi standard e risorse dai pianeti A/B, personaggi come variante; riserva di 25 gettoni. 2 GIOCATORI: risorse sui riquadri = terzo giocatore nel punteggio (confermato). LORE: 28 carte (1-14 base, 15-28 pack) trascritte il 2026-11-21; effetti da implementare. CORTE CAMPAGNA: 15 carte (set \"campaign\", fuori dal mazzo nelle partite normali) trascritte il 2026-11-21. CAMPAGNA: 4 editti e la carta Evento registrati il 2026-11-21 (solo dati). TESTI di LEADER e LORE (nome e testo inglesi dalla libreria carte dell'editore, traduzione italiana in i18n.it) aggiunti il 2026-11-23.",
+  "handSize": 6,
+  "chapters": 5,
+  "powerToWin": {
+    "2": 33,
+    "3": 30,
+    "4": 27
+  },
+  "playerBoard": {
+    "slotKeys": [
+      3,
+      1,
+      1,
+      2,
+      1,
+      3
+    ],
+    "baseSlots": [
+      0,
+      1
+    ],
+    "cityUnlocks": [
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        4,
+        5
+      ],
+      [],
+      []
+    ],
+    "cityBonusPower": [
+      0,
+      0,
+      0,
+      2,
+      3
+    ],
+    "bonusMode": "sum",
+    "cityReturnResource": "move"
+  },
+  "agentsPerPlayer": 10,
+  "shipsPerPlayer": 15,
+  "citiesPerPlayer": 5,
+  "starportsPerPlayer": 5,
+  "courtSize": {
+    "2": 3,
+    "3": 4,
+    "4": 4
+  },
+  "suits": {
+    "construction": [
+      "build",
+      "repair"
+    ],
+    "administration": [
+      "repair",
+      "tax",
+      "influence"
+    ],
+    "mobilization": [
+      "influence",
+      "move"
+    ],
+    "aggression": [
+      "move",
+      "battle",
+      "secure"
+    ]
+  },
+  "actionCards": [
+    {
+      "id": "construction-1",
+      "suit": "construction",
+      "number": 1,
+      "pips": 4,
+      "minPlayers": 4
+    },
+    {
+      "id": "construction-2",
+      "suit": "construction",
+      "number": 2,
+      "pips": 4
+    },
+    {
+      "id": "construction-3",
+      "suit": "construction",
+      "number": 3,
+      "pips": 3
+    },
+    {
+      "id": "construction-4",
+      "suit": "construction",
+      "number": 4,
+      "pips": 3
+    },
+    {
+      "id": "construction-5",
+      "suit": "construction",
+      "number": 5,
+      "pips": 2
+    },
+    {
+      "id": "construction-6",
+      "suit": "construction",
+      "number": 6,
+      "pips": 2
+    },
+    {
+      "id": "construction-7",
+      "suit": "construction",
+      "number": 7,
+      "pips": 1,
+      "minPlayers": 4
+    },
+    {
+      "id": "administration-1",
+      "suit": "administration",
+      "number": 1,
+      "pips": 4,
+      "minPlayers": 4
+    },
+    {
+      "id": "administration-2",
+      "suit": "administration",
+      "number": 2,
+      "pips": 4
+    },
+    {
+      "id": "administration-3",
+      "suit": "administration",
+      "number": 3,
+      "pips": 3
+    },
+    {
+      "id": "administration-4",
+      "suit": "administration",
+      "number": 4,
+      "pips": 3
+    },
+    {
+      "id": "administration-5",
+      "suit": "administration",
+      "number": 5,
+      "pips": 3
+    },
+    {
+      "id": "administration-6",
+      "suit": "administration",
+      "number": 6,
+      "pips": 2
+    },
+    {
+      "id": "administration-7",
+      "suit": "administration",
+      "number": 7,
+      "pips": 1,
+      "minPlayers": 4
+    },
+    {
+      "id": "mobilization-1",
+      "suit": "mobilization",
+      "number": 1,
+      "pips": 4,
+      "minPlayers": 4
+    },
+    {
+      "id": "mobilization-2",
+      "suit": "mobilization",
+      "number": 2,
+      "pips": 4
+    },
+    {
+      "id": "mobilization-3",
+      "suit": "mobilization",
+      "number": 3,
+      "pips": 3
+    },
+    {
+      "id": "mobilization-4",
+      "suit": "mobilization",
+      "number": 4,
+      "pips": 3
+    },
+    {
+      "id": "mobilization-5",
+      "suit": "mobilization",
+      "number": 5,
+      "pips": 2
+    },
+    {
+      "id": "mobilization-6",
+      "suit": "mobilization",
+      "number": 6,
+      "pips": 2
+    },
+    {
+      "id": "mobilization-7",
+      "suit": "mobilization",
+      "number": 7,
+      "pips": 1,
+      "minPlayers": 4
+    },
+    {
+      "id": "aggression-1",
+      "suit": "aggression",
+      "number": 1,
+      "pips": 3,
+      "minPlayers": 4
+    },
+    {
+      "id": "aggression-2",
+      "suit": "aggression",
+      "number": 2,
+      "pips": 3
+    },
+    {
+      "id": "aggression-3",
+      "suit": "aggression",
+      "number": 3,
+      "pips": 2
+    },
+    {
+      "id": "aggression-4",
+      "suit": "aggression",
+      "number": 4,
+      "pips": 2
+    },
+    {
+      "id": "aggression-5",
+      "suit": "aggression",
+      "number": 5,
+      "pips": 2
+    },
+    {
+      "id": "aggression-6",
+      "suit": "aggression",
+      "number": 6,
+      "pips": 2
+    },
+    {
+      "id": "aggression-7",
+      "suit": "aggression",
+      "number": 7,
+      "pips": 1,
+      "minPlayers": 4
+    }
+  ],
+  "courtCards": [
+    {
+      "id": "court-01",
+      "kind": "faction",
+      "resource": "material",
+      "keys": 3,
+      "effect": "court-01",
+      "name": "Loyal Engineers",
+      "text": "If you **Provoke Outrage**, keep this card.\nYou may spend any resources as Material. You ignore Outrage when spending Material for its Prelude action.",
+      "artFocus": [
+        0.45,
+        0.22
+      ],
+      "i18n": {
+        "it": {
+          "name": "Ingegneri Leali",
+          "text": "Se **Recate Oltraggio**, tenete questa carta.\nPotete spendere qualsiasi risorsa come Materiale. Ignorate l'Oltraggio quando spendete Materiale per la sua azione Preludio."
+        }
+      }
+    },
+    {
+      "id": "court-02",
+      "kind": "faction",
+      "resource": "material",
+      "keys": 2,
+      "effect": "court-02",
+      "name": "Mining Interest",
+      "text": "**Manufacture (Build):** Gain 1 Material.\n**Prelude:** You may discard this to gain Material up to your number of empty resource slots. If the Material supply empties, steal the Material instead.",
+      "artFocus": [
+        0.45,
+        0.19
+      ],
+      "i18n": {
+        "it": {
+          "name": "Interessi Minerari",
+          "text": "**Fabbricare (Costruire):** Ottenete 1 Materiale.\n**Preludio:** Potete scartare questa carta per ottenere Materiale fino al numero dei vostri spazi Risorsa liberi. Se la riserva di Materiale si esaurisce, rubate il Materiale."
+        }
+      }
+    },
+    {
+      "id": "court-03",
+      "kind": "faction",
+      "resource": "material",
+      "keys": 2,
+      "effect": "court-03",
+      "name": "Material Cartel",
+      "text": "You keep the Material supply on here. *(You add it to Tycoon but can't spend it.)*\nAfter **scoring**, Rivals discard all Material.\n**Prelude:** You may discard this to steal 1 Material.",
+      "artFocus": [
+        0.5,
+        0.18
+      ],
+      "i18n": {
+        "it": {
+          "name": "Cartello del Materiale",
+          "text": "Tenete qui la riserva di Materiale. *(Lo contate per Magnate ma non potete spenderlo.)*\nDopo il **calcolo del Potere**, i Rivali scartano tutto il loro Materiale.\n**Preludio:** Potete scartare questa carta per rubare 1 Materiale."
+        }
+      }
+    },
+    {
+      "id": "court-04",
+      "kind": "faction",
+      "resource": "material",
+      "keys": 2,
+      "effect": "court-04",
+      "name": "Admin Union",
+      "text": "**Prelude:** You may place this card next to a face-up played Administration card. When the round ends, draw that card into your hand and discard this card.",
+      "artFocus": [
+        0.4,
+        0.19
+      ],
+      "i18n": {
+        "it": {
+          "name": "Sindacato Amministrativo",
+          "text": "**Preludio:** Potete posizionare questa carta accanto a una carta Amministrazione giocata a faccia in su. Alla fine del round, prendete in mano quella carta e scartate questa."
+        }
+      }
+    },
+    {
+      "id": "court-05",
+      "kind": "faction",
+      "resource": "material",
+      "keys": 2,
+      "effect": "court-05",
+      "name": "Construction Union",
+      "text": "**Prelude:** You may place this card next to a face-up played Construction card. When the round ends, draw that card into your hand and discard this card.",
+      "artFocus": [
+        0.38,
+        0.21
+      ],
+      "i18n": {
+        "it": {
+          "name": "Sindacato Edile",
+          "text": "**Preludio:** Potete posizionare questa carta accanto a una carta Costruzione giocata a faccia in su. Alla fine del round, prendete in mano quella carta e scartate questa."
+        }
+      }
+    },
+    {
+      "id": "court-06",
+      "kind": "faction",
+      "resource": "fuel",
+      "keys": 2,
+      "effect": "court-06",
+      "name": "Fuel Cartel",
+      "text": "You keep the Fuel supply on here. *(You add it to Tycoon but can't spend it.)*\nAfter **scoring**, Rivals discard all Fuel.\n**Prelude:** You may discard this to steal 1 Fuel.",
+      "artFocus": [
+        0.42,
+        0.24
+      ],
+      "i18n": {
+        "it": {
+          "name": "Cartello del Carburante",
+          "text": "Tenete qui la riserva di Carburante. *(Lo contate per Magnate ma non potete spenderlo.)*\nDopo il **calcolo del Potere**, i Rivali scartano tutto il loro Carburante.\n**Preludio:** Potete scartare questa carta per rubare 1 Carburante."
+        }
+      }
+    },
+    {
+      "id": "court-07",
+      "kind": "faction",
+      "resource": "fuel",
+      "keys": 3,
+      "effect": "court-07",
+      "name": "Loyal Pilots",
+      "text": "If you **Provoke Outrage**, keep this card.\nYou may spend any resources as Fuel. You ignore Outrage when spending Fuel for its Prelude action.",
+      "artFocus": [
+        0.55,
+        0.18
+      ],
+      "i18n": {
+        "it": {
+          "name": "Piloti Leali",
+          "text": "Se **Recate Oltraggio**, tenete questa carta.\nPotete spendere qualsiasi risorsa come Carburante. Ignorate l'Oltraggio quando spendete Carburante per la sua azione Preludio."
+        }
+      }
+    },
+    {
+      "id": "court-08",
+      "kind": "faction",
+      "resource": "fuel",
+      "keys": 2,
+      "effect": "court-08",
+      "name": "Gatekeepers",
+      "text": "When you **battle** in a gate, you may collect 2 more dice.\n**Prelude:** You may discard this to place 1 ship in each gate *(unless out of play)*.",
+      "artFocus": [
+        0.5,
+        0.26
+      ],
+      "i18n": {
+        "it": {
+          "name": "Guardaportali",
+          "text": "Quando **combattete** in un portale, potete prendere 2 dadi in più.\n**Preludio:** Potete scartare questa carta per posizionare 1 nave in ogni portale *(se non è Fuori dal Gioco)*."
+        }
+      }
+    },
+    {
+      "id": "court-09",
+      "kind": "faction",
+      "resource": "fuel",
+      "keys": 2,
+      "effect": "court-09",
+      "name": "Shipping Interest",
+      "text": "**Synthesize (Build):** Gain 1 Fuel.\n**Prelude:** You may discard this to gain Fuel up to your number of empty resource slots. If the Fuel supply empties, steal the Fuel instead.",
+      "artFocus": [
+        0.55,
+        0.22
+      ],
+      "i18n": {
+        "it": {
+          "name": "Interessi Navali",
+          "text": "**Sintetizzare (Costruire):** Ottenete 1 Carburante.\n**Preludio:** Potete scartare questa carta per ottenere Carburante fino al numero dei vostri spazi Risorsa liberi. Se la riserva di Carburante si esaurisce, rubate il Carburante."
+        }
+      }
+    },
+    {
+      "id": "court-10",
+      "kind": "faction",
+      "resource": "fuel",
+      "keys": 2,
+      "effect": "court-10",
+      "name": "Spacing Union",
+      "text": "**Prelude:** You may place this card next to a face-up played Mobilization card. When the round ends, draw that card into your hand and discard this card.",
+      "artFocus": [
+        0.45,
+        0.23
+      ],
+      "i18n": {
+        "it": {
+          "name": "Sindacato Spaziale",
+          "text": "**Preludio:** Potete posizionare questa carta accanto a una carta Mobilitazione giocata a faccia in su. Alla fine del round, prendete in mano quella carta e scartate questa."
+        }
+      }
+    },
+    {
+      "id": "court-11",
+      "kind": "faction",
+      "resource": "weapons",
+      "keys": 2,
+      "effect": "court-11",
+      "name": "Arms Union",
+      "text": "**Prelude:** You may place this card next to a face-up played Aggression card. When the round ends, draw that card into your hand and discard this card.",
+      "artFocus": [
+        0.45,
+        0.21
+      ],
+      "i18n": {
+        "it": {
+          "name": "Sindacato delle Armi",
+          "text": "**Preludio:** Potete posizionare questa carta accanto a una carta Aggressione giocata a faccia in su. Alla fine del round, prendete in mano quella carta e scartate questa."
+        }
+      }
+    },
+    {
+      "id": "court-12",
+      "kind": "faction",
+      "resource": "weapons",
+      "keys": 2,
+      "effect": "court-12",
+      "name": "Prison Wardens",
+      "text": "**Pressgang (Build):** Return any number of your Captives to gain any 1 resource for each.\n**Execute (Influence):** Move any number of your Captives to your Trophies.\n**Prelude:** You may discard this to place 3 ships in a system you control.",
+      "artFocus": [
+        0.3,
+        0.32
+      ],
+      "i18n": {
+        "it": {
+          "name": "Secondini",
+          "text": "**Arruolare (Costruire):** Restituite un qualsiasi numero dei vostri Prigionieri per ottenere 1 risorsa a scelta per ciascuno.\n**Giustiziare (Influenzare):** Spostate un qualsiasi numero dei vostri Prigionieri tra i vostri Trofei.\n**Preludio:** Potete scartare questa carta per posizionare 3 navi in un sistema che controllate."
+        }
+      }
+    },
+    {
+      "id": "court-13",
+      "kind": "faction",
+      "resource": "weapons",
+      "keys": 2,
+      "effect": "court-13",
+      "name": "Skirmishers",
+      "text": "After you roll in **battle**, you may reroll a number of skirmish dice up to your total Weapon icons from resources and cards.\n**Prelude:** You may discard this to place 3 ships in a system you control.",
+      "artFocus": [
+        0.5,
+        0.28
+      ],
+      "i18n": {
+        "it": {
+          "name": "Incursori",
+          "text": "Dopo aver tirato i dadi in un **combattimento**, potete ritirare dadi Incursione fino al totale dei simboli Armi sulle vostre risorse e carte.\n**Preludio:** Potete scartare questa carta per posizionare 3 navi in un sistema che controllate."
+        }
+      }
+    },
+    {
+      "id": "court-14",
+      "kind": "faction",
+      "resource": "weapons",
+      "keys": 2,
+      "effect": "court-14",
+      "name": "Court Enforcers",
+      "text": "**Abduct (Battle):** Capture all Rival agents from a card in the Court that has fewer Rival agents than your total Weapon icons from resources and cards.\n**Prelude:** You may discard this to place 3 ships in a system you control.",
+      "artFocus": [
+        0.55,
+        0.22
+      ],
+      "i18n": {
+        "it": {
+          "name": "Sgherri della Corte",
+          "text": "**Rapire (Combattere):** Catturate tutti gli agenti Rivali su una carta della Corte che ha meno agenti Rivali del totale dei simboli Armi sulle vostre risorse e carte.\n**Preludio:** Potete scartare questa carta per posizionare 3 navi in un sistema che controllate."
+        }
+      }
+    },
+    {
+      "id": "court-15",
+      "kind": "faction",
+      "resource": "weapons",
+      "keys": 3,
+      "effect": "court-15",
+      "name": "Loyal Marines",
+      "text": "If you **Provoke Outrage**, keep this card.\nYou may spend any resources as Weapons. You ignore Outrage when spending Weapons for their Prelude action.\n**Prelude:** You may discard this to place 3 ships in a system you control.",
+      "artFocus": [
+        0.4,
+        0.27
+      ],
+      "i18n": {
+        "it": {
+          "name": "Marines Leali",
+          "text": "Se **Recate Oltraggio**, tenete questa carta.\nPotete spendere qualsiasi risorsa come Armi. Ignorate l'Oltraggio quando spendete Armi per la loro azione Preludio.\n**Preludio:** Potete scartare questa carta per posizionare 3 navi in un sistema che controllate."
+        }
+      }
+    },
+    {
+      "id": "court-16",
+      "kind": "faction",
+      "resource": "psionic",
+      "keys": 2,
+      "effect": "court-16",
+      "name": "Lattice Spies",
+      "text": "**Prelude:** Before any other actions, you may discard this to seize the initiative.\n*You can't seize the initiative if you have it or if it's already seized this round!*",
+      "artFocus": [
+        0.5,
+        0.22
+      ],
+      "i18n": {
+        "it": {
+          "name": "Spie del Reticolo",
+          "text": "**Preludio:** Prima di qualsiasi altra azione, potete scartare questa carta per sottrarre l'iniziativa.\n*Non potete sottrarre l'iniziativa se l'avete già o se è già stata sottratta in questo round!*"
+        }
+      }
+    },
+    {
+      "id": "court-17",
+      "kind": "faction",
+      "resource": "psionic",
+      "keys": 2,
+      "effect": "court-17",
+      "name": "Farseers",
+      "text": "When you **declare an ambition**, look at a Rival's hand. You may swap 1 card with them.\n**Prelude:** You may discard this and any number of cards from your hand. Draw the same number of cards *(including Farseers)* from the bottom of the action discard pile.",
+      "artFocus": [
+        0.45,
+        0.16
+      ],
+      "i18n": {
+        "it": {
+          "name": "Veggenti",
+          "text": "Quando **dichiarate un'ambizione**, guardate la mano di un Rivale. Potete scambiare 1 carta con lui.\n**Preludio:** Potete scartare questa carta e un qualsiasi numero di carte dalla vostra mano. Pescate lo stesso numero di carte *(Veggenti compresa)* dal fondo della pila degli scarti delle carte Azione."
+        }
+      }
+    },
+    {
+      "id": "court-18",
+      "kind": "faction",
+      "resource": "psionic",
+      "keys": 2,
+      "effect": "court-18",
+      "name": "Secret Order",
+      "text": "When you **declare** Keeper or Empath, do not place the zero marker.",
+      "artFocus": [
+        0.45,
+        0.2
+      ],
+      "i18n": {
+        "it": {
+          "name": "Ordine Segreto",
+          "text": "Quando **dichiarate** Custode o Empate, non posizionate il segnalino Zero."
+        }
+      }
+    },
+    {
+      "id": "court-19",
+      "kind": "faction",
+      "resource": "psionic",
+      "keys": 3,
+      "effect": "court-19",
+      "name": "Loyal Empaths",
+      "text": "If you **Provoke Outrage**, keep this card.\nYou may spend any resources as Psionic. You ignore Outrage when spending Psionic for its Prelude action.",
+      "artFocus": [
+        0.48,
+        0.22
+      ],
+      "i18n": {
+        "it": {
+          "name": "Empati Leali",
+          "text": "Se **Recate Oltraggio**, tenete questa carta.\nPotete spendere qualsiasi risorsa come Psicoenergia. Ignorate l'Oltraggio quando spendete Psicoenergia per la sua azione Preludio."
+        }
+      }
+    },
+    {
+      "id": "court-20",
+      "kind": "faction",
+      "resource": "psionic",
+      "keys": 2,
+      "effect": "court-20",
+      "name": "Silver-Tongues",
+      "text": "**Prelude:** You may discard this to steal a Guild card or resource.",
+      "artFocus": [
+        0.45,
+        0.21
+      ],
+      "i18n": {
+        "it": {
+          "name": "Lingue d'Argento",
+          "text": "**Preludio:** Potete scartare questa carta per rubare una carta Gilda o una risorsa."
+        }
+      }
+    },
+    {
+      "id": "court-21",
+      "kind": "faction",
+      "resource": "relic",
+      "keys": 3,
+      "effect": "court-21",
+      "name": "Loyal Keepers",
+      "text": "If you **Provoke Outrage**, keep this card.\nYou may spend any resources as Relics. You ignore Outrage when spending Relics for their Prelude action.",
+      "artFocus": [
+        0.5,
+        0.16
+      ],
+      "i18n": {
+        "it": {
+          "name": "Custodi Leali",
+          "text": "Se **Recate Oltraggio**, tenete questa carta.\nPotete spendere qualsiasi risorsa come Reliquie. Ignorate l'Oltraggio quando spendete Reliquie per la loro azione Preludio."
+        }
+      }
+    },
+    {
+      "id": "court-22",
+      "kind": "faction",
+      "resource": "relic",
+      "keys": 1,
+      "effect": "court-22",
+      "name": "Sworn Guardians",
+      "text": "Rivals cannot steal your resources and other Guild cards. *(In battle they can steal this first and then spend {key}.)*\nIf this card is stolen, bury it. *(Place it on the bottom of the Court deck.)*",
+      "artFocus": [
+        0.4,
+        0.3
+      ],
+      "i18n": {
+        "it": {
+          "name": "Guardiani Giurati",
+          "text": "I Rivali non possono rubare le vostre risorse né le vostre altre carte Gilda. *(In combattimento possono rubare prima questa carta e poi spendere {key}.)*\nSe questa carta viene rubata, seppellitela. *(Posizionatela sul fondo del mazzo Corte.)*"
+        }
+      }
+    },
+    {
+      "id": "court-23",
+      "kind": "faction",
+      "resource": "relic",
+      "keys": 2,
+      "effect": "court-23",
+      "name": "Elder Broker",
+      "text": "**Trade (Tax):** Choose a Rival city you control. Swap 1 resource with that Rival—take a resource of that city type from them, and give them a resource they don't have.\n**Prelude:** You may discard this to gain 1 Material, 1 Fuel, and 1 Weapon.",
+      "artFocus": [
+        0.47,
+        0.35
+      ],
+      "i18n": {
+        "it": {
+          "name": "Anziano Mediatore",
+          "text": "**Commerciare (Tassare):** Scegliete una città Rivale che controllate. Scambiate 1 risorsa con quel Rivale: prendete da lui una risorsa del tipo di quella città e dategli una risorsa che non ha.\n**Preludio:** Potete scartare questa carta per ottenere 1 Materiale, 1 Carburante e 1 Armi."
+        }
+      }
+    },
+    {
+      "id": "court-24",
+      "kind": "faction",
+      "resource": "relic",
+      "keys": 2,
+      "effect": "court-24",
+      "name": "Relic Fence",
+      "text": "**Prelude:** Once per turn, you may discard 1 resource to gain 1 Relic.",
+      "artFocus": [
+        0.45,
+        0.2
+      ],
+      "i18n": {
+        "it": {
+          "name": "Ricettatore di Reliquie",
+          "text": "**Preludio:** Una volta per turno, potete scartare 1 risorsa per ottenere 1 Reliquia."
+        }
+      }
+    },
+    {
+      "id": "court-25",
+      "kind": "faction",
+      "resource": "relic",
+      "keys": 1,
+      "effect": "court-25",
+      "name": "Galactic Bards",
+      "text": "When you **Surpass** or **Pivot**, before taking ***any*** actions, you may declare the ambition on your played card if an ambition has not been declared yet this round. Do not place the zero marker.",
+      "artFocus": [
+        0.4,
+        0.19
+      ],
+      "i18n": {
+        "it": {
+          "name": "Bardi Galattici",
+          "text": "Quando **Superate** o **Cambiate**, prima di svolgere ***qualsiasi*** azione, potete dichiarare l'ambizione della carta che avete giocato, se in questo round non è ancora stata dichiarata un'ambizione. Non posizionate il segnalino Zero."
+        }
+      }
+    },
+    {
+      "id": "court-26",
+      "kind": "decree",
+      "effect": "court-26",
+      "name": "Mass Uprising",
+      "text": "**When Secured:** Choose a cluster on the map. You place 1 ship in each system of that cluster. Discard this card.",
+      "artFocus": [
+        0.5,
+        0.74
+      ],
+      "i18n": {
+        "it": {
+          "name": "Rivolta di Massa",
+          "text": "**Quando la Acquisite:** Scegliete un settore della mappa. Posizionate 1 nave in ogni sistema di quel settore. Scartate questa carta."
+        }
+      }
+    },
+    {
+      "id": "court-27",
+      "kind": "decree",
+      "effect": "court-27",
+      "name": "Populist Demands",
+      "text": "**When Secured:** You may declare any ambition. *(An ambition marker must be Available.)* Discard this card.",
+      "artFocus": [
+        0.5,
+        0.74
+      ],
+      "i18n": {
+        "it": {
+          "name": "Richieste Populiste",
+          "text": "**Quando la Acquisite:** Potete dichiarare un'ambizione qualsiasi. *(Deve essere disponibile un segnalino Ambizione.)* Scartate questa carta."
+        }
+      }
+    },
+    {
+      "id": "court-28",
+      "kind": "decree",
+      "effect": "court-28",
+      "name": "Outrage Spreads",
+      "text": "**When Secured:** You may choose an Outrage type. Each player *(even you)* must Provoke Outrage of that type. Discard this card.",
+      "artFocus": [
+        0.5,
+        0.74
+      ],
+      "i18n": {
+        "it": {
+          "name": "L'Oltraggio Dilaga",
+          "text": "**Quando la Acquisite:** Potete scegliere un tipo di Oltraggio. Ogni giocatore *(voi compresi)* deve Recare Oltraggio di quel tipo. Scartate questa carta."
+        }
+      }
+    },
+    {
+      "id": "court-29",
+      "kind": "decree",
+      "effect": "court-29",
+      "name": "Song of Freedom",
+      "text": "**When Secured:** You may return ***any*** one city you control to its player board. If you do, you may seize the initiative. Shuffle this card into the Court deck.\n*You can't seize the initiative if you have it or if it's already seized this round!*",
+      "artFocus": [
+        0.5,
+        0.74
+      ],
+      "i18n": {
+        "it": {
+          "name": "Canto di Libertà",
+          "text": "**Quando la Acquisite:** Potete restituire ***qualsiasi*** città che controllate alla sua plancia giocatore. Se lo fate, potete sottrarre l'iniziativa. Mescolate questa carta nel mazzo Corte.\n*Non potete sottrarre l'iniziativa se l'avete già o se è già stata sottratta in questo round!*"
+        }
+      }
+    },
+    {
+      "id": "court-30",
+      "kind": "decree",
+      "effect": "court-30",
+      "name": "Guild Struggle",
+      "text": "**When Secured:** You may steal 1 Guild card from a Rival. Shuffle all Guild cards from the Court discard pile into the Court deck. Discard Guild Struggle.",
+      "artFocus": [
+        0.5,
+        0.74
+      ],
+      "i18n": {
+        "it": {
+          "name": "Lotta tra Gilde",
+          "text": "**Quando la Acquisite:** Potete rubare 1 carta Gilda a un Rivale. Mescolate nel mazzo Corte tutte le carte Gilda della pila degli scarti della Corte. Scartate Lotta tra Gilde."
+        }
+      }
+    },
+    {
+      "id": "court-31",
+      "kind": "decree",
+      "effect": "court-31",
+      "name": "Call to Action",
+      "text": "**When Secured:** Draw 1 action card from the bottom of the action discard pile. Discard Call to Action.",
+      "artFocus": [
+        0.5,
+        0.74
+      ],
+      "i18n": {
+        "it": {
+          "name": "Chiamata all'Azione",
+          "text": "**Quando la Acquisite:** Pescate 1 carta Azione dal fondo della pila degli scarti delle carte Azione. Scartate Chiamata all'Azione."
+        }
+      }
+    },
+    {
+      "id": "court-cc-01",
+      "kind": "faction",
+      "resource": "material",
+      "keys": 2,
+      "effect": "court-cc-01",
+      "set": "campaign",
+      "name": "Mining Interest",
+      "text": "**Manufacture (Build):** Gain 1 Material.\n**Prelude:** You may discard this to gain Material up to your number of empty resource slots. If the Material supply empties, steal the Material instead.",
+      "artFocus": [
+        0.45,
+        0.19
+      ]
+    },
+    {
+      "id": "court-cc-02",
+      "kind": "faction",
+      "resource": "material",
+      "keys": 2,
+      "effect": "court-cc-02",
+      "set": "campaign",
+      "name": "Construction Union",
+      "text": "**Prelude:** You may place this card next to a face-up played Construction card. When the round ends, draw that card into your hand and discard this card.",
+      "artFocus": [
+        0.38,
+        0.21
+      ]
+    },
+    {
+      "id": "court-cc-03",
+      "kind": "faction",
+      "resource": "fuel",
+      "keys": 2,
+      "effect": "court-cc-03",
+      "set": "campaign",
+      "name": "Gatekeepers",
+      "text": "When you **battle** in a gate, you may collect 2 more dice.\n**Prelude:** You may discard this to place 1 ship in each gate.",
+      "artFocus": [
+        0.5,
+        0.26
+      ]
+    },
+    {
+      "id": "court-cc-04",
+      "kind": "faction",
+      "resource": "fuel",
+      "keys": 2,
+      "effect": "court-cc-04",
+      "set": "campaign",
+      "name": "Shipping Interest",
+      "text": "**Synthesize (Build):** Gain 1 Fuel.\n**Prelude:** You may discard this to gain Fuel up to your number of empty resource slots. If the Fuel supply empties, steal the Fuel instead.",
+      "artFocus": [
+        0.55,
+        0.22
+      ]
+    },
+    {
+      "id": "court-cc-05",
+      "kind": "faction",
+      "resource": "weapons",
+      "keys": 2,
+      "effect": "court-cc-05",
+      "set": "campaign",
+      "name": "Skirmishers",
+      "text": "After you roll in **battle**, you may reroll a number of skirmish dice up to your total Weapon icons from resources and cards.\n**Prelude:** You may discard this to place 3 ships in a system you control.",
+      "artFocus": [
+        0.5,
+        0.28
+      ]
+    },
+    {
+      "id": "court-cc-06",
+      "kind": "faction",
+      "resource": "weapons",
+      "keys": 2,
+      "effect": "court-cc-06",
+      "set": "campaign",
+      "name": "Arms Union",
+      "text": "**Prelude:** You may place this card next to a face-up played Aggression card. When the round ends, draw that card into your hand and discard this card.",
+      "artFocus": [
+        0.45,
+        0.21
+      ]
+    },
+    {
+      "id": "court-cc-07",
+      "kind": "faction",
+      "resource": "psionic",
+      "keys": 2,
+      "effect": "court-cc-07",
+      "set": "campaign",
+      "name": "Lattice Spies",
+      "text": "**Prelude:** Before any other actions, you may discard this to seize the initiative.\n*You can't seize the initiative if you have it or if it's already seized this round!*",
+      "artFocus": [
+        0.5,
+        0.22
+      ]
+    },
+    {
+      "id": "court-cc-08",
+      "kind": "faction",
+      "resource": "psionic",
+      "keys": 2,
+      "effect": "court-cc-08",
+      "set": "campaign",
+      "name": "Silver-Tongues",
+      "text": "**Prelude:** You may discard this to steal a Guild card or resource.",
+      "artFocus": [
+        0.45,
+        0.21
+      ]
+    },
+    {
+      "id": "court-cc-09",
+      "kind": "faction",
+      "resource": "relic",
+      "keys": 1,
+      "effect": "court-cc-09",
+      "set": "campaign",
+      "name": "Sworn Guardians",
+      "text": "Rivals cannot steal your resources and other Guild cards. *(In battle they can steal this first and then spend {key}.)*\nIf this card is stolen, bury it. *(Place it on the bottom of the Court deck.)*",
+      "artFocus": [
+        0.4,
+        0.3
+      ]
+    },
+    {
+      "id": "court-cc-10",
+      "kind": "faction",
+      "resource": "relic",
+      "keys": 2,
+      "effect": "court-cc-10",
+      "set": "campaign",
+      "name": "Elder Broker",
+      "text": "**Trade (Tax):** Choose a Rival city you control. Swap 1 resource with that Rival—take a resource of that city type from them, and give them a resource they don't have.\n**Prelude:** You may discard this to gain 1 Material, 1 Fuel, and 1 Weapon.",
+      "artFocus": [
+        0.47,
+        0.35
+      ]
+    },
+    {
+      "id": "court-cc-11",
+      "kind": "decree",
+      "effect": "court-cc-11",
+      "set": "campaign",
+      "name": "Populist Demands",
+      "crisis": "Return the declared ambition marker of highest Power to Available Ambitions.",
+      "text": "**When Secured:** You may declare any ambition. *(An ambition marker must be Available.)* Bury this card.",
+      "artFocus": [
+        0.5,
+        0.74
+      ]
+    },
+    {
+      "id": "court-cc-12",
+      "kind": "decree",
+      "effect": "court-cc-12",
+      "set": "campaign",
+      "name": "Council Intrigue",
+      "crisis": "Flip the Imperial Council to In Session. Move agents from here to it. Bury this card.",
+      "text": "**When Secured:** Flip the Imperial Council to In Session. You may move any Loyal agents from here to other Court cards *(even the Council)*. Bury this card.",
+      "artFocus": [
+        0.5,
+        0.74
+      ]
+    },
+    {
+      "id": "court-cc-13",
+      "kind": "decree",
+      "effect": "court-cc-13",
+      "set": "campaign",
+      "name": "Diplomatic Fiasco",
+      "crisis": "In turn order, each player with more Guild cards than agents in their supply must discard Guild cards until their Guild cards equal their agents. Bury this card. *(Count protected Guild cards but don't discard them.)*",
+      "text": "**When Secured:** Rivals resolve the Crisis.",
+      "artFocus": [
+        0.5,
+        0.74
+      ]
+    },
+    {
+      "id": "court-cc-14",
+      "kind": "decree",
+      "effect": "court-cc-14",
+      "set": "campaign",
+      "name": "Song of Freedom",
+      "crisis": "The player with the most Power must replace a Loyal city with a Free city.",
+      "text": "**When Secured:** You may replace **any** Loyal or Rival city you control with a Free city. If you do, you may seize the initiative. Shuffle this card into the Court deck.",
+      "artFocus": [
+        0.5,
+        0.74
+      ]
+    },
+    {
+      "id": "court-cc-15",
+      "kind": "decree",
+      "effect": "court-cc-15",
+      "set": "campaign",
+      "name": "Blight Looms",
+      "crisis": "Repair all Blight in the rolled cluster. Place 1 damaged Blight at each planet of the rolled symbol with no Blight. Bury this card.",
+      "text": "**When Secured:** You may destroy all damaged Blight in a cluster with Loyal pieces. Bury this card.",
+      "artFocus": [
+        0.5,
+        0.74
+      ]
+    }
+  ],
+  "declareByNumber": {
+    "2": "wealth",
+    "3": "captives",
+    "4": "trophies",
+    "5": "relics",
+    "6": "psionics",
+    "7": "any"
+  },
+  "ambitionMetrics": {
+    "wealth": {
+      "kind": "resources",
+      "resources": [
+        "material",
+        "fuel"
+      ]
+    },
+    "captives": {
+      "kind": "captives"
+    },
+    "trophies": {
+      "kind": "trophies"
+    },
+    "relics": {
+      "kind": "resources",
+      "resources": [
+        "relic"
+      ]
+    },
+    "psionics": {
+      "kind": "resources",
+      "resources": [
+        "psionic"
+      ]
+    }
+  },
+  "ambitionMarkers": [
+    {
+      "id": "m-low",
+      "sides": [
+        {
+          "first": 2,
+          "second": 0
+        },
+        {
+          "first": 4,
+          "second": 2
+        }
+      ],
+      "flipAfterChapter": 1
+    },
+    {
+      "id": "m-mid",
+      "sides": [
+        {
+          "first": 3,
+          "second": 2
+        },
+        {
+          "first": 6,
+          "second": 3
+        }
+      ],
+      "flipAfterChapter": 2
+    },
+    {
+      "id": "m-high",
+      "sides": [
+        {
+          "first": 5,
+          "second": 3
+        },
+        {
+          "first": 9,
+          "second": 4
+        }
+      ],
+      "flipAfterChapter": 3
+    }
+  ],
+  "maxDeclarationsPerRound": 1,
+  "ties": {
+    "firstTieDropsToSecond": true,
+    "secondTieAwardsNone": true
+  },
+  "gameEndTieBreak": "turnOrder",
+  "resourceActions": {
+    "material": {
+      "actions": [
+        "build",
+        "repair"
+      ]
+    },
+    "fuel": {
+      "actions": [
+        "move"
+      ]
+    },
+    "weapons": {
+      "grantKind": "battle"
+    },
+    "relic": {
+      "actions": [
+        "secure"
+      ]
+    },
+    "psionic": {
+      "leadSuit": true
+    }
+  },
+  "rivalTax": {
+    "allowed": true,
+    "effect": "takeCaptive"
+  },
+  "dice": {
+    "skirmish": [
+      {
+        "hit": 1
+      },
+      {
+        "hit": 1
+      },
+      {
+        "hit": 1
+      },
+      {},
+      {},
+      {}
+    ],
+    "assault": [
+      {
+        "hit": 1,
+        "intercept": 1
+      },
+      {},
+      {
+        "hit": 2,
+        "selfHit": 1
+      },
+      {
+        "hit": 1,
+        "selfHit": 1
+      },
+      {
+        "hit": 2
+      },
+      {
+        "hit": 1,
+        "selfHit": 1
+      }
+    ],
+    "raid": [
+      {
+        "buildingHit": 1,
+        "key": 1
+      },
+      {
+        "intercept": 1
+      },
+      {
+        "selfHit": 1,
+        "key": 1
+      },
+      {
+        "buildingHit": 1,
+        "selfHit": 1
+      },
+      {
+        "key": 2,
+        "intercept": 1
+      },
+      {
+        "buildingHit": 1,
+        "selfHit": 1
+      }
+    ]
+  },
+  "map": {
+    "systems": [
+      {
+        "id": "c1-gate",
+        "cluster": "c1",
+        "kind": "gate"
+      },
+      {
+        "id": "c1-p1",
+        "cluster": "c1",
+        "kind": "planet",
+        "resource": "weapons",
+        "slots": 2,
+        "idSymbol": "arrowhead"
+      },
+      {
+        "id": "c1-p2",
+        "cluster": "c1",
+        "kind": "planet",
+        "resource": "fuel",
+        "slots": 1,
+        "idSymbol": "crescent"
+      },
+      {
+        "id": "c1-p3",
+        "cluster": "c1",
+        "kind": "planet",
+        "resource": "material",
+        "slots": 2,
+        "idSymbol": "hexagon"
+      },
+      {
+        "id": "c2-gate",
+        "cluster": "c2",
+        "kind": "gate"
+      },
+      {
+        "id": "c2-p1",
+        "cluster": "c2",
+        "kind": "planet",
+        "resource": "psionic",
+        "slots": 1,
+        "idSymbol": "arrowhead"
+      },
+      {
+        "id": "c2-p2",
+        "cluster": "c2",
+        "kind": "planet",
+        "resource": "weapons",
+        "slots": 1,
+        "idSymbol": "crescent"
+      },
+      {
+        "id": "c2-p3",
+        "cluster": "c2",
+        "kind": "planet",
+        "resource": "relic",
+        "slots": 2,
+        "idSymbol": "hexagon"
+      },
+      {
+        "id": "c3-gate",
+        "cluster": "c3",
+        "kind": "gate"
+      },
+      {
+        "id": "c3-p1",
+        "cluster": "c3",
+        "kind": "planet",
+        "resource": "material",
+        "slots": 1,
+        "idSymbol": "arrowhead"
+      },
+      {
+        "id": "c3-p2",
+        "cluster": "c3",
+        "kind": "planet",
+        "resource": "fuel",
+        "slots": 1,
+        "idSymbol": "crescent"
+      },
+      {
+        "id": "c3-p3",
+        "cluster": "c3",
+        "kind": "planet",
+        "resource": "weapons",
+        "slots": 2,
+        "idSymbol": "hexagon"
+      },
+      {
+        "id": "c4-gate",
+        "cluster": "c4",
+        "kind": "gate"
+      },
+      {
+        "id": "c4-p1",
+        "cluster": "c4",
+        "kind": "planet",
+        "resource": "relic",
+        "slots": 2,
+        "idSymbol": "arrowhead"
+      },
+      {
+        "id": "c4-p2",
+        "cluster": "c4",
+        "kind": "planet",
+        "resource": "fuel",
+        "slots": 2,
+        "idSymbol": "crescent"
+      },
+      {
+        "id": "c4-p3",
+        "cluster": "c4",
+        "kind": "planet",
+        "resource": "material",
+        "slots": 1,
+        "idSymbol": "hexagon"
+      },
+      {
+        "id": "c5-gate",
+        "cluster": "c5",
+        "kind": "gate"
+      },
+      {
+        "id": "c5-p1",
+        "cluster": "c5",
+        "kind": "planet",
+        "resource": "weapons",
+        "slots": 1,
+        "idSymbol": "arrowhead"
+      },
+      {
+        "id": "c5-p2",
+        "cluster": "c5",
+        "kind": "planet",
+        "resource": "relic",
+        "slots": 1,
+        "idSymbol": "crescent"
+      },
+      {
+        "id": "c5-p3",
+        "cluster": "c5",
+        "kind": "planet",
+        "resource": "psionic",
+        "slots": 2,
+        "idSymbol": "hexagon"
+      },
+      {
+        "id": "c6-gate",
+        "cluster": "c6",
+        "kind": "gate"
+      },
+      {
+        "id": "c6-p1",
+        "cluster": "c6",
+        "kind": "planet",
+        "resource": "material",
+        "slots": 1,
+        "idSymbol": "arrowhead"
+      },
+      {
+        "id": "c6-p2",
+        "cluster": "c6",
+        "kind": "planet",
+        "resource": "fuel",
+        "slots": 2,
+        "idSymbol": "crescent"
+      },
+      {
+        "id": "c6-p3",
+        "cluster": "c6",
+        "kind": "planet",
+        "resource": "psionic",
+        "slots": 1,
+        "idSymbol": "hexagon"
+      }
+    ],
+    "links": [
+      [
+        "c1-gate",
+        "c1-p1"
+      ],
+      [
+        "c1-gate",
+        "c1-p2"
+      ],
+      [
+        "c1-gate",
+        "c1-p3"
+      ],
+      [
+        "c1-p1",
+        "c1-p2"
+      ],
+      [
+        "c1-p2",
+        "c1-p3"
+      ],
+      [
+        "c1-gate",
+        "c2-gate"
+      ],
+      [
+        "c2-gate",
+        "c2-p1"
+      ],
+      [
+        "c2-gate",
+        "c2-p2"
+      ],
+      [
+        "c2-gate",
+        "c2-p3"
+      ],
+      [
+        "c2-p1",
+        "c2-p2"
+      ],
+      [
+        "c2-p2",
+        "c2-p3"
+      ],
+      [
+        "c2-gate",
+        "c3-gate"
+      ],
+      [
+        "c3-gate",
+        "c3-p1"
+      ],
+      [
+        "c3-gate",
+        "c3-p2"
+      ],
+      [
+        "c3-gate",
+        "c3-p3"
+      ],
+      [
+        "c3-p1",
+        "c3-p2"
+      ],
+      [
+        "c3-p2",
+        "c3-p3"
+      ],
+      [
+        "c3-gate",
+        "c4-gate"
+      ],
+      [
+        "c4-gate",
+        "c4-p1"
+      ],
+      [
+        "c4-gate",
+        "c4-p2"
+      ],
+      [
+        "c4-gate",
+        "c4-p3"
+      ],
+      [
+        "c4-p1",
+        "c4-p2"
+      ],
+      [
+        "c4-p2",
+        "c4-p3"
+      ],
+      [
+        "c4-gate",
+        "c5-gate"
+      ],
+      [
+        "c5-gate",
+        "c5-p1"
+      ],
+      [
+        "c5-gate",
+        "c5-p2"
+      ],
+      [
+        "c5-gate",
+        "c5-p3"
+      ],
+      [
+        "c5-p1",
+        "c5-p2"
+      ],
+      [
+        "c5-p2",
+        "c5-p3"
+      ],
+      [
+        "c5-gate",
+        "c6-gate"
+      ],
+      [
+        "c6-gate",
+        "c6-p1"
+      ],
+      [
+        "c6-gate",
+        "c6-p2"
+      ],
+      [
+        "c6-gate",
+        "c6-p3"
+      ],
+      [
+        "c6-p1",
+        "c6-p2"
+      ],
+      [
+        "c6-p2",
+        "c6-p3"
+      ],
+      [
+        "c6-gate",
+        "c1-gate"
+      ],
+      [
+        "c2-p3",
+        "c3-p1"
+      ],
+      [
+        "c5-p3",
+        "c6-p1"
+      ]
+    ],
+    "exclusions": {}
+  },
+  "setupCards": [
+    {
+      "id": "2p-1",
+      "playerCount": 2,
+      "seats": [
+        [
+          {
+            "system": "c5-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c4-p3",
+            "slot": "B"
+          },
+          {
+            "system": "c3-gate",
+            "slot": "C"
+          },
+          {
+            "system": "c3-p3",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c3-p1",
+            "slot": "A"
+          },
+          {
+            "system": "c5-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c4-p1",
+            "slot": "C"
+          },
+          {
+            "system": "c5-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c6",
+          "c1"
+        ]
+      },
+      "openLinks": [
+        [
+          "c5-gate",
+          "c2-gate"
+        ]
+      ]
+    },
+    {
+      "id": "2p-2",
+      "playerCount": 2,
+      "seats": [
+        [
+          {
+            "system": "c4-p2",
+            "slot": "A"
+          },
+          {
+            "system": "c3-p2",
+            "slot": "B"
+          },
+          {
+            "system": "c1-gate",
+            "slot": "C"
+          },
+          {
+            "system": "c6-p1",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c6-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c3-p3",
+            "slot": "B"
+          },
+          {
+            "system": "c1-p2",
+            "slot": "C"
+          },
+          {
+            "system": "c4-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c2",
+          "c5"
+        ]
+      },
+      "openLinks": [
+        [
+          "c1-gate",
+          "c3-gate"
+        ],
+        [
+          "c4-gate",
+          "c6-gate"
+        ]
+      ]
+    },
+    {
+      "id": "2p-3",
+      "playerCount": 2,
+      "seats": [
+        [
+          {
+            "system": "c5-p1",
+            "slot": "A"
+          },
+          {
+            "system": "c6-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c5-gate",
+            "slot": "C"
+          },
+          {
+            "system": "c5-p3",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c3-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c3-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c2-p1",
+            "slot": "C"
+          },
+          {
+            "system": "c3-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c1",
+          "c4"
+        ]
+      },
+      "openLinks": [
+        [
+          "c3-gate",
+          "c5-gate"
+        ],
+        [
+          "c6-gate",
+          "c2-gate"
+        ]
+      ]
+    },
+    {
+      "id": "2p-4",
+      "playerCount": 2,
+      "seats": [
+        [
+          {
+            "system": "c5-p2",
+            "slot": "A"
+          },
+          {
+            "system": "c2-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c3-gate",
+            "slot": "C"
+          },
+          {
+            "system": "c6-p2",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c2-p2",
+            "slot": "A"
+          },
+          {
+            "system": "c6-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c3-p3",
+            "slot": "C"
+          },
+          {
+            "system": "c5-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c1",
+          "c4"
+        ]
+      },
+      "openLinks": [
+        [
+          "c3-gate",
+          "c5-gate"
+        ],
+        [
+          "c6-gate",
+          "c2-gate"
+        ]
+      ]
+    },
+    {
+      "id": "3p-1",
+      "playerCount": 3,
+      "seats": [
+        [
+          {
+            "system": "c3-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c5-p2",
+            "slot": "B"
+          },
+          {
+            "system": "c2-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c5-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c2-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c3-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c2-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c3-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c5-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c1",
+          "c4"
+        ]
+      },
+      "openLinks": [
+        [
+          "c3-gate",
+          "c5-gate"
+        ],
+        [
+          "c6-gate",
+          "c2-gate"
+        ]
+      ]
+    },
+    {
+      "id": "3p-2",
+      "playerCount": 3,
+      "seats": [
+        [
+          {
+            "system": "c1-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c4-p3",
+            "slot": "B"
+          },
+          {
+            "system": "c6-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c5-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c1-p2",
+            "slot": "B"
+          },
+          {
+            "system": "c5-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c4-p2",
+            "slot": "A"
+          },
+          {
+            "system": "c6-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c1-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c2",
+          "c3"
+        ]
+      },
+      "openLinks": [
+        [
+          "c1-gate",
+          "c4-gate"
+        ]
+      ]
+    },
+    {
+      "id": "3p-3",
+      "playerCount": 3,
+      "seats": [
+        [
+          {
+            "system": "c2-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c3-p2",
+            "slot": "B"
+          },
+          {
+            "system": "c3-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c1-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c2-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c2-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c1-p1",
+            "slot": "A"
+          },
+          {
+            "system": "c4-p3",
+            "slot": "B"
+          },
+          {
+            "system": "c4-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c5",
+          "c6"
+        ]
+      },
+      "openLinks": [
+        [
+          "c4-gate",
+          "c1-gate"
+        ]
+      ]
+    },
+    {
+      "id": "3p-4",
+      "playerCount": 3,
+      "seats": [
+        [
+          {
+            "system": "c1-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c2-p2",
+            "slot": "B"
+          },
+          {
+            "system": "c1-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c2-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c1-p2",
+            "slot": "B"
+          },
+          {
+            "system": "c2-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c1-p1",
+            "slot": "A"
+          },
+          {
+            "system": "c2-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c4-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c6",
+          "c3"
+        ]
+      },
+      "openLinks": [
+        [
+          "c2-gate",
+          "c4-gate"
+        ],
+        [
+          "c5-gate",
+          "c1-gate"
+        ]
+      ]
+    },
+    {
+      "id": "4p-1",
+      "playerCount": 4,
+      "seats": [
+        [
+          {
+            "system": "c4-p1",
+            "slot": "A"
+          },
+          {
+            "system": "c6-p3",
+            "slot": "B"
+          },
+          {
+            "system": "c1-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c4-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c5-p3",
+            "slot": "B"
+          },
+          {
+            "system": "c6-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c5-p1",
+            "slot": "A"
+          },
+          {
+            "system": "c1-p3",
+            "slot": "B"
+          },
+          {
+            "system": "c4-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c6-p1",
+            "slot": "A"
+          },
+          {
+            "system": "c1-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c5-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c3"
+        ]
+      },
+      "openLinks": [
+        [
+          "c2-gate",
+          "c4-gate"
+        ]
+      ]
+    },
+    {
+      "id": "4p-2",
+      "playerCount": 4,
+      "seats": [
+        [
+          {
+            "system": "c5-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c3-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c2-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c3-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c5-p2",
+            "slot": "B"
+          },
+          {
+            "system": "c1-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c2-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c1-p3",
+            "slot": "B"
+          },
+          {
+            "system": "c3-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c1-p1",
+            "slot": "A"
+          },
+          {
+            "system": "c2-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c5-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c4"
+        ]
+      },
+      "openLinks": [
+        [
+          "c3-gate",
+          "c5-gate"
+        ]
+      ]
+    },
+    {
+      "id": "4p-3",
+      "playerCount": 4,
+      "seats": [
+        [
+          {
+            "system": "c1-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c3-p2",
+            "slot": "B"
+          },
+          {
+            "system": "c2-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c2-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c6-p3",
+            "slot": "B"
+          },
+          {
+            "system": "c3-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c4-p2",
+            "slot": "A"
+          },
+          {
+            "system": "c2-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c6-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c1-p1",
+            "slot": "A"
+          },
+          {
+            "system": "c6-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c4-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c5"
+        ]
+      },
+      "openLinks": [
+        [
+          "c4-gate",
+          "c6-gate"
+        ]
+      ]
+    },
+    {
+      "id": "4p-4",
+      "playerCount": 4,
+      "seats": [
+        [
+          {
+            "system": "c3-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c5-p2",
+            "slot": "B"
+          },
+          {
+            "system": "c1-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c1-p1",
+            "slot": "A"
+          },
+          {
+            "system": "c3-p1",
+            "slot": "B"
+          },
+          {
+            "system": "c2-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c1-p3",
+            "slot": "A"
+          },
+          {
+            "system": "c4-p3",
+            "slot": "B"
+          },
+          {
+            "system": "c3-gate",
+            "slot": "C"
+          }
+        ],
+        [
+          {
+            "system": "c4-p1",
+            "slot": "A"
+          },
+          {
+            "system": "c2-p2",
+            "slot": "B"
+          },
+          {
+            "system": "c5-gate",
+            "slot": "C"
+          }
+        ]
+      ],
+      "exclusions": {
+        "clusters": [
+          "c6"
+        ]
+      },
+      "openLinks": [
+        [
+          "c5-gate",
+          "c1-gate"
+        ]
+      ]
+    }
+  ],
+  "_todo": [
+    "abilita dei personaggi ed effetti delle carte corte (da implementare, una alla volta)"
+  ],
+  "leaders": [
+    {
+      "id": "leader-01",
+      "resources": [
+        "relic",
+        "material"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Elder",
+      "text": "*Beloved*. After defending in **battle**, you may influence if the attacker took any Trophies. Rivals cannot Ransack the Court when they **battle** you.\n*Just*. When you're **scoring** Tyrant, gain no Power for second place, and gain Power for second place if you get first place. *(Don't get bonus city Power.)*",
+      "i18n": {
+        "it": {
+          "name": "Anziano",
+          "text": "*Amato*. Dopo esservi difesi in **combattimento**, potete influenzare se l'attaccante ha preso Trofei. I Rivali non possono Saccheggiare la Corte quando **combattono** contro di voi.\n*Giusto*. Quando **assegnate i punti** di Tiranno, non ottenete Potere per il secondo posto, e ottenete il Potere del secondo posto se arrivate primi. *(Non ottenete il Potere bonus delle città.)*"
+        }
+      }
+    },
+    {
+      "id": "leader-02",
+      "resources": [
+        "psionic",
+        "relic"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Mystic",
+      "text": "*Attuned*. When you Copy or Pivot in order to **tax**, you gain 1 Psionic along with the taxed resource.\n*Cryptic*. In **setup**, place agents on your Material and Fuel Outrage slots on your player board.",
+      "i18n": {
+        "it": {
+          "name": "Mistico",
+          "text": "*Sintonizzato*. Quando Copiate o Cambiate per **tassare**, ottenete 1 Psicoenergia insieme alla risorsa tassata.\n*Criptico*. Nella **preparazione**, posizionate agenti sugli spazi Oltraggio di Materiale e Carburante della vostra plancia giocatore."
+        }
+      }
+    },
+    {
+      "id": "leader-03",
+      "resources": [
+        "fuel",
+        "fuel"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Fuel-Drinker",
+      "text": "*Insatiable*. When you Copy or Pivot in order to **tax**, you gain 1 Fuel along with the taxed resource.\n*Lavish*. After **scoring**, you must discard all of your Fuel if the Tycoon ambition was scored.",
+      "i18n": {
+        "it": {
+          "name": "Bevitore di Carburante",
+          "text": "*Insaziabile*. Quando Copiate o Cambiate per **tassare**, ottenete 1 Carburante insieme alla risorsa tassata.\n*Prodigo*. Dopo l'**assegnazione dei punti**, dovete scartare tutto il vostro Carburante se sono stati assegnati i punti di Magnate."
+        }
+      }
+    },
+    {
+      "id": "leader-04",
+      "resources": [
+        "psionic",
+        "material"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Upstart",
+      "text": "*Ambitious*. When you **declare an ambition**, you may gain any resource. *(You must declare the ambition before taking any actions, including Prelude actions from resources.)*\n*Callow*. You can only **tax** Loyal cities if you control them.",
+      "i18n": {
+        "it": {
+          "name": "Arrivista",
+          "text": "*Ambizioso*. Quando **dichiarate un'ambizione**, potete ottenere una risorsa qualsiasi. *(Dovete dichiarare l'ambizione prima di compiere qualsiasi azione, comprese le azioni Preludio delle risorse.)*\n*Inesperto*. Potete **tassare** le città Leali solo se le controllate."
+        }
+      }
+    },
+    {
+      "id": "leader-05",
+      "resources": [
+        "material",
+        "weapons"
+      ],
+      "setup": {
+        "A": {
+          "ships": 4,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "B": {
+          "ships": 4
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Rebel",
+      "text": "*Committed*. In **battle**, you collect 2 extra dice.\n*Disorganized*. You cannot **move** more than 2 ships at a time.",
+      "i18n": {
+        "it": {
+          "name": "Ribelle",
+          "text": "*Risoluto*. In **combattimento**, prendete 2 dadi in più.\n*Disorganizzato*. Non potete **muovere** più di 2 navi alla volta."
+        }
+      }
+    },
+    {
+      "id": "leader-06",
+      "resources": [
+        "weapons",
+        "material"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Warrior",
+      "text": "*Tactical*. When you Copy or Pivot to **battle**, you may move before or after you battle. *(You may do this even if you spent a Weapon to let you battle.)*\n*Violent*. When you're **scoring** Empath, gain no Power for second place, and gain Power for second place if you get first place. *(Don't get bonus city Power.)*",
+      "i18n": {
+        "it": {
+          "name": "Guerriero",
+          "text": "*Tattico*. Quando Copiate o Cambiate per **combattere**, potete muovere prima o dopo il combattimento. *(Potete farlo anche se avete speso un'Arma per poter combattere.)*\n*Violento*. Quando **assegnate i punti** di Empate, non ottenete Potere per il secondo posto, e ottenete il Potere del secondo posto se arrivate primi. *(Non ottenete il Potere bonus delle città.)*"
+        }
+      }
+    },
+    {
+      "id": "leader-07",
+      "resources": [
+        "relic",
+        "material"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "C": {
+          "ships": 3
+        }
+      },
+      "name": "Feastbringer",
+      "text": "*Charismatic*. When you Copy or Pivot in order to **secure** a card, you may influence before or after you secure.\n*Generous*. To **declare an ambition**, you must give 1 Guild card to your Rival with the least Power.",
+      "i18n": {
+        "it": {
+          "name": "Portatore di Banchetti",
+          "text": "*Carismatico*. Quando Copiate o Cambiate per **acquisire** una carta, potete influenzare prima o dopo averla acquisita.\n*Generoso*. Per **dichiarare un'ambizione**, dovete dare 1 carta Gilda al vostro Rivale con meno Potere."
+        }
+      }
+    },
+    {
+      "id": "leader-08",
+      "resources": [
+        "psionic",
+        "weapons"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Demagogue",
+      "text": "*Bold*. When you **declare an ambition**, you may influence any number of cards in the Court once.\n*Paranoid*. You cannot **secure** Guild cards with only 1 Loyal agent on them. *(You can secure Vox cards as normal.)* Ignore this if you Ransack the Court.",
+      "i18n": {
+        "it": {
+          "name": "Demagogo",
+          "text": "*Audace*. Quando **dichiarate un'ambizione**, potete influenzare una volta un numero qualsiasi di carte della Corte.\n*Paranoico*. Non potete **acquisire** carte Gilda con sopra un solo agente Leale. *(Potete acquisire le carte Vox normalmente.)* Ignorate questa regola se Saccheggiate la Corte."
+        }
+      }
+    },
+    {
+      "id": "leader-09",
+      "resources": [
+        "relic",
+        "relic"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Archivist",
+      "text": "*Learned*. After **setup**, gain 2 extra lore cards—draw 5 lore, keep 2, and scrap the other 3 *(returning them to the box).*\n*Academic*. When you're **scoring** Tycoon, gain no Power for second place, and gain Power for second place if you get first place. *(Don't get bonus city Power.)*",
+      "i18n": {
+        "it": {
+          "name": "Archivista",
+          "text": "*Erudito*. Dopo la **preparazione**, ottenete 2 carte Lore in più: pescate 5 Lore, tenetene 2 ed eliminate le altre 3 *(rimettendole nella scatola).*\n*Accademico*. Quando **assegnate i punti** di Magnate, non ottenete Potere per il secondo posto, e ottenete il Potere del secondo posto se arrivate primi. *(Non ottenete il Potere bonus delle città.)*"
+        }
+      }
+    },
+    {
+      "id": "leader-10",
+      "resources": [
+        "fuel",
+        "material"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Overseer",
+      "text": "*Ruthless*. Once per turn, when you **tax** any city or **build** a ship at a starport, you may hit the building to take that action again with it. If you destroy a Loyal city, you Provoke Outrage. *(If you destroy a Rival city, Provoke Outrage and Ransack the Court.)*\n*Hated*. In **setup**, scrap 2 Loyal ships and 3 Loyal agents. *(Return them to the box.)*",
+      "i18n": {
+        "it": {
+          "name": "Sorvegliante",
+          "text": "*Spietato*. Una volta per turno, quando **tassate** una città qualsiasi o **costruite** una nave in uno spazioporto, potete colpire l'edificio per compiere di nuovo quell'azione con esso. Se distruggete una città Leale, Recate Oltraggio. *(Se distruggete una città Rivale, Recate Oltraggio e Saccheggiate la Corte.)*\n*Odiato*. Nella **preparazione**, eliminate 2 navi Leali e 3 agenti Leali. *(Rimetteteli nella scatola.)*"
+        }
+      }
+    },
+    {
+      "id": "leader-11",
+      "resources": [
+        "fuel",
+        "weapons"
+      ],
+      "setup": {
+        "A": {
+          "ships": 4,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "B": {
+          "ships": 3
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Corsair",
+      "text": "*Tricky*. When attacking in **battle**, you may reroll raid dice up to the number of different resources you have.\n*Wary*. When attacking in **battle**, you cannot collect more assault dice than skirmish dice.",
+      "i18n": {
+        "it": {
+          "name": "Corsaro",
+          "text": "*Astuto*. Quando attaccate in **combattimento**, potete ritirare un numero di dadi Razzia fino al numero di risorse diverse che avete.\n*Prudente*. Quando attaccate in **combattimento**, non potete prendere più dadi Assalto che dadi Incursione."
+        }
+      }
+    },
+    {
+      "id": "leader-12",
+      "resources": [
+        "psionic",
+        "psionic"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Noble",
+      "text": "*Connected*. When you **declare an ambition** that's not declared, draw and secure the top card of the Court deck. *(You can't use its Prelude action now.)*\n*Influential*. When you Copy or Pivot to **influence**, you may influence twice.\n*Proud*. When **scoring**, you only gain Power if you get first place *(not tied).*",
+      "i18n": {
+        "it": {
+          "name": "Nobile",
+          "text": "*Ben introdotto*. Quando **dichiarate un'ambizione** non ancora dichiarata, pescate e acquisite la prima carta del mazzo Corte. *(Non potete usarne ora l'azione Preludio.)*\n*Influente*. Quando Copiate o Cambiate per **influenzare**, potete influenzare due volte.\n*Orgoglioso*. Nell'**assegnazione dei punti**, ottenete Potere solo se arrivate primi *(non a pari merito).*"
+        }
+      }
+    },
+    {
+      "id": "leader-13",
+      "resources": [
+        "relic",
+        "weapons"
+      ],
+      "setup": {
+        "A": {
+          "ships": 4
+        },
+        "B": {
+          "ships": 3
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Anarchist",
+      "text": "*Decentralized*. In **setup**, scrap your 2 leftmost cities from your player board.\n*Inspiring*. In systems with Loyal ships, you may **tax** Rival cities ignoring control, and you may tax empty building slots like Loyal cities.\n*Principled*. You cannot **tax** Loyal cities.\n*Remember, if you have no buildings on the map, Rivals can raid your ships!*",
+      "i18n": {
+        "it": {
+          "name": "Anarchico",
+          "text": "*Decentralizzato*. Nella **preparazione**, eliminate dalla vostra plancia giocatore le 2 città più a sinistra.\n*Trascinatore*. Nei sistemi con navi Leali, potete **tassare** le città Rivali ignorandone il controllo, e potete tassare gli spazi Edificio liberi come città Leali.\n*Integerrimo*. Non potete **tassare** le città Leali.\n*Ricordate: se non avete edifici sulla mappa, i Rivali possono razziare le vostre navi!*"
+        }
+      }
+    },
+    {
+      "id": "leader-14",
+      "resources": [
+        "relic",
+        "material"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3
+        },
+        "C": {
+          "ships": 3
+        }
+      },
+      "name": "Shaper",
+      "text": "*Mythic*. After you **tax** a city, you may place 1 resource you have over the planet's resource icon. From now on, its planet type is the placed resource, and its planet type cannot be changed again with *Mythic*.\n*Ancient*. You cannot Catapult **move** from starports, but you can Catapult **move** from gates.",
+      "i18n": {
+        "it": {
+          "name": "Plasmatore",
+          "text": "*Mitico*. Dopo aver **tassato** una città, potete posizionare 1 risorsa che avete sull'icona risorsa del pianeta. Da quel momento il tipo del pianeta è quello della risorsa posizionata, e non può essere cambiato di nuovo con *Mitico*.\n*Antico*. Non potete **muovere** con la Fionda dagli spazioporti, ma potete **muovere** con la Fionda dai portali."
+        }
+      }
+    },
+    {
+      "id": "leader-15",
+      "resources": [
+        "fuel",
+        "material"
+      ],
+      "setup": {
+        "A": {
+          "ships": 3,
+          "buildings": [
+            "city"
+          ]
+        },
+        "B": {
+          "ships": 3,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Agitator",
+      "text": "*Firebrand*. When you Copy or Pivot in order to **tax**, you gain 1 Weapon along with the taxed resource.\n*Irregular*. If a Rival attacks you in **battle** and rolls {intercept}, they ***do not*** take hits from fresh defending ships. Instead, they take 1 hit per Weapon icon you have from cards and resources, then you discard 1 Weapon resource you have.",
+      "i18n": {
+        "it": {
+          "name": "Agitatore",
+          "text": "*Sobillatore*. Quando Copiate o Cambiate per **tassare**, ottenete 1 Arma insieme alla risorsa tassata.\n*Irregolare*. Se un Rivale vi attacca in **combattimento** e ottiene {intercept}, ***non*** subisce colpi dalle navi integre in difesa. Subisce invece 1 colpo per ogni icona Arma che avete su carte e risorse, poi scartate 1 risorsa Arma che avete."
+        }
+      }
+    },
+    {
+      "id": "leader-16",
+      "resources": [
+        "fuel",
+        "weapons"
+      ],
+      "setup": {
+        "A": {
+          "ships": 4,
+          "buildings": [
+            "starport"
+          ]
+        },
+        "B": {
+          "ships": 3
+        },
+        "C": {
+          "ships": 2
+        }
+      },
+      "name": "Quartermaster",
+      "text": "*Resilient*. After any **battle** with you, repair 1 Loyal ship in the battle system per starport on the map you control. *(Even Rival ones!)*\n*Greedy*. In **setup**, place an agent on your Material Outrage slot.",
+      "i18n": {
+        "it": {
+          "name": "Quartiermastro",
+          "text": "*Tenace*. Dopo ogni **combattimento** che vi coinvolge, riparate 1 nave Leale nel sistema del combattimento per ogni spazioporto sulla mappa che controllate. *(Anche quelli Rivali!)*\n*Avido*. Nella **preparazione**, posizionate un agente sul vostro spazio Oltraggio del Materiale."
+        }
+      }
+    }
+  ],
+  "maxDicePerType": 6,
+  "baseSetupPieces": {
+    "A": {
+      "ships": 3,
+      "buildings": [
+        "city"
+      ]
+    },
+    "B": {
+      "ships": 3,
+      "buildings": [
+        "starport"
+      ]
+    },
+    "C": {
+      "ships": 2
+    }
+  },
+  "resourceSupply": {
+    "material": 5,
+    "fuel": 5,
+    "weapons": 5,
+    "relic": 5,
+    "psionic": 5
+  },
+  "twoPlayerAmbitionBoxes": {
+    "material": "wealth",
+    "fuel": "wealth",
+    "weapons": "trophies",
+    "relic": "relics",
+    "psionic": "psionics"
+  },
+  "seizeOnSurpassNumber": 7,
+  "loreCards": [
+    {
+      "id": "lore-01",
+      "effect": "lore-01",
+      "set": "base",
+      "name": "Tool-Priests",
+      "text": "**Summon (Build):** Once per turn, build 1 ship at ***any*** city you control.\n*Yes, even Rival cities you control!*",
+      "i18n": {
+        "it": {
+          "name": "Sacerdoti degli Utensili",
+          "text": "**Evocare (Costruire):** Una volta per turno, costruite 1 nave in ***qualsiasi*** città che controllate.\n*Sì, anche nelle città Rivali che controllate!*"
+        }
+      }
+    },
+    {
+      "id": "lore-02",
+      "effect": "lore-02",
+      "set": "base",
+      "name": "Galactic Rifles",
+      "text": "**Fire Rifles (Battle):** Like in a battle, choose a system and collect **skirmish** dice for fresh Loyal ships there, choose a defender in an adjacent system, roll the collected dice, and deal 1 hit to the defender per {hit} rolled. \n*(Hit ships before buildings.)*",
+      "i18n": {
+        "it": {
+          "name": "Fucili Galattici",
+          "text": "**Fare fuoco (Combattere):** Come in un combattimento, scegliete un sistema e prendete dadi **Incursione** per le navi Leali integre lì, scegliete un difensore in un sistema adiacente, tirate i dadi presi e infliggete al difensore 1 colpo per ogni {hit} ottenuto.\n*(Colpite le navi prima degli edifici.)*"
+        }
+      }
+    },
+    {
+      "id": "lore-03",
+      "effect": "lore-03",
+      "set": "base",
+      "name": "Sprinter Drives",
+      "text": "When you **move** fresh Loyal ships, you may move any of them one more time. *(Damaged ships can move with them once, but won't move one more time. Resolve this after all Catapult moves.)*",
+      "i18n": {
+        "it": {
+          "name": "Motori Scattanti",
+          "text": "Quando **muovete** navi Leali integre, potete muoverne una qualsiasi un'altra volta. *(Le navi danneggiate possono muoversi con loro una volta, ma non un'altra volta. Risolvete questo effetto dopo tutti i movimenti con la Fionda.)*"
+        }
+      }
+    },
+    {
+      "id": "lore-04",
+      "effect": "lore-04",
+      "set": "base",
+      "name": "Mirror Plating",
+      "text": "When you defend in **battle**, add 1 {intercept} to the attacker’s roll if they rolled any number of assault dice.",
+      "i18n": {
+        "it": {
+          "name": "Corazza a Specchio",
+          "text": "Quando vi difendete in **combattimento**, aggiungete 1 {intercept} al tiro dell'attaccante se ha tirato dadi Assalto."
+        }
+      }
+    },
+    {
+      "id": "lore-05",
+      "effect": "lore-05",
+      "set": "base",
+      "name": "Hidden Harbors",
+      "text": "You always **build** ships fresh.\nWhen defending in **battle**, the attacker cannot collect raid dice if you have a fresh defending starport.",
+      "i18n": {
+        "it": {
+          "name": "Porti Nascosti",
+          "text": "**Costruite** sempre navi integre.\nQuando vi difendete in **combattimento**, l'attaccante non può prendere dadi Razzia se avete uno spazioporto integro in difesa."
+        }
+      }
+    },
+    {
+      "id": "lore-06",
+      "effect": "lore-06",
+      "set": "base",
+      "name": "Signal Breaker",
+      "text": "When attacking in **battle**, if all attacking ships are fresh at the start of the battle, you ignore 1 {intercept} you roll.",
+      "i18n": {
+        "it": {
+          "name": "Spezzasegnali",
+          "text": "Quando attaccate in **combattimento**, se all'inizio del combattimento tutte le navi attaccanti sono integre, ignorate 1 {intercept} che ottenete."
+        }
+      }
+    },
+    {
+      "id": "lore-07",
+      "effect": "lore-07",
+      "set": "base",
+      "name": "Repair Drones",
+      "text": "After you **battle** as the attacker, repair 1 Loyal attacking ship.",
+      "i18n": {
+        "it": {
+          "name": "Droni Riparatori",
+          "text": "Dopo aver **combattuto** come attaccanti, riparate 1 nave Leale attaccante."
+        }
+      }
+    },
+    {
+      "id": "lore-08",
+      "effect": "lore-08",
+      "set": "base",
+      "name": "Gate Ports",
+      "text": "You may **build** starports on gates, max 1 per gate.\nWhen Rival ships take a **move** into a gate you control with a fresh Loyal starport, capture 1 agent of that Rival.",
+      "i18n": {
+        "it": {
+          "name": "Porti dei Portali",
+          "text": "Potete **costruire** spazioporti sui portali, al massimo 1 per portale.\nQuando navi Rivali **muovono** in un portale che controllate con uno spazioporto Leale integro, catturate 1 agente di quel Rivale."
+        }
+      }
+    },
+    {
+      "id": "lore-09",
+      "effect": "lore-09",
+      "set": "base",
+      "name": "Cloud Cities",
+      "text": "You may **build** cities on planets outside their building slots, max 1 per planet.\nThis costs 1 resource of the planet type.",
+      "i18n": {
+        "it": {
+          "name": "Città tra le Nuvole",
+          "text": "Potete **costruire** città sui pianeti fuori dai loro spazi Edificio, al massimo 1 per pianeta.\nCosta 1 risorsa del tipo del pianeta."
+        }
+      }
+    },
+    {
+      "id": "lore-10",
+      "effect": "lore-10",
+      "set": "base",
+      "name": "Living Structures",
+      "text": "**Nurture (Build):** Tax a Loyal city.\n**Prune (Repair):** Replace a Loyal starport with a Loyal city or vice versa.",
+      "i18n": {
+        "it": {
+          "name": "Strutture Viventi",
+          "text": "**Nutrire (Costruire):** Tassate una città Leale.\n**Potare (Riparare):** Sostituite uno spazioporto Leale con una città Leale o viceversa."
+        }
+      }
+    },
+    {
+      "id": "lore-11",
+      "effect": "lore-11",
+      "set": "base",
+      "name": "Gate Stations",
+      "text": "You may **build** cities on gates, max 1 per gate.\nA gate city's type matches all cities in its cluster. *(Players may tax it for 1 resource of any of those cities. If it is destroyed, Provoke Outrage of all those city types.)*",
+      "i18n": {
+        "it": {
+          "name": "Stazioni dei Portali",
+          "text": "Potete **costruire** città sui portali, al massimo 1 per portale.\nIl tipo di una città su un portale corrisponde a quello di tutte le città del suo settore. *(I giocatori possono tassarla per 1 risorsa di una qualsiasi di quelle città. Se viene distrutta, si Reca Oltraggio di tutti quei tipi di città.)*"
+        }
+      }
+    },
+    {
+      "id": "lore-12",
+      "effect": "lore-12",
+      "set": "base",
+      "name": "Railgun Arrays",
+      "text": "When defending in **battle**, before the attacker collects dice, they must take 1 hit if any Loyal defending ships are fresh.",
+      "i18n": {
+        "it": {
+          "name": "Batterie di Cannoni a Rotaia",
+          "text": "Quando vi difendete in **combattimento**, prima che l'attaccante prenda i dadi, subisce 1 colpo se una qualsiasi nave Leale in difesa è integra."
+        }
+      }
+    },
+    {
+      "id": "lore-13",
+      "effect": "lore-13",
+      "set": "base",
+      "holds": {
+        "resourceSlots": 1,
+        "keys": 4
+      },
+      "name": "Ancient Holdings",
+      "text": "This card has one resource slot with a raid cost of {key} {key} {key} {key}.\n*(You can hold one resource here. It adds to your ambitions. You can spend it.)*",
+      "i18n": {
+        "it": {
+          "name": "Antichi Possedimenti",
+          "text": "Questa carta ha uno spazio Risorsa con costo di razzia {key} {key} {key} {key}.\n*(Potete tenere qui una risorsa. Conta per le vostre ambizioni. Potete spenderla.)*"
+        }
+      }
+    },
+    {
+      "id": "lore-14",
+      "effect": "lore-14",
+      "set": "base",
+      "name": "Seeker Torpedoes",
+      "text": "When attacking in **battle**, after rolling dice, you may reroll up to 1 assault die for each fresh Loyal attacking ship.",
+      "i18n": {
+        "it": {
+          "name": "Siluri Cercatori",
+          "text": "Quando attaccate in **combattimento**, dopo aver tirato i dadi, potete ritirare fino a 1 dado Assalto per ogni nave Leale attaccante integra."
+        }
+      }
+    },
+    {
+      "id": "lore-15",
+      "effect": "lore-15",
+      "set": "pack",
+      "name": "Predictive Sensors",
+      "text": "When defending in **battle**, before the attacker collects dice, you may move any number of fresh Loyal ships from systems adjacent to the battle system into it.",
+      "i18n": {
+        "it": {
+          "name": "Sensori Predittivi",
+          "text": "Quando vi difendete in **combattimento**, prima che l'attaccante prenda i dadi, potete muovere nel sistema del combattimento un numero qualsiasi di navi Leali integre dai sistemi adiacenti."
+        }
+      }
+    },
+    {
+      "id": "lore-16",
+      "effect": "lore-16",
+      "set": "pack",
+      "name": "Force Beams",
+      "text": "**Guide (Move):** Move any number of ***any*** ships *(even if not Loyal)* from a system with a fresh Loyal starport to an adjacent system, or vice versa, ignoring **move** modifiers in play areas.",
+      "i18n": {
+        "it": {
+          "name": "Raggi di Forza",
+          "text": "**Guidare (Muovere):** Muovete un numero qualsiasi di navi ***qualsiasi*** *(anche non Leali)* da un sistema con uno spazioporto Leale integro a un sistema adiacente, o viceversa, ignorando i modificatori di **movimento** nelle aree di gioco."
+        }
+      }
+    },
+    {
+      "id": "lore-17",
+      "effect": "lore-17",
+      "set": "pack",
+      "name": "Raider Exosuits",
+      "text": "When attacking in **battle**, if there are no defending buildings, you may collect up to 1 raid die. *(This is not an extra die. Follow the limit of 1 die per ship.)*",
+      "i18n": {
+        "it": {
+          "name": "Esoscheletri da Razzia",
+          "text": "Quando attaccate in **combattimento**, se non ci sono edifici in difesa, potete prendere fino a 1 dado Razzia. *(Non è un dado in più. Rispettate il limite di 1 dado per nave.)*"
+        }
+      }
+    },
+    {
+      "id": "lore-18",
+      "effect": "lore-18",
+      "set": "pack",
+      "name": "Survival Overrides",
+      "text": "**Martyr (Move):** Destroy 1 fresh Loyal ship on the map to destroy 1 ship that is not Loyal in its system, taking it as a Trophy. *(Your Loyal ship does not become a Trophy.)*",
+      "i18n": {
+        "it": {
+          "name": "Protocolli di Sopravvivenza",
+          "text": "**Martire (Muovere):** Distruggete 1 nave Leale integra sulla mappa per distruggere 1 nave non Leale nel suo sistema, prendendola come Trofeo. *(La vostra nave Leale non diventa un Trofeo.)*"
+        }
+      }
+    },
+    {
+      "id": "lore-19",
+      "effect": "lore-19",
+      "set": "pack",
+      "name": "Empath's Vision",
+      "text": "***While Empath is declared***, if you roll ***any*** dice *(even outside battle)*, you may reroll any number of them once.\n**Prelude:** You may discard this to clear your Psionic Outrage.",
+      "i18n": {
+        "it": {
+          "name": "Visione dell'Empate",
+          "text": "***Finché Empate è dichiarata***, se tirate ***qualsiasi*** dado *(anche fuori dal combattimento)*, potete ritirarne un numero qualsiasi una volta.\n**Preludio:** Potete scartare questa carta per liberare il vostro Oltraggio di Psicoenergia."
+        }
+      }
+    },
+    {
+      "id": "lore-20",
+      "effect": "lore-20",
+      "set": "pack",
+      "name": "Empath's Bond",
+      "text": "***While Empath is declared***, you may **tax** ***any*** cities, and **build** ships and Catapult **move** with ***any*** starports, like they are Loyal. *(Don't take Captives. Build ships damaged in Rival-controlled systems.)*",
+      "i18n": {
+        "it": {
+          "name": "Legame dell'Empate",
+          "text": "***Finché Empate è dichiarata***, potete **tassare** ***qualsiasi*** città, e **costruire** navi e **muovere** con la Fionda da ***qualsiasi*** spazioporto, come se fossero Leali. *(Non prendete Prigionieri. Costruite navi danneggiate nei sistemi controllati da Rivali.)*"
+        }
+      }
+    },
+    {
+      "id": "lore-21",
+      "effect": "lore-21",
+      "set": "pack",
+      "name": "Keeper's Trust",
+      "text": "***While Keeper is declared***, Rivals cannot steal resources from you that are the same as resources they have already.\n**Prelude:** You may discard this to clear your Relic Outrage.",
+      "i18n": {
+        "it": {
+          "name": "Fiducia del Custode",
+          "text": "***Finché Custode è dichiarata***, i Rivali non possono rubarvi risorse dello stesso tipo di quelle che hanno già.\n**Preludio:** Potete scartare questa carta per liberare il vostro Oltraggio di Reliquie."
+        }
+      }
+    },
+    {
+      "id": "lore-22",
+      "effect": "lore-22",
+      "set": "pack",
+      "name": "Keeper's Solidarity",
+      "text": "***While Keeper is declared***, Rivals cannot steal Guild cards from you while you have any resources of the same type. *(If you have both Relics and Sworn Guardians, neither can be stolen!)*",
+      "i18n": {
+        "it": {
+          "name": "Solidarietà del Custode",
+          "text": "***Finché Custode è dichiarata***, i Rivali non possono rubarvi carte Gilda finché avete risorse dello stesso tipo. *(Se avete sia Reliquie sia Guardiani Giurati, nessuno dei due può essere rubato!)*"
+        }
+      }
+    },
+    {
+      "id": "lore-23",
+      "effect": "lore-23",
+      "set": "pack",
+      "name": "Warlord's Cruelty",
+      "text": "***While Warlord is declared***, you may **tax** cities that you already taxed this turn.\n**Prelude:** You may discard this to clear your Weapon Outrage.",
+      "i18n": {
+        "it": {
+          "name": "Crudeltà del Generale",
+          "text": "***Finché Generale è dichiarata***, potete **tassare** città che avete già tassato in questo turno.\n**Preludio:** Potete scartare questa carta per liberare il vostro Oltraggio di Armi."
+        }
+      }
+    },
+    {
+      "id": "lore-24",
+      "effect": "lore-24",
+      "set": "pack",
+      "name": "Warlord's Terror",
+      "text": "***While Warlord is declared***, you may spend Trophies in your Prelude, returning them, to influence once for each.",
+      "i18n": {
+        "it": {
+          "name": "Terrore del Generale",
+          "text": "***Finché Generale è dichiarata***, potete spendere Trofei nel vostro Preludio, restituendoli, per influenzare una volta per ciascuno."
+        }
+      }
+    },
+    {
+      "id": "lore-25",
+      "effect": "lore-25",
+      "set": "pack",
+      "name": "Tyrant's Ego",
+      "text": "***While Tyrant is declared***, you may spend Captives in your Prelude, returning them, to secure once for each.\n**Prelude:** You may discard this to clear your Weapon Outrage.",
+      "i18n": {
+        "it": {
+          "name": "Ego del Tiranno",
+          "text": "***Finché Tiranno è dichiarata***, potete spendere Prigionieri nel vostro Preludio, restituendoli, per acquisire una volta per ciascuno.\n**Preludio:** Potete scartare questa carta per liberare il vostro Oltraggio di Armi."
+        }
+      }
+    },
+    {
+      "id": "lore-26",
+      "effect": "lore-26",
+      "set": "pack",
+      "name": "Tyrant's Authority",
+      "text": "**Annex (Build):** ***While Tyrant is declared***, replace ***any*** city or starport you control with a Loyal city or starport, respectively. *(Cities return to player boards.)*",
+      "i18n": {
+        "it": {
+          "name": "Autorità del Tiranno",
+          "text": "**Annettere (Costruire):** ***Finché Tiranno è dichiarata***, sostituite ***qualsiasi*** città o spazioporto che controllate rispettivamente con una città o uno spazioporto Leale. *(Le città tornano sulle plance giocatore.)*"
+        }
+      }
+    },
+    {
+      "id": "lore-27",
+      "effect": "lore-27",
+      "set": "pack",
+      "name": "Tycoon's Ambition",
+      "text": "**Prelude:** ***While Tycoon is declared***, before taking any other actions, you may discard all of your Material and Fuel to declare exactly 1 undeclared ambition. Do not place the zero marker. *(You may do this just after declaring Tycoon.)*",
+      "i18n": {
+        "it": {
+          "name": "Ambizione del Magnate",
+          "text": "**Preludio:** ***Finché Magnate è dichiarata***, prima di compiere qualsiasi altra azione, potete scartare tutto il vostro Materiale e Carburante per dichiarare esattamente 1 ambizione non dichiarata. Non posizionate il segnalino Zero. *(Potete farlo subito dopo aver dichiarato Magnate.)*"
+        }
+      }
+    },
+    {
+      "id": "lore-28",
+      "effect": "lore-28",
+      "set": "pack",
+      "name": "Tycoon's Charm",
+      "text": "**Prelude:** ***While Tycoon is declared***, you may discard any number of Material and Fuel to gain 1 resource for each.\n**Prelude:** You may discard this to clear your Material and Fuel Outrage.",
+      "i18n": {
+        "it": {
+          "name": "Fascino del Magnate",
+          "text": "**Preludio:** ***Finché Magnate è dichiarata***, potete scartare un numero qualsiasi di Materiale e Carburante per ottenere 1 risorsa per ciascuno.\n**Preludio:** Potete scartare questa carta per liberare il vostro Oltraggio di Materiale e Carburante."
+        }
+      }
+    }
+  ],
+  "rescueShips": 3,
+  "campaign": {
+    "_comment": "Contenuti della campagna, non usati nelle partite normali. Regole della campagna non ancora implementate.",
+    "edicts": [
+      {
+        "id": "edict-02",
+        "order": 0,
+        "twoPlayerOnly": true
+      },
+      {
+        "id": "edict-03",
+        "order": 3,
+        "policy": "war"
+      },
+      {
+        "id": "edict-04",
+        "order": 3,
+        "policy": "peace"
+      },
+      {
+        "id": "edict-05",
+        "order": 3,
+        "policy": "escalation"
+      }
+    ],
+    "eventCards": [
+      {
+        "id": "event-01",
+        "copies": 3
+      }
+    ],
+    "doubleSided": [
+      {
+        "id": "imperial-council",
+        "sides": [
+          "in-session",
+          "decided"
+        ]
+      },
+      {
+        "id": "title",
+        "sides": [
+          "regent",
+          "outlaw"
+        ],
+        "perPlayer": true
+      },
+      {
+        "id": "flagship-upgrades",
+        "sides": [
+          "upgrades-a",
+          "upgrades-b"
+        ],
+        "upgrades": {
+          "upgrades-a": [
+            "slipstream-drive",
+            "tractor-beam",
+            "control-array"
+          ],
+          "upgrades-b": [
+            "defense-array",
+            "ship-crane",
+            "hull"
+          ]
+        }
+      },
+      {
+        "id": "flagship-board",
+        "sides": [
+          "board",
+          "setup-and-resettling"
+        ],
+        "perPlayer": true
+      }
+    ],
+    "fates": [
+      {
+        "id": "fate-a-01",
+        "tier": "A",
+        "complexity": 2,
+        "acts": {
+          "I": {
+            "objectiveTarget": {
+              "2": 20,
+              "3": 17,
+              "4": 14
+            },
+            "setup": {
+              "take": [
+                "02",
+                "03"
+              ],
+              "takeTile": "first-regent"
+            },
+            "success": {
+              "addToCourt": [
+                "05",
+                "06",
+                "07"
+              ],
+              "addRule": [
+                "08"
+              ],
+              "discard": [
+                "09",
+                "10",
+                "11"
+              ]
+            },
+            "failure": {
+              "discard": [
+                "05",
+                "06",
+                "07",
+                "08"
+              ],
+              "addToCourt": [
+                "09",
+                "10",
+                "11",
+                "03"
+              ]
+            }
+          },
+          "II": {
+            "objectiveTarget": 22,
+            "setup": {
+              "addToEdicts": [
+                "12"
+              ]
+            },
+            "success": {
+              "addToCourt": [
+                "15",
+                "16",
+                "17"
+              ],
+              "discard": [
+                "18",
+                "19",
+                "20",
+                "21",
+                "22"
+              ]
+            },
+            "failure": {
+              "discard": [
+                "15",
+                "16",
+                "17"
+              ],
+              "addToCourt": [
+                "18",
+                "19",
+                "20",
+                "21",
+                "22"
+              ]
+            }
+          },
+          "III": {
+            "objective": "two grand ambitions",
+            "setup": {
+              "addRule": [
+                "23"
+              ],
+              "replaceEdicts": {
+                "remove": "govern-the-imperial-reach",
+                "add": [
+                  "24",
+                  "25"
+                ]
+              }
+            },
+            "resolutionCard": null
+          }
+        },
+        "knownIssues": [
+          "15: misprinted on every physical copy (front shows an Event); exclude it or use a proxy"
+        ]
+      },
+      {
+        "id": "fate-a-02",
+        "tier": "A"
+      },
+      {
+        "id": "fate-a-03",
+        "tier": "A"
+      },
+      {
+        "id": "fate-a-04",
+        "tier": "A"
+      },
+      {
+        "id": "fate-a-05",
+        "tier": "A"
+      },
+      {
+        "id": "fate-a-06",
+        "tier": "A"
+      },
+      {
+        "id": "fate-a-07",
+        "tier": "A"
+      },
+      {
+        "id": "fate-a-08",
+        "tier": "A"
+      },
+      {
+        "id": "fate-b-01",
+        "tier": "B"
+      },
+      {
+        "id": "fate-b-02",
+        "tier": "B"
+      },
+      {
+        "id": "fate-b-03",
+        "tier": "B"
+      },
+      {
+        "id": "fate-b-04",
+        "tier": "B"
+      },
+      {
+        "id": "fate-b-05",
+        "tier": "B"
+      },
+      {
+        "id": "fate-b-06",
+        "tier": "B"
+      },
+      {
+        "id": "fate-b-07",
+        "tier": "B"
+      },
+      {
+        "id": "fate-b-08",
+        "tier": "B"
+      },
+      {
+        "id": "fate-c-01",
+        "tier": "C"
+      },
+      {
+        "id": "fate-c-02",
+        "tier": "C"
+      },
+      {
+        "id": "fate-c-03",
+        "tier": "C"
+      },
+      {
+        "id": "fate-c-04",
+        "tier": "C"
+      },
+      {
+        "id": "fate-c-05",
+        "tier": "C"
+      },
+      {
+        "id": "fate-c-06",
+        "tier": "C"
+      },
+      {
+        "id": "fate-c-07",
+        "tier": "C"
+      },
+      {
+        "id": "fate-c-08",
+        "tier": "C"
+      }
+    ],
+    "pieces": {
+      "blight": 24,
+      "freeCities": 28,
+      "freeStarports": 14,
+      "imperialShips": 15,
+      "dice": [
+        "number",
+        "event"
+      ],
+      "titlesPerPlayer": 1,
+      "firstRegentTile": 1
+    },
+    "acts": {
+      "I": {
+        "chapters": 3
+      },
+      "II": {
+        "chapters": 3
+      },
+      "III": {
+        "chapters": 4,
+        "grandAmbitionPower": {
+          "1": [
+            2,
+            4
+          ],
+          "2": [
+            3,
+            8
+          ],
+          "3": [
+            4,
+            14
+          ],
+          "4": [
+            5,
+            20
+          ]
+        }
+      }
+    },
+    "flagshipSlots": {
+      "ship-crane": [
+        "material",
+        "fuel"
+      ],
+      "defense-array": [
+        "weapons",
+        "psionic"
+      ],
+      "slipstream-drive": [
+        "fuel",
+        "relic"
+      ],
+      "control-array": [
+        "psionic",
+        "material"
+      ],
+      "tractor-beam": [
+        "relic",
+        "weapons"
+      ],
+      "hull": [
+        "any",
+        "any"
+      ]
+    },
+    "freeStatesRaid": {
+      "keys": 1,
+      "resources": 1
+    },
+    "setupBuildingChoice": "city-or-starport",
+    "eventDice": {
+      "_comment": "Owner-confirmed 2026-11-22. Rolled together: event die + number die.",
+      "event": [
+        {
+          "kind": "crisis",
+          "symbol": "arrowhead"
+        },
+        {
+          "kind": "crisis",
+          "symbol": "crescent"
+        },
+        {
+          "kind": "crisis",
+          "symbol": "hexagon"
+        },
+        {
+          "kind": "edict",
+          "symbol": "arrowhead"
+        },
+        {
+          "kind": "edict",
+          "symbol": "crescent"
+        },
+        {
+          "kind": "edict",
+          "symbol": "hexagon"
+        }
+      ],
+      "number": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    }
+  }
+}

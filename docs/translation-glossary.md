@@ -1,8 +1,8 @@
 # Italian glossary (EN → IT)
 
 The standard terms for the Italian version: interface (`src/i18n/it.json`),
-game log, rule errors and the Italian card texts (owner's content, kept in
-`data/content.json`, never in the repository).
+game log, rule errors and the Italian card texts (owner's content, kept only
+in `data/content.json`, never in code, tests or docs).
 
 **Source:** the official Italian rulebook by MS Edizioni (revision of
 13 January 2025). A term marked **[ours]** is not in that rulebook, so we
@@ -167,6 +167,7 @@ On buttons the verb goes in the *tu* imperative ("Tassa", "Acquisisci",
 | attacker / defender | attaccante / difensore | |
 | raid (steal with keys) | razziare | |
 | Subjugate the Court | Soggiogare la Corte | |
+| Ransack the Court | Saccheggiare la Corte **[ours]** | |
 
 ## Verbs from the rulebook glossary
 
@@ -188,6 +189,8 @@ way.
 | bury | seppellire |
 | swap | invertire |
 | demolish | demolire |
+| scrap (back to the box) | eliminare **[ours]** |
+| score / scoring (an ambition) | assegnare i punti / assegnazione dei punti **[ours]** |
 | free (empty) | libero |
 | clear (an area) | liberare |
 | Provoke Outrage | Recare Oltraggio |
@@ -206,5 +209,5 @@ city, Fate, Title (Regent / Outlaw).
 | What | Where |
 |---|---|
 | Interface | `src/i18n/en.json`, `src/i18n/it.json` (one key per string). |
-| Card names and texts | Owner content: `courtCards[].i18n.it` in `data/content.json` (`name`, `text`, `crisis`); the original words when missing. |
+| Card names and texts | Owner content: `courtCards[].i18n.it`, `loreCards[].i18n.it` and `leaders[].i18n.it` in `data/content.json` (`name`, `text`, `crisis`); the original words when missing. |
 | Rules engine: log, errors, effect results | The engine writes English. `tools/i18n/extract-messages.mjs` collects its sentences into `src/i18n/messages.json` (`${…}` → `{0}`); `src/i18n/messages.it.json` translates each one, and `src/i18n/messages.ts` fills in players, resources and cards by name. `tests/unit/i18n/messages.test.ts` fails when a sentence is new or untranslated: run the script, then add the Italian. |
