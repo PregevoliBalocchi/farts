@@ -4,6 +4,7 @@
 // live listener.
 
 import { onAuthStateChanged } from 'firebase/auth';
+import { seatLabel } from '../online/newgame';
 import { normalizeEmail } from '../online/roles';
 import { mountTable } from '../ui/table/table';
 import type { GameState } from '../game/engine';
@@ -53,6 +54,7 @@ onAuthStateChanged(auth, async (user) => {
             content,
             state: g.state,
             seat,
+            seats: { names: g.players.map((p, i) => seatLabel(p, i)), colors: g.colors },
             commit: async (next) => {
               try {
                 version = await saveMove(id, version, next, email);
@@ -83,6 +85,7 @@ async function playHotseat(): Promise<void> {
       content,
       state: game.state,
       seat: null,
+      seats: { names: game.names, colors: game.colors },
       commit: async (next) => {
         game.state = next;
         saveHotseat(game);

@@ -110,9 +110,22 @@ export function cardArt(id: string): string | null {
   return assetUrl(`card.${id}`);
 }
 
-/** Seat glyph name for a player id. */
+/** Colour index (0-3) of each seat, chosen when the game was created; seat i has colour i unless set. */
+let seatColors: readonly number[] = [];
+
+/** Sets the colour of each seat (an index 0-3 per seat, all different); an empty list restores the defaults. */
+export function setSeatColors(colors: readonly number[] = []): void {
+  seatColors = colors.length && new Set(colors).size === colors.length && colors.every((c) => Number.isInteger(c) && c >= 0 && c < 4) ? [...colors] : [];
+}
+
+/** The colour index (0-3) of a seat: its paint, glyph and CSS class `s-<n>`. */
+export function seatColor(player: number): number {
+  return seatColors[player] ?? player % 4;
+}
+
+/** Seat glyph name for a player id (it follows the seat's colour). */
 export function seatIcon(player: number): IconName {
-  return `seat${player % 4}` as IconName;
+  return `seat${seatColor(player)}` as IconName;
 }
 
 /**

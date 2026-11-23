@@ -26,6 +26,10 @@
       "rotateZ": 0
     }
   },
+  "agent": {
+    "trousersFade": 0.55,
+    "leather": "#7a4f2e"
+  },
   "tint": {
     "strength": 0.92,
     "damagedShade": 0.55

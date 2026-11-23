@@ -315,8 +315,8 @@ button.supply:hover { border-color: var(--rule-hi); }
 /* ---- Card zoom (hover / focus) ---- */
 .card-zoom { position: absolute; z-index: 110; pointer-events: none; filter: drop-shadow(0 12px 30px rgba(0, 0, 0, .7)); }
 .card-zoom .lcard { cursor: default; }
-.card-zoom .zoom-agents { display: block; width: 300px; height: 190px; margin-top: -45px; position: relative; border-radius: 0 0 16px 16px;
-  background: linear-gradient(180deg, transparent 0 24%, rgba(20, 17, 13, .92) 24%, rgba(11, 10, 8, .96)); box-shadow: inset 0 1px 0 #6b5320; }
+.card-zoom .zoom-agents { display: block; width: 300px; height: 190px; margin-top: -118px; position: relative; z-index: 2;
+  background: none; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .75)); }
 
 /* ---- Large card (modal / popover) ---- */
 .lcard.full-art { padding: 0; display: block; background: #000; }
@@ -990,3 +990,112 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .draft-win .dr-mini { width: 34px; height: 46px; border-radius: 4px; overflow: hidden; box-shadow: 0 0 0 1px #7d5d27; }
 .tbl-stage .draft-win .dr-mini img { width: 100%; height: 100%; object-fit: cover; }
 .tbl-stage .draft-win .dr-none { font-weight: 400; font-size: 13px; color: #8f8370; }
+
+/* ==== Court cards drawn from the development kit (cardface.ts) ====
+   The card is 372x519 kit pixels (63x88 mm); the kit pictures carry a 3 mm bleed
+   (408x555), so they are drawn larger and shifted out by the bleed. Sizes in cqw
+   follow the card's width. */
+.cface { position: relative; width: 100%; aspect-ratio: 372 / 519; overflow: hidden; container-type: inline-size; border-radius: 4.2% / 3%;
+  color: #1c140c; font-family: "Arcs Card Text", "Jost", "Futura", "Century Gothic", sans-serif; text-align: left; line-height: 1.2; }
+.cface .cf-art, .cface .cf-sketch { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cface .cf-kit { position: absolute; left: -4.84%; top: -3.47%; width: 109.68%; height: 106.94%; pointer-events: none; }
+.cface .cf-sketch { mix-blend-mode: multiply; filter: brightness(1.1) contrast(1.15); z-index: 1;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 43%, #000 53%, #000 88%, transparent 91.5%); mask-image: linear-gradient(to bottom, transparent 43%, #000 53%, #000 88%, transparent 91.5%); }
+.cface.with-crisis .cf-sketch { -webkit-mask-image: linear-gradient(to bottom, transparent 56%, #000 64%, #000 88%, transparent 91.5%); mask-image: linear-gradient(to bottom, transparent 56%, #000 64%, #000 88%, transparent 91.5%); }
+/* Fonts and boxes after the kit's font guide and the printed cards: titles in the title face (FM Bolyar Pro, or
+   Cinzel Black standing in), text and footer in the text face (Neue Kabel, or Jost). The text box is the paper
+   under the title (64.5%..91% of the height, 7% in from the sides); fitCardText() shrinks the text (--k)
+   until it stays inside it, and a long title until it fits its band. */
+.cface .cf-title { position: absolute; left: 4%; right: 4%; text-align: center; z-index: 2; white-space: nowrap; overflow: hidden;
+  font-family: "Arcs Card Title", "Cinzel", Georgia, serif; font-weight: 900; font-size: calc(8.4cqw * var(--k, 1)); line-height: 1.15; letter-spacing: .01em; }
+.cface.guild .cf-title { top: 55.6%; }
+.cface.vox .cf-title { top: 5.6%; }
+.cface .cf-fit { position: absolute; left: 7.2%; right: 6.8%; z-index: 2; overflow: hidden; font-size: calc(4.45cqw * var(--k, 1)); line-height: 1.17; }
+.cface.guild .cf-text { top: 64.6%; bottom: 8.8%; }
+.cface.vox .cf-body { top: 16.4%; bottom: 9.6%; }
+.cface .cf-body .cf-text { position: static; font-size: 1em; }
+.cface p { margin: 0 0 .38em; }
+.cface p:last-child { margin-bottom: 0; }
+.cface b { font-weight: 700; }
+.cface .cf-crisis { margin: 0 -2% .7em; padding: .45em .7em .1em; border: .5cqw solid #c79a4f; border-radius: 1cqw; background: rgba(214, 178, 120, .22); }
+.cface .cf-ic { height: 1em; vertical-align: -.12em; filter: invert(1); }
+.cface .cf-foot { position: absolute; left: 0; right: 0; bottom: 0; height: 7.6%; display: grid; grid-template-columns: 19% 1fr 19%; align-items: center; z-index: 2; padding-top: .3%;
+  font: 700 4.6cqw/1 "Arcs Card Text", "Jost", "Futura", sans-serif; letter-spacing: .04em; }
+.cface .cf-foot span { text-align: center; color: #3a250e; }
+.cface .cf-foot span:nth-child(2) { color: #f7e6c4; letter-spacing: .06em; }
+.cf-plain { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.lcard.kit { display: block; padding: 0; border: 0; background: transparent; border-radius: 10px; }
+.lcard.kit .cface { height: 100%; }
+
+/* ==== Court column as card banners (owner's review 2026-11-23): picture strip, kit resource badge,
+   name on a white band; the agents sit outside the card on its right, one row per seat ==== */
+.tbl-stage .side-court .court-row { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.tbl-stage .court-slot { display: grid; grid-template-columns: minmax(0, 1fr) 36px; gap: 4px; align-items: center; }
+.tbl-stage .court-tile.banner { height: 92px; border-radius: 6px; }
+.tbl-stage .court-tile.banner .cb { position: absolute; inset: 0; display: block; overflow: hidden; }
+.tbl-stage .court-tile.banner .cb-art { position: absolute; left: 0; top: 0; width: 100%; height: calc(100% - 22px); object-fit: cover; object-position: 50% 32%; }
+.tbl-stage .court-tile.banner .cb-art.plain { height: 100%; }
+.tbl-stage .court-tile.banner .cb.guild { background: #c99a3c; }
+.tbl-stage .court-tile.banner .cb-badge { position: absolute; top: 2px; right: 2px; width: 34px; height: 34px; border-radius: 50%;
+  background-repeat: no-repeat; background-size: 121.7px auto; background-position: -80.6px -4.2px; filter: drop-shadow(0 1px 2px #000a); }
+.tbl-stage .court-tile.banner .cb.vox { background-size: 160% auto; background-position: 50% 30%; }
+.tbl-stage .court-tile.banner .cb-sketch { position: absolute; left: 0; top: 0; width: 100%; height: calc(100% - 22px); object-fit: cover; object-position: 50% 78%; mix-blend-mode: multiply; filter: brightness(1.1) contrast(1.15); }
+.tbl-stage .court-tile.banner .cb-title { position: absolute; left: 0; right: 0; bottom: 0; height: 22px; display: grid; place-items: center; padding: 0 4px;
+  background: linear-gradient(180deg, #fbf6ea, #e9dfc9); border-top: 2px solid #c79a4f; color: #1c140c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font: 900 12px/1 "Arcs Card Title", "Cinzel", Georgia, serif; letter-spacing: .01em; }
+.tbl-stage .cb-agents { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+.tbl-stage .cb-agent { display: inline-flex; align-items: center; gap: 2px; font-size: 16px; color: var(--seat); }
+.tbl-stage .cb-agent img { width: 17px; height: 23px; object-fit: contain; filter: drop-shadow(0 1px 1px #000); }
+.tbl-stage .cb-agent b { color: #f3ead6; text-shadow: 0 1px 2px #000; }
+.tbl-stage .court-tile.banner .cb-title.t-2 { font-size: 11px; } .tbl-stage .court-tile.banner .cb-title.t-3 { font-size: 10px; letter-spacing: 0; }
+
+/* ==== Court picker: agents already on each card, confirm right under the chosen card ==== */
+.modal .pick-slot { position: relative; display: flex; flex-direction: column; align-items: center; }
+.modal .pick-agents { position: relative; z-index: 2; margin-top: -34px; min-height: 46px; display: flex; gap: 14px; justify-content: center; pointer-events: none; }
+.modal .ag-group { display: inline-flex; align-items: flex-end; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .8)); }
+.modal .ag-group img { height: 44px; width: auto; margin-left: -9px; }
+.modal .ag-group img:first-child { margin-left: 0; }
+.modal .ag-group b { margin-left: 3px; color: #f3ead6; font-size: 15px; text-shadow: 0 1px 2px #000; }
+.modal .pick-go { margin-top: 10px; min-width: 150px; visibility: hidden; opacity: 0; transform: translateY(-6px); transition: opacity .15s, transform .15s; }
+.modal .pick-slot.chosen .pick-go { visibility: visible; opacity: 1; transform: none; animation: dg-ready 1.4s ease-in-out infinite alternate; }
+.modal .pick-slot:not(:has(.pick-agents)) .pick-go { margin-top: 50px; }
+.modal .pick-agents.loading { visibility: hidden; }
+.modal .pick-agents.three { margin-top: -118px; min-height: 0; }
+.modal .pick-agents .pick-3d { display: block; width: 300px; height: 190px; }
+
+/* ==== Action cards laid out to stay readable in the fanned hand (owner's review 2026-11-23):
+   number top left, pips in two columns beside it, the actions below, the ambition glyph always at the
+   bottom left; everything kept on the left part, which the next card does not cover ==== */
+.tbl-stage .acard { grid-template-columns: auto 1fr; grid-template-rows: auto 1fr auto; grid-template-areas: "n pips" "kinds kinds" "amb amb";
+  justify-items: start; align-items: start; gap: 3px 5px; padding: 5px 6px 6px; }
+.tbl-stage .acard .n { grid-area: n; font-size: 34px; line-height: .95; }
+.tbl-stage .acard .pips { grid-area: pips; display: grid; grid-template-columns: repeat(2, 13px); gap: 2px; align-self: center; justify-content: start; }
+.tbl-stage .acard .pips .ic { width: 13px; height: 13px; }
+.tbl-stage .acard .kinds { grid-area: kinds; align-items: flex-start; justify-content: flex-start; text-align: left; padding-top: 4px; }
+.tbl-stage .acard .kinds .kw { font-size: 8.5px; }
+.tbl-stage .acard .amb { grid-area: amb; justify-content: flex-start; min-height: 22px; align-self: end; }
+.tbl-stage .acard .amb .ic { width: 22px; height: 22px; }
+.tbl-stage .region.hand .hand-cards { padding-bottom: 30px; }
+/* Played cards beside the seats and in the action box keep their narrow stacked layout */
+.tbl-stage .play .acard, .tbl-stage .region.actions .act-card .acard { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; grid-template-areas: "n" "pips" "kinds"; justify-items: center; }
+.tbl-stage .play .acard .pips, .tbl-stage .region.actions .act-card .acard .pips { grid-template-columns: repeat(2, 11px); }
+.tbl-stage .play .acard .pips .ic { width: 11px; height: 11px; }
+
+/* Banner strips centred on the picture's main subject (--fx, --fy from the content's artFocus):
+   the picture is zoomed by 1/--fz and moved so the subject sits mid-strip, clamped to the picture's edges.
+   The picture is 254x354 (ratio 1.3937); --ah is the strip's height above the name band. */
+.tbl-stage .court-tile.banner .cb { container-type: inline-size; --ah: 66px; --fz: .72; }
+.tbl-stage .court-tile.banner .cb .cb-art { width: calc(100cqw / var(--fz)); height: auto; max-width: none; object-fit: fill;
+  left: clamp(calc(100cqw - 100cqw / var(--fz)), calc(50cqw - var(--fx) * 100cqw / var(--fz)), 0px);
+  top: clamp(calc(var(--ah) - 100cqw * 1.3937 / var(--fz)), calc(var(--ah) / 2 - var(--fy) * 100cqw * 1.3937 / var(--fz)), 0px); }
+.tbl-stage .court-tile.banner .cb.plain { --ah: 88px; }
+.tbl-stage .court-tile.banner .cb.vox { --fz: 1; }
+
+/* ==== Player board: the slots' keys as the kit's key tabs of the Court cards (owner's review 2026-11-23).
+   The tab is cropped out of the full-card kit picture (408x555, the tab at x 28..103, y 0..84). ==== */
+.board .slot { grid-template-rows: calc(36 * var(--u)) calc(42 * var(--u)); }
+.board .slot .keys.kit, .board .slot .keys.kit:empty { visibility: visible; }
+.board .slot .keys.kit { width: calc(32 * var(--u)); height: calc(36 * var(--u)); min-width: 0; padding: 0; border-radius: 0;
+  background-color: transparent; background-repeat: no-repeat; background-size: 544% auto; background-position: 8.41% 0;
+  filter: drop-shadow(0 1px 2px #000a); }

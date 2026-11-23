@@ -6,7 +6,7 @@
 import type { ContentIndex, Resource } from '../../game/engine';
 import type { Translate } from '../../i18n';
 import { layout } from '../map';
-import { assetUrl, svgGlyph } from './assets';
+import { assetUrl, seatColor, svgGlyph } from './assets';
 import type { TableView } from './view';
 
 const SIZE = 640;
@@ -126,7 +126,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&
 const STACK_OFFSETS: [number, number][] = [[-30, -30], [30, -30], [30, 30], [-30, 30]];
 
 function shipStack(x: number, y: number, player: number, fresh: number, damaged: number): string {
-  const seat = `var(--seat-${player % 4})`;
+  const seat = `var(--seat-${seatColor(player)})`;
   let h = `<g transform="translate(${x} ${y})">`;
   // A wedge pointing right; damaged-only stacks are drawn turned and dimmed.
   const turned = fresh === 0 ? ' rotate(90)' : '';
@@ -137,7 +137,7 @@ function shipStack(x: number, y: number, player: number, fresh: number, damaged:
 }
 
 function building(x: number, y: number, owner: number, type: 'city' | 'starport', damaged: boolean): string {
-  const seat = `var(--seat-${owner % 4})`;
+  const seat = `var(--seat-${seatColor(owner)})`;
   const cls = `m-bld${damaged ? ' dmg' : ''}`;
   return type === 'city'
     ? `<path d="M${x - 8} ${y + 7}V${y - 2}l8-7 8 7v9z" fill="${seat}" class="${cls}"/>`

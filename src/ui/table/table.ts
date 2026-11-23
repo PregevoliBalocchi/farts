@@ -11,7 +11,9 @@ import { BASE_EFFECTS } from '../../game/cards/base';
 import { LANGS, pickLang, translator } from '../../i18n';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
-import { assetUrl, cardArt, icon, seatIcon } from './assets';
+import { assetUrl, cardArt, icon, seatColor, seatIcon, setSeatColors } from './assets';
+import { faceOf, fitCardText } from './cardface';
+import { loadCardFonts } from './cardfonts';
 import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, hitsLeft } from './battle';
 import type { BattlePick } from './battle';
 import { BATTLE_VIEW, BattleView3D } from './battleview3d';
@@ -21,7 +23,7 @@ import type { Allocation, BattleRef } from '../../game/engine';
 import { AGENTS_VIEW, CourtAgents3D } from './courtagents3d';
 
 /** How far the agents' view rises over the bottom of the zoomed card, in pixels. */
-const AGENTS_OVERLAP = 45;
+const AGENTS_OVERLAP = 118;
 import { cardPowers, decisionOptions } from './decide';
 import type { PowerOption } from './decide';
 import type { DecisionOption, DecisionPart } from './decide';
@@ -29,10 +31,10 @@ import { detailHtml } from './details';
 import type { DetailTarget } from './details';
 import { actionCommand, battlePayload, clamp, IDLE, movePayload, startAction } from './intent';
 import type { Intent } from './intent';
-import { HAND_AWAY, place, REGIONS, STAGE, placeUp } from './layout';
+import { HAND_AWAY, place, REGIONS, setStage, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  actionCard, button, cardLabel, confirmButtons, playedCard, playedText, cardPicker, courtFace, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, PICKER_PAGE, playerName, rivalPanel, sidePanel,
+  actionCard, button, cardLabel, confirmButtons, playedCard, playedText, cardPicker, courtFace, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, PICKER_PAGE, playerName, rivalPanel, setSeatNames, sidePanel,
 } from './render';
 import type { PickerGroup, PickerState } from './render';
 import { legal, othersTurn, tableView } from './view';
@@ -74,6 +76,8 @@ export interface TableOnline {
   seat: PlayerId | null;
   /** Saves a new state after a command (or an undo, without one); a rejection shows the error and the shared state comes back. */
   commit: (next: GameState, cmd?: Command) => Promise<void>;
+  /** The seats' names and colours (a colour index 0-3 per seat), as chosen when the game was created. */
+  seats?: { names?: string[]; colors?: number[] };
 }
 
 /** Mounts the table into `root`. */
@@ -83,6 +87,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let t = translator(lang);
   const { content, source } = online ? { content: online.content, source: 'owner' as const } : loadContent();
   const ix = indexContent(content, BASE_EFFECTS);
+
+  // Seat names and colours: from the game online, or locally from ?names=Anna,Bruno&colors=3,1,0.
+  const list = (k: string) => (params.get(k) ?? '').split(',').filter((x) => x !== '');
+  setSeatNames(online ? (online.seats?.names ?? []) : list('names'));
+  setSeatColors(online ? (online.seats?.colors ?? []) : list('colors').map(Number));
 
   let players = Number(params.get('players') ?? 3) as PlayerCount;
   let seed = Number(params.get('seed') ?? 1) || 1;
@@ -132,13 +141,32 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   shell.appendChild(stage);
   root.appendChild(shell);
 
+  // Card faces keep their text inside the paper: refit whenever cards are drawn or shown, and once the card fonts are in.
+  let fitQueued = false;
+  const queueFit = () => {
+    if (fitQueued) return;
+    fitQueued = true;
+    requestAnimationFrame(() => {
+      fitQueued = false;
+      fitCardText(stage);
+    });
+  };
+  new MutationObserver(queueFit).observe(stage, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  void loadCardFonts().then(() => fitCardText(stage, true));
+
   let scale = 1;
+  let mounted = false;
+  /** Stretches the stage to the window's shape (panels follow the edges) and scales it to fit. */
   function fit(): void {
-    const s = Math.min(window.innerWidth / STAGE.w, window.innerHeight / STAGE.h);
+    const before = `${STAGE.w}x${STAGE.h}`;
+    const s = setStage(window.innerWidth, window.innerHeight);
     scale = s;
+    stage.style.width = `${STAGE.w}px`;
+    stage.style.height = `${STAGE.h}px`;
     const x = (window.innerWidth - STAGE.w * s) / 2;
     const y = (window.innerHeight - STAGE.h * s) / 2;
     stage.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+    if (mounted && before !== `${STAGE.w}x${STAGE.h}`) render();
     // The 3D map fills the window; it is centred on the area the panels leave free.
     const m = REGIONS.map;
     board3d?.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio, { x: x + m.x * s, y: y + m.y * s, w: m.w * s, h: m.h * s });
@@ -472,7 +500,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     };
     const order = d.order
       .slice(0, 8)
-      .map((p, i) => `<span class="dr-turn s-${p % 4}${i === 0 ? ' now' : ''}" title="${esc(playerName(t, p))}">${icon(seatIcon(p))}</span>`)
+      .map((p, i) => `<span class="dr-turn s-${seatColor(p)}${i === 0 ? ' now' : ''}" title="${esc(playerName(t, p))}">${icon(seatIcon(p))}</span>`)
       .join('');
     const taken = state.players
       .map((p) => {
@@ -480,7 +508,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           const art = cardArt(id);
           return `<span class="dr-mini" data-zoom="${esc(id)}">${art ? `<img src="${esc(art)}" alt="">` : esc(id)}</span>`;
         });
-        return `<div class="dr-seat s-${p.id % 4}"><span class="seat-c">${icon(seatIcon(p.id))}</span><span class="nm">${esc(playerName(t, p.id))}</span>${got.join('') || `<span class="dr-none">${esc(t('draft.none'))}</span>`}</div>`;
+        return `<div class="dr-seat s-${seatColor(p.id)}"><span class="seat-c">${icon(seatIcon(p.id))}</span><span class="nm">${esc(playerName(t, p.id))}</span>${got.join('') || `<span class="dr-none">${esc(t('draft.none'))}</span>`}</div>`;
       })
       .join('');
     const now = d.order[0];
@@ -599,7 +627,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     ].filter(Boolean).join(' · ');
     // Engine log lines name seats P0, P1…; show them with the table's seat names.
     const live = o.live.map((l) => `<li>${esc(l.replace(/\bP(\d)\b/g, (_, n) => playerName(t, Number(n))))}</li>`).join('');
-    return `<div class="live-head s-${o.player % 4}"><span class="live-dot" aria-hidden="true"></span>${esc(t('others.title', { name: who }))}</div>
+    return `<div class="live-head s-${seatColor(o.player)}"><span class="live-dot" aria-hidden="true"></span>${esc(t('others.title', { name: who }))}</div>
       <div class="hint">${esc(doing)}</div>
       ${live ? `<ol class="live-list" aria-live="polite">${live}</ol>` : ''}
       <div class="hint">${esc(facts)}</div>
@@ -715,12 +743,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   // ---- modals ----
   function courtGroups(v: TableView): PickerGroup[] {
-    const def = (id: string) => {
-      const d = ix.courtCards.get(id);
-      return { card: id, kind: d?.kind ?? null, resource: d?.resource ?? null, keys: d?.keys ?? 0 };
-    };
+    const def = (id: string) => faceOf(ix, id);
     return [
-      { owner: null, label: t('court'), cards: v.court.map((c) => def(c.card)) },
+      { owner: null, label: t('court'), cards: v.court.map((c) => ({ ...def(c.card), agents: c.agents })) },
       ...v.players.map((p) => ({ owner: p.id, label: playerName(t, p.id), cards: p.court.map(def) })),
     ];
   }
@@ -790,8 +815,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       modal.options.forEach((o, i) => groups.set(o.card, [...(groups.get(o.card) ?? []), { i, o }]));
       const rows = [...groups.entries()]
         .map(([card, list]) => {
-          const d = ix.courtCards.get(card);
-          const face = courtFace({ card, kind: d?.kind ?? null, resource: d?.resource ?? null, keys: d?.keys ?? 0 }, t);
+          const face = courtFace(faceOf(ix, card), t);
           const byAbility = new Map<string, { i: number; o: PowerOption }[]>();
           for (const x of list) byAbility.set(x.o.ability, [...(byAbility.get(x.o.ability) ?? []), x]);
           const abilities = [...byAbility.entries()]
@@ -871,7 +895,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** The hotseat hand-over screen: whose turn it is, and a button to show their view. */
   function handOver(seat: PlayerId): string {
     const name = playerName(t, seat);
-    return `<div class="hs-curtain" role="dialog" aria-modal="true" aria-labelledby="hs-title"><div class="hs-box s-${seat % 4}">
+    return `<div class="hs-curtain" role="dialog" aria-modal="true" aria-labelledby="hs-title"><div class="hs-box s-${seatColor(seat)}">
       <span class="hs-seat seat-c">${icon(seatIcon(seat))}</span>
       <h2 id="hs-title">${esc(t('hotseat.turn', { name }))}</h2>
       <p>${esc(t('hotseat.pass', { name }))}</p>
@@ -942,6 +966,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const pick = draftWindow();
     if (pick) stage.insertAdjacentHTML('beforeend', pick);
     mountBattle();
+    agentsInPicker();
     restoreFocus(key);
     const dialog = stage.querySelector('.modal');
     if (dialog && !dialog.contains(document.activeElement)) {
@@ -1224,6 +1249,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           const again = modal.picker.selected === d.card;
           modal.picker = { ...modal.picker, selected: d.card! };
           if (again) return confirmPick();
+          // Only the choice changes: mark it in place instead of drawing the window again.
+          for (const slot of stage.querySelectorAll<HTMLElement>('.modal .pick-slot')) {
+            const on = slot.dataset.card === d.card;
+            slot.classList.toggle('chosen', on);
+            const card = slot.querySelector<HTMLElement>('.lcard');
+            card?.classList.toggle('selected', on);
+            card?.setAttribute('aria-pressed', String(on));
+          }
+          stage.querySelector<HTMLElement>('.modal .pick-slot.chosen .pick-go')?.focus({ preventScroll: true });
+          return;
         }
         break;
       case 'pick-confirm':
@@ -1282,12 +1317,46 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
     return agents3d;
   }
+  // The Court picker shows the agents on each card as still pictures of the 3D agents (one renderer, cached per group).
+  let stills: CourtAgents3D | null | undefined;
+  const stillCache = new Map<string, Promise<string | null>>();
+  function agentsInPicker(): void {
+    const slots = stage.querySelectorAll<HTMLElement>('.modal .pick-agents[data-agents]');
+    if (!slots.length) return;
+    if (stills === undefined) {
+      try {
+        stills = new CourtAgents3D(false);
+      } catch {
+        stills = null;
+      }
+    }
+    const view = stills;
+    if (!view) return;
+    let queue = Promise.resolve();
+    for (const slot of slots) {
+      const key = slot.dataset.agents!;
+      slot.classList.add('loading');
+      if (!stillCache.has(key)) {
+        const onCard = key.split(',').map((x) => x.split(':').map(Number)).map(([player, count]) => ({ player, count }));
+        // One at a time: the renderer is shared.
+        const shot = queue.then(() => view.snapshot(onCard)).catch(() => null);
+        queue = shot.then(() => undefined);
+        stillCache.set(key, shot);
+      }
+      void stillCache.get(key)!.then((url) => {
+        slot.classList.remove('loading');
+        if (!url || !slot.isConnected) return;
+        slot.classList.add('three');
+        slot.innerHTML = `<img class="pick-3d" src="${url}" alt="">`;
+      });
+    }
+  }
+
   function showZoom(el: HTMLElement): void {
     const zoom = stage.querySelector<HTMLElement>('.card-zoom');
     const id = el.dataset.zoom;
     if (!zoom || !id) return;
-    const d = ix.courtCards.get(id);
-    zoom.innerHTML = largeCard({ card: id, kind: d?.kind ?? null, resource: d?.resource ?? null, keys: d?.keys ?? 0 }, t, { selected: false, disabled: false });
+    zoom.innerHTML = largeCard(faceOf(ix, id), t, { selected: false, disabled: false });
     const onCard = (el.dataset.agents ?? '')
       .split(',')
       .filter(Boolean)
@@ -1390,6 +1459,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   }, { passive: true });
 
   render();
+  mounted = true;
 
   return {
     get state() {

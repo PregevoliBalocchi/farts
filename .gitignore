@@ -190,6 +190,13 @@ assets/cards/*
 !assets/cards/leaders/
 assets/map/
 
+# Card fonts (src/ui/table/cardfonts.ts): the free stand-ins (SIL OFL, with their licences) are committed;
+# the official commercial fonts (FM Bolyar Pro, Neue Kabel) are the owner's licensed copies: local only.
+assets/fonts/*
+!assets/fonts/cinzel-*
+!assets/fonts/jost-*
+!assets/fonts/OFL-*.txt
+
 # Owner transcriptions of campaign Fate cards (images and texts): local only.
 PG/
 

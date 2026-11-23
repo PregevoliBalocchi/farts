@@ -4,7 +4,8 @@
 
 import type { ContentIndex } from '../../game/engine';
 import type { Translate } from '../../i18n';
-import { icon, seatIcon } from './assets';
+import { icon, seatColor, seatIcon } from './assets';
+import { faceOf } from './cardface';
 import { button, cardLabel, courtFace, esc, playerName } from './render';
 import type { AmbitionRowView, PlayerView, SystemView, TableView } from './view';
 
@@ -15,7 +16,7 @@ export type DetailTarget =
   | { kind: 'ambition'; id: string }
   | { kind: 'supply' };
 
-const seatTag = (t: Translate, p: number) => `<span class="s-${p % 4}"><span class="seat-c">${icon(seatIcon(p))}</span> ${esc(playerName(t, p))}</span>`;
+const seatTag = (t: Translate, p: number) => `<span class="s-${seatColor(p)}"><span class="seat-c">${icon(seatIcon(p))}</span> ${esc(playerName(t, p))}</span>`;
 
 const row = (label: string, value: string) => `<dt>${esc(label)}</dt><dd>${value}</dd>`;
 
@@ -41,8 +42,7 @@ function seatDetail(ix: ContentIndex, v: TableView, p: PlayerView, t: Translate)
   const playedText = played ? `${esc(t(`play.${played.mode}`))}${played.card ? ` ${esc(cardLabel(t, played.card))}` : ''}` : esc(t('empty'));
   const cards = p.court.length
     ? `<div class="detail-cards">${p.court.map((c) => {
-        const d = ix.courtCards.get(c);
-        return `<span class="detail-card" data-zoom="${esc(c)}" tabindex="0">${courtFace({ card: c, kind: d?.kind ?? null, resource: d?.resource ?? null, keys: d?.keys ?? 0 }, t)}</span>`;
+        return `<span class="detail-card" data-zoom="${esc(c)}" tabindex="0">${courtFace(faceOf(ix, c), t)}</span>`;
       }).join('')}</div>`
     : esc(t('empty'));
   return `<h2 id="modal-title">${seatTag(t, p.id)}</h2>

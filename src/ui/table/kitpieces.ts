@@ -7,7 +7,7 @@
 // are used.
 
 import * as THREE from 'three';
-import { assetUrl } from './assets';
+import { assetUrl, seatColor } from './assets';
 import { largestBlob, simplifyOutline, traceOutline } from './outline';
 import { modelPiece } from './models3d';
 import { makePiece, paintedWood, SEAT_PAINT, woodGrain } from './pieces3d';
@@ -124,6 +124,7 @@ export function loadKitPieces(): Promise<boolean> {
  * side; `damaged`: a building tile with its damaged side up.
  */
 export function piece(kind: PieceKind, seat: number, opts: { lying?: boolean; damaged?: boolean } = {}): THREE.Object3D {
+  seat = seatColor(seat);
   const model = modelPiece(kind, seat, opts);
   if (model) return model;
   const s = seat % SEAT_PAINT.length;

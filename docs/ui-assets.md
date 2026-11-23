@@ -30,6 +30,23 @@ the kit changes, then commit the result.
 | `token/` | resource, ambition and initiative tokens | reserved for the panels |
 | `dice/` | dice faces | reserved for battles |
 | `piece/` | ships, agents, flagships, cities, starports per seat | the 3D pieces |
+| `cardkit/` | Guild frames per resource, the Vox paper, the footer band, the key-cost tabs | Court cards drawn from the kit (`src/ui/table/cardface.ts`) |
+
+Court cards are drawn from `cardkit/`: the illustration is the owner's card
+picture (`assets/cards/court*/`, not committed) seen through the kit frame's
+arch, and the name and rules text come from the owner's content
+(`courtCards[].name`, `.text` and, for Vox cards with a Crisis, `.crisis`, in
+`data/content.json`: `**bold**`, `*italic*`, `{key}`, one paragraph per line).
+A card without a transcribed name keeps its plain picture. Online the content
+is read from the database: upload `data/content.json` again after adding texts.
+
+The kit's font guide names the card fonts: **FM Bolyar Pro** for titles and
+**Neue Kabel** for the text. Both are commercial. Put licensed files (a web
+licence is needed for the online site) in `assets/fonts/`, with "bolyar" and
+"kabel" in their names (`NeueKabel-Book`, `-Bold`, `-BookItalic`); they are
+git-ignored and win over the free stand-ins committed there, Cinzel Black and
+Jost (SIL Open Font License, licences beside them). `src/ui/table/cardfonts.ts`
+picks the files; the rules text shrinks until it fits the card's text box.
 
 Seats map to the kit's colours in this order: 0 yellow, 1 blue, 2 red, 3 white
 (`--seat-N` in `src/ui/table/table.css` and `SEAT_PAINT` in `pieces3d.ts`

@@ -93,6 +93,27 @@ for (const [from, to] of plan()) {
   copyFileSync(file, dest);
   copied++;
 }
+// Card-making pieces, at the kit's top level: Court cards are drawn from them (src/ui/table/cardface.ts).
+const CARD_KIT = [
+  ...Object.entries(RESOURCES).map(([id, kit]) => [`CardAsset-Frame-Guild-${kit[0].toUpperCase()}${kit.slice(1)}`, `cardkit/guild-${id}`]),
+  ['CardAsset-Frame-Vox', 'cardkit/vox'],
+  ['CardAsset-Footer-Paper', 'cardkit/footer'],
+  ['CardAsset-Icon-Raid-Cost-1', 'cardkit/cost-1'],
+  ['CardAsset-Icon-Raid-Cost-2', 'cardkit/cost-2'],
+  ['CardAsset-Icon-Raid-Cost-3', 'cardkit/cost-3'],
+  ['CardAsset-Icon-Raid-Cost-X', 'cardkit/cost-x'],
+];
+for (const [from, to] of CARD_KIT) {
+  const file = join(dir, `${from}.png`);
+  if (!existsSync(file)) {
+    missing.push(from);
+    continue;
+  }
+  const dest = join(out, `${to}.png`);
+  mkdirSync(dirname(dest), { recursive: true });
+  copyFileSync(file, dest);
+  copied++;
+}
 console.log(`Copied ${copied} pictures into assets/ui/.`);
 if (missing.length) console.log(`Not found in the kit: ${missing.join(', ')}`);
 if (!existsSync(join(out, 'map', 'board.png'))) console.log('Reminder: the board picture goes in assets/ui/map/board.png (not part of the kit).');
