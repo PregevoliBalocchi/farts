@@ -15,9 +15,10 @@ import { loadContent } from '../content';
 import { assetUrl, cardArt, icon, seatColor, seatIcon, setSeatColors } from './assets';
 import { cardFaceById, cardWords, courtCardFace, faceOf, fitCardText, hasKitFace, setFaceSource } from './cardface';
 import { loadCardFonts } from './cardfonts';
-import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, hitsLeft } from './battle';
+import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceKey, facePicture, hitsLeft } from './battle';
 import type { BattlePick } from './battle';
 import { BATTLE_VIEW, BattleView3D } from './battleview3d';
+import { battleScenario } from './scenario';
 import { createBoard3D } from './board3d';
 import type { RoutePreview, ShipGlow } from './board3d';
 import type { Allocation, BattleRef } from '../../game/engine';
@@ -122,6 +123,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** Locally, ?variant=leaders starts the Leaders & Lore variant (with its draft). */
   const variant = params.get('variant') === 'leaders' ? 'leaders' : 'base';
   let state: GameState = online ? online.state : newGame(ix, { playerCount: players, seed, variant });
+  /** Locally, ?scenario=battle sets up a battle for the first seat to lead (applied once per game). */
+  const scenario = online ? null : params.get('scenario');
+  let scenarioDone = false;
   let history: GameState[] = [];
   // Online the seat is fixed; locally the view follows the active seat unless ?seat= pins it.
   // Hotseat: a shared game whose seat is null, or locally ?hotseat=1 (to try the hand-over screen).
@@ -295,6 +299,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   function restart(): void {
     state = newGame(ix, { playerCount: players, seed, variant });
+    scenarioDone = false;
     history = [];
     resetChoices();
     modal = null;
@@ -623,10 +628,34 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const title = t('battle.title', { system: systemName(ix.content.map.systems.find((s) => s.id === b.system), t, b.system), a: playerName(t, b.attacker), d: playerName(t, b.target) });
     return `<div class="battle-win glass" role="dialog" aria-label="${esc(title)}">
       <div class="b-head"><span class="ctx-title">${esc(title)}</span><span class="b-counts">${counts || esc(t('battle.noHits'))}</span></div>
+      ${diceStrip(b)}
       <div class="battle-slot" style="width:${BATTLE_VIEW.w}px;height:${BATTLE_VIEW.h}px"></div>
       ${mine ? `<div class="hint small">${esc(t('battle.howTo'))}</div>` : ''}
       ${controls}
     </div>`;
+  }
+
+  /** The roll the dice strip last showed: a new roll (or reroll) tumbles the dice in again, other renders keep them still. */
+  let diceShown = '';
+  /**
+   * The rolled dice as the official face pictures, in the order they fire in
+   * the battle view (each one lands as its volley starts).
+   */
+  function diceStrip(b: BattleRef): string {
+    const faces = b.faces ?? [];
+    if (!faces.length) return '';
+    const key = rollKeyOf(b);
+    const roll = key !== diceShown && params.get('motion') !== 'off';
+    diceShown = key;
+    const dice = faces
+      .map((f, i) => {
+        const pic = facePicture(f.type, f.face);
+        const label = `${t(`battle.dice.${f.type}`)}: ${faceKey(f.face) || '—'}`;
+        const inner = pic ? `<img src="${esc(assetUrl(pic))}" alt="">` : `<span>${esc(faceKey(f.face) || '·')}</span>`;
+        return `<span class="b-die d-${f.type}" style="--i:${i}" title="${esc(label)}">${inner}</span>`;
+      })
+      .join('');
+    return `<div class="b-dice${roll ? ' rolling' : ''}" aria-label="${esc(t('battle.diceRolled'))}">${dice}</div>`;
   }
 
   /** A decision that asks to keep some of the cards drawn (its data lists them), or null. */
@@ -690,6 +719,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     </div>`;
   }
 
+  /** The planet a battle in `system` is fought over, or null at a gate. */
+  function battlePlanet(system: string): { id: string; resource: string | undefined } | null {
+    const sys = ix.content.map.systems.find((s) => s.id === system);
+    return sys?.kind === 'planet' ? { id: sys.id, resource: sys.resource ?? undefined } : null;
+  }
+
   /** Puts the 3D battle scene into the battle window, or stops it when there is no battle. */
   let battle3d: BattleView3D | null | undefined;
   function mountBattle(): void {
@@ -722,9 +757,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       defenderSeat: pb.target,
       after: battleAfter(forces, al),
       buildings: forces.buildings.map((x) => ({ owner: x.owner, type: x.type })),
-      dice: (pb.faces ?? []).map((f) => ({ type: f.type, faces: content.dice[f.type], index: faceIndex(content.dice[f.type], f.face) })),
+      dice: (pb.faces ?? []).map((f) => ({ type: f.type, face: f.face })),
       rollKey: rollKeyOf(pb),
       canPick: mine ? (p) => addHit(forces, pb, al, p) !== null : null,
+      planet: battlePlanet(pb.system),
     });
   }
 
@@ -1123,6 +1159,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** Whether the hand was slid away at the last render (to animate only the change). */
   let lastHandAway = false;
   function render(): void {
+    if (scenario === 'battle' && !scenarioDone && state.phase.type === 'lead') {
+      state = battleScenario(ix, state);
+      scenarioDone = true;
+    }
     const key = focusKey();
     const me = local();
     const v = withSay(tableView(ix, state, me, lang));

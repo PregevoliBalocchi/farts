@@ -193,8 +193,9 @@ describe('where pieces go', () => {
 describe('planet recipes', () => {
   it('reads a known planet with its extras', () => {
     const r = planetRecipe('c2-p3');
-    expect(r.style).toBe('veined');
+    expect(r.style).toBe('marbled');
     expect(r.extras).toContain('ring');
+    expect(r.atmosphere).not.toBeNull();
   });
 
   it('falls back to the defaults for an unknown planet', () => {

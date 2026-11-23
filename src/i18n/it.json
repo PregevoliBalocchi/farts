@@ -313,5 +313,6 @@
   "menu.taxOwn": "Le tue città",
   "menu.taxRival": "Città di {name}",
   "menu.moveFrom": "Muovi da qui",
-  "prompt.pick.menu": "Scegli cosa fare a {system}, nel menu accanto."
+  "prompt.pick.menu": "Scegli cosa fare a {system}, nel menu accanto.",
+  "battle.diceRolled": "Dadi tirati"
 }

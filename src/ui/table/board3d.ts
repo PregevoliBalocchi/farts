@@ -30,7 +30,7 @@ import boardLinesData from './board.lines.json';
 import { drawInfoLayer, isBoardLines, resourceIconSpots, sectorTints, withLayerSpots } from './infolayer';
 import type { BoardLines, SectorMode } from './infolayer';
 import { SEAT_PAINT } from './pieces3d';
-import { buildPlanet, planetPalette, turnPlanets } from './planets3d';
+import { buildPlanet, planetPalette, roomAround, turnPlanets } from './planets3d';
 import type { Planet } from './planets3d';
 import { starfield } from './starfield';
 import type { TableView } from './view';
@@ -620,10 +620,13 @@ export class Board3D {
    */
   private buildPlanets(c: BoardCalibration): void {
     const unit = BOARD_DEPTH / c.height;
+    // Each planet's moons and rings keep clear of its neighbours.
+    const discs: Record<string, { x: number; y: number; r: number }> = {};
+    for (const [id, sys] of Object.entries(c.systems)) if (sys.disc) discs[id] = sys.disc;
     for (const s of this.ix.content.map.systems) {
       const disc = c.systems[s.id]?.disc;
       if (s.kind !== 'planet' || !disc) continue;
-      const p = buildPlanet(s.id, s.resource, disc.r * unit);
+      const p = buildPlanet(s.id, s.resource, disc.r * unit, roomAround(s.id, discs));
       const top = new THREE.Box3().setFromObject(p.holder).max.y;
       const depth = top + 0.06;
       const at = pictureToWorld(c, disc.x, disc.y);
