@@ -146,6 +146,18 @@ export function battlePayload(i: Extract<Intent, { step: 'battle' }>): ActionPay
   return { kind: 'battle', system: i.system, target: i.target, dice: { ...i.dice } };
 }
 
+/** Most dice of one type a battle stepper offers (also the most the battle probe tries). */
+export const MAX_STEPPER_DICE = 9;
+
+/**
+ * The smallest skirmish pool that makes a battle legal, or null if none does.
+ * One die is not always enough: a leader may have to collect extra dice.
+ */
+export function battleProbe(ok: (dice: { skirmish: number }) => boolean, most = MAX_STEPPER_DICE): { skirmish: number } | null {
+  for (let n = 1; n <= most; n++) if (ok({ skirmish: n })) return { skirmish: n };
+  return null;
+}
+
 /** Clamps a stepper value to 0..max. */
 export function clamp(n: number, max: number): number {
   return Math.max(0, Math.min(max, n));
