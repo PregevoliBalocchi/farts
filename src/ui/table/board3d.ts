@@ -63,6 +63,8 @@ export interface Board3DOptions {
   onPick(id: string, shipOf?: number): void;
   /** The view moved (pan or zoom): things placed over the map follow it. */
   onView?(): void;
+  /** The pointer is over system `id` (null: over none, or it left the map), at client point x, y. */
+  onHover?(id: string | null, x: number, y: number): void;
   /** Calibration mode (?debug=calibrate): a click on the board reports where, as fractions (0..1) of the picture. */
   onCalibrate?(fx: number, fy: number): void;
   /** ?map=picture: the board picture on a table instead of the map in space. */
@@ -272,6 +274,7 @@ export class Board3D {
     this.canvas.addEventListener('pointerdown', (e) => (this.down = { x: e.clientX, y: e.clientY }));
     this.canvas.addEventListener('pointerup', (e) => this.click(e));
     this.canvas.addEventListener('pointermove', (e) => this.hover(e));
+    this.canvas.addEventListener('pointerleave', (e) => this.opts.onHover?.(null, e.clientX, e.clientY));
     this.canvas.addEventListener('dblclick', () => this.resetView());
 
     renderer.setAnimationLoop((t) => this.frame(t));
@@ -1068,10 +1071,13 @@ export class Board3D {
   }
 
   private hover(e: PointerEvent): void {
-    if (e.buttons) return;
+    if (e.buttons) {
+      this.opts.onHover?.(null, e.clientX, e.clientY);
+      return;
+    }
     const id = this.hit(e);
     this.canvas.style.cursor = id ? 'pointer' : 'grab';
-    this.canvas.title = id ?? '';
+    this.opts.onHover?.(id, e.clientX, e.clientY);
     // Planning a route: the system under the pointer, if the route may go on there, shows that step.
     this.showNext(id && this.route?.open && this.route.targets.has(id) ? id : null);
   }

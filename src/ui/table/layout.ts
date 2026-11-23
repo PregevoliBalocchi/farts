@@ -47,6 +47,7 @@ const PLAY_W = 96; // the card played this turn, at its left end
 const MINE_W = 430; // the local player's own Court cards, at its right end
 const BTN_W = 140; // the turn's buttons, left of those
 const ACT_W = 520; // the action box, over the hand (grows upwards when it needs more room)
+const ACT_GAP = 46; // between the action box and the bar: a hand card raised on hover stays under the box
 
 /** Region ids and rectangles, read from the current STAGE (left column on the left edge, right column on the right edge, bottom row on the bottom edge). */
 export const REGIONS = {
@@ -72,12 +73,8 @@ export const REGIONS = {
   get confirm(): Rect { const b = REGIONS.bar; return { x: b.x + b.w - MINE_W - BTN_W, y: b.y, w: BTN_W, h: b.h }; },
   /** The local player's own Court: guild and lore cards, at the right end of the bar. */
   get mine(): Rect { const b = REGIONS.bar; return { x: b.x + b.w - MINE_W, y: b.y, w: MINE_W, h: b.h }; },
-  /** The action box, centred over the hand: anchored at its bottom, grows upwards up to h. */
-  get actions(): Rect { const h = REGIONS.hand; return { x: Math.round(h.x + h.w / 2 - ACT_W / 2), y: h.y - 10 - 440, w: ACT_W, h: 440 }; },
-  /** Card picker and other dialogs, centred. */
-  get modal(): Rect { return { x: (STAGE.w - 1600) / 2, y: (STAGE.h - 900) / 2, w: 1600, h: 900 }; },
-  /** Detail windows (height grows with the content, up to h), centred. */
-  get detail(): Rect { return { x: (STAGE.w - 1000) / 2, y: (STAGE.h - 780) / 2, w: 1000, h: 780 }; },
+  /** The action box, centred over the hand: anchored at its bottom (clear of a hand card raised on hover), grows upwards up to h. */
+  get actions(): Rect { const h = REGIONS.hand; return { x: Math.round(h.x + h.w / 2 - ACT_W / 2), y: h.y - ACT_GAP - 440, w: ACT_W, h: 440 }; },
 };
 
 export type RegionId = keyof typeof REGIONS;

@@ -25,7 +25,7 @@ describe('seat board', () => {
     const html = localPanel(v.players[0], t, new Set(), null, [{ card: 'a', lit: true }, { card: 'b', lit: false }]);
     expect(count(html, 'class="pre lit"')).toBe(1);
     expect(count(html, 'class="pre"')).toBe(1);
-    expect(html).toContain('data-act="powers-open"');
+    expect(html).toContain('data-act="power-card"');
   });
 
   it('covers each Outraged type with an agent, on local and rival boards', () => {
@@ -46,7 +46,7 @@ describe('seat board', () => {
     expect(slim).not.toContain('pb-guild');
     const row = preludeTab([{ card: 'a', lit: true }], t, true);
     expect(row).toContain('class="pre-row"');
-    expect(row).toContain('data-act="powers-open"');
+    expect(row).toContain('data-act="power-card"');
     expect(preludeTab([], t, true)).toBe('');
   });
 });
