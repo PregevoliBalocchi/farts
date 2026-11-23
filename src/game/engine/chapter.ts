@@ -233,7 +233,7 @@ function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
       }
       removeFromHand(p.hand, def.id);
       s.round.plays.push({ player: p.id, card: def.id, mode: cmd.mode, faceUp: cmd.mode !== 'copy', seized: cmd.seizeWith !== undefined });
-      log(s, `P${p.id} ${cmd.mode} ${cmd.mode === 'copy' ? '(face down)' : def.id}`);
+      log(s, cmd.mode === 'copy' ? `P${p.id} copies with a card face down` : cmd.mode === 'pivot' ? `P${p.id} pivots with ${def.id}` : `P${p.id} surpasses with ${def.id}`);
       s.phase = { type: 'actions', budget: { player: p.id, kinds, remaining: pips } };
       if (followDeclared) for (const t of afterDeclare(ix, s, p.id, followDeclared.amb, followDeclared.was)) log(s, t);
       return;

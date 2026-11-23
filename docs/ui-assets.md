@@ -37,6 +37,9 @@ picture (`assets/cards/court*/`, not committed) seen through the kit frame's
 arch, and the name and rules text come from the owner's content
 (`courtCards[].name`, `.text` and, for Vox cards with a Crisis, `.crisis`, in
 `data/content.json`: `**bold**`, `*italic*`, `{key}`, one paragraph per line).
+Translations sit beside them in `courtCards[].i18n.<lang>` (`name`, `text`,
+`crisis`); the table shows the one for its language and falls back to the
+original words (terms: `docs/translation-glossary.md`).
 A card without a transcribed name keeps its plain picture. Online the content
 is read from the database: upload `data/content.json` again after adding texts.
 

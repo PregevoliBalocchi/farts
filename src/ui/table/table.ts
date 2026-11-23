@@ -9,10 +9,11 @@ import { activePlayer, AMBITIONS, dispatch, effectOf, indexContent, newGame } fr
 import type { ActionKind, ActionPayload, AmbitionId, Command, GameContent, GameState, PlayerCount, PlayerId, RaidTake, Resource } from '../../game/engine';
 import { BASE_EFFECTS } from '../../game/cards/base';
 import { LANGS, pickLang, translator } from '../../i18n';
+import { messageTranslator } from '../../i18n/messages';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
 import { assetUrl, cardArt, icon, seatColor, seatIcon, setSeatColors } from './assets';
-import { faceOf, fitCardText } from './cardface';
+import { cardWords, faceOf, fitCardText } from './cardface';
 import { loadCardFonts } from './cardfonts';
 import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, hitsLeft } from './battle';
 import type { BattlePick } from './battle';
@@ -87,6 +88,25 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let t = translator(lang);
   const { content, source } = online ? { content: online.content, source: 'owner' as const } : loadContent();
   const ix = indexContent(content, BASE_EFFECTS);
+  /** The engine's sentences (log, errors) in the table's language, players and ids by name. */
+  const engineSay = () =>
+    messageTranslator(lang, {
+      player: (n) => playerName(t, n),
+      word: (w) => {
+        const court = ix.courtCards.get(w);
+        if (court) return cardWords(court, lang).name;
+        const action = ix.actionCards.get(w);
+        if (action) return cardLabel(t, action);
+        for (const k of ['resource', 'ambition', 'suit', 'action', 'piece', 'battle.dice', 'word']) {
+          const v = t(`${k}.${w}`);
+          if (v !== `${k}.${w}`) return v;
+        }
+        return undefined;
+      },
+    });
+  let say = engineSay();
+  /** The view with its recent log lines translated. */
+  const withSay = (v: TableView): TableView => ({ ...v, recent: v.recent.map((l) => say(l)) });
 
   // Seat names and colours: from the game online, or locally from ?names=Anna,Bruno&colors=3,1,0.
   const list = (k: string) => (params.get(k) ?? '').split(',').filter((x) => x !== '');
@@ -240,12 +260,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       render();
       if (online)
         online.commit(next, cmd).catch((e: Error) => {
-          showToast(t('error', { msg: e.message }));
+          showToast(t('error', { msg: say(e.message) }));
           render();
         });
       return true;
     } catch (e) {
-      showToast(t('error', { msg: (e as Error).message }));
+      showToast(t('error', { msg: say((e as Error).message) }));
       render();
       return false;
     }
@@ -636,7 +656,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       o.next === null ? t('others.lastInRound') : o.next === local() ? t('others.nextYou') : t('others.next', { name: playerName(t, o.next) }),
     ].filter(Boolean).join(' · ');
     // Engine log lines name seats P0, P1…; show them with the table's seat names.
-    const live = o.live.map((l) => `<li>${esc(l.replace(/\bP(\d)\b/g, (_, n) => playerName(t, Number(n))))}</li>`).join('');
+    const live = o.live.map((l) => `<li>${esc(say(l))}</li>`).join('');
     return `<div class="live-head s-${seatColor(o.player)}"><span class="live-dot" aria-hidden="true"></span>${esc(t('others.title', { name: who }))}</div>
       <div class="hint">${esc(doing)}</div>
       ${live ? `<ol class="live-list" aria-live="polite">${live}</ol>` : ''}
@@ -753,7 +773,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   // ---- modals ----
   function courtGroups(v: TableView): PickerGroup[] {
-    const def = (id: string) => faceOf(ix, id);
+    const def = (id: string) => faceOf(ix, id, lang);
     return [
       { owner: null, label: t('court'), cards: v.court.map((c) => ({ ...def(c.card), agents: c.agents })) },
       ...v.players.map((p) => ({ owner: p.id, label: playerName(t, p.id), cards: p.court.map(def) })),
@@ -780,7 +800,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       }
       inner = html;
     } else if (modal.type === 'log') {
-      const items = state.log.slice(-120).reverse().map((l) => `<li>[${l.chapter}] ${esc(l.text)}</li>`).join('');
+      const items = state.log.slice(-120).reverse().map((l) => `<li>[${l.chapter}] ${esc(say(l.text))}</li>`).join('');
       inner = `<h2 id="modal-title">${esc(t('log.title'))}</h2><div></div><div class="modal-body"><ol class="log-list" reversed>${items}</ol></div><div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`;
     } else if (modal.type === 'settings') {
       const seatOpts = v.players.map((p) => `<option value="${p.id}"${seatChoice === p.id ? ' selected' : ''}>${esc(playerName(t, p.id))}</option>`).join('');
@@ -825,7 +845,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       modal.options.forEach((o, i) => groups.set(o.card, [...(groups.get(o.card) ?? []), { i, o }]));
       const rows = [...groups.entries()]
         .map(([card, list]) => {
-          const face = courtFace(faceOf(ix, card), t);
+          const face = courtFace(faceOf(ix, card, lang), t);
           const byAbility = new Map<string, { i: number; o: PowerOption }[]>();
           for (const x of list) byAbility.set(x.o.ability, [...(byAbility.get(x.o.ability) ?? []), x]);
           const abilities = [...byAbility.entries()]
@@ -918,7 +938,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   function render(): void {
     const key = focusKey();
     const me = local();
-    const v = tableView(ix, state, me);
+    const v = withSay(tableView(ix, state, me, lang));
     const valid = validSystems(v);
     const chosen = new Set<string>();
     if (intent.step === 'to' || intent.step === 'move') {
@@ -986,7 +1006,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   // ---- input ----
   function pickSystem(id: string): void {
-    const v = tableView(ix, state, local());
+    const v = withSay(tableView(ix, state, local(), lang));
     // Clicking your own ships while you may move starts a move from there.
     if (intent.step === 'idle' && !modal && canStartMove(v) && movableFrom(v).has(id)) {
       pendingMove = null;
@@ -1048,7 +1068,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   function onAct(el: HTMLElement): void {
     const d = el.dataset;
     const me = local();
-    const v = tableView(ix, state, me);
+    const v = withSay(tableView(ix, state, me, lang));
     switch (d.act) {
       case 'deselect':
         selected = null;
@@ -1204,7 +1224,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
             modal = null;
             send({ type: 'decide', player: me, args });
           } catch (e) {
-            showToast(t('error', { msg: (e as Error).message }));
+            showToast(t('error', { msg: say((e as Error).message) }));
             render();
           }
         }
@@ -1219,7 +1239,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         if (online && !hotseat) return;
         const prev = history.pop();
         if (prev) state = prev;
-        if (prev && online && hotseat) online.commit(prev).catch((e: Error) => showToast(t('error', { msg: e.message })));
+        if (prev && online && hotseat) online.commit(prev).catch((e: Error) => showToast(t('error', { msg: say(e.message) })));
         resetChoices();
         modal = null;
         break;
@@ -1375,7 +1395,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const zoom = stage.querySelector<HTMLElement>('.card-zoom');
     const id = el.dataset.zoom;
     if (!zoom || !id) return;
-    zoom.innerHTML = largeCard(faceOf(ix, id), t, { selected: false, disabled: false });
+    zoom.innerHTML = largeCard(faceOf(ix, id, lang), t, { selected: false, disabled: false });
     const onCard = (el.dataset.agents ?? '')
       .split(',')
       .filter(Boolean)
@@ -1439,6 +1459,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'lang':
         lang = el.value as Lang;
         t = translator(lang);
+        say = engineSay();
         break;
       case 'players':
         players = Number(el.value) as PlayerCount;

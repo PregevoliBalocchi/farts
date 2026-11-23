@@ -4,17 +4,23 @@
 // the name and rules text from the owner's content (never from code). A card
 // without a transcribed name, or without the kit, keeps its plain picture.
 
-import type { ContentIndex } from '../../game/engine';
+import type { CardWords, ContentIndex, CourtCardDef } from '../../game/engine';
 import { assetUrl, cardArt } from './assets';
 import type { CourtCardView } from './view';
 
 /** What a card face needs. */
 export type CourtFaceData = Pick<CourtCardView, 'card' | 'kind' | 'resource' | 'keys' | 'name' | 'text' | 'crisis' | 'set' | 'focus'>;
 
-/** A Court card's face data from the content. */
-export function faceOf(ix: ContentIndex, id: string): CourtFaceData {
+/** A card's printed words in `lang`: the translation where the content has one, else the original. */
+export function cardWords(d: CourtCardDef | undefined, lang: string): CardWords {
+  const tr = lang === 'en' ? undefined : d?.i18n?.[lang];
+  return { name: tr?.name ?? d?.name, text: tr?.text ?? d?.text, crisis: tr?.crisis ?? d?.crisis };
+}
+
+/** A Court card's face data from the content, its words in `lang`. */
+export function faceOf(ix: ContentIndex, id: string, lang = 'en'): CourtFaceData {
   const d = ix.courtCards.get(id);
-  return { card: id, kind: d?.kind ?? null, resource: d?.resource ?? null, keys: Number(d?.keys ?? 0), name: d?.name, text: d?.text, crisis: d?.crisis, set: d?.set, focus: d?.artFocus };
+  return { card: id, kind: d?.kind ?? null, resource: d?.resource ?? null, keys: Number(d?.keys ?? 0), ...cardWords(d, lang), set: d?.set, focus: d?.artFocus };
 }
 
 const esc = (v: unknown) => String(v).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
