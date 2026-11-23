@@ -5,9 +5,9 @@
 
 import type { ContentIndex, Resource } from '../../game/engine';
 import type { Translate } from '../../i18n';
-import { assetUrl, cardArt, icon, seatColor, seatIcon } from './assets';
+import { assetUrl, cardArt, cardCut, icon, seatColor, seatIcon } from './assets';
 import type { IconName } from './assets';
-import { courtBanner, courtCardFace, hasKitFace } from './cardface';
+import { cardFaceById, courtBanner, courtCardFace, hasKitFace } from './cardface';
 import type { CourtFaceData } from './cardface';
 import { roundedTriangle } from './model-fx';
 import type { ActionCardView, CourtCardView, PlayerView, TableView } from './view';
@@ -194,9 +194,9 @@ function outrage(p: PlayerView, t: Translate): string {
   return `<div class="outrage" aria-label="${esc(t('outrage.row'))}">${spaces}</div>`;
 }
 
-/** The leader's picture when the seat has a leader card with art (hover or focus shows the whole card), else the seat portrait. */
+/** The leader's character (cut from its card) when the seat has a leader (hover or focus shows the whole card), else the seat portrait. */
 function leaderPortrait(p: PlayerView): string {
-  const art = p.leader ? cardArt(p.leader) : null;
+  const art = p.leader ? (cardCut(p.leader) ?? cardArt(p.leader)) : null;
   return art ? `<div class="portrait leader" data-zoom="${esc(p.leader)}" tabindex="0"><img src="${esc(art)}" alt=""></div>` : portrait(p.id);
 }
 
@@ -210,7 +210,7 @@ function preludeTab(cards: readonly PreludeCard[], t: Translate): string {
   if (!cards.length) return '';
   const btns = cards
     .map((c) => {
-      const art = cardArt(c.card);
+      const art = cardCut(c.card) ?? cardArt(c.card);
       const face = art ? `<img src="${esc(art)}" alt="">` : icon('court');
       return c.lit
         ? `<button type="button" class="pre lit" data-act="powers-open" data-zoom="${esc(c.card)}" title="${esc(t('powers.title'))}">${face}</button>`
@@ -242,10 +242,7 @@ function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<numb
 function miniCards(cards: string[], max: number): string {
   const shown = cards
     .slice(0, max)
-    .map((c) => {
-      const art = cardArt(c);
-      return `<div class="mini-card${art ? ' has-art' : ''}" title="${esc(c)}" data-zoom="${esc(c)}">${art ? `<img src="${esc(art)}" alt="">` : icon('court')}</div>`;
-    })
+    .map((c) => `<div class="mini-card kitted" data-zoom="${esc(c)}">${cardFaceById(c)}</div>`)
     .join('');
   return `<div class="mini-cards">${shown}${cards.length > max ? `<div class="mini-card more">+${cards.length - max}</div>` : ''}</div>`;
 }
@@ -362,6 +359,7 @@ export function ambitionsStrip(ix: ContentIndex, v: TableView, t: Translate): st
 
 /** Small portrait face of a Court card: its image when present, else a drawn placeholder with its data. */
 export function courtFace(c: CourtFaceData, t: Translate): string {
+  if (hasKitFace(c)) return courtCardFace(c);
   const art = cardArt(c.card);
   if (art) return `<img class="face-img" src="${esc(art)}" alt="">`;
   const keys = c.keys ? `<span>${icon('key')}${c.keys}</span>` : '';

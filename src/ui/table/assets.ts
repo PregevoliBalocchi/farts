@@ -25,7 +25,11 @@ const cardFiles = import.meta.glob('../../../assets/cards/{court,court-campaign,
   import: 'default',
 }) as Record<string, string>;
 
+// The illustrations cut out of those pictures (tools/cards/extract-art.mjs): key art.<card id>.
+const artFiles = import.meta.glob('../../../assets/cards/art/*.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+
 const byKey = new Map<string, string>();
+for (const [path, url] of Object.entries(artFiles)) byKey.set(`art.${path.replace(/^.*\//, '').replace(/\.png$/, '')}`, url);
 for (const [path, url] of Object.entries(cardFiles)) {
   byKey.set(`card.${path.replace(/^.*\//, '').replace(/\.[a-zA-Z]+$/, '')}`, url);
 }
@@ -109,6 +113,11 @@ export function icon(name: IconName, cls = '', label?: string): string {
 /** The image for a card id (assets/ui/card/<id>.*), or null. */
 export function cardArt(id: string): string | null {
   return assetUrl(`card.${id}`);
+}
+
+/** The illustration alone, cut out of a card's picture (assets/cards/art/<id>.png), or null. */
+export function cardCut(id: string): string | null {
+  return assetUrl(`art.${id}`);
 }
 
 /** Colour index (0-3) of each seat, chosen when the game was created; seat i has colour i unless set. */

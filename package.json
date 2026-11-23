@@ -18,7 +18,8 @@
     "build:online": "tsc --noEmit && vite build --config vite.online.config.ts",
     "dev:online": "vite --config vite.online.config.ts",
     "deploy:online": "firebase deploy",
-    "assets:kit": "node tools/fetch-kit.mjs"
+    "assets:kit": "node tools/fetch-kit.mjs",
+    "assets:art": "node tools/cards/extract-art.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

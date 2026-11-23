@@ -10,9 +10,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import config from './models.json';
-import { bounds, engineSpots, fireSpots, fitModel, rimSpots, rng, roundedTriangle, windowSpots } from './model-fx';
+import { bounds, engineSpots, fireSpots, fitModel, footprintCentre, rimSpots, rng, roundedTriangle, windowSpots } from './model-fx';
 import type { ModelSpec } from './model-fx';
-import { paintedWood, SEAT_PAINT } from './pieces3d';
+import { SEAT_PAINT } from './pieces3d';
 import type { PieceKind } from './pieces3d';
 
 const urls = import.meta.glob('../../../assets/models/*.glb', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
@@ -79,7 +79,11 @@ function prepare(kind: PieceKind, mesh: THREE.Mesh): Model {
   if (spec.rotateZ) g.rotateZ((spec.rotateZ * Math.PI) / 180);
   const pos0 = g.getAttribute('position').array;
   const b0 = bounds(pos0);
-  g.translate(-(b0.min[0] + b0.max[0]) / 2, 0, -(b0.min[2] + b0.max[2]) / 2);
+  // A building is centred on what stands on the ground (its footprint), so it sits in the middle of its base;
+  // anything else on its bounding box.
+  const building = kind === 'city' || kind === 'starport';
+  const c0 = building ? footprintCentre(pos0) : { x: (b0.min[0] + b0.max[0]) / 2, z: (b0.min[2] + b0.max[2]) / 2 };
+  g.translate(-c0.x, 0, -c0.z);
   const fit = fitModel(b0.min, b0.max, spec);
   g.scale(fit.scale, fit.scale, fit.scale);
   g.translate(0, fit.lift, 0);
@@ -298,9 +302,140 @@ function burning(sources: readonly THREE.Vector3[], seed: number): THREE.Object3
   return [points(Fx.Fire, config.fire.size, fire, [config.fire.color, '#ffd25a'], seed), points(Fx.Smoke, config.smoke.size, smoke, [config.smoke.color, '#b3aca1'], seed + 1)];
 }
 
+// ---- engine glow and trails in the seat's colour ----
+
+/** The glow of a seat's engines: its colour, lifted towards white so it shines. */
+export function seatGlow(seat: number): string {
+  const c = new THREE.Color(SEAT_PAINT[seat % SEAT_PAINT.length]);
+  return `#${c.lerp(new THREE.Color('#ffffff'), config.engine.mix).getHexString()}`;
+}
+
+const TRAIL_VERT = `
+uniform float uTime;
+uniform float uLife;
+uniform float uSize;
+uniform float uViewH;
+attribute float aBorn;
+varying float vAlpha;
+void main() {
+  float age = clamp((uTime - aBorn) / uLife, 0.0, 1.0);
+  vAlpha = pow(1.0 - age, 1.6);
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * mv;
+  gl_PointSize = uSize * (1.0 - 0.65 * age) * projectionMatrix[1][1] * uViewH * 0.5 / -mv.z;
+}
+`;
+
+const TRAIL_FRAG = `
+uniform vec3 uColor;
+varying float vAlpha;
+void main() {
+  float d = length(gl_PointCoord - 0.5) * 2.0;
+  if (d > 1.0) discard;
+  float g = pow(1.0 - d, 1.8);
+  gl_FragColor = vec4(mix(uColor, vec3(1.0), pow(1.0 - d, 5.0) * 0.6), g * vAlpha * 0.85);
+}
+`;
+
+/** A ship's glowing engine trail (Homeworld style): fading points left behind it as it flies. */
+export interface EngineTrail {
+  readonly object: THREE.Points;
+  /** Leaves trail behind `ship` (a ship holder: position and heading) at time `sec`. */
+  follow(ship: THREE.Object3D, sec: number): void;
+  /** The ship has landed: no more trail; what is there fades out. */
+  land(sec: number): void;
+  /** True once the whole trail has faded. */
+  done(sec: number): boolean;
+  /** Takes the trail off the board and frees it. */
+  detach(): void;
+}
+
+/** A new engine trail in `color`. Add its `object` to the scene, then call follow() every frame of the flight. */
+export function engineTrail(color: string): EngineTrail {
+  const t = config.trail;
+  const pos = new Float32Array(t.samples * 3);
+  const born = new Float32Array(t.samples).fill(-1e6);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('aBorn', new THREE.BufferAttribute(born, 1));
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uTime: fxTime, uViewH: fxViewHeight, uLife: { value: t.life }, uSize: { value: t.size }, uColor: { value: new THREE.Color(color) } },
+    vertexShader: TRAIL_VERT,
+    fragmentShader: TRAIL_FRAG,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const object = new THREE.Points(geo, mat);
+  object.frustumCulled = false;
+  object.renderOrder = 2;
+  let next = 0;
+  let last: THREE.Vector3 | null = null;
+  let lastTime = -1e6;
+  let landed = false;
+  const put = (p: THREE.Vector3, sec: number) => {
+    pos.set([p.x, p.y, p.z], next * 3);
+    born[next] = sec;
+    next = (next + 1) % t.samples;
+  };
+  return {
+    object,
+    follow(ship, sec) {
+      if (landed) return;
+      // The engines are at the back of the hull: +X in the ship's own frame (its nose is −X).
+      const h = ship.rotation.y;
+      const p = new THREE.Vector3(ship.position.x + Math.cos(h) * t.back, ship.position.y + t.height, ship.position.z - Math.sin(h) * t.back);
+      if (!last) {
+        put(p, sec);
+        last = p;
+        lastTime = sec;
+        return;
+      }
+      // Fill the way since the last frame with evenly spaced points, aged by when the ship passed them.
+      const gap = p.distanceTo(last);
+      const n = Math.floor(gap / t.spacing);
+      for (let i = 1; i <= n; i++) {
+        const k = i / Math.max(1, n);
+        put(last.clone().lerp(p, k), lastTime + (sec - lastTime) * k);
+      }
+      if (n > 0) {
+        last = p;
+        lastTime = sec;
+      }
+      geo.attributes.position.needsUpdate = true;
+      geo.attributes.aBorn.needsUpdate = true;
+    },
+    land(sec) {
+      landed = true;
+      lastTime = Math.max(lastTime, sec);
+    },
+    done(sec) {
+      return landed && sec - lastTime > t.life;
+    },
+    detach() {
+      object.removeFromParent();
+      geo.dispose();
+      mat.dispose();
+    },
+  };
+}
+
 // ---- the triangular base of a building ----
 
 let baseGeo: THREE.BufferGeometry | null = null;
+/** How far the base's middle (its centroid) is from the centre of its bounding box, towards the viewer (+Z). */
+let baseMiddle = 0;
+
+const baseMats = new Map<string, THREE.MeshStandardMaterial>();
+/** The base's smooth painted finish in the seat's colour (no wood grain), cached per colour. */
+function baseMaterial(color: string): THREE.MeshStandardMaterial {
+  let m = baseMats.get(color);
+  if (!m) {
+    m = new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.1 });
+    baseMats.set(color, m);
+  }
+  return m;
+}
 
 function baseGeometry(): THREE.BufferGeometry {
   if (baseGeo) return baseGeo;
@@ -315,6 +450,8 @@ function baseGeometry(): THREE.BufferGeometry {
   const g = new THREE.ExtrudeGeometry(shape, { depth: height - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3, curveSegments: 1 });
   g.rotateX(-Math.PI / 2);
   g.translate(0, bevel, 0);
+  // The outline is centred on its bounding box (like the map's slot points); the centroid lies h/6 towards the viewer.
+  baseMiddle = (side * Math.sqrt(3)) / 2 / 6;
   baseGeo = g;
   return g;
 }
@@ -346,14 +483,16 @@ export function modelPiece(kind: PieceKind, seat: number, opts: { lying?: boolea
       body.rotation.x = config.damagedTilt;
       body.position.y = config.damagedHover - spec.hover;
     } else if (m.engines.length) {
-      body.add(points(Fx.Engine, config.engine.size * (kind === 'flagship' ? 1.3 : 1), m.engines, [config.engine.color], seed));
+      body.add(points(Fx.Engine, config.engine.size * (kind === 'flagship' ? 1.3 : 1), m.engines, [seatGlow(seat)], seed));
     }
     holder.userData.float = { phase: rng(seed)() * Math.PI * 2, base: body.position.y };
   } else if (kind === 'city' || kind === 'starport') {
-    const base = new THREE.Mesh(baseGeometry(), paintedWood(SEAT_PAINT[seat % SEAT_PAINT.length]));
+    const base = new THREE.Mesh(baseGeometry(), baseMaterial(SEAT_PAINT[seat % SEAT_PAINT.length]));
     base.castShadow = true;
     base.receiveShadow = true;
     holder.add(base);
+    // The building stands in the middle of the triangle, not of its bounding box.
+    body.position.z = baseMiddle;
     if (!damaged && m.windows.length) body.add(points(Fx.Window, config.windows.size, m.windows, [config.windows.color, '#ffe6a8', '#9fd8ff'], seed));
     if (!damaged && m.rim.length) body.add(points(Fx.Landing, config.landing.size, m.rim, config.landing.colors, seed));
   }

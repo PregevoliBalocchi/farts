@@ -1,7 +1,7 @@
 // Pure helpers behind the 3D piece models (src/ui/table/model-fx.ts): fitting,
 // surface points for lights and fire, building bases, and ship flights.
 import { describe, expect, it } from 'vitest';
-import { agentLayout, arcHeight, easeInOut, headingSway, engineSpots, fireSpots, fitModel, planMoves, rimSpots, fleetFormation, roundedTriangle, triangleCorners, windowSpots } from '../../../src/ui/table/model-fx';
+import { agentLayout, arcHeight, easeInOut, faceEnemies, flightPhase, footprintCentre, headingSway, headingTowards, engineSpots, fireSpots, fitModel, planMoves, rimSpots, fleetFormation, roundedTriangle, routeSystems, triangleCorners, turnBetween, windowSpots } from '../../../src/ui/table/model-fx';
 import type { ShipGroupAt } from '../../../src/ui/table/model-fx';
 
 /** A box from -1..1 on every axis as 8 corner vertices, normals pointing out along y for the top four. */
@@ -135,7 +135,7 @@ describe('planMoves', () => {
 
   it('flies a group that left one system into the system that gained it', () => {
     const moves = planMoves([g('a', 2, 0), g('b', 1, 5)], [g('b', 3, 5)]);
-    expect(moves).toEqual([{ player: 0, damaged: false, system: 'b', from: { x: 0, z: 0 } }]);
+    expect(moves).toEqual([{ player: 0, damaged: false, system: 'b', fromSystem: 'a', from: { x: 0, z: 0 } }]);
   });
 
   it('takes ships from the nearest system that lost some', () => {
@@ -147,6 +147,56 @@ describe('planMoves', () => {
     expect(planMoves([g('a', 2, 0)], [g('a', 3, 0)])).toEqual([]);
     expect(planMoves([g('a', 1, 0, 1)], [g('b', 1, 5, 2)])).toEqual([]);
     expect(planMoves([g('a', 1, 0, 0, true)], [g('b', 1, 5, 0, false)])).toEqual([]);
+  });
+});
+
+describe('ship facing', () => {
+  it('points the nose (−X) at the target', () => {
+    expect(headingTowards({ x: 0, z: 0 }, { x: -1, z: 0 })).toBeCloseTo(0);
+    expect(Math.abs(headingTowards({ x: 0, z: 0 }, { x: 1, z: 0 }))).toBeCloseTo(Math.PI);
+  });
+
+  it('turns the short way round', () => {
+    expect(turnBetween(3, -3)).toBeCloseTo(2 * Math.PI - 6);
+    expect(turnBetween(0, 1)).toBeCloseTo(1);
+  });
+
+  it('faces the other seats in a shared system and leaves a lone group alone', () => {
+    const [a, b] = faceEnemies([
+      { player: 0, x: 0, z: 0 },
+      { player: 1, x: -2, z: 0 },
+    ]);
+    expect(a).toBeCloseTo(0);
+    expect(Math.abs(b!)).toBeCloseTo(Math.PI);
+    expect(faceEnemies([{ player: 0, x: 0, z: 0 }, { player: 0, x: 1, z: 0 }])).toEqual([null, null]);
+  });
+});
+
+describe('flight route', () => {
+  const links: [string, string][] = [['a', 'g'], ['g', 'h'], ['h', 'b'], ['a', 'x']];
+
+  it('follows the links with the fewest jumps', () => {
+    expect(routeSystems(links, 'a', 'b')).toEqual(['a', 'g', 'h', 'b']);
+    expect(routeSystems(links, 'a', 'x')).toEqual(['a', 'x']);
+  });
+
+  it('goes straight when no route is known', () => {
+    expect(routeSystems(links, 'a', 'zz')).toEqual(['a', 'zz']);
+  });
+
+  it('turns first, flies, then settles', () => {
+    expect(flightPhase(0.05).stage).toBe('turn');
+    expect(flightPhase(0.5)).toMatchObject({ stage: 'fly' });
+    expect(flightPhase(0.5).u).toBeGreaterThan(0);
+    expect(flightPhase(1)).toMatchObject({ stage: 'settle', k: 1, u: 1 });
+  });
+});
+
+describe('building footprint', () => {
+  it('centres on the ground part, not on what leans out above', () => {
+    // A ground square centred at (1, 1) and a tall arm reaching out to x = 5 high up.
+    const pos = [0, 0, 0, 2, 0, 2, 0, 0, 2, 2, 0, 0, 5, 10, 1];
+    expect(footprintCentre(pos)).toEqual({ x: 1, z: 1 });
   });
 });
 

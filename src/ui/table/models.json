@@ -42,7 +42,7 @@
   "damagedTilt": 0.5,
   "damagedHover": 0.07,
   "engine": {
-    "color": "#8fdcff",
+    "mix": 0.3,
     "size": 0.16
   },
   "windows": {
@@ -71,13 +71,26 @@
     "size": 0.2
   },
   "move": {
-    "duration": 0.9,
-    "arc": 0.5
+    "duration": 1.6,
+    "perJump": 0.55,
+    "maxDuration": 3.2,
+    "lift": 0.06,
+    "bank": 0.45,
+    "turnShare": 0.18,
+    "settleShare": 0.17
   },
   "base": {
     "side": 0.73,
     "radius": 0.07,
     "height": 0.05,
     "bevel": 0.014
+  },
+  "trail": {
+    "samples": 90,
+    "spacing": 0.02,
+    "life": 1.6,
+    "size": 0.13,
+    "back": 0.2,
+    "height": 0.17
   }
 }
