@@ -18,10 +18,11 @@ import defaultCalibration from './board.default.json';
 import { BOARD_DEPTH, boardWidth, buildingSpots, headingJitter, isCalibration, MAX_SHOWN, pictureToWorld, shipGroups, shipSpot, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
 import type { BoardCalibration, Spot } from './board3d-layout';
 import { loadKitPieces, piece } from './kitpieces';
-import { arcHeight, easeInOut, planMoves } from './model-fx';
+import { faceEnemies, flightPhase, headingTowards, planMoves, routeSystems, turnBetween } from './model-fx';
 import type { ShipGroupAt } from './model-fx';
 import modelConfig from './models.json';
-import { fxTime, fxViewHeight, hasModels, loadModels } from './models3d';
+import { engineTrail, fxTime, fxViewHeight, hasModels, loadModels, seatGlow } from './models3d';
+import type { EngineTrail } from './models3d';
 import { boardImageSvg } from './mapview';
 import { loadCardFonts } from './cardfonts';
 import boardLinesData from './board.lines.json';
@@ -97,6 +98,20 @@ export interface ShipGlow {
   chosen?: string;
 }
 
+/** A ship group flying to its new system: its course, how it turns at both ends, and its engine trail. */
+interface Flight {
+  o: THREE.Object3D;
+  curve: THREE.CatmullRomCurve3;
+  startHeading: number;
+  endHeading: number;
+  duration: number;
+  /** Start time, set on the first frame. */
+  t0: number | null;
+  trail: EngineTrail | null;
+  bank: number;
+  damaged: boolean;
+}
+
 /** The 3D map. Create with createBoard3D (null when WebGL is not available). */
 export class Board3D {
   readonly canvas: HTMLCanvasElement;
@@ -121,7 +136,9 @@ export class Board3D {
   private shipsAt: ShipGroupAt[] = [];
   private glow: ShipGlow | null = null;
   /** Ship groups flying from one system to another: start time set on the first frame. */
-  private flights: { o: THREE.Object3D; from: { x: number; z: number }; to: { x: number; z: number }; heading: number; t0: number | null }[] = [];
+  private flights: Flight[] = [];
+  /** Glowing engine trails, kept after their ship lands until they fade out. */
+  private trails: EngineTrail[] = [];
   private framed = false;
   /** Distance at which the board just covers the window: from here outwards the camera looks straight down. */
   private coverDist = 1;
@@ -510,8 +527,14 @@ export class Board3D {
     });
     this.pieces.clear();
     this.flights = [];
+    for (const tr of this.trails) tr.detach();
+    this.trails = [];
     const shipsAt: ShipGroupAt[] = [];
     const groupObjects = new Map<string, THREE.Object3D>();
+    // Every ship drawn, by system, to turn the ones that share a system with another seat towards it.
+    const bySystem = new Map<string, { o: THREE.Object3D; player: number; x: number; z: number }[]>();
+    const keep = (system: string, o: THREE.Object3D, player: number) =>
+      bySystem.set(system, [...(bySystem.get(system) ?? []), { o, player, x: o.position.x, z: o.position.z }]);
     for (const s of v.systems) {
       const p = this.spots[s.id];
       if (!p) continue;
@@ -535,9 +558,14 @@ export class Board3D {
             if (!o.userData.model) o.scale.setScalar((o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE) * ZONE_SHIP_SCALE);
             o.userData.system = s.id;
             this.pieces.add(o);
+            keep(s.id, o, st.player);
             shipsAt.push({ player: st.player, damaged: g.lying, system: s.id, count: g.count, x: w.x, z: w.z });
             groupObjects.set(`${s.id}:${st.player}:${g.lying ? 1 : 0}`, o);
-            if (g.count > 1) this.pieces.add(countTag(g.count, w.x, w.z, 'small', o.userData.model ? 0.5 : 0.3));
+            if (g.count > 1) {
+              const tag = countTag(g.count, w.x, w.z, 'small', o.userData.model ? 0.5 : 0.3);
+              o.userData.tag = tag;
+              this.pieces.add(tag);
+            }
           }
           return;
         }
@@ -550,6 +578,7 @@ export class Board3D {
           if (!o.userData.model) o.scale.setScalar(o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE);
           o.userData.system = s.id;
           this.pieces.add(o);
+          keep(s.id, o, st.player);
         }
         if (st.fresh + st.damaged > MAX_SHOWN) this.pieces.add(countTag(st.fresh + st.damaged, p.x + c.x, p.z + c.z));
       });
@@ -568,6 +597,13 @@ export class Board3D {
         this.pieces.add(o);
       });
     }
+    // Ships sharing a system with another seat's ships face them, ready for battle.
+    for (const list of bySystem.values()) {
+      faceEnemies(list).forEach((h, i) => {
+        if (h !== null) list[i].o.rotation.y = h;
+      });
+    }
+    for (const g of shipsAt) g.heading = groupObjects.get(`${g.system}:${g.player}:${g.damaged ? 1 : 0}`)?.rotation.y;
     this.planFlights(shipsAt, groupObjects, fly);
   }
 
@@ -576,11 +612,36 @@ export class Board3D {
     const prev = this.shipsAt;
     this.shipsAt = shipsAt;
     if (!fly || !this.opts.motion || !prev.length) return;
+    const links = this.last?.links ?? this.ix.content.map.links;
+    const before = new Map(prev.map((g) => [`${g.system}:${g.player}:${g.damaged ? 1 : 0}`, g.heading]));
     for (const m of planMoves(prev, shipsAt)) {
       const o = groupObjects.get(`${m.system}:${m.player}:${m.damaged ? 1 : 0}`);
       if (!o) continue;
-      this.flights.push({ o, from: m.from, to: { x: o.position.x, z: o.position.z }, heading: o.rotation.y, t0: null });
+      // The course: from where the group stood, through the systems on the way (the gates), to its new
+      // place; a single jump bends a little to one side, like a ship steering rather than a straight cut.
+      const route = routeSystems(links, m.fromSystem, m.system);
+      const to = { x: o.position.x, z: o.position.z };
+      const via = route.slice(1, -1).map((id) => this.spots[id]).filter((p): p is Spot => !!p);
+      const pts = [new THREE.Vector3(m.from.x, 0, m.from.z), ...via.map((p) => new THREE.Vector3(p.x, 0, p.z)), new THREE.Vector3(to.x, 0, to.z)];
+      if (pts.length === 2) {
+        const d = pts[1].clone().sub(pts[0]);
+        const side = new THREE.Vector3(-d.z, 0, d.x).multiplyScalar(m.player % 2 ? 0.12 : -0.12);
+        pts.splice(1, 0, pts[0].clone().add(pts[1]).multiplyScalar(0.5).add(side));
+      }
+      const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
+      const startHeading = before.get(`${m.fromSystem}:${m.player}:${m.damaged ? 1 : 0}`) ?? SHIP_HEADING;
+      const move = modelConfig.move;
+      const duration = Math.min(move.maxDuration, move.duration + move.perJump * Math.max(0, route.length - 2));
+      const trail = m.damaged ? null : engineTrail(seatGlow(m.player));
+      if (trail) {
+        this.pieces.add(trail.object);
+        this.trails.push(trail);
+      }
+      this.flights.push({ o, curve, startHeading, endHeading: o.rotation.y, duration, t0: null, trail, bank: 0, damaged: m.damaged });
       o.position.set(m.from.x, 0, m.from.z);
+      o.rotation.y = startHeading;
+      // The group's count shows once it has landed.
+      if (o.userData.tag) (o.userData.tag as THREE.Sprite).visible = false;
     }
   }
 
@@ -673,19 +734,45 @@ export class Board3D {
       body.position.y = fl.base + f.amplitude * Math.sin(w);
       body.rotation.z = f.roll * Math.sin(w * 0.7 + 1.3);
     }
-    const dur = modelConfig.move.duration;
+    const move = modelConfig.move;
     this.flights = this.flights.filter((fl) => {
       fl.t0 ??= sec;
-      const p = Math.min(1, (sec - fl.t0) / dur);
-      const e = easeInOut(p);
-      fl.o.position.set(fl.from.x + (fl.to.x - fl.from.x) * e, arcHeight(e, modelConfig.move.arc), fl.from.z + (fl.to.z - fl.from.z) * e);
-      // The models' nose is −X: face the way of travel, and settle back to the resting heading on arrival.
-      const travel = Math.atan2(fl.to.z - fl.from.z, -(fl.to.x - fl.from.x));
-      const settle = easeInOut((p - 0.75) / 0.25);
-      fl.o.rotation.y = travel + (fl.heading - travel) * settle;
+      const p = Math.min(1, (sec - fl.t0) / fl.duration);
+      const ph = flightPhase(p, move.turnShare, move.settleShare);
+      // The course's direction at u (the last stretch looks from just before the end).
+      const course = (u: number) => {
+        const a = Math.min(0.99, Math.max(0, u));
+        return headingTowards(fl.curve.getPointAt(a), fl.curve.getPointAt(a + 0.01));
+      };
+      const at = fl.curve.getPointAt(ph.u);
+      // A little off the board while flying, back down on arrival.
+      fl.o.position.set(at.x, move.lift * Math.sin(Math.PI * ph.u), at.z);
+      let heading: number;
+      if (ph.stage === 'turn') heading = fl.startHeading + turnBetween(fl.startHeading, course(0)) * ph.k;
+      else if (ph.stage === 'settle') heading = course(1) + turnBetween(course(1), fl.endHeading) * ph.k;
+      else heading = course(ph.u);
+      // Banking into turns: the hull rolls with how fast the heading changes (fresh ships only).
+      const body = fl.o.userData.body as THREE.Object3D | undefined;
+      if (body && !fl.damaged) {
+        const rate = turnBetween(fl.o.rotation.y, heading);
+        fl.bank += (Math.max(-move.bank, Math.min(move.bank, rate * 6)) - fl.bank) * 0.2;
+        body.rotation.x = ph.stage === 'fly' ? fl.bank : fl.bank * (1 - ph.k);
+      }
+      fl.o.rotation.y = heading;
+      fl.trail?.follow(fl.o, sec);
       if (p < 1) return true;
-      fl.o.position.set(fl.to.x, 0, fl.to.z);
-      fl.o.rotation.y = fl.heading;
+      fl.o.position.set(at.x, 0, at.z);
+      fl.o.rotation.y = fl.endHeading;
+      if (body && !fl.damaged) body.rotation.x = 0;
+      fl.trail?.land(sec);
+      if (fl.o.userData.tag) (fl.o.userData.tag as THREE.Sprite).visible = true;
+      return false;
+    });
+    // Trails fade after landing, then go.
+    this.trails = this.trails.filter((tr) => {
+
+      if (!tr.done(sec)) return true;
+      tr.detach();
       return false;
     });
   }

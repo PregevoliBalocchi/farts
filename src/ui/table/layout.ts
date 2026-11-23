@@ -33,8 +33,8 @@ export interface Rect {
 const G = 10; // gutter
 const TOP = 70; // height of the top strip
 const SIDE_R = 180; // the right column: ambitions, then the Court
-const LOCAL_W = 470;
-const LOCAL_H = 236;
+const LOCAL_W = 600;
+const LOCAL_H = 292;
 const RIVAL_H = 206;
 const bot = () => STAGE.h - G; // bottom edge of the bottom row
 

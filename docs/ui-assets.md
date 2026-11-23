@@ -40,13 +40,22 @@ arch, and the name and rules text come from the owner's content
 Translations sit beside them in `courtCards[].i18n.<lang>` (`name`, `text`,
 `crisis`); the table shows the one for its language and falls back to the
 original words (terms: `docs/translation-glossary.md`).
-Lore cards are drawn the same way: the owner's picture under the kit's Lore
-frame (`cardkit/lore`), whose paper hides the printed words, the content's
-`loreCards[].name` and `.text`, and the footer band. Leader cards (tarot size)
-keep the printed picture for the illustration and the resources and A/B/C
-setup row, and a fresh panel over the printed name and text box shows
-`leaders[].name` and `.text`. Both have `i18n.<lang>` translations. In rules
+Every card face is drawn from the kit around the illustration alone:
+`npm run assets:art` (`tools/cards/extract-art.mjs`) cuts it out of each card
+picture into `assets/cards/art/<id>.png` (committed): the picture inside a
+Guild card's arch, a Vox card's sketch with its paper made clear, a Lore
+card's picture above the gold band, a Leader's character with its edges faded
+(an automatic cut-out would lose the dark ink and shadows, as dark as the
+space around them). It also trims the kit's Tarot leader background into
+`cardkit/leader`. Lore cards: the illustration under the kit's Lore frame
+(`cardkit/lore`), the content's `loreCards[].name` and `.text`, the footer
+band. Leader cards (tarot size): the Tarot space, the character, a white panel
+with `leaders[].name` and `.text`, and the bottom bar rebuilt from the
+content: the starting `resources` in rings, then the A/B/C boxes with the
+buildings and ships of `setup`. Both have `i18n.<lang>` translations. In rules
 texts `{hit}` and `{intercept}` stand for the dice icons, like `{key}`.
+Every panel (draft, boards, details, powers, zoom) draws a card by id the
+same way (`cardFaceById`).
 A card without a transcribed name keeps its plain picture. Online the content
 is read from the database: upload `data/content.json` again after adding texts.
 

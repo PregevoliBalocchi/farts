@@ -13,7 +13,7 @@ import { messageTranslator } from '../../i18n/messages';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
 import { assetUrl, cardArt, icon, seatColor, seatIcon, setSeatColors } from './assets';
-import { cardWords, courtCardFace, faceOf, fitCardText, hasKitFace } from './cardface';
+import { cardFaceById, cardWords, courtCardFace, faceOf, fitCardText, hasKitFace, setFaceSource } from './cardface';
 import { loadCardFonts } from './cardfonts';
 import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, hitsLeft } from './battle';
 import type { BattlePick } from './battle';
@@ -88,6 +88,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let t = translator(lang);
   const { content, source } = online ? { content: online.content, source: 'owner' as const } : loadContent();
   const ix = indexContent(content, BASE_EFFECTS);
+  // Every panel draws a card by id the same way: from the kit, in the table's language.
+  setFaceSource((id) => faceOf(ix, id, lang));
   /** The engine's sentences (log, errors) in the table's language, players and ids by name. */
   const engineSay = () =>
     messageTranslator(lang, {
@@ -517,6 +519,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     return Array.isArray(cards) && typeof keep === 'number' && keep > 0 ? { cards: cards as string[], keep: Math.min(keep, cards.length) } : null;
   }
 
+  /** A card's printed name in the table's language (its id when the content has none). */
+  function cardName(id: string): string {
+    return faceOf(ix, id, lang).name ?? id;
+  }
+
   /** A Lore, Leader or Court card at full size: drawn from the kit when it can be, else its picture, else its id. */
   function drawnCard(id: string): { face: string; kind: string } {
     const f = faceOf(ix, id, lang);
@@ -549,8 +556,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const taken = state.players
       .map((p) => {
         const got = [p.leader, ...p.lore].filter((x): x is string => !!x).map((id) => {
-          const art = cardArt(id);
-          return `<span class="dr-mini" data-zoom="${esc(id)}">${art ? `<img src="${esc(art)}" alt="">` : esc(id)}</span>`;
+          return `<span class="dr-mini" data-zoom="${esc(id)}">${cardFaceById(id)}</span>`;
         });
         return `<div class="dr-seat s-${seatColor(p.id)}"><span class="seat-c">${icon(seatIcon(p.id))}</span><span class="nm">${esc(playerName(t, p.id))}</span>${got.join('') || `<span class="dr-none">${esc(t('draft.none'))}</span>`}</div>`;
       })
@@ -727,7 +733,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
     if (v.phase === 'decide' && v.decision) {
       const declinable = can({ type: 'decide', player: me, args: {} });
-      return `<div class="hint">${esc(t('decide.what', { card: v.decision.card, effect: t(`decide.effect.${v.decision.effect}`) }))}</div><div class="btn-grid two">${button('decide-open', t('decide.choose'), { cls: 'primary' })}${declinable ? button('decline', t('decide.decline')) : ''}</div>`;
+      return `<div class="hint">${esc(t('decide.what', { card: cardName(v.decision.card), effect: t(`decide.effect.${v.decision.effect}`) }))}</div><div class="btn-grid two">${button('decide-open', t('decide.choose'), { cls: 'primary' })}${declinable ? button('decline', t('decide.decline')) : ''}</div>`;
     }
 
     if (v.phase !== 'actions' || !v.budget) return `<div class="hint">${esc(prompt(v))}</div>`;
@@ -851,7 +857,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         .join('');
       inner = `<h2 id="modal-title">${esc(t('keep.title', { n: keep }))}</h2><div></div>
         <div class="modal-body keep-cards">
-          <p class="hint">${esc(t('keep.hint', { n: keep, card: v.decision.card }))}</p>
+          <p class="hint">${esc(t('keep.hint', { n: keep, card: cardName(v.decision.card) }))}</p>
           <div class="dr-row">${faces}</div>
           <p class="keep-count">${esc(t('keep.count', { n: chosen.length, of: keep }))}</p>
         </div>
@@ -863,7 +869,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       const declinable = modal.options.some((o) => !o.parts.length);
       inner = `<h2 id="modal-title">${esc(t('decide.title'))}</h2><div></div>
         <div class="modal-body">
-          <p class="hint">${esc(t('decide.what', { card: v.decision.card, effect: t(`decide.effect.${v.decision.effect}`) }))}</p>
+          <p class="hint">${esc(t('decide.what', { card: cardName(v.decision.card), effect: t(`decide.effect.${v.decision.effect}`) }))}</p>
           <div class="decide-list">${opts || `<p class="hint">${esc(t('decide.none'))}</p>`}</div>
           <details class="decide-adv"><summary>${esc(t('decide.advanced'))}</summary>
             <pre>${esc(JSON.stringify(v.decision, null, 1))}</pre><p>${esc(t('decide.args'))}</p><textarea data-set="decide-args">${esc(modal.args)}</textarea>
@@ -1459,7 +1465,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const y = (r.top - s.top) / scale;
     const w = r.width / scale;
     // A leader card is tarot size: taller than the others at the same width.
-    const ZW = 300, ZH = (face.kind === 'leader' ? Math.round((ZW * 305) / 173) : 416) + (view ? AGENTS_VIEW.h - AGENTS_OVERLAP : 0), GAP = 14;
+    const ZW = 300, ZH = (face.kind === 'leader' ? Math.round((ZW * 672) / 377) : 416) + (view ? AGENTS_VIEW.h - AGENTS_OVERLAP : 0), GAP = 14;
     const left = x + w / 2 > STAGE.w / 2 ? x - ZW - GAP : x + w + GAP;
     const top = Math.max(8, Math.min(STAGE.h - ZH - 8, y + (r.height / scale) / 2 - ZH / 2));
     zoom.style.left = `${left}px`;

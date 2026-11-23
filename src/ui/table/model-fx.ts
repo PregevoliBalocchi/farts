@@ -46,6 +46,24 @@ export function fitModel(min: readonly number[], max: readonly number[], spec: M
   return { scale, lift: -min[1] * scale + spec.hover };
 }
 
+/**
+ * Centre (x, z) of the part of a model that stands on the ground: the
+ * bounding box of the vertices in the lowest `share` of its height.
+ */
+export function footprintCentre(pos: ArrayLike<number>, share = 0.15): { x: number; z: number } {
+  const { min, max } = bounds(pos);
+  const top = min[1] + (max[1] - min[1]) * share;
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (let i = 0; i < pos.length; i += 3) {
+    if (pos[i + 1] > top) continue;
+    x0 = Math.min(x0, pos[i]);
+    x1 = Math.max(x1, pos[i]);
+    z0 = Math.min(z0, pos[i + 2]);
+    z1 = Math.max(z1, pos[i + 2]);
+  }
+  return x0 <= x1 ? { x: (x0 + x1) / 2, z: (z0 + z1) / 2 } : { x: (min[0] + max[0]) / 2, z: (min[2] + max[2]) / 2 };
+}
+
 /** Bounding box of packed xyz positions. */
 export function bounds(pos: ArrayLike<number>): { min: number[]; max: number[] } {
   const min = [Infinity, Infinity, Infinity];
@@ -223,13 +241,16 @@ export interface ShipGroupAt {
   count: number;
   x: number;
   z: number;
+  /** Its resting heading as drawn (to start a flight from). */
+  heading?: number;
 }
 
-/** A group that arrived in `system` and should be flown in from `from`. */
+/** A group that arrived in `system` and should be flown in from `from` (in system `fromSystem`). */
 export interface ShipMove {
   player: number;
   damaged: boolean;
   system: string;
+  fromSystem: string;
   from: { x: number; z: number };
 }
 
@@ -259,12 +280,84 @@ export function planMoves(prev: readonly ShipGroupAt[], next: readonly ShipGroup
         s.left -= take;
         need -= take;
         if (!out.some((m) => m.player === g.player && m.damaged === g.damaged && m.system === g.system)) {
-          out.push({ player: g.player, damaged: g.damaged, system: g.system, from: { x: s.g.x, z: s.g.z } });
+          out.push({ player: g.player, damaged: g.damaged, system: g.system, fromSystem: s.g.system, from: { x: s.g.x, z: s.g.z } });
         }
       }
     }
   }
   return out;
+}
+
+/**
+ * Heading (rotation about the vertical axis) that points a ship model's nose
+ * from `from` towards `to`. The models' nose is −X: heading 0 faces −X.
+ */
+export function headingTowards(from: { x: number; z: number }, to: { x: number; z: number }): number {
+  return Math.atan2(to.z - from.z, -(to.x - from.x));
+}
+
+/** The signed smallest turn from heading `a` to heading `b`, in (−π, π]. */
+export function turnBetween(a: number, b: number): number {
+  let d = (b - a) % (Math.PI * 2);
+  if (d > Math.PI) d -= Math.PI * 2;
+  if (d <= -Math.PI) d += Math.PI * 2;
+  return d;
+}
+
+/**
+ * Resting headings of the ship groups in one system: a group that shares the
+ * system with another seat's ships faces the middle of those ships; a group
+ * alone keeps its own heading (null).
+ */
+export function faceEnemies(groups: readonly { player: number; x: number; z: number }[]): (number | null)[] {
+  return groups.map((g) => {
+    const foes = groups.filter((o) => o.player !== g.player);
+    if (!foes.length) return null;
+    const c = { x: foes.reduce((s, o) => s + o.x, 0) / foes.length, z: foes.reduce((s, o) => s + o.z, 0) / foes.length };
+    return Math.hypot(c.x - g.x, c.z - g.z) < 1e-6 ? null : headingTowards(g, c);
+  });
+}
+
+/**
+ * The systems a group passes through from `from` to `to` along the map's
+ * links (breadth first, so the fewest jumps), both ends included; just the
+ * two ends when no route is known.
+ */
+export function routeSystems(links: readonly (readonly [string, string])[], from: string, to: string): string[] {
+  if (from === to) return [from];
+  const next = new Map<string, string[]>();
+  for (const [a, b] of links) {
+    next.set(a, [...(next.get(a) ?? []), b]);
+    next.set(b, [...(next.get(b) ?? []), a]);
+  }
+  const back = new Map<string, string>([[from, from]]);
+  const queue = [from];
+  while (queue.length) {
+    const s = queue.shift()!;
+    if (s === to) break;
+    for (const n of next.get(s) ?? []) {
+      if (back.has(n)) continue;
+      back.set(n, s);
+      queue.push(n);
+    }
+  }
+  if (!back.has(to)) return [from, to];
+  const path = [to];
+  while (path[0] !== from) path.unshift(back.get(path[0])!);
+  return path;
+}
+
+/**
+ * Where a flying ship is in its flight at progress `p` (0..1): it first turns
+ * on the spot to its course (`turn` share of the time), then flies along the
+ * course easing in and out (`u` is the share of the course covered), then
+ * turns to its resting heading (`settle` share).
+ */
+export function flightPhase(p: number, turn = 0.18, settle = 0.17): { stage: 'turn' | 'fly' | 'settle'; k: number; u: number } {
+  const c = Math.min(1, Math.max(0, p));
+  if (c < turn) return { stage: 'turn', k: easeInOut(c / turn), u: 0 };
+  if (c > 1 - settle) return { stage: 'settle', k: easeInOut((c - (1 - settle)) / settle), u: 1 };
+  return { stage: 'fly', k: 0, u: easeInOut((c - turn) / (1 - turn - settle)) };
 }
 
 /** Height along a move's arc at progress `t` (0..1): up and down again, peaking at `arc`. */

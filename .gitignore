@@ -188,6 +188,8 @@ assets/cards/*
 !assets/cards/court-campaign/
 !assets/cards/lore/
 !assets/cards/leaders/
+# The illustrations cut out of those pictures (tools/cards/extract-art.mjs) are committed too.
+!assets/cards/art/
 assets/map/
 
 # Card fonts (src/ui/table/cardfonts.ts): the free stand-ins (SIL OFL, with their licences) are committed;
