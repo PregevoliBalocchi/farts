@@ -38,7 +38,8 @@ function dot(): THREE.Texture {
 /**
  * The star field: `count` stars spread over a wide slab under the map
  * (`width` × `depth` world units, from just under the planets to far below).
- * Two layers: many faint small stars, a few bright large ones.
+ * Three layers, sized in screen pixels so far stars stay visible: many
+ * small faint ones, fewer brighter ones, a handful of large bright ones.
  */
 export function starfield(width: number, depth: number, count = 7000, seed = 7): THREE.Group {
   const rand = rng(seed);
@@ -61,11 +62,11 @@ export function starfield(width: number, depth: number, count = 7000, seed = 7):
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const mat = new THREE.PointsMaterial({ size, map: sprite, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true });
+    const mat = new THREE.PointsMaterial({ size, map: sprite, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: false });
     const pts = new THREE.Points(geo, mat);
     pts.frustumCulled = false;
     return pts;
   };
-  group.add(layer(count, 0.16, 0.9), layer(Math.round(count / 18), 0.42, 1));
+  group.add(layer(count, 2.2, 0.8), layer(Math.round(count / 8), 4, 1), layer(Math.round(count / 60), 7, 1));
   return group;
 }
