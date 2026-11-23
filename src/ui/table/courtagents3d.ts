@@ -55,7 +55,7 @@ export class CourtAgents3D {
   private frame(xs: readonly number[]): void {
     const span = Math.max(0.5, Math.max(...xs) - Math.min(...xs) + 0.3);
     const half = Math.tan(((this.camera.fov / 2) * Math.PI) / 180) * this.camera.aspect;
-    const dist = Math.max(1.35, span / 2 / half);
+    const dist = Math.max(0.95, span / 2 / half);
     this.camera.position.set(0, dist * 0.3, dist);
     this.camera.lookAt(0, 0.13, -0.05);
   }
@@ -75,6 +75,23 @@ export class CourtAgents3D {
       if (this.motion) this.raf = requestAnimationFrame(tick);
     };
     this.raf = requestAnimationFrame(tick);
+  }
+
+  /**
+   * A still picture (PNG data URL) of `agents` standing as in the close-up, for
+   * places that show many cards at once (the Court picker). Null when no model
+   * is loaded. Do not use the instance that animates the close-up.
+   */
+  async snapshot(agents: readonly CardAgents[]): Promise<string | null> {
+    if (!(await loadModels())) return null;
+    cancelAnimationFrame(this.raf);
+    this.shown = [...agents];
+    this.build();
+    this.sway(0);
+    // The same framing for every card, so agents have the same size whatever their number.
+    this.frame([-0.55, 0.55]);
+    this.renderer.render(this.scene, this.camera);
+    return this.canvas.toDataURL('image/png');
   }
 
   /** Stops drawing (the card close-up is hidden). */

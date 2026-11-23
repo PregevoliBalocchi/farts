@@ -113,6 +113,14 @@ export interface CourtCardView {
   kind: CourtKind | null;
   resource: Resource | null;
   keys: number;
+  /** Printed name, rules text and Crisis box (owner content; absent when not transcribed). */
+  name?: string;
+  text?: string;
+  crisis?: string;
+  /** Centre of the picture's main subject, [x, y] as fractions (crops keep it in view). */
+  focus?: [number, number];
+  /** Court set ('base' when absent). */
+  set?: string;
   agents: { player: PlayerId; count: number }[];
 }
 
@@ -328,7 +336,12 @@ export function tableView(ix: ContentIndex, s: GameState, local: PlayerId): Tabl
         card: slot.card,
         kind: d?.kind ?? null,
         resource: d?.resource ?? null,
-        keys: d?.keys ?? 0,
+        keys: Number(d?.keys ?? 0),
+        name: d?.name,
+        text: d?.text,
+        crisis: d?.crisis,
+        focus: d?.artFocus,
+        set: d?.set,
         agents: Object.entries(slot.agents)
           .filter(([, n]) => n > 0)
           .map(([p, n]) => ({ player: Number(p), count: n })),

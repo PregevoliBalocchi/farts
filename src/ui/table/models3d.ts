@@ -126,12 +126,67 @@ const TINT_GLSL = `
 }
 `;
 
+// The agent, sorted by the model's own texture colours: the hood and coat
+// (orange, rust and cream patches) in the seat's colour; the scarf, strap,
+// pouch and the coat's teal inserts in leather; the trousers and boots
+// (grey-brown) in a faded seat colour; the shadow inside the hood stays dark.
+const AGENT_GLSL = `
+#include <map_fragment>
+{
+  vec3 lin = diffuseColor.rgb;
+  vec3 s = pow(max(lin, vec3(0.0)), vec3(1.0 / 2.2));
+  float mx = max(s.r, max(s.g, s.b));
+  float mn = min(s.r, min(s.g, s.b));
+  float d = mx - mn;
+  float sat = mx > 0.001 ? d / mx : 0.0;
+  float lum = dot(s, vec3(0.299, 0.587, 0.114));
+  float h = 0.0;
+  if (d > 0.0001) {
+    if (mx == s.r) h = mod((s.g - s.b) / d, 6.0);
+    else if (mx == s.g) h = (s.b - s.r) / d + 2.0;
+    else h = (s.r - s.g) / d + 4.0;
+    h /= 6.0;
+  }
+  float teal = smoothstep(0.28, 0.34, h) * (1.0 - smoothstep(0.66, 0.72, h)) * smoothstep(0.1, 0.18, sat);
+  float grey = (1.0 - smoothstep(0.34, 0.42, sat)) * (1.0 - smoothstep(0.62, 0.7, mx)) * smoothstep(0.22, 0.3, mx) * (1.0 - teal);
+  float dark = 1.0 - smoothstep(0.1, 0.18, mx);
+  vec3 paint = uSeat * (0.45 + 0.9 * lum);
+  vec3 faded = mix(uSeat, vec3(dot(uSeat, vec3(0.299, 0.587, 0.114))), uFade) * (0.35 + 0.8 * lum);
+  vec3 leather = uLeather * (0.5 + 1.0 * lum);
+  vec3 c = mix(paint, faded, grey);
+  c = mix(c, leather, teal);
+  diffuseColor.rgb = mix(c, lin, dark) * uShade;
+}
+`;
+
 const materials = new Map<string, THREE.MeshStandardMaterial>();
+
+function agentMaterial(seat: number, damaged: boolean): THREE.MeshStandardMaterial {
+  const m = models.get('agent')!;
+  const mat = new THREE.MeshStandardMaterial({ map: m.texture, roughness: 0.8, metalness: 0.05 });
+  const seatColor = new THREE.Color(SEAT_PAINT[seat % SEAT_PAINT.length]);
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uSeat = { value: seatColor };
+    shader.uniforms.uLeather = { value: new THREE.Color(config.agent.leather) };
+    shader.uniforms.uFade = { value: config.agent.trousersFade };
+    shader.uniforms.uShade = { value: damaged ? config.tint.damagedShade : 1 };
+    shader.fragmentShader = shader.fragmentShader
+      .replace('void main() {', 'uniform vec3 uSeat;\nuniform vec3 uLeather;\nuniform float uFade;\nuniform float uShade;\nvoid main() {')
+      .replace('#include <map_fragment>', AGENT_GLSL);
+  };
+  mat.customProgramCacheKey = () => 'arcs-agent';
+  return mat;
+}
 
 function bodyMaterial(kind: PieceKind, seat: number, damaged: boolean): THREE.MeshStandardMaterial {
   const key = `${kind}:${seat}:${damaged ? 1 : 0}`;
   const hit = materials.get(key);
   if (hit) return hit;
+  if (kind === 'agent') {
+    const a = agentMaterial(seat, damaged);
+    materials.set(key, a);
+    return a;
+  }
   const m = models.get(kind)!;
   const mat = new THREE.MeshStandardMaterial({ map: m.texture, roughness: 0.72, metalness: 0.12 });
   const seatColor = new THREE.Color(SEAT_PAINT[seat % SEAT_PAINT.length]);

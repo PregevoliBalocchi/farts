@@ -5,8 +5,10 @@
 
 import type { ContentIndex, Resource } from '../../game/engine';
 import type { Translate } from '../../i18n';
-import { assetUrl, cardArt, icon, seatIcon } from './assets';
+import { assetUrl, cardArt, icon, seatColor, seatIcon } from './assets';
 import type { IconName } from './assets';
+import { courtBanner, courtCardFace, hasKitFace } from './cardface';
+import type { CourtFaceData } from './cardface';
 import { roundedTriangle } from './model-fx';
 import type { ActionCardView, CourtCardView, PlayerView, TableView } from './view';
 
@@ -14,8 +16,16 @@ import type { ActionCardView, CourtCardView, PlayerView, TableView } from './vie
 export const esc = (v: unknown) =>
   String(v).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]!);
 
+/** Names given to the seats when the game was created (empty: "Player N"). */
+let seatNames: readonly string[] = [];
+
+/** Sets the seats' display names; blank entries keep the default name. */
+export function setSeatNames(names: readonly string[] = []): void {
+  seatNames = names.map((n) => String(n ?? '').trim().slice(0, 24));
+}
+
 /** Display name of a seat. */
-export const playerName = (t: Translate, id: number) => t('player.name', { n: id + 1 });
+export const playerName = (t: Translate, id: number) => seatNames[id] || t('player.name', { n: id + 1 });
 
 /** Display name of a suit: its translation when the table has one, else its content id. */
 export function suitName(t: Translate, suit: string): string {
@@ -84,7 +94,7 @@ export function confirmButtons(t: Translate, undo: { show: boolean; enabled: boo
 
 /** A game piece of a seat as a small picture (the kit's piece image), else its glyph in the seat colour. */
 function pieceIcon(kind: 'ship' | 'agent' | 'city' | 'starport', seat: number, label?: string): string {
-  const url = assetUrl(`piece.${kind}-${seat % 4}`);
+  const url = assetUrl(`piece.${kind}-${seatColor(seat)}`);
   const alt = label ? `alt="${esc(label)}"` : 'alt="" aria-hidden="true"';
   return url ? `<img class="ic pc pc-${kind}" src="${esc(url)}" ${alt}>` : `<span class="seat-c">${icon(kind, '', label)}</span>`;
 }
@@ -139,7 +149,11 @@ const CITY_TRIANGLE = (() => {
 function slotsHtml(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null): string {
   const slot = (i: number, covered: boolean) => {
     const s = p.slots[i];
-    const keys = `<span class="keys">${Array.from({ length: s.keys }, () => icon('key')).join('')}</span>`;
+    // The keys as the Court cards print them: the kit's 1, 2 or 3 key tab.
+    const tab = s.keys > 0 ? assetUrl(`cardkit.cost-${Math.min(3, s.keys)}`) : null;
+    const keys = tab
+      ? `<span class="keys kit" style="background-image:url('${esc(tab)}')" aria-label="${s.keys}"></span>`
+      : `<span class="keys">${Array.from({ length: s.keys }, () => icon('key')).join('')}</span>`;
     if (s.locked) return `<div class="slot locked${covered ? ' covered' : ''}" title="${esc(t('slot.locked'))}">${keys}<span class="well">${covered ? '' : icon('lock')}</span></div>`;
     if (!s.resource) return `<div class="slot${covered ? ' covered' : ''}" title="${esc(t('slot.empty'))}">${keys}<span class="well"></span></div>`;
     const out = p.outraged.includes(s.resource) ? ' outraged' : '';
@@ -260,7 +274,7 @@ export function playedCard(ix: ContentIndex, v: TableView, t: Translate, player:
  * but smaller. The card they played sits beside it.
  */
 export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Translate): string {
-  return `<div class="rival-wrap"><button type="button" class="board pb rival s-${p.id % 4}${p.isActive ? ' active' : ''}" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">
+  return `<div class="rival-wrap"><button type="button" class="board pb rival s-${seatColor(p.id)}${p.isActive ? ' active' : ''}" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">
     ${seatBoard(p, t, { spendable: new Set(), chosen: null, preludes: [], maxCards: 6, head: leaderPortrait(p) })}
   </button>${playedCard(ix, v, t, p.id)}</div>`;
 }
@@ -271,7 +285,7 @@ export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Tra
  */
 export function localPanel(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, preludes: readonly PreludeCard[] = []): string {
   const head = `<button type="button" class="portrait-btn" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">${leaderPortrait(p)}</button>`;
-  return `<div class="board pb local s-${p.id % 4}${p.isActive ? ' active' : ''}">
+  return `<div class="board pb local s-${seatColor(p.id)}${p.isActive ? ' active' : ''}">
     ${seatBoard(p, t, { spendable, chosen, preludes, maxCards: 9, head })}
   </div>`;
 }
@@ -329,7 +343,7 @@ export function ambitionsStrip(ix: ContentIndex, v: TableView, t: Translate): st
       const place = (p: number) => (a.first.includes(p) ? ' first' : a.second.includes(p) ? ' second' : '');
       const tallies = [...a.tallies]
         .sort((x, y) => y.value - x.value)
-        .map((x) => `<span class="tl s-${x.player % 4}${x.value ? '' : ' zero'}${place(x.player)}" title="${esc(`${playerName(t, x.player)}: ${x.value}`)}"><b class="num">${x.value}</b><i class="dot"></i></span>`)
+        .map((x) => `<span class="tl s-${seatColor(x.player)}${x.value ? '' : ' zero'}${place(x.player)}" title="${esc(`${playerName(t, x.player)}: ${x.value}`)}"><b class="num">${x.value}</b><i class="dot"></i></span>`)
         .join('');
       const box = a.box ? `<span class="box num" title="${esc(t('amb.box'))}">▣${a.box}</span>` : '';
       const name = t(`ambition.${a.id}`);
@@ -345,7 +359,7 @@ export function ambitionsStrip(ix: ContentIndex, v: TableView, t: Translate): st
 }
 
 /** Small portrait face of a Court card: its image when present, else a drawn placeholder with its data. */
-export function courtFace(c: Pick<CourtCardView, 'card' | 'kind' | 'resource' | 'keys'>, t: Translate): string {
+export function courtFace(c: CourtFaceData, t: Translate): string {
   const art = cardArt(c.card);
   if (art) return `<img class="face-img" src="${esc(art)}" alt="">`;
   const keys = c.keys ? `<span>${icon('key')}${c.keys}</span>` : '';
@@ -360,9 +374,15 @@ export function courtFace(c: Pick<CourtCardView, 'card' | 'kind' | 'resource' | 
 export function courtPanel(v: TableView, t: Translate, pickable: ReadonlySet<number>): string {
   const cards = v.court
     .map((c) => {
-      const agents = c.agents.map((a) => `<span class="agent s-${a.player % 4}" title="${esc(playerName(t, a.player))}">${icon('agent')}<b class="num">${a.count}</b></span>`).join('');
-      return `<button type="button" class="court-tile banner k-${esc(c.kind ?? 'none')}${pickable.has(c.slot) ? ' pickable' : ''}" data-act="court" data-slot="${c.slot}" data-zoom="${esc(c.card)}" data-agents="${esc(c.agents.map((a) => `${a.player}:${a.count}`).join(','))}" aria-label="${esc(c.card)}">
-        <span class="court-face">${courtFace(c, t)}</span><span class="agents">${agents}</span></button>`;
+      // Agents beside the card, outside it: the seat's agent piece and how many, one row per seat.
+      const agents = c.agents
+        .map((a) => {
+          const pic = assetUrl(`piece.agent-${seatColor(a.player)}`);
+          return `<span class="cb-agent s-${seatColor(a.player)}" title="${esc(`${playerName(t, a.player)}: ${a.count}`)}">${pic ? `<img src="${esc(pic)}" alt="">` : icon('agent')}<b class="num">${a.count}</b></span>`;
+        })
+        .join('');
+      const label = c.name ?? c.card;
+      return `<div class="court-slot"><button type="button" class="court-tile banner k-${esc(c.kind ?? 'none')}${pickable.has(c.slot) ? ' pickable' : ''}" data-act="court" data-slot="${c.slot}" data-zoom="${esc(c.card)}" data-agents="${esc(c.agents.map((a) => `${a.player}:${a.count}`).join(','))}" aria-label="${esc(label)}">${courtBanner(c)}</button><span class="cb-agents">${agents}</span></div>`;
     })
     .join('');
   return `<div class="court-row" title="${esc(t('court.deck', { n: v.courtDeck }))}">${cards}</div>`;
@@ -388,12 +408,13 @@ export function handPanel(ix: ContentIndex, v: TableView, t: Translate, selected
 }
 
 /** A Court card as shown in the picker (the large variant). */
-export function largeCard(c: Pick<CourtCardView, 'card' | 'kind' | 'resource' | 'keys'>, t: Translate, state: { selected: boolean; disabled: boolean }): string {
+export function largeCard(c: CourtFaceData, t: Translate, state: { selected: boolean; disabled: boolean }): string {
   const art = cardArt(c.card);
   const keys = Array.from({ length: c.keys }, () => icon('key')).join('');
   const cls = `lcard${state.selected ? ' selected' : ''}${state.disabled ? ' disabled' : ''}${art ? ' full-art' : ''}`;
   const attrs = `data-act="pick" data-card="${esc(c.card)}"${state.disabled ? ' aria-disabled="true"' : ''} aria-pressed="${state.selected}" aria-label="${esc(c.card)}"`;
-  // With an image, the image is the whole card face.
+  // Drawn from the kit when the card's text is known, else the picture is the whole card face.
+  if (hasKitFace(c)) return `<button type="button" class="${cls} kit" ${attrs}>${courtCardFace(c)}</button>`;
   if (art) return `<button type="button" class="${cls}" ${attrs}><img class="lcard-img" src="${esc(art)}" alt=""></button>`;
   return `<button type="button" class="${cls}" ${attrs}>
     <div class="lcard-top"><span class="lcard-keys">${keys}</span>${c.resource ? `<span class="lcard-res">${resIcon(c.resource, t)}</span>` : ''}</div>
@@ -407,7 +428,8 @@ export function largeCard(c: Pick<CourtCardView, 'card' | 'kind' | 'resource' | 
 export interface PickerGroup {
   owner: number | null;
   label: string;
-  cards: Pick<CourtCardView, 'card' | 'kind' | 'resource' | 'keys'>[];
+  /** The cards, with the agents already on them (Court cards). */
+  cards: (CourtFaceData & { agents?: { player: number; count: number }[] })[];
 }
 
 /** Card picker state (docs/ui/UI_SPEC.md §11 CardPickerModal). */
@@ -433,12 +455,20 @@ export function cardPicker(m: PickerState, t: Translate): string {
   const page = Math.min(m.page, pages - 1);
   const shown = g.cards.slice(page * PICKER_PAGE, page * PICKER_PAGE + PICKER_PAGE);
   const tabs = m.groups
-    .map((x, i) => `<button type="button" class="tab${x.owner !== null ? ` s-${x.owner % 4}` : ''}${i === m.active ? ' active' : ''}" data-act="tab" data-tab="${i}" role="tab" aria-selected="${i === m.active}">${x.owner !== null ? portrait(x.owner) : icon('court')}${esc(x.label)}</button>`)
+    .map((x, i) => `<button type="button" class="tab${x.owner !== null ? ` s-${seatColor(x.owner)}` : ''}${i === m.active ? ' active' : ''}" data-act="tab" data-tab="${i}" role="tab" aria-selected="${i === m.active}">${x.owner !== null ? portrait(x.owner) : icon('court')}${esc(x.label)}</button>`)
     .join('');
+  // Each card with the agents already on it and, while it is the chosen one, the confirm button right under it.
   const cards = shown.length
-    ? shown.map((c) => largeCard(c, t, { selected: m.selected === c.card, disabled: m.selectable !== null && !m.selectable.has(c.card) })).join('')
+    ? shown
+        .map((c) => {
+          const can = m.selectable !== null && m.selectable.has(c.card);
+          const chosen = m.selected === c.card;
+          const confirm = can ? button('pick-confirm', t('btn.confirm'), { cls: 'primary pick-go' }) : '';
+          return `<div class="pick-slot${chosen ? ' chosen' : ''}" data-card="${esc(c.card)}">${largeCard(c, t, { selected: chosen, disabled: m.selectable !== null && !can })}${agentsOnCard(c.agents ?? [], t)}${confirm}</div>`;
+        })
+        .join('')
     : `<div class="empty-note">${esc(t('empty'))}</div>`;
-  return `${m.actor !== null ? `<div class="actor s-${m.actor % 4}">${portrait(m.actor)}</div>` : ''}
+  return `${m.actor !== null ? `<div class="actor s-${seatColor(m.actor)}">${portrait(m.actor)}</div>` : ''}
     <h2 id="modal-title">${esc(m.title)}</h2>
     <div class="tabs" role="tablist">${tabs}</div>
     <div class="card-row">
@@ -449,6 +479,25 @@ export function cardPicker(m: PickerState, t: Translate): string {
     <div class="modal-foot">
       ${button('close-modal', t('btn.back'))}
       ${m.allowDiscard ? button('discard', '', { cls: 'icon', title: t('btn.discard'), html: icon('trash') }) : '<span></span>'}
-      ${m.selectable ? button('pick-confirm', t('btn.confirm'), { cls: 'primary', disabled: !m.selected }) : '<span></span>'}
+      <span></span>
     </div>`;
+}
+
+/**
+ * The agents on a card in the picker, over the card's bottom edge. `data-agents`
+ * ("seat:count,…") lets the table swap the flat pieces for the 3D agents.
+ */
+export function agentsOnCard(agents: readonly { player: number; count: number }[], t: Translate): string {
+  if (!agents.length) return '';
+  const groups = agents
+    .map((a) => {
+      const pic = assetUrl(`piece.agent-${seatColor(a.player)}`);
+      const shown = Math.min(a.count, 4);
+      const pieces = Array.from({ length: shown }, () => (pic ? `<img src="${esc(pic)}" alt="">` : icon('agent'))).join('');
+      return `<span class="ag-group s-${seatColor(a.player)}" title="${esc(`${playerName(t, a.player)}: ${a.count}`)}">${pieces}${a.count > shown ? `<b class="num">×${a.count}</b>` : ''}</span>`;
+    })
+    .join('');
+  const key = agents.map((a) => `${a.player}:${a.count}`).join(',');
+  const label = agents.map((a) => `${playerName(t, a.player)}: ${a.count}`).join(', ');
+  return `<div class="pick-agents" data-agents="${esc(key)}" title="${esc(label)}">${groups}</div>`;
 }

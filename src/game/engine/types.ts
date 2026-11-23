@@ -39,6 +39,13 @@ export interface CourtCardDef {
   set?: string;
   /** Hook id resolved by an effect registry (decree on secure, faction passive). */
   effect?: string;
+  /** Presentation only (owner content): the printed name and rules text (**bold**, *italic*, {key}; one paragraph per line). */
+  name?: string;
+  text?: string;
+  /** Presentation only: a Vox card's Crisis box. */
+  crisis?: string;
+  /** Presentation only: centre of the picture's main subject, [x, y] as fractions of the picture (crops keep it in view). */
+  artFocus?: [number, number];
 }
 
 export type SystemKind = 'gate' | 'planet';

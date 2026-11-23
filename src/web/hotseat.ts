@@ -12,6 +12,9 @@ const KEY = 'farts.hotseat';
 export interface HotseatGame {
   players: number;
   variant: 'base' | 'leaders';
+  /** Seat names (blank: default) and colour indexes, as chosen; absent in games saved before they existed. */
+  names?: string[];
+  colors?: number[];
   startedAt: number;
   state: GameState;
 }
@@ -40,12 +43,18 @@ export function clearHotseat(): void {
   }
 }
 
-/** Starts a new hotseat game of `players` seats (replacing any saved one) and saves it. */
-export function startHotseat(content: GameContent, players: number, variant: 'base' | 'leaders'): HotseatGame {
+/** Starts a new hotseat game (replacing any saved one) with one seat per name, and saves it. */
+export function startHotseat(
+  content: GameContent,
+  names: string[],
+  variant: 'base' | 'leaders',
+  opts: { colors?: number[]; firstPlayer?: number } = {},
+): HotseatGame {
+  const players = names.length;
   if (players < 2 || players > 4) throw new Error('Servono da 2 a 4 giocatori');
   const ix = indexContent(content, BASE_EFFECTS);
-  const state = newGame(ix, { playerCount: players as PlayerCount, seed: 1 + Math.floor(Math.random() * 2_000_000_000), variant });
-  const g: HotseatGame = { players, variant, startedAt: Date.now(), state };
+  const state = newGame(ix, { playerCount: players as PlayerCount, seed: 1 + Math.floor(Math.random() * 2_000_000_000), variant, firstPlayer: opts.firstPlayer });
+  const g: HotseatGame = { players, variant, names, colors: opts.colors, startedAt: Date.now(), state };
   saveHotseat(g);
   return g;
 }

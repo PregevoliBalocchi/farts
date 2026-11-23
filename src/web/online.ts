@@ -7,8 +7,12 @@ import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from
 import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import { isAdmin, normalizeEmail, removeRefusal, roleOf, setRoleRefusal } from '../online/roles';
 import type { Member, MemberRole, Role } from '../online/roles';
-import { auth, createGame, db, loadContent, myGames, uploadContent } from './games';
-import { loadHotseat, startHotseat } from './hotseat';
+import { seatLabel } from '../online/newgame';
+import type { GameSetup } from '../online/newgame';
+import { auth, createGame, db, deleteGame, loadContent, myGames, uploadContent } from './games';
+import { clearHotseat, loadHotseat, startHotseat } from './hotseat';
+import { mountNewGame, renderGames } from './lobby';
+import type { GameItem } from './lobby';
 
 const ROLE_LABEL: Record<Role, string> = { master: 'amministratore principale', admin: 'amministratore', player: 'giocatore' };
 
@@ -63,7 +67,6 @@ onAuthStateChanged(auth, async (user) => {
     $('lobby').hidden = false;
     $('content-admin').hidden = me.role !== 'master';
     await refreshGames();
-    refreshHotseat();
     if (isAdmin(me.role)) {
       // Only the master appoints admins.
       $<HTMLSelectElement>('invite-role').querySelector<HTMLOptionElement>('option[value="admin"]')!.hidden = me.role !== 'master';
@@ -89,59 +92,76 @@ $('invite').addEventListener('submit', async (ev) => {
 
 // ---------- games ----------
 
-const VARIANT_LABEL = { base: 'base', leaders: 'personaggi e lore' } as const;
+let lobbyMounted = false;
 
+/** Your games: the ones online and the hotseat game saved in this browser. */
 async function refreshGames(): Promise<void> {
-  const list = await myGames(me.email);
-  $('games').innerHTML = list.length
-    ? list
-        .map((g) => {
-          const others = g.players.filter((p) => p !== me.email).map(escape).join(', ');
-          const when = new Date(g.createdAt).toLocaleString('it-IT');
-          const phase = g.status === 'over' ? 'finita' : `capitolo ${g.state.chapter}`;
-          return `<li><a href="play.html?id=${encodeURIComponent(g.id)}">Partita del ${when}</a> · con ${others} · ${VARIANT_LABEL[g.variant]} · ${phase}</li>`;
-        })
-        .join('')
-    : '<li class="muted">Nessuna partita.</li>';
-}
-
-/** The hotseat game saved in this browser, if any, with a link to resume it. */
-function refreshHotseat(): void {
-  const g = loadHotseat();
-  $('hotseat-resume').innerHTML = g
-    ? `<a href="play.html?hotseat=1">Riprendi la partita su questo computer</a> · ${g.players} giocatori · ${VARIANT_LABEL[g.variant]} · capitolo ${g.state.chapter} · iniziata il ${new Date(g.startedAt).toLocaleString('it-IT')}`
-    : '';
-}
-
-$('hotseat-game').addEventListener('submit', async (ev) => {
-  ev.preventDefault();
-  const msg = $('hotseat-msg');
-  try {
-    if (loadHotseat() && !confirm('In questo browser c’è già una partita hotseat: iniziarne una nuova la cancella. Continuo?')) return;
-    const players = Number($<HTMLSelectElement>('hotseat-players').value);
-    const variant = $<HTMLSelectElement>('hotseat-variant').value as 'base' | 'leaders';
-    show(msg, 'Preparo la partita…', 'muted');
-    startHotseat(await loadContent(), players, variant);
-    location.href = 'play.html?hotseat=1';
-  } catch (e) {
-    show(msg, message(e), 'err');
+  if (!lobbyMounted) {
+    lobbyMounted = true;
+    mountNewGame($('new-game'), { me: me.email, create });
   }
-});
-
-$('new-game').addEventListener('submit', async (ev) => {
-  ev.preventDefault();
-  const msg = $('game-msg');
+  const items: GameItem[] = [];
+  const hot = loadHotseat();
+  if (hot)
+    items.push({
+      key: 'hotseat',
+      href: 'play.html?hotseat=1',
+      seats: Array.from({ length: hot.players }, (_, i) => ({ name: seatLabel(hot.names?.[i] ?? '', i), color: hot.colors?.[i] ?? i })),
+      variant: hot.variant,
+      state: hot.state,
+      startedAt: hot.startedAt,
+      mySeat: null,
+      local: true,
+      canDelete: true,
+    });
   try {
-    const others = $<HTMLInputElement>('new-players').value.split(/[\s,;]+/).filter(Boolean).map(normalizeEmail);
-    const players = [me.email, ...others.filter((e) => e !== me.email)];
-    const variant = $<HTMLSelectElement>('new-variant').value as 'base' | 'leaders';
-    show(msg, 'Creo la partita…', 'muted');
-    const id = await createGame(await loadContent(), players, variant, me.email);
+    for (const g of await myGames(me.email))
+      items.push({
+        key: g.id,
+        href: `play.html?id=${encodeURIComponent(g.id)}`,
+        seats: g.players.map((p, i) => ({ name: seatLabel(p, i), color: g.colors?.[i] ?? i })),
+        variant: g.variant,
+        state: g.state,
+        startedAt: g.createdAt,
+        mySeat: g.players.indexOf(me.email),
+        local: false,
+        canDelete: g.createdBy === me.email || isAdmin(me.role),
+      });
+  } catch (e) {
+    show($('games-msg'), `Partite online non caricate: ${message(e)}`, 'err');
+  }
+  renderGames($('games'), items, remove);
+}
+
+/** Deletes a game after asking. */
+async function remove(item: GameItem): Promise<void> {
+  const what = item.local ? 'la partita salvata su questo computer' : 'questa partita per tutti i giocatori';
+  if (!confirm(`Eliminare ${what}? Non si può annullare.`)) return;
+  try {
+    if (item.local) clearHotseat();
+    else await deleteGame(item.key);
+    show($('games-msg'), 'Partita eliminata.', 'ok');
+  } catch (e) {
+    show($('games-msg'), message(e), 'err');
+  }
+  await refreshGames();
+}
+
+/** Creates the game chosen on the new-game screen and opens it. */
+async function create(setup: GameSetup): Promise<void> {
+  if (setup.mode === 'hotseat') {
+    if (loadHotseat() && !confirm('In questo browser c’è già una partita su questo computer: iniziarne una nuova la cancella. Continuo?')) return;
+    startHotseat(await loadContent(), setup.players, setup.variant, { colors: setup.colors, firstPlayer: setup.firstPlayer });
+    location.href = 'play.html?hotseat=1';
+    return;
+  }
+  try {
+    const id = await createGame(await loadContent(), setup.players, setup.variant, me.email, { colors: setup.colors, firstPlayer: setup.firstPlayer });
     location.href = `play.html?id=${encodeURIComponent(id)}`;
   } catch (e) {
-    show(msg, message(e), 'err');
+    throw new Error(/permission|permess/i.test(String((e as Error).message)) ? 'Non creata: controlla che tutti gli indirizzi siano invitati.' : message(e));
   }
-});
+}
 
 $('content-file').addEventListener('change', async () => {
   const msg = $('content-msg');
@@ -177,8 +197,8 @@ async function refresh(): Promise<void> {
     const other: MemberRole = m.role === 'admin' ? 'player' : 'admin';
     const canSwitch = setRoleRefusal(me.role, m.role, other, m.email === me.email) === null;
     const buttons = [
-      canSwitch ? `<button type="button" data-set="${escape(m.email)}" data-role="${other}">rendi ${ROLE_LABEL[other]}</button>` : '',
-      canRemove ? `<button type="button" data-remove="${escape(m.email)}">togli accesso</button>` : '',
+      canSwitch ? `<button type="button" class="btn small" data-set="${escape(m.email)}" data-role="${other}">rendi ${ROLE_LABEL[other]}</button>` : '',
+      canRemove ? `<button type="button" class="btn small danger" data-remove="${escape(m.email)}">togli accesso</button>` : '',
     ].join('');
     rows.push(`<tr><td>${escape(m.email)}</td><td>${ROLE_LABEL[m.role]}</td><td class="actions">${buttons}</td></tr>`);
   }
