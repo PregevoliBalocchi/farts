@@ -64,7 +64,8 @@ function resIcon(r: Resource, t: Translate, cls = ''): string {
  * general supply (left); the prompt over a thin gold line, with the round's
  * lead and seize under it (centre); the menu buttons (right).
  */
-export function header(v: TableView, t: Translate, exampleContent: boolean, promptText: string): string {
+/** `control`: whether the map shows who controls each sector (null: the map has no such layer). */
+export function header(v: TableView, t: Translate, exampleContent: boolean, promptText: string, control: boolean | null = null): string {
   const supply = v.supply.map((s) => `<span title="${esc(t(`resource.${s.resource}`))}">${resIcon(s.resource, t)}<b class="num">${s.count}</b></span>`).join('');
   const declared = v.ambitions.filter((a) => a.markers.length).map((a) => t(`ambition.${a.id}`));
   const lead = v.lead ? t('header.lead', { card: cardLabel(t, v.lead) }) : '';
@@ -81,6 +82,7 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, prom
       ${exampleContent ? `<span class="content-note">${esc(t('content.example'))}</span>` : ''}
       ${button('court-view', '', { cls: 'icon sq', title: t('btn.court'), html: icon('court') })}
       <span data-region="recent">${button('log', '', { cls: 'icon sq', title: `${t('btn.log')} · ${t('recent.last')} ${last}`, html: icon('log') })}</span>
+      ${control !== null ? `<button type="button" class="btn icon sq${control ? ' on' : ''}" data-act="map-control" title="${esc(t('btn.control'))}" aria-label="${esc(t('btn.control'))}" aria-pressed="${control}">${icon('control')}</button>` : ''}
       ${button('help', '', { cls: 'icon sq', title: t('btn.help'), html: icon('anyAmbition') })}
       ${button('settings', '', { cls: 'icon sq', title: t('btn.settings'), html: icon('settings') })}
     </div>`;
