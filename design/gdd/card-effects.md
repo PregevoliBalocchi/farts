@@ -218,6 +218,22 @@ compared card by card with `src/game/cards/base.ts`. Applied:
 | leader-15 | Errata: "is intercepted" (so lore-04's intercept counts). | done |
 | leader-16 | Starports counted after the battle. | done |
 
+## Rulings checked against the card reference FAQ (2026-11-23)
+
+Source: the FAQ pages of the public card reference site (see
+`docs/ui-assets.md`). The site says its FAQ is **mostly unofficial**:
+community rulings, some confirmed by the publisher. Where it disagrees with
+the publisher's errata above, the errata wins. Every base-game ruling was
+compared with the engine; the ones no other card test covered are pinned in
+`tests/unit/cards/faq-rulings.test.ts`.
+
+| Topic | Result |
+|---|---|
+| leader-02/03 bonus with an empty stack, leader-13 + lore-20, leader-10 repeat (no pip), Copy/Pivot extra action (move only, move modifiers apply), rerolls, lore-02, lore-03, lore-08/09/11, lore-10, lore-20, lore-27, guild "spend as", Cartels | Engine already agrees. |
+| leader-04 (Upstart) taxing a Rival city "like it is Loyal" | The FAQ allows it; the publisher's errata forbids it. Engine follows the errata. |
+| Gate city types from lore-11 after the card leaves play | Only possible through campaign effects; the engine does not re-check that the card is still in play. Left until the campaign is planned. |
+| Campaign FAQ (campaign Court, Fates) | Not checked: the campaign is on hold. |
+
 ## Campaign Court cards (set `campaign`, ids `court-cc-01`…`court-cc-15`)
 
 Used only in campaign games (`courtSets` includes `campaign`); they rely on
