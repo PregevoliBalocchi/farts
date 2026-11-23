@@ -14,7 +14,7 @@ access works and how to deploy.
   | Role | Who | Can |
   |---|---|---|
   | master | one address, stored by the owner in Firestore `config/access` | everything; appoints, demotes and removes admins; cannot be changed or removed |
-  | admin | appointed by the master | invites and removes players |
+  | admin | appointed by the master | invites and removes players; replaces the game content |
   | player | invited by an admin | plays |
 
   Nobody changes their own role or removes their own access.
