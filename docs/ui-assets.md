@@ -42,7 +42,7 @@ Translations sit beside them in `courtCards[].i18n.<lang>` (`name`, `text`,
 original words (terms: `docs/translation-glossary.md`).
 Every card face is drawn from the kit around the illustration alone:
 `npm run assets:art` (`tools/cards/extract-art.mjs`) cuts it out of each card
-picture into `assets/cards/art/<id>.png` (committed): the picture inside a
+picture into `assets/cards/art/<id>.webp` (committed): the picture inside a
 Guild card's arch, a Vox card's sketch with its paper made clear, a Lore
 card's picture above the gold band, a Leader's character with its edges faded
 (an automatic cut-out would lose the dark ink and shadows, as dark as the
@@ -144,3 +144,20 @@ and `?debug=spots` shows them.
 Drag pans, the wheel zooms towards the pointer (zooming in leans the camera
 towards the pieces, zooming out looks straight down on the whole map), a
 double click goes back to the starting view. `?map=2d` shows the flat board.
+
+## Card pictures from the public card reference (2026-11-23)
+
+The owner pointed to a public site with every card of the base game and the
+campaign at a much higher resolution than the scans we had. Three tools in
+`tools/cards/` (Python; `cut-leaders.py` needs `opencv-python` and `numpy`):
+
+| Step | Command | Result |
+|---|---|---|
+| Download | `python tools/cards/fetch-source.py assets/cards/source/arcsfates` | every picture of the site under the same paths, with `catalogue.json` (page, heading, name, file, and the game id once installed). **Local only** (`assets/cards/source/` is git-ignored): 565 pictures, about 69 MB |
+| Install | `python tools/cards/install-source.py assets/cards/source/arcsfates` | the pictures the table shows, copied to `assets/cards/leaders/`, `lore/`, `court/`, `court-campaign/` under the game ids (matched by card name in `data/content.json`) |
+| Illustrations | `npm run assets:art` | `assets/cards/art/<id>.webp`, cut from the new pictures |
+| Avatars | `python tools/cards/cut-leaders.py` | `assets/cards/avatar/leader-nn.webp` (committed): each leader's character on a clear background. The seat boards draw it with no frame, rising out of the board's top edge (key `avatar.<card id>`) |
+
+The rest of the catalogue (setup cards, campaign Fates, rulebook pages, the
+site's FAQ) is not used by the game yet.
+

@@ -1,5 +1,5 @@
 {
-  "_comment": "Procedural planets of the 3D map (planets3d.ts): one recipe per planet, drawn after its illustration on the board and seen from above, as the map shows it. style: the surface drawing (planets3d.ts STYLES); extras: ring, moons, network, asteroids, shards, blocks, debris. Colours come from the planet's resource (palette), or from colors when given. size scales the board's disc; spin is turns per minute; craterScale and param tune a style; bite [x, y, z, depth] cuts a chunk out of the planet towards that direction (depth: 0..1 of the radius); atmosphere: a glow at the rim, of the palette's line or accent colour.",
+  "_comment": "Procedural planets of the 3D map (planets3d.ts): one recipe per planet, drawn after its illustration on the board and seen from above, as the map shows it. style: the surface drawing (planets3d.ts STYLES); extras: ring, moons, network, asteroids, shards, blocks, debris. Colours come from the planet's resource (palette), or from colors when given. size scales the board's disc; spin is turns per minute; craterScale and param tune a style; bite [x, y, z, depth] cuts a chunk out of the planet towards that direction (depth: 0..1 of the radius); atmosphere: a glow at the rim, of the palette's line or accent colour. axis [x, y, z]: the axis the planet turns about, in its own space (y is towards the map's viewer); without one a planet with a bite turns about the bite, the others about a slightly tilted upright axis. The ring lies across its planet's axis. defaults.orbits: turns per minute of the moons, the satellite network and the asteroids around their planet (negative: the other way), unlike the planet's own spin.",
   "palette": {
     "weapons": { "base": "#5a2412", "line": "#ff9a52", "accent": "#ffd07a" },
     "fuel": { "base": "#463d12", "line": "#e8d35a", "accent": "#fff0a0" },
@@ -7,25 +7,36 @@
     "psionic": { "base": "#3c1a3e", "line": "#f08fd2", "accent": "#7f96ff" },
     "relic": { "base": "#1b3a44", "line": "#a8e6f2", "accent": "#e8fbff" }
   },
-  "defaults": { "size": 0.92, "spin": 0.9, "tilt": 0.35 },
+  "defaults": { "size": 0.92, "spin": 0.9, "tilt": 0.35, "orbits": { "moons": [ 0.4, 0.22 ], "network": 0.3, "asteroids": -0.28 }
+  },
   "planets": {
-    "c1-p1": { "style": "shattered", "extras": ["shards"], "size": 0.8, "bite": [0.55, 0.55, -0.62, 0.42] },
-    "c1-p2": { "style": "plated", "extras": ["debris"] },
-    "c1-p3": { "style": "eroded", "bite": [0.62, 0.5, -0.6, 0.36] },
-    "c2-p1": { "style": "striated", "extras": ["moons"], "atmosphere": { "color": "line", "strength": 0.9 } },
+    "c1-p1": { "style": "shattered", "extras": [ "shards" ], "size": 0.8, "bite": [ 0.55, 0.55, -0.62, 0.42 ] },
+    "c1-p2": { "style": "plated", "extras": [ "debris" ], "axis": [ 1, 0.35, 0.25 ] },
+    "c1-p3": { "style": "eroded", "bite": [ 0.62, 0.5, -0.6, 0.36 ] },
+    "c2-p1": { "style": "striated", "extras": [ "moons" ], "atmosphere": { "color": "line", "strength": 0.9 },
+      "axis": [ 0.3, 0.15, 1 ]
+    },
     "c2-p2": { "style": "cratered" },
-    "c2-p3": { "style": "marbled", "extras": ["ring"], "atmosphere": { "color": "accent", "strength": 0.6 } },
+    "c2-p3": { "style": "marbled", "extras": [ "ring" ], "size": 0.8, "atmosphere": { "color": "accent", "strength": 0.6 },
+      "axis": [ 0.42, 1, -0.38 ]
+    },
     "c3-p1": { "style": "blotched" },
-    "c3-p2": { "style": "scratched", "atmosphere": { "color": "line", "strength": 0.45 } },
-    "c3-p3": { "style": "terrain", "param": 1, "bite": [-0.5, 0.55, -0.66, 0.3] },
-    "c4-p1": { "style": "tech", "atmosphere": { "color": "line", "strength": 0.6 } },
+    "c3-p2": { "style": "scratched", "atmosphere": { "color": "line", "strength": 0.45 }
+    },
+    "c3-p3": { "style": "terrain", "param": 1, "bite": [ -0.5, 0.55, -0.66, 0.3 ] },
+    "c4-p1": { "style": "tech", "atmosphere": { "color": "line", "strength": 0.6 }
+    },
     "c4-p2": { "style": "terrain" },
     "c4-p3": { "style": "spirals" },
-    "c5-p1": { "style": "rifted", "colors": { "base": "#2c0a07", "line": "#ff3d1f", "accent": "#ffb36a" } },
-    "c5-p2": { "style": "icy", "atmosphere": { "color": "line", "strength": 0.9 } },
-    "c5-p3": { "style": "rocky", "extras": ["asteroids"], "size": 0.55 },
-    "c6-p1": { "style": "pixel", "extras": ["blocks"], "size": 0.72, "bite": [0.55, 0.5, 0.67, 0.4] },
-    "c6-p2": { "style": "terrain", "param": 2, "atmosphere": { "color": "line", "strength": 0.4 } },
-    "c6-p3": { "style": "molecule", "extras": ["network"], "size": 0.62 }
+    "c5-p1": { "style": "rifted", "colors": { "base": "#2c0a07", "line": "#ff3d1f", "accent": "#ffb36a" },
+      "axis": [ 0.1, 0.3, 1 ]
+    },
+    "c5-p2": { "style": "icy", "atmosphere": { "color": "line", "strength": 0.9 }
+    },
+    "c5-p3": { "style": "rocky", "extras": [ "asteroids" ], "size": 0.55 },
+    "c6-p1": { "style": "pixel", "extras": [ "blocks" ], "size": 0.72, "bite": [ 0.55, 0.5, 0.67, 0.4 ] },
+    "c6-p2": { "style": "terrain", "param": 2, "atmosphere": { "color": "line", "strength": 0.4 }
+    },
+    "c6-p3": { "style": "molecule", "extras": [ "network" ], "size": 0.62 }
   }
 }

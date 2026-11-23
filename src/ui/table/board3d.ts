@@ -190,6 +190,9 @@ export class Board3D {
   private bridges: [string, string][] = [];
   private readonly planetGroup = new THREE.Group();
   private planets: Planet[] = [];
+  /** The planets' resource tokens: sprites, so they stay round whatever the camera's tilt. */
+  private readonly iconGroup = new THREE.Group();
+  private iconKey = '';
 
   constructor(private readonly ix: ContentIndex, private readonly opts: Board3DOptions, renderer: THREE.WebGLRenderer) {
     this.renderer = renderer;
@@ -240,7 +243,7 @@ export class Board3D {
     this.board.position.y = -0.01;
     this.board.receiveShadow = !this.space;
     if (this.space) this.board.renderOrder = 2;
-    this.scene.add(this.board, this.shades, this.pieces, this.rings, this.discs, this.routeGroup, this.nextGroup);
+    this.scene.add(this.board, this.shades, this.pieces, this.rings, this.discs, this.routeGroup, this.nextGroup, this.iconGroup);
 
     this.controls = new OrbitControls(this.camera, this.canvas);
     this.controls.enableDamping = false;
@@ -604,14 +607,57 @@ export class Board3D {
     }
     const systems = this.last?.systems ?? [];
     const tints = sectorTints(systems, this.sectorMode, (r) => planetPalette(r).line, (p) => SEAT_PAINT[seatColor(p)]);
-    const icons = [];
-    for (const spot of this.calib ? resourceIconSpots(this.calib, lines.ring, systems) : []) {
-      const image = this.iconImage(spot.resource);
-      if (image) icons.push({ ...spot, image, ring: planetPalette(spot.resource).line });
-    }
-    drawInfoLayer(this.infoCanvas, lines, this.calib, { inPlay: this.inPlay, numberFont: NUMBER_FONT, tints, icons, bridges: this.bridges, showSpots: this.opts.showSpots });
+    this.buildIcons(lines, systems);
+    drawInfoLayer(this.infoCanvas, lines, this.calib, { inPlay: this.inPlay, numberFont: NUMBER_FONT, tints, bridges: this.bridges, showSpots: this.opts.showSpots });
     if (this.glassMaterial.map) this.glassMaterial.map.needsUpdate = true;
     this.dirty = true;
+  }
+
+  /**
+   * Each planet's resource token on its rim: a dark disc ringed in the
+   * resource's colour, as a sprite just over the glass (always facing the
+   * camera, so it stays round). Rebuilt when systems or pictures change.
+   */
+  private buildIcons(lines: BoardLines, systems: readonly { id: string; resource: string | null }[]): void {
+    const c = this.calib;
+    if (!c) return;
+    const spots = resourceIconSpots(c, lines.ring, systems)
+      .filter((s) => this.inPlay.get(s.system) !== false)
+      .map((s) => ({ ...s, image: this.iconImage(s.resource) }));
+    const key = JSON.stringify(spots.map((s) => [s.system, s.resource, !!s.image]));
+    if (key === this.iconKey) return;
+    this.iconKey = key;
+    for (const o of this.iconGroup.children) {
+      const m = (o as THREE.Sprite).material;
+      m.map?.dispose();
+      m.dispose();
+    }
+    this.iconGroup.clear();
+    const unit = BOARD_DEPTH / c.height;
+    for (const s of spots) {
+      if (!s.image) continue;
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 128;
+      const g = cv.getContext('2d')!;
+      g.beginPath();
+      g.arc(64, 64, 58, 0, Math.PI * 2);
+      g.fillStyle = 'rgba(10,9,12,0.9)';
+      g.fill();
+      g.lineWidth = 6;
+      g.strokeStyle = planetPalette(s.resource).line;
+      g.stroke();
+      g.drawImage(s.image, 64 - 39, 64 - 39, 78, 78);
+      const tex = new THREE.CanvasTexture(cv);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthWrite: false, toneMapped: false }));
+      const at = pictureToWorld(c, s.x, s.y);
+      const size = s.r * unit * 2.2;
+      sprite.scale.set(size, size, 1);
+      sprite.position.set(at.x, size * 0.25, at.z);
+      // After the glass, so its lines never cross the token.
+      sprite.renderOrder = 3;
+      this.iconGroup.add(sprite);
+    }
   }
 
   /**
@@ -706,8 +752,8 @@ export class Board3D {
             keep(s.id, o, st.player);
             shipsAt.push({ player: st.player, damaged: g.lying, system: s.id, count: g.count, x: w.x, z: w.z });
             groupObjects.set(`${s.id}:${st.player}:${g.lying ? 1 : 0}`, o);
-            if (g.count > 1) {
-              const tag = countTag(g.count, w.x, w.z, 'small', o.userData.model ? 0.5 : 0.3);
+            if (g.count > 0) {
+              const tag = countTag(g.count, w.x, w.z, 'small', o.userData.model ? 0.5 : 0.3, SEAT_PAINT[seatColor(st.player)]);
               o.userData.tag = tag;
               this.pieces.add(tag);
             }
@@ -726,7 +772,7 @@ export class Board3D {
           this.pieces.add(o);
           keep(s.id, o, st.player);
         }
-        if (st.fresh + st.damaged > MAX_SHOWN) this.pieces.add(countTag(st.fresh + st.damaged, p.x + c.x, p.z + c.z));
+        if (st.fresh + st.damaged > MAX_SHOWN) this.pieces.add(countTag(st.fresh + st.damaged, p.x + c.x, p.z + c.z, 'large', 0.3, SEAT_PAINT[seatColor(st.player)]));
       });
       const arc = buildingSpots(s.buildings.length);
       s.buildings.forEach((bd, i) => {
@@ -1032,38 +1078,72 @@ export class Board3D {
 }
 
 /**
- * A "×n" label floating over a stack with more pieces than drawn; `small` is
- * the plain number beside one ship group in a ship zone.
+ * How many ships a model stands for, as on the digital table: a paint splat
+ * in the owner's colour with the number on it, white with a dark outline,
+ * floating by the model (`small`: beside one ship group in a ship zone;
+ * `large`: over a stack with more pieces than drawn). Drawn after the glass
+ * and over everything, so no line of the map covers it.
  */
-function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'large', height = 0.3): THREE.Sprite {
+function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'large', height = 0.3, colour = '#1a2030'): THREE.Sprite {
   const small = size === 'small';
+  const S = 128;
   const cv = document.createElement('canvas');
-  cv.width = small ? 64 : 128;
-  cv.height = 64;
+  cv.width = cv.height = S;
   const g = cv.getContext('2d')!;
-  g.fillStyle = 'rgba(10,14,28,.9)';
-  g.beginPath();
-  if (small) g.arc(32, 32, 30, 0, Math.PI * 2);
-  else g.roundRect(4, 4, 120, 56, 18);
+  const c = new THREE.Color(colour);
+  const hex = (k: THREE.Color) => '#' + k.getHexString();
+  // The splat: a disc with a rough, bitten rim and a few drops flung off it (the same for a given number).
+  let seed = 977 + n * 131;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) & 0xffff) / 0xffff;
+  const blob = (r0: number) => {
+    g.beginPath();
+    const steps = 44;
+    for (let i = 0; i <= steps; i++) {
+      const a = (i / steps) * Math.PI * 2;
+      const r = r0 * (0.9 + 0.1 * Math.sin(a * 5 + n) + 0.07 * (rand() - 0.5) + (i % 9 === 0 ? 0.08 : 0));
+      const px = S / 2 + Math.cos(a) * r;
+      const py = S / 2 + Math.sin(a) * r;
+      if (i) g.lineTo(px, py);
+      else g.moveTo(px, py);
+    }
+    g.closePath();
+  };
+  g.shadowColor = 'rgba(0,0,0,0.7)';
+  g.shadowBlur = 6;
+  g.fillStyle = hex(c.clone().lerp(new THREE.Color('#000000'), 0.12));
+  blob(50);
   g.fill();
-  if (small) {
-    g.strokeStyle = 'rgba(255,255,255,.85)';
-    g.lineWidth = 3;
-    g.stroke();
+  g.shadowBlur = 0;
+  for (let i = 0; i < 6; i++) {
+    const a = rand() * Math.PI * 2;
+    const d = 52 + rand() * 7;
+    g.beginPath();
+    g.arc(S / 2 + Math.cos(a) * d, S / 2 + Math.sin(a) * d, 2 + rand() * 3.5, 0, Math.PI * 2);
+    g.fill();
   }
-  g.fillStyle = '#fff';
-  g.font = 'bold 40px sans-serif';
+  // A lighter heart, like wet paint.
+  g.fillStyle = hex(c.clone().lerp(new THREE.Color('#ffffff'), 0.16));
+  blob(41);
+  g.fill();
+  // The number: white, heavy, with a dark outline.
+  g.font = `900 ${n > 9 ? 62 : 76}px ${NUMBER_FONT}`;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillText(small ? String(n) : `×${n}`, cv.width / 2, 34);
+  g.lineJoin = 'round';
+  g.lineWidth = 12;
+  g.strokeStyle = '#17130f';
+  g.strokeText(String(n), S / 2, S / 2 + 4);
+  g.fillStyle = '#ffffff';
+  g.fillText(String(n), S / 2, S / 2 + 4);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, toneMapped: false }));
+  sprite.renderOrder = 10;
   if (small) {
-    sprite.scale.set(0.15, 0.15, 1);
-    sprite.position.set(x + 0.08, height, z);
+    sprite.scale.set(0.27, 0.27, 1);
+    sprite.position.set(x + 0.12, height, z - 0.04);
   } else {
-    sprite.scale.set(0.5, 0.25, 1);
+    sprite.scale.set(0.34, 0.34, 1);
     sprite.position.set(x, 0.6, z);
   }
   return sprite;

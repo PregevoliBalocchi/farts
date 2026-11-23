@@ -190,6 +190,8 @@ assets/cards/*
 !assets/cards/leaders/
 # The illustrations cut out of those pictures (tools/cards/extract-art.mjs) are committed too.
 !assets/cards/art/
+# The leaders cut out as the players' avatars (tools/cards/cut-leaders.py): committed too.
+!assets/cards/avatar/
 assets/map/
 
 # Card fonts (src/ui/table/cardfonts.ts): the free stand-ins (SIL OFL, with their licences) are committed;

@@ -26,10 +26,14 @@ const cardFiles = import.meta.glob('../../../assets/cards/{court,court-campaign,
 }) as Record<string, string>;
 
 // The illustrations cut out of those pictures (tools/cards/extract-art.mjs): key art.<card id>.
-const artFiles = import.meta.glob('../../../assets/cards/art/*.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const artFiles = import.meta.glob('../../../assets/cards/art/*.{png,webp}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+
+// The leaders' characters cut out of their cards (tools/cards/cut-leaders.py): key avatar.<card id>.
+const avatarFiles = import.meta.glob('../../../assets/cards/avatar/*.{png,webp}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 
 const byKey = new Map<string, string>();
-for (const [path, url] of Object.entries(artFiles)) byKey.set(`art.${path.replace(/^.*\//, '').replace(/\.png$/, '')}`, url);
+for (const [path, url] of Object.entries(avatarFiles)) byKey.set(`avatar.${path.replace(/^.*\//, '').replace(/\.[a-zA-Z]+$/, '')}`, url);
+for (const [path, url] of Object.entries(artFiles)) byKey.set(`art.${path.replace(/^.*\//, '').replace(/\.[a-zA-Z]+$/, '')}`, url);
 for (const [path, url] of Object.entries(cardFiles)) {
   byKey.set(`card.${path.replace(/^.*\//, '').replace(/\.[a-zA-Z]+$/, '')}`, url);
 }
@@ -115,9 +119,14 @@ export function cardArt(id: string): string | null {
   return assetUrl(`card.${id}`);
 }
 
-/** The illustration alone, cut out of a card's picture (assets/cards/art/<id>.png), or null. */
+/** The illustration alone, cut out of a card's picture (assets/cards/art/<id>.webp), or null. */
 export function cardCut(id: string): string | null {
   return assetUrl(`art.${id}`);
+}
+
+/** A leader's character alone on a clear background, the seat's avatar (assets/cards/avatar/<id>.webp), or null. */
+export function cardAvatar(id: string): string | null {
+  return assetUrl(`avatar.${id}`);
 }
 
 /** Colour index (0-3) of each seat, chosen when the game was created; seat i has colour i unless set. */

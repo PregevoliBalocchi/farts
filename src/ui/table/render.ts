@@ -5,7 +5,7 @@
 
 import type { ContentIndex, Resource } from '../../game/engine';
 import type { Translate } from '../../i18n';
-import { assetUrl, cardArt, cardCut, icon, seatColor, seatIcon } from './assets';
+import { assetUrl, cardArt, cardAvatar, cardCut, icon, seatColor, seatIcon } from './assets';
 import type { IconName } from './assets';
 import { cardFaceById, courtBanner, courtCardFace, hasKitFace } from './cardface';
 import type { CourtFaceData } from './cardface';
@@ -219,6 +219,9 @@ function outrage(p: PlayerView, t: Translate): string {
 
 /** The leader's character (cut from its card) when the seat has a leader (hover or focus shows the whole card), else the seat portrait. */
 function leaderPortrait(p: PlayerView): string {
+  // `bust`: the character cut out of its card, with no frame: it rises out of the board's top edge.
+  const avatar = p.leader ? cardAvatar(p.leader) : null;
+  if (avatar) return `<div class="portrait leader bust" data-zoom="${esc(p.leader)}" tabindex="0"><img src="${esc(avatar)}" alt=""></div>`;
   const art = p.leader ? (cardCut(p.leader) ?? cardArt(p.leader)) : null;
   return art ? `<div class="portrait leader" data-zoom="${esc(p.leader)}" tabindex="0"><img src="${esc(art)}" alt=""></div>` : portrait(p.id);
 }
@@ -229,7 +232,11 @@ export interface PreludeCard {
   lit: boolean;
 }
 
-function preludeTab(cards: readonly PreludeCard[], t: Translate): string {
+/**
+ * The cards with a prelude power as round buttons (lit ones open the powers
+ * window): the tab on a seat board, or (`row`) the row over the local hand.
+ */
+export function preludeTab(cards: readonly PreludeCard[], t: Translate, row = false): string {
   if (!cards.length) return '';
   const btns = cards
     .map((c) => {
@@ -240,6 +247,7 @@ function preludeTab(cards: readonly PreludeCard[], t: Translate): string {
         : `<span class="pre" data-zoom="${esc(c.card)}" title="${esc(c.card)}">${face}</span>`;
     })
     .join('');
+  if (row) return `<div class="pre-row" aria-label="${esc(t('powers.title'))}"><span class="pre-label">${esc(t('prelude.row'))}</span>${btns}</div>`;
   return `<div class="pb-tab" aria-label="${esc(t('powers.title'))}">${btns}</div>`;
 }
 
@@ -248,7 +256,8 @@ function preludeTab(cards: readonly PreludeCard[], t: Translate): string {
  * smaller): the leader top left, the prelude tab top right, the resource
  * slots with their keys and the unbuilt cities on them; captives and
  * trophies beside the guild cards; the reserve and the Outraged resources;
- * the name bar with the power in a ring.
+ * the name bar with the power in a ring. `maxCards` 0: no guild cards (the
+ * local player's are in their own panel of the bar).
  */
 function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<number>; chosen: number | null; preludes: readonly PreludeCard[]; maxCards: number; head: string }): string {
   return `${preludeTab(o.preludes, t)}
@@ -256,7 +265,7 @@ function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<numb
       <div class="pb-face">${o.head}</div>
       ${slotsHtml(p, t, o.spendable, o.chosen)}
       ${spoils(p, t)}
-      <div class="pb-guild">${miniCards([...p.court, ...p.lore], o.maxCards)}</div>
+      ${o.maxCards > 0 ? `<div class="pb-guild">${miniCards([...p.court, ...p.lore], o.maxCards)}</div>` : ''}
       <div class="pb-low">${stats(p, t, false)}${outrage(p, t)}</div>
     </div>
     ${nameBar(p, t)}`;
@@ -303,13 +312,47 @@ export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Tra
 
 /**
  * The local seat's board, like the physical one: a slot is clickable when its
- * token can be spent; the prelude tab lights the cards whose power can be used now.
+ * token can be spent; the prelude tab lights the cards whose power can be used
+ * now. `slim`: without the guild cards and with the leader rising out of the
+ * frame (the table's bottom bar, which shows those cards in their own panel).
  */
-export function localPanel(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, preludes: readonly PreludeCard[] = []): string {
+export function localPanel(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, preludes: readonly PreludeCard[] = [], slim = false): string {
   const head = `<button type="button" class="portrait-btn" data-act="seat-detail" data-player="${p.id}" aria-label="${esc(playerName(t, p.id))}">${leaderPortrait(p)}</button>`;
-  return `<div class="board pb local s-${seatColor(p.id)}${p.isActive ? ' active' : ''}">
-    ${seatBoard(p, t, { spendable, chosen, preludes, maxCards: 9, head })}
+  return `<div class="board pb local${slim ? ' slim' : ''} s-${seatColor(p.id)}${p.isActive ? ' active' : ''}">
+    ${seatBoard(p, t, { spendable, chosen, preludes, maxCards: slim ? 0 : 9, head })}
   </div>`;
+}
+
+/** How the local player's own Court cards are ordered: as acquired, by type, or by resource. */
+export type CourtSort = 'got' | 'kind' | 'resource';
+export const COURT_SORTS: readonly CourtSort[] = ['got', 'kind', 'resource'];
+
+/** `cards` in the order `sort` asks for (stable: ties keep the order acquired). Pure. */
+export function sortCourt<T extends { kind?: string | null; resource?: string | null }>(cards: readonly T[], sort: CourtSort): T[] {
+  if (sort === 'got') return [...cards];
+  const key = (c: T) => (sort === 'kind' ? c.kind : c.resource) ?? null;
+  // Cards without the key (no type, no resource) go last.
+  const order = (x: string | null, y: string | null) => (x === y ? 0 : x === null ? 1 : y === null ? -1 : x < y ? -1 : 1);
+  return cards
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => order(key(a.c), key(b.c)) || a.i - b.i)
+    .map((x) => x.c);
+}
+
+/**
+ * The local player's own Court at the right end of the bar: their guild and
+ * lore cards as small faces (hover shows the whole card), with buttons to
+ * order them. `data` reads a card's type and resource; `width`: the panel's
+ * inner width in stage pixels, to size the cards so that two rows hold them all.
+ */
+export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data: (id: string) => CourtFaceData, width: number): string {
+  const cards = sortCourt([...p.court, ...p.lore].map(data), sort);
+  const perRow = Math.max(1, cards.length > 5 ? Math.ceil(cards.length / 2) : cards.length);
+  const w = Math.max(30, Math.min(72, Math.floor((width - (perRow - 1) * 6) / perRow)));
+  const sorts = COURT_SORTS.map((k) => `<button type="button" class="cs-btn${k === sort ? ' on' : ''}" data-act="court-sort" data-sort="${k}" aria-pressed="${k === sort}">${esc(t(`mine.sort.${k}`))}</button>`).join('');
+  const faces = cards.map((c) => `<div class="mine-card k-${esc(c.kind ?? 'none')}" data-zoom="${esc(c.card)}" tabindex="0">${cardFaceById(c.card)}</div>`).join('');
+  return `<div class="mine-head"><span class="mine-title">${esc(t('mine.title'))}</span><span class="mine-n num">${cards.length}</span>${sorts}</div>
+    <div class="mine-cards" style="--w:${w}px">${faces || `<span class="mine-empty">${esc(t('mine.empty'))}</span>`}</div>`;
 }
 
 /** Glyphs of the ambition a card of this number can declare ('any': a free choice), or [] when it declares none. */
@@ -390,9 +433,9 @@ export function courtFace(c: CourtFaceData, t: Translate): string {
 }
 
 /**
- * The Court as the digital table's banners down the right column: each card's
- * picture cropped to a strip with the agents on it per seat beside it;
- * `pickable` cards glow and pick on click.
+ * The Court as banners in a row along the top: each card's picture cropped to
+ * a strip, with the agents on it per seat under it; `pickable` cards glow and
+ * pick on click.
  */
 export function courtPanel(v: TableView, t: Translate, pickable: ReadonlySet<number>): string {
   const cards = v.court
@@ -411,9 +454,9 @@ export function courtPanel(v: TableView, t: Translate, pickable: ReadonlySet<num
   return `<div class="court-row" title="${esc(t('court.deck', { n: v.courtDeck }))}">${cards}</div>`;
 }
 
-/** The right column: the ambitions on top, the Court under them. */
-export function sidePanel(ix: ContentIndex, v: TableView, t: Translate, pickable: ReadonlySet<number>): string {
-  return `<div class="side-amb" data-region="ambitions">${ambitionsStrip(ix, v, t)}</div><div class="side-court" data-region="court">${courtPanel(v, t, pickable)}</div>`;
+/** The right column: the ambitions. */
+export function sidePanel(ix: ContentIndex, v: TableView, t: Translate): string {
+  return `<div class="side-amb" data-region="ambitions">${ambitionsStrip(ix, v, t)}</div>`;
 }
 
 /** The local hand with its caption; `selected` is raised. */
@@ -424,7 +467,7 @@ export function handPanel(ix: ContentIndex, v: TableView, t: Translate, selected
     .map((h, i) => {
       const cls = `hand-card${h.playable ? '' : ' unplayable'}${selected === h.card ? ' selected' : ''}${seizeWith === h.card ? ' seize-mark' : ''}`;
       const off = i - (n - 1) / 2;
-      return `<button type="button" class="${cls}" style="--fan:${(off * 4).toFixed(1)}deg;--drop:${(off * off * 2.2).toFixed(1)}px" data-act="hand" data-card="${esc(h.card)}" aria-pressed="${selected === h.card}" aria-label="${esc(cardLabel(t, h))}">${actionCard(ix, h, t)}</button>`;
+      return `<button type="button" class="${cls}" style="--fan:${(off * 3.2).toFixed(1)}deg;--drop:${(off * off * 1.8).toFixed(1)}px" data-act="hand" data-card="${esc(h.card)}" aria-pressed="${selected === h.card}" aria-label="${esc(cardLabel(t, h))}">${actionCard(ix, h, t)}</button>`;
     })
     .join('');
   return `<div class="hand-top">${tools}</div><div class="hand-cards" aria-label="${esc(t(mine ? 'hand.title' : 'hand.waiting'))}">${cards || `<div class="hand-empty">${esc(t('empty'))}</div>`}</div>`;

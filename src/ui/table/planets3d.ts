@@ -46,9 +46,11 @@ export interface PlanetRecipe {
   atmosphere: { color: 'line' | 'accent'; strength: number } | null;
   /** Colours that replace the resource's palette. */
   colors: PlanetPalette | null;
+  /** The axis the planet turns about, in its own space; null: about its bite, or a slightly tilted upright axis. */
+  axis: [number, number, number] | null;
 }
 
-type RawRecipe = { style?: string; extras?: string[]; size?: number; spin?: number; tilt?: number; craterScale?: number; param?: number; bite?: number[]; atmosphere?: { color: 'line' | 'accent'; strength: number }; colors?: PlanetPalette };
+type RawRecipe = { style?: string; extras?: string[]; size?: number; spin?: number; tilt?: number; craterScale?: number; param?: number; bite?: number[]; atmosphere?: { color: 'line' | 'accent'; strength: number }; colors?: PlanetPalette; axis?: number[] };
 
 /** The recipe for planet `id` (defaults when planets.json does not name it). Pure. */
 export function planetRecipe(id: string): PlanetRecipe {
@@ -67,6 +69,7 @@ export function planetRecipe(id: string): PlanetRecipe {
     bite,
     atmosphere: r.atmosphere ?? null,
     colors: r.colors ?? null,
+    axis: Array.isArray(r.axis) && r.axis.length === 3 ? (r.axis as [number, number, number]) : null,
   };
 }
 
@@ -538,7 +541,8 @@ function moon(r: number, pal: PlanetPalette, seed: number, style: PlanetStyle = 
  * The extra bodies of a recipe, around a planet of radius r: `still` ones
  * stay put by the planet, `orbit` ones turn around it.
  */
-function extras(recipe: PlanetRecipe, pal: PlanetPalette, r: number, rand: () => number): { still: THREE.Object3D[]; orbit: THREE.Object3D[] } {
+function extras(recipe: PlanetRecipe, pal: PlanetPalette, r: number, rand: () => number, axis: THREE.Vector3): { still: THREE.Object3D[]; orbit: THREE.Object3D[] } {
+  const speed = recipes.defaults.orbits;
   const still: THREE.Object3D[] = [];
   const orbit: THREE.Object3D[] = [];
   const bite = recipe.bite ? new THREE.Vector3(recipe.bite[0], recipe.bite[1], recipe.bite[2]).normalize() : randomDir(rand).setY(0.6).normalize();
@@ -551,19 +555,21 @@ function extras(recipe: PlanetRecipe, pal: PlanetPalette, r: number, rand: () =>
       cv.height = 4;
       const g = cv.getContext('2d')!;
       for (let i = 0; i < 512; i++) {
-        const band = 0.35 + 0.5 * Math.abs(Math.sin(i * 0.09 + rand() * 0.3)) * (0.6 + 0.4 * rand());
-        const a = band * Math.sin((i / 512) * Math.PI) ** 0.6 * (i % 97 < 6 ? 0.15 : 1);
+        const band = 0.6 + 0.4 * Math.abs(Math.sin(i * 0.09 + rand() * 0.3)) * (0.6 + 0.4 * rand());
+        // Crisp at both rims, with a few dark gaps between the bands.
+        const a = band * Math.sin((i / 512) * Math.PI) ** 0.25 * (i % 97 < 6 ? 0.15 : 1);
         g.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`;
         g.fillRect(i, 0, 1, 4);
       }
       const tex = new THREE.CanvasTexture(cv);
-      const inner = r * 1.25;
-      const outer = r * 1.72;
+      const inner = r * 1.2;
+      const outer = r * 1.62;
       const geo = new THREE.RingGeometry(inner, outer, 128, 1);
       const uv = geo.getAttribute('uv');
       const pos = geo.getAttribute('position');
       for (let i = 0; i < uv.count; i++) uv.setXY(i, (Math.hypot(pos.getX(i), pos.getY(i)) - inner) / (outer - inner), 0.5);
-      ring.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, color: pal.line, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false })));
+      const bright = '#' + new THREE.Color(pal.line).lerp(new THREE.Color('#ffffff'), 0.3).getHexString();
+      ring.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, color: bright, transparent: true, side: THREE.DoubleSide, depthWrite: false })));
       const riders = new THREE.Group();
       const mat = rockMaterial(pal.accent);
       for (let i = 0; i < 9; i++) {
@@ -575,8 +581,8 @@ function extras(recipe: PlanetRecipe, pal: PlanetPalette, r: number, rand: () =>
       }
       riders.userData.spinZ = 0.05;
       ring.add(riders);
-      // Steeply tilted and turned, as the board draws it: a long ellipse seen from above.
-      ring.rotation.set(-Math.PI / 2 - 1.05, 0, 0.32);
+      // Across the planet's axis, which leans away from the viewer: an open ellipse from every angle of the map's camera.
+      ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), axis);
       still.push(ring);
     } else if (x === 'moons') {
       for (let i = 0; i < 2; i++) {
@@ -584,7 +590,7 @@ function extras(recipe: PlanetRecipe, pal: PlanetPalette, r: number, rand: () =>
         const pivot = new THREE.Group();
         m.position.set(r * (1.4 + 0.3 * i), r * 0.12 * (i ? -1 : 1), 0);
         pivot.rotation.set(0.3 * rand(), rand() * Math.PI * 2, 0.25);
-        pivot.userData.orbit = 0.25 + 0.2 * i;
+        pivot.userData.orbit = speed.moons[i % speed.moons.length];
         pivot.add(m);
         orbit.push(pivot);
       }
@@ -611,7 +617,7 @@ function extras(recipe: PlanetRecipe, pal: PlanetPalette, r: number, rand: () =>
         link(p, pts[(i + 1) % pts.length], 0.03);
         if (i % 2 === 0) link(p, new THREE.Vector3(0, 0, 0), 0.022);
       });
-      net.userData.orbit = 0.12;
+      net.userData.orbit = speed.network;
       orbit.push(net);
     } else if (x === 'asteroids') {
       // Boulders crowding round the small planet, pink and blue, some large.
@@ -628,7 +634,7 @@ function extras(recipe: PlanetRecipe, pal: PlanetPalette, r: number, rand: () =>
         m.rotation.set(rand() * 6, rand() * 6, rand() * 6);
         belt.add(m);
       }
-      belt.userData.orbit = 0.18;
+      belt.userData.orbit = speed.asteroids;
       orbit.push(belt);
     } else if (x === 'shards') {
       // Sharp fragments breaking off where the chunk is missing, drifting away from it.
@@ -684,9 +690,11 @@ export interface Planet {
   extras: THREE.Object3D[];
   surface: THREE.ShaderMaterial | null;
   spin: number;
+  /** The axis the body turns about, in the holder's space. */
+  axis: THREE.Vector3;
 }
 
-/** How far an object reaches from the planet's centre, in the planet's horizontal plane (it may turn about Y). */
+/** How far an object reaches from the planet's centre (it may turn about any axis). */
 function reach(o: THREE.Object3D): number {
   o.updateMatrix();
   let far = 0;
@@ -704,7 +712,7 @@ function reach(o: THREE.Object3D): number {
     const step = Math.max(1, Math.floor(pos.count / 200));
     for (let i = 0; i < pos.count; i += step) {
       v.fromBufferAttribute(pos, i).applyMatrix4(t);
-      far = Math.max(far, Math.hypot(v.x, v.z));
+      far = Math.max(far, v.length());
     }
   });
   return far;
@@ -723,11 +731,19 @@ export function buildPlanet(id: string, resource: string | undefined, r: number,
   const holder = new THREE.Group();
   const body = new THREE.Group();
   holder.add(body);
-  body.rotation.z = recipe.tilt * (rand() - 0.5) * 2;
+  // The axis it turns about: the recipe's (the way its bands run), else through
+  // its bite (which then stays where the board draws it), else nearly upright.
+  const lean = recipe.tilt * (0.5 + rand());
+  const head = rand() * Math.PI * 2;
+  const axis = recipe.axis
+    ? new THREE.Vector3(...recipe.axis).normalize()
+    : recipe.bite
+      ? new THREE.Vector3(recipe.bite[0], recipe.bite[1], recipe.bite[2]).normalize()
+      : new THREE.Vector3(Math.sin(lean) * Math.cos(head), Math.cos(lean), Math.sin(lean) * Math.sin(head));
   const R = r * recipe.size;
   const mat = surface(recipe.style, pal, rand() * 50, { crater: recipe.craterScale, param: recipe.param, bite: recipe.bite });
   body.add(new THREE.Mesh(new THREE.SphereGeometry(R, 96, 64), mat));
-  const { still, orbit } = extras(recipe, pal, R, rand);
+  const { still, orbit } = extras(recipe, pal, R, rand, axis);
   // Rings and wreckage stay put by the planet (a turning ring would sweep over its neighbours); moons orbit.
   const all: THREE.Object3D[] = [...still, ...orbit];
   for (const o of all) holder.add(o);
@@ -741,7 +757,7 @@ export function buildPlanet(id: string, resource: string | undefined, r: number,
     holder.add(glow);
     all.push(glow);
   }
-  const planet: Planet = { id, holder, body, orbits: orbit, extras: all, surface: mat, spin: recipe.spin };
+  const planet: Planet = { id, holder, body, orbits: orbit, extras: all, surface: mat, spin: recipe.spin, axis };
   const own = Object.entries(ownModels).find(([p]) => p.endsWith(`/${id}.glb`))?.[1];
   if (own) {
     void new GLTFLoader().loadAsync(own).then((gltf) => {
@@ -764,8 +780,9 @@ export function buildPlanet(id: string, resource: string | undefined, r: number,
 /** Turns the planets, their moons and the rocks riding their rings: `sec` seconds on the clock. */
 export function turnPlanets(planets: readonly Planet[], sec: number): void {
   for (const p of planets) {
-    p.body.rotation.y = (sec / 60) * p.spin * Math.PI * 2;
-    for (const o of p.orbits) o.rotation.y = (sec / 60) * (o.userData.orbit as number) * Math.PI * 2 * 4;
+    p.body.quaternion.setFromAxisAngle(p.axis, (sec / 60) * p.spin * Math.PI * 2);
+    // Moons and rocks go round at their own pace, not the planet's.
+    for (const o of p.orbits) o.rotation.y = (sec / 60) * (o.userData.orbit as number) * Math.PI * 2;
     for (const o of p.extras)
       for (const x of o.children) if (x.userData.spinZ) x.rotation.z = (sec / 60) * (x.userData.spinZ as number) * Math.PI * 2 * 4;
   }
