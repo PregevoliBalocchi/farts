@@ -457,7 +457,37 @@ export function drawInfoLayer(cv: HTMLCanvasElement, lines: BoardLines, calib: B
     const pts = bridgeArc(lines, st.inPlay, a, b);
     if (pts) bridgeArrow(g, pts);
   }
+
+  // The map has no hard edge: everything fades out towards the picture's borders.
   g.setTransform(1, 0, 0, 1, 0, 0);
+  fadeEdges(g, cv.width, cv.height, (EDGE_FADE * cv.width) / lines.width);
+}
+
+/** Width of the fade at the map's borders, in picture pixels. */
+export const EDGE_FADE = 150;
+
+/** Fades the canvas out towards its borders: transparent at the edge, untouched from `w` pixels in. */
+function fadeEdges(g: CanvasRenderingContext2D, width: number, height: number, w: number): void {
+  const ramp = (x0: number, y0: number, x1: number, y1: number) => {
+    const grad = g.createLinearGradient(x0, y0, x1, y1);
+    // A smoothstep in a few stops, so the fade has no visible start.
+    for (const t of [0, 0.15, 0.3, 0.5, 0.7, 0.85, 1]) grad.addColorStop(t, `rgba(0,0,0,${(1 - t * t * (3 - 2 * t)).toFixed(3)})`);
+    return grad;
+  };
+  g.save();
+  // destination-out (not -in): it touches only the strips, the rest stays.
+  g.globalCompositeOperation = 'destination-out';
+  const sides: [number, number, number, number, number, number, number, number][] = [
+    [0, 0, w, 0, 0, 0, w, height],
+    [width, 0, width - w, 0, width - w, 0, w, height],
+    [0, 0, 0, w, 0, 0, width, w],
+    [0, height, 0, height - w, 0, height - w, width, w],
+  ];
+  for (const [x0, y0, x1, y1, rx, ry, rw, rh] of sides) {
+    g.fillStyle = ramp(x0, y0, x1, y1);
+    g.fillRect(rx, ry, rw, rh);
+  }
+  g.restore();
 }
 
 /** A curved arrow along `pts` with a head at each end, in the layer's ink over a dark edge. */

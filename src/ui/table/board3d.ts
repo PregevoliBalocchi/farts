@@ -172,7 +172,7 @@ export class Board3D {
 
     if (this.space) {
       // Space: stars far below, planets under the glass, the pieces' shadows on the glass.
-      this.scene.add(starfield(60, 44), this.planetGroup);
+      this.scene.add(starfield(60, 44, 7000, 7, Math.min(2, window.devicePixelRatio || 1)), this.planetGroup);
       const catcher = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.ShadowMaterial({ opacity: 0.32, depthWrite: false }));
       catcher.rotation.x = -Math.PI / 2;
       catcher.position.y = 0.0005;
