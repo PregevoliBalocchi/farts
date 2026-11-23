@@ -65,7 +65,7 @@ onAuthStateChanged(auth, async (user) => {
     $('who').innerHTML = `${escape(email)} · <b>${ROLE_LABEL[me.role]}</b>`;
     show(status, 'Accesso consentito.', 'ok');
     $('lobby').hidden = false;
-    $('content-admin').hidden = me.role !== 'master';
+    $('content-admin').hidden = !isAdmin(me.role);
     await refreshGames();
     if (isAdmin(me.role)) {
       // Only the master appoints admins.

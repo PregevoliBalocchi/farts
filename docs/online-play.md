@@ -7,7 +7,7 @@ table (`src/ui/debug.ts`) keeps its own online mode but is no longer used here.
 
 ## How it works
 
-- **Content**: the master uploads `data/content.json` from the entrance page
+- **Content**: the master or an admin uploads `data/content.json` from the entrance page
   ("Contenuti del gioco"). It is stored in Firestore `content/main`, readable
   by invited members only, and never bundled into the public pages
   (`vite.online.config.ts` replaces the local content loader with a stub).
@@ -58,5 +58,5 @@ table (`src/ui/debug.ts`) keeps its own online mode but is no longer used here.
 
 ## Deploy
 
-`npm run deploy:online` (see `docs/online-access.md`). Then, once, the master
+`npm run deploy:online` (see `docs/online-access.md`). Then, once, the master or an admin
 uploads the content from the entrance page.

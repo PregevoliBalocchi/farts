@@ -67,10 +67,10 @@ service cloud.firestore {
       return email == masterEmail() || exists(memberDoc(email));
     }
 
-    // The game content (owner's data): members read it, only the master replaces it.
+    // The game content (owner's data): members read it, the master and admins replace it.
     match /content/main {
       allow read: if isMember();
-      allow write: if isMaster()
+      allow write: if isAdmin()
         && request.resource.data.keys().hasOnly(['json', 'updatedAt', 'updatedBy'])
         && request.resource.data.json is string
         && request.resource.data.updatedBy == me();
