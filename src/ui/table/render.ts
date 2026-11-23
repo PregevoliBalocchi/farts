@@ -194,10 +194,10 @@ function outrage(p: PlayerView, t: Translate): string {
   return `<div class="outrage" aria-label="${esc(t('outrage.row'))}">${spaces}</div>`;
 }
 
-/** The leader's picture when the seat has a leader card with art, else the seat portrait. */
+/** The leader's picture when the seat has a leader card with art (hover or focus shows the whole card), else the seat portrait. */
 function leaderPortrait(p: PlayerView): string {
   const art = p.leader ? cardArt(p.leader) : null;
-  return art ? `<div class="portrait leader"><img src="${esc(art)}" alt=""></div>` : portrait(p.id);
+  return art ? `<div class="portrait leader" data-zoom="${esc(p.leader)}" tabindex="0"><img src="${esc(art)}" alt=""></div>` : portrait(p.id);
 }
 
 /** A card with a prelude power on the board's tab: lit (and clickable) when it can be used now. */
