@@ -111,6 +111,8 @@ function rng(seed: string): () => number {
 // ---- the surface shader ----
 
 const NOISE = /* glsl */ `
+// How many texels wide the ink lines are per screen pixel (1 drawn live; more in a bake, whose texels are smaller than the screen's pixels).
+uniform float uInk;
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 permute(vec4 x) { return mod289(((x * 34.0) + 10.0) * x); }
@@ -184,19 +186,19 @@ vec3 worley(vec3 p) {
 }
 // A thin line where v crosses whole numbers, about px pixels wide on screen.
 float isoline(float v, float px) {
-  float w = fwidth(v) * px;
+  float w = fwidth(v) * px * uInk;
   float d = abs(fract(v - 0.5) - 0.5);
   return 1.0 - smoothstep(0.0, w, d);
 }
 // A thin line where d is zero (d >= 0), about px pixels wide.
 float ink(float d, float px) {
-  return 1.0 - smoothstep(0.0, fwidth(d) * px + 1e-5, d);
+  return 1.0 - smoothstep(0.0, fwidth(d) * px * uInk + 1e-5, d);
 }
 // The seams of a 3D grid of cells drawn on the sphere, leaving out the planes
 // that lie almost flat on the surface (they would smear into wide bands).
 float grid(vec3 g, vec3 n, float px) {
   vec3 d = 0.5 - abs(fract(g) - 0.5);
-  vec3 l = 1.0 - smoothstep(vec3(0.0), fwidth(g) * px, d);
+  vec3 l = 1.0 - smoothstep(vec3(0.0), fwidth(g) * px * uInk, d);
   vec3 keep = smoothstep(vec3(0.93), vec3(0.72), abs(n));
   return max(max(l.x * keep.x, l.y * keep.y), l.z * keep.z);
 }
@@ -220,7 +222,7 @@ void main() {
 }
 `;
 
-const FRAG = /* glsl */ `
+const SURFACE_HEAD = /* glsl */ `
 uniform int uStyle;
 uniform vec3 uBase;
 uniform vec3 uLine;
@@ -235,7 +237,10 @@ varying vec3 vPos;
 varying vec3 vNormalW;
 varying vec3 vViewDir;
 ${NOISE}
-void main() {
+`;
+
+/** The surface drawing: sets `col` (its colour at point `p` of the sphere) and `glow`; discards a bitten-away chunk. */
+const SURFACE_BODY = /* glsl */ `
   vec3 p = normalize(vPos);
   vec3 q = p + uSeed;
   float mott = fbm3(q * 2.3);
@@ -428,9 +433,60 @@ void main() {
     col = mix(col, vec3(1.0, 0.92, 0.98), ink(abs(w.x - R), 1.3) * 0.7);
   }
 
+`;
+
+const FRAG = /* glsl */ `${SURFACE_HEAD}
+void main() {
+${SURFACE_BODY}
   // Inside a cut-away chunk: the dark rock under the surface.
   if (!gl_FrontFacing) {
     col = uBase * (0.18 + 0.12 * mott);
+    glow = 0.0;
+  }
+  // Light: a distant sun, a soft fill, the edge darkening like the board's drawings, a thin bright rim.
+  vec3 n = normalize(vNormalW) * (gl_FrontFacing ? 1.0 : -1.0);
+  float lit = max(dot(n, normalize(uSun)), 0.0);
+  float facing = max(dot(n, normalize(vViewDir)), 0.0);
+  vec3 c = col * (0.32 + 0.85 * lit) * (0.55 + 0.45 * facing);
+  c += uLine * smoothstep(0.86, 0.98, 1.0 - facing) * 0.3;
+  c += glowCol * glow * 1.1;
+  gl_FragColor = vec4(c * uDim, 1.0);
+  #include <colorspace_fragment>
+}
+`;
+
+/**
+ * The bake: the surface drawing alone, unlit, rendered once into a cube map seen
+ * from the sphere's centre (bakePlanets). Colour stored as sqrt(col / 2) to keep
+ * the darks precise in 8 bits; alpha 0 where a chunk is cut away, else 0.5 + glow / 2.
+ */
+const BAKE_FRAG = /* glsl */ `${SURFACE_HEAD}
+void main() {
+${SURFACE_BODY.replace('discard;', '{ gl_FragColor = vec4(0.0); return; }')}
+  gl_FragColor = vec4(sqrt(clamp(col * 0.5, 0.0, 1.0)), 0.5 + 0.5 * clamp(glow, 0.0, 1.0));
+}
+`;
+
+/** A baked planet: its surface read from the cube map, then lit as FRAG lights it. */
+const BAKED_FRAG = /* glsl */ `
+uniform samplerCube uBaked;
+uniform vec3 uBase;
+uniform vec3 uLine;
+uniform vec3 uGlowCol;
+uniform float uDim;
+uniform vec3 uSun;
+varying vec3 vPos;
+varying vec3 vNormalW;
+varying vec3 vViewDir;
+void main() {
+  vec4 s = textureCube(uBaked, normalize(vPos));
+  if (s.a < 0.25) discard;
+  vec3 col = s.rgb * s.rgb * 2.0;
+  float glow = s.a * 2.0 - 1.0;
+  vec3 glowCol = uGlowCol;
+  // Inside a cut-away chunk: the dark rock under the surface.
+  if (!gl_FrontFacing) {
+    col = uBase * 0.24;
     glow = 0.0;
   }
   // Light: a distant sun, a soft fill, the edge darkening like the board's drawings, a thin bright rim.
@@ -465,6 +521,7 @@ function surface(style: PlanetStyle, pal: PlanetPalette, seed: number, o: { crat
       uBite: { value: new THREE.Vector4(bite[0], bite[1], bite[2], bite[3]) },
       uDim: { value: 1 },
       uSun: { value: SUN },
+      uInk: { value: 1 },
     },
   });
 }
@@ -775,6 +832,70 @@ export function buildPlanet(id: string, resource: string | undefined, r: number,
     }).catch(() => undefined);
   }
   return planet;
+}
+
+/** Cube-map face size (pixels) of a baked planet, and of a baked moon (much smaller on screen). */
+const BAKE_SIZE = { body: 256, moon: 96 } as const;
+/** Ink lines in a bake: texels per screen pixel, the face size over its usual width on the map's screen. */
+const BAKE_INK = 2;
+
+/**
+ * Bakes the planets' surface drawings: each procedural surface (the planet's
+ * and its moons') is rendered once into a cube map with `renderer`, and its
+ * mesh then draws from that map with the same light. The drawing is costly
+ * (noise at every pixel); read from a map it is cheap, so the map can turn
+ * its planets on modest graphics cards. Surfaces already baked are skipped;
+ * a renderer that cannot draw into cube maps keeps the live drawing.
+ * `bodySize`: the planet's cube-map face size, larger for a planet seen close up;
+ * `ink`: how many texels wide a line one screen pixel wide is drawn (about the
+ * face size over the face's width on screen).
+ */
+export function bakePlanets(renderer: THREE.WebGLRenderer, planets: readonly Planet[], bodySize: number = BAKE_SIZE.body, ink: number = BAKE_INK): void {
+  const scissor = renderer.getScissorTest();
+  renderer.setScissorTest(false);
+  const scene = new THREE.Scene();
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32));
+  scene.add(ball);
+  const rifted = STYLES.indexOf('rifted');
+  for (const p of planets) {
+    p.holder.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      const src = mesh.material as THREE.ShaderMaterial | undefined;
+      if (!mesh.isMesh || !(src instanceof THREE.ShaderMaterial) || !src.uniforms.uStyle || src.userData.baked) return;
+      const u = src.uniforms;
+      const size = src === p.surface ? bodySize : BAKE_SIZE.moon;
+      const target = new THREE.WebGLCubeRenderTarget(size, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter });
+      const bake = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: BAKE_FRAG, uniforms: { ...u, uInk: { value: ink } }, side: THREE.BackSide });
+      ball.material = bake;
+      try {
+        new THREE.CubeCamera(0.05, 10, target).update(renderer, scene);
+      } catch {
+        target.dispose();
+        return;
+      } finally {
+        bake.dispose();
+      }
+      const mat = new THREE.ShaderMaterial({
+        vertexShader: VERT,
+        fragmentShader: BAKED_FRAG,
+        side: src.side,
+        uniforms: {
+          uBaked: { value: target.texture },
+          uBase: u.uBase,
+          uLine: u.uLine,
+          uGlowCol: { value: (u.uStyle.value === rifted ? u.uLine.value : u.uAccent.value) as THREE.Color },
+          uDim: u.uDim,
+          uSun: u.uSun,
+        },
+      });
+      mat.userData.baked = true;
+      mesh.material = mat;
+      if (p.surface === src) p.surface = mat;
+      src.dispose();
+    });
+  }
+  ball.geometry.dispose();
+  renderer.setScissorTest(scissor);
 }
 
 /** Turns the planets, their moons and the rocks riding their rings: `sec` seconds on the clock. */

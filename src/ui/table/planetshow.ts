@@ -8,7 +8,7 @@ import { loadContent } from '../content';
 import { assetUrl } from './assets';
 import { createRenderer, drawRatio } from './gpu';
 import calibration from './board.default.json';
-import { buildPlanet, turnPlanets } from './planets3d';
+import { bakePlanets, buildPlanet, turnPlanets } from './planets3d';
 import type { Planet } from './planets3d';
 import './table.css';
 
@@ -56,6 +56,8 @@ export function mountPlanets(root: HTMLElement): void {
     sun.position.set(-3, 7, 5);
     scene.add(sun);
     const planet: Planet = buildPlanet(s.id, s.resource ?? undefined, 1);
+    // ?bake=0: the live drawing, to compare with the baked one.
+    if (params.get('bake') !== '0') bakePlanets(renderer, [planet], one ? 1024 : 256, one ? 3.5 : 2);
     scene.add(planet.holder);
     // Seen from above and a little in front, as the map's camera sees it.
     const camera = new THREE.PerspectiveCamera(32, cell.w / 2 / cell.h, 0.1, 50);

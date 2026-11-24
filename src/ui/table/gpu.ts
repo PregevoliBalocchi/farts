@@ -63,8 +63,9 @@ export const LITE_FRAME_MS = 33;
 /**
  * Watches the time between drawn frames while a view animates: reports once
  * when, over `frames` frames in a row, they average more than `slowMs`
- * (the card cannot keep up). Pauses longer than `gapMs` (a hidden tab, a
- * still view) start the count again.
+ * (the card cannot keep up: by default under about 36 frames a second, so a
+ * card that only manages every other screen refresh draws lighter). Pauses
+ * longer than `gapMs` (a hidden tab, a still view) start the count again.
  */
 export class FrameWatch {
   private last = -1;
@@ -72,7 +73,7 @@ export class FrameWatch {
   private n = 0;
   private done = false;
 
-  constructor(private readonly slowMs = 45, private readonly frames = 90, private readonly gapMs = 250) {}
+  constructor(private readonly slowMs = 28, private readonly frames = 90, private readonly gapMs = 250) {}
 
   /** A frame was drawn at `t` milliseconds; true the one time the frames are found too slow. */
   tick(t: number): boolean {
