@@ -157,10 +157,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let powerMenu: { card: string; options: PowerOption[] } | null = null;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
   let controlLayer = false;
+  /** The planets drawn in 2D as on the board (remembered between games). */
+  let flatPlanets = false;
   /** How the local player's own Court cards are ordered in the bar. */
   let courtSort: CourtSort = 'got';
   try {
     controlLayer = localStorage.getItem('arcs.controlLayer') === '1';
+    flatPlanets = localStorage.getItem('arcs.planets2d') === '1';
   } catch {
     /* no storage: off */
   }
@@ -244,6 +247,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       });
   if (board3d) {
     board3d.setSectorMode(controlLayer ? 'control' : 'resource');
+    board3d.setPlanetMode(flatPlanets && board3d.hasFlatPlanets ? '2d' : '3d');
     // Behind the stage, as large as the window: the interface is drawn in front of it.
     shell.classList.add('has-3d');
     shell.insertBefore(board3d.canvas, stage);
@@ -1210,7 +1214,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const preludes = preludeCards(v);
 
     stage.innerHTML = `<div class="tbl-stars"></div>
-      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', prompt(v), board3d?.hasInfoLayer ? controlLayer : null, drop)}</div>
+      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', prompt(v), board3d?.hasInfoLayer ? controlLayer : null, drop, board3d?.hasFlatPlanets ? flatPlanets : null)}</div>
       <div class="map-area${board3d ? '' : ' glass'}" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
       <div class="region court" data-region="court" style="${place(REGIONS.court)}">${courtPanel(v, t, courtPickable(intent))}</div>
@@ -1516,6 +1520,15 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           /* not remembered */
         }
         board3d?.setSectorMode(controlLayer ? 'control' : 'resource');
+        break;
+      case 'map-planets':
+        flatPlanets = !flatPlanets;
+        try {
+          localStorage.setItem('arcs.planets2d', flatPlanets ? '1' : '0');
+        } catch {
+          /* not remembered */
+        }
+        board3d?.setPlanetMode(flatPlanets ? '2d' : '3d');
         break;
       case 'help':
       case 'log':

@@ -161,3 +161,24 @@ campaign at a much higher resolution than the scans we had. Three tools in
 The rest of the catalogue (setup cards, campaign Fates, rulebook pages, the
 site's FAQ) is not used by the game yet.
 
+
+## 2D planets (cut from the board picture)
+
+The square button with a ringed planet in the top bar switches the map between
+the 3D planets and flat 2D planets drawn exactly as on the board (the choice is
+remembered in the browser). The button shows only when the pictures exist.
+
+| What | How | Where |
+|---|---|---|
+| Planet crops for Gemini | `python tools/map/import-planets.py crops <dir>` (needs opencv-python) | 1024 px squares from `assets/ui/map/board.png`, centred on each disc: 1.3 disc radii each side, 1.7 for planets with parts that stick out |
+| Planet pictures | Gemini rebuilds each crop (one prompt per planet, written for its shape), returning it on flat magenta; then `python tools/map/import-planets.py import <gemini dir> <crops dir> --sheet sheet.png` | `assets/ui/map/planets/<system>.png` (committed, like the board picture): 768 px, transparent, 1.7 disc radii each side (`FLAT_MARGIN` in `board3d.ts`) |
+
+Gemini removes what covers a planet on the board (building triangles, resource
+icon, sector and crack lines) and repaints the drawing underneath, keeping the
+planet's real outline. The import turns the magenta transparent without a
+coloured rim (`tools/map/key-planets.py` unmixes the edge pixels), lines each
+picture up with its crop (Gemini sometimes zooms or moves the planet) and
+writes the game's frame. The check sheet shows each crop with the result laid
+over it. A planet with no good Gemini picture yet can take a transparent
+picture from the earlier cutter (`tools/map/cut-planets.py`, 1.08 radii framing)
+placed in `<gemini dir>/legacy/<system>.png`: it is only reframed.

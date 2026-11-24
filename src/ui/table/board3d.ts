@@ -81,6 +81,13 @@ const INFO_WIDTH = 4096;
 /** Font of the gate numbers on the information layer. */
 const NUMBER_FONT = '"Arcs Card Title", "Cinzel", Georgia, serif';
 
+/** How the planets are drawn: as 3D globes, or flat as on the board picture. */
+export type PlanetMode = '3d' | '2d';
+/** A 2D planet's picture spans this many disc radii each side of its centre (tools/map/import-planets.py OUT_PAD). */
+const FLAT_MARGIN = 1.7;
+/** How far under the glass the 2D planets lie (world units). */
+const FLAT_DEPTH = 0.01;
+
 /** Width / height of our schematic board picture. */
 const SCHEMATIC_ASPECT = 1.6;
 /** Camera tilt of the default view, from the table plane. */
@@ -199,6 +206,10 @@ export class Board3D {
   private bridges: [string, string][] = [];
   private readonly planetGroup = new THREE.Group();
   private planets: Planet[] = [];
+  /** The 2D planets: each planet cut out of the board picture (assets/ui/map/planets/<id>.png), flat under the glass. */
+  private readonly flatGroup = new THREE.Group();
+  private flats: { id: string; mesh: THREE.Mesh }[] = [];
+  private planetMode: PlanetMode = '3d';
   /** The planets' resource tokens: sprites, so they stay round whatever the camera's tilt. */
   private readonly iconGroup = new THREE.Group();
   private iconKey = '';
@@ -230,7 +241,8 @@ export class Board3D {
 
     if (this.space) {
       // Space: stars far below, planets under the glass, the pieces' shadows on the glass.
-      this.scene.add(starfield(60, 44, 7000, 7, drawRatio(window.devicePixelRatio)), this.planetGroup);
+      this.scene.add(starfield(60, 44, 7000, 7, drawRatio(window.devicePixelRatio)), this.planetGroup, this.flatGroup);
+      this.flatGroup.visible = false;
       const catcher = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.ShadowMaterial({ opacity: 0.32, depthWrite: false }));
       catcher.rotation.x = -Math.PI / 2;
       catcher.position.y = 0.0005;
@@ -538,7 +550,8 @@ export class Board3D {
       const known = (a: string, b: string) => base.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
       this.bridges = links.filter(([a, b]) => a.endsWith('gate') && b.endsWith('gate') && !known(a, b));
       if (!this.planets.length) this.buildPlanets(c);
-      for (const p of this.planets) p.holder.visible = inPlay.get(p.id) !== false;
+      if (this.planetMode === '2d' && !this.flats.length) this.buildFlats(c);
+      this.showPlanets();
       this.drawInfo();
       return;
     }
@@ -577,6 +590,59 @@ export class Board3D {
   /** True when the map is the map in space, with its information layer. */
   get hasInfoLayer(): boolean {
     return this.space;
+  }
+
+  /** True when the 2D planets can be shown: the map in space, with the planets cut out of the board picture. */
+  get hasFlatPlanets(): boolean {
+    return this.space && !!this.calib && this.ix.content.map.systems.some((s) => s.kind === 'planet' && !!assetUrl(`map.planets.${s.id}`));
+  }
+
+  /** Shows the 3D planets (default) or the 2D ones drawn as on the board. */
+  setPlanetMode(mode: PlanetMode): void {
+    if (mode === this.planetMode) return;
+    this.planetMode = mode;
+    if (mode === '2d' && !this.flats.length && this.calib) this.buildFlats(this.calib);
+    this.showPlanets();
+    this.dirty = true;
+  }
+
+  /** Each in-play planet in the chosen style; in 2D a planet with no picture keeps its 3D globe. */
+  private showPlanets(): void {
+    const flat = new Set(this.planetMode === '2d' ? this.flats.map((f) => f.id) : []);
+    for (const p of this.planets) p.holder.visible = this.inPlay.get(p.id) !== false && !flat.has(p.id);
+    for (const f of this.flats) f.mesh.visible = this.inPlay.get(f.id) !== false;
+    this.flatGroup.visible = this.planetMode === '2d';
+  }
+
+  /**
+   * One flat picture per planet system, drawn as on the board with its
+   * covered parts rebuilt (tools/map/import-planets.py): lying just under the
+   * glass, centred on the system's disc, as large as its frame (FLAT_MARGIN).
+   */
+  private buildFlats(c: BoardCalibration): void {
+    const unit = BOARD_DEPTH / c.height;
+    const loader = new THREE.TextureLoader();
+    for (const s of this.ix.content.map.systems) {
+      const disc = c.systems[s.id]?.disc;
+      const url = assetUrl(`map.planets.${s.id}`);
+      if (s.kind !== 'planet' || !disc || !url) continue;
+      const side = 2 * disc.r * FLAT_MARGIN * unit;
+      const mat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, opacity: 0 });
+      loader.load(url, (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+        mat.map = tex;
+        mat.opacity = 1;
+        mat.needsUpdate = true;
+        this.dirty = true;
+      });
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(side, side), mat);
+      mesh.rotation.x = -Math.PI / 2;
+      const at = pictureToWorld(c, disc.x, disc.y);
+      mesh.position.set(at.x, -FLAT_DEPTH, at.z);
+      this.flatGroup.add(mesh);
+      this.flats.push({ id: s.id, mesh });
+    }
   }
 
   /** Colours the sectors by resource (default) or by who controls them. */
