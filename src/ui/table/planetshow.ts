@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { loadContent } from '../content';
 import { assetUrl } from './assets';
+import { createRenderer, drawRatio } from './gpu';
 import calibration from './board.default.json';
 import { buildPlanet, turnPlanets } from './planets3d';
 import type { Planet } from './planets3d';
@@ -33,12 +34,12 @@ export function mountPlanets(root: HTMLElement): void {
 
   let renderer: THREE.WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = createRenderer({ antialias: true });
   } catch {
     wrap.textContent = 'WebGL';
     return;
   }
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.setPixelRatio(drawRatio(window.devicePixelRatio));
   renderer.setSize(W, H);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.setScissorTest(true);
