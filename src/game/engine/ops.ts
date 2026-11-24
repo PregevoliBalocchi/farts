@@ -7,7 +7,37 @@ import { gainResource, heldResources, onCityReturned, returnToSupply, takeResour
 import { hasPassive, isDeclared, ownedEffects } from './effects';
 import { declareAmbition } from './ambitions';
 import type { ContentIndex } from './setup';
-import type { AmbitionId, GameState, PlayerId, Resource, ShipStack, SystemState } from './types';
+import type { AmbitionId, GameState, Owner, PlayerId, Resource, ShipStack, SystemState, Trophy } from './types';
+
+/** True for a player's piece (not the campaign's Empire, Free States or Blight). */
+export function isPlayer(owner: Owner | Trophy['owner']): owner is PlayerId {
+  return typeof owner === 'number';
+}
+
+/**
+ * Puts a piece back in its supply: a player's own supply (a city covers its
+ * board slots again), or the campaign's general supply for Imperial ships,
+ * Free buildings and Blight (campaign rulebook p. 3, 15, 19).
+ */
+export function returnPiece(ix: ContentIndex, s: GameState, owner: Trophy['owner'], piece: Trophy['piece']): void {
+  if (isPlayer(owner)) {
+    const pl = s.players[owner];
+    if (piece === 'ship') pl.supply.ships += 1;
+    else if (piece === 'starport') pl.supply.starports += 1;
+    else if (piece === 'agent') pl.supply.agents += 1;
+    else if (piece === 'city') {
+      pl.supply.cities += 1;
+      returnToSupply(s, ...onCityReturned(ix.content, pl));
+    }
+    return;
+  }
+  const sup = s.campaign?.supply;
+  if (!sup) return;
+  if (piece === 'blight') sup.blight += 1;
+  else if (piece === 'ship') sup.imperialShips += 1;
+  else if (piece === 'city') sup.freeCities += 1;
+  else if (piece === 'starport') sup.freeStarports += 1;
+}
 
 /**
  * Puts action cards on top of the action discard. Cards put there face down
@@ -56,6 +86,7 @@ export function stealBlocked(ix: ContentIndex, s: GameState, thief: PlayerId, vi
     if (w && hasResourceType(ix, s, thief, what.resource)) return `P${victim} is protected: you already hold ${what.resource}`;
     return null;
   }
+  if (isProtected(ix, what.card)) return `${what.card} is protected: it cannot be taken from P${victim}`;
   // Guild cards: the guard card itself may be stolen (then it is buried), the others may not.
   const guard = guards.find((g) => g.effect.guardsSteals);
   if (guard && guard.card !== what.card) return `P${victim}'s Guild cards are protected from stealing`;
@@ -63,6 +94,17 @@ export function stealBlocked(ix: ContentIndex, s: GameState, thief: PlayerId, vi
   const w = guards.find((g) => g.effect.guardGuildWhile && isDeclared(s, g.effect.guardGuildWhile));
   if (w && type && hasResourceType(ix, s, victim, type)) return `P${victim} holds ${type}: that Guild card cannot be stolen`;
   return null;
+}
+
+/**
+ * A protected Guild card ("X" in place of its raid cost, campaign rulebook
+ * p. 27): "They cannot be removed from the holder's play area unless the
+ * holder Provokes Outrage of its suit or the card is referenced by name." So
+ * it cannot be stolen, raided or given away; Provoking Outrage still
+ * discards it (provokeOutrage); an effect naming it bypasses this check.
+ */
+export function isProtected(ix: ContentIndex, card: string): boolean {
+  return ix.courtCards.get(card)?.keys === 'X';
 }
 
 /** Steals the resource on `slot` from a Rival. A token the thief cannot hold goes back to the supply. */
@@ -143,10 +185,9 @@ export function returnCity(ix: ContentIndex, s: GameState, system: string, index
   const sys = s.map[system] ?? fail(`Unknown system ${system}`);
   const b = sys.buildings[index];
   if (!b || b.type !== 'city') fail(`No city at ${system}#${index}`);
+  if (!isPlayer(b.owner)) fail(`The city at ${system}#${index} is a Free city`);
   sys.buildings.splice(index, 1);
-  const owner = s.players[b.owner];
-  owner.supply.cities += 1;
-  returnToSupply(s, ...onCityReturned(ix.content, owner));
+  returnPiece(ix, s, b.owner, 'city');
   return b.owner;
 }
 
@@ -202,14 +243,7 @@ export function returnTrophy(ix: ContentIndex, s: GameState, holder: PlayerId, i
   const h = s.players[holder];
   const t = h.trophies[index] ?? fail(`No trophy #${index}`);
   h.trophies.splice(index, 1);
-  const owner = s.players[t.owner];
-  if (t.piece === 'ship') owner.supply.ships += 1;
-  else if (t.piece === 'starport') owner.supply.starports += 1;
-  else if (t.piece === 'agent') owner.supply.agents += 1;
-  else {
-    owner.supply.cities += 1;
-    returnToSupply(s, ...onCityReturned(ix.content, owner));
-  }
+  returnPiece(ix, s, t.owner, t.piece);
 }
 
 /** Returns a captive (by index) to its owner's supply. */

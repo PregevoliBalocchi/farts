@@ -7791,6 +7791,12 @@
         "damaged"
       ]
     },
-    "_componentsComment": "Copies per the campaign rulebook pp. 2-3 (components): 24 Blight, 28 Free cities, 14 Free starports, 15 Imperial ships, 3 Event cards, 4 Edicts, 4 titles, 4 Flagship upgrade cards, 4 Flagship boards, 1 Imperial Council; Fate sets in fateCards (one entry per physical card)."
+    "_componentsComment": "Copies per the campaign rulebook pp. 2-3 (components): 24 Blight, 28 Free cities, 14 Free starports, 15 Imperial ships, 3 Event cards, 4 Edicts, 4 titles, 4 Flagship upgrade cards, 4 Flagship boards, 1 Imperial Council; Fate sets in fateCards (one entry per physical card).",
+    "eventCardsInDeck": {
+      "2": 2,
+      "3": 2,
+      "4": 3
+    },
+    "startingShips": 3
   }
 }

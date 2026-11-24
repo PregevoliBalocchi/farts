@@ -26,6 +26,7 @@ import {
   provokeOutrage,
   returnCaptive,
   returnCity,
+  returnPiece,
   returnToSupply,
   returnTrophy,
   seize,
@@ -655,7 +656,7 @@ export const BASE_EFFECTS: EffectRegistry = {
           s.players[ctx.player].supply.ships += 1;
           if (dmg) theirs.damaged -= 1;
           else theirs.fresh -= 1;
-          s.players[target].supply.ships += 1;
+          // The destroyed Rival ship goes to the Trophies box, back to its owner only when trophies return.
           s.players[ctx.player].trophies.push({ owner: target, piece: 'ship' });
           return `sacrifices a ship to destroy a ship of P${target} at ${id}`;
         },
@@ -723,7 +724,7 @@ export const BASE_EFFECTS: EffectRegistry = {
           if (b.type === 'city') returnCity(ctx.ix, s, id, i);
           else {
             sys.buildings.splice(i, 1);
-            s.players[old].supply.starports += 1;
+            returnPiece(ctx.ix, s, old, 'starport');
           }
           sup[key] -= 1;
           sys.buildings.splice(i, 0, { owner: ctx.player, type: b.type, damaged: false });

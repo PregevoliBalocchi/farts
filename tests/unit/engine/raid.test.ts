@@ -44,6 +44,14 @@ describe('raid', () => {
     expect(s.players[1].court).toEqual([]);
   });
 
+  it('adds a printed key cost written as text, as data/content.json has it, as a number', () => {
+    const ix = fixed({ key: 2 });
+    (ix.courtCards.get('faction-1') as { keys?: unknown }).keys = '2';
+    const s = raidWith(ix, ready(ix), 2, [{ resource: 0 }, { card: 'faction-1' }]);
+    expect(s.players[0].court).toEqual(['faction-1']);
+    expect(heldResources(s.players[0])).toEqual(['fuel']);
+  });
+
   it('rejects a raid costing more keys than rolled', () => {
     const ix = fixed({ key: 2 });
     const s = ready(ix);

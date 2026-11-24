@@ -20,7 +20,10 @@ import type { DeclareGift } from './declare';
 import { HANDLERS } from './actions';
 import type { MovePayload } from './actions';
 import { effectOf, hasPassive, isDeclared, ownedEffects } from './effects';
-import { cartelSupply, toDiscard } from './ops';
+import { cartelSupply, returnPiece, toDiscard } from './ops';
+import { returnCouncil } from './campaign';
+import { decideEvent, isEventDecision, runEvent, startEvent } from './events';
+import { isEventCard, placeStartingPieces } from './campaign-setup';
 import type { ActionPayload, ActionResult, Allocation } from './actions';
 import { shuffle } from './rng';
 import { arrangeResources, endArranging, gainFromSupply, onCityReturned, returnToSupply, takeResourceAt } from './board';
@@ -35,7 +38,8 @@ export type Command =
   /** `give`: the Guild card a declaring cost asks for (see declare.ts). */
   | { type: 'lead'; player: PlayerId; card: string; declare?: boolean; ambition?: AmbitionId; give?: DeclareGift }
   /** `declare`: with a card allowing it, a Surpass or Pivot may declare the played card's ambition. */
-  | { type: 'follow'; player: PlayerId; card: string; mode: 'surpass' | 'pivot' | 'copy'; seizeWith?: string; declare?: boolean; ambition?: AmbitionId; give?: DeclareGift }
+  /** `event`: a campaign Event card, taking actions like the lead card (campaign rulebook p. 12). */
+  | { type: 'follow'; player: PlayerId; card: string; mode: 'surpass' | 'pivot' | 'copy' | 'event'; seizeWith?: string; declare?: boolean; ambition?: AmbitionId; give?: DeclareGift }
   | { type: 'action'; player: PlayerId; action: ActionPayload }
   /**
    * Spend one resource in the prelude; `action` is required unless the resource only grants a kind for this turn.
@@ -64,8 +68,13 @@ export type Command =
   | { type: 'arrange'; player: PlayerId; slots: (Resource | null)[] }
   /** Leaders & Lore draft: take one face-up leader or lore card. */
   | { type: 'draft'; player: PlayerId; card: string }
-  /** 2 players, before the first lead: the player without initiative redraws the first hand once. */
-  | { type: 'mulligan'; player: PlayerId };
+  /**
+   * 2 players, before the first lead: the player without initiative redraws the first hand once.
+   * Campaign (p. 6 step J, p. 12): `cards` are the cards discarded (never Event cards); as many are drawn.
+   */
+  | { type: 'mulligan'; player: PlayerId; cards?: string[] }
+  /** Campaign Act I setup steps G-H (p. 6): 3 ships and a building at a planet with an Imperial ship. */
+  | { type: 'place'; player: PlayerId; system: string; building: 'city' | 'starport' };
 
 /**
  * Applies a command and returns the new state. Pure: the input is not mutated;
@@ -83,6 +92,8 @@ export function activePlayer(s: GameState): PlayerId | null {
   switch (s.phase.type) {
     case 'draft':
       return s.draft!.order[0];
+    case 'campaignSetup':
+      return s.campaign!.placements[0];
     case 'lead':
       return s.initiative;
     case 'follow':
@@ -118,6 +129,20 @@ function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
   if (cmd.type === 'mulligan') {
     if (s.mulligan !== cmd.player) err(`P${cmd.player} cannot redraw`);
     const p = s.players[cmd.player];
+    if (s.campaign) {
+      // p. 12: "you must keep any Event cards in your hand and only draw the number of action cards you discarded".
+      const out = cmd.cards ?? p.hand.filter((c) => !isEventCard(ix, c));
+      for (const c of out) {
+        if (!p.hand.includes(c)) err(`Card ${c} not in hand`);
+        if (isEventCard(ix, c)) err('Event cards stay in hand in a mulligan');
+      }
+      for (const c of out) removeFromHand(p.hand, c);
+      toDiscard(s, out, p.id);
+      p.hand.push(...s.deck.splice(0, out.length));
+      s.mulligan = null;
+      log(s, `P${cmd.player} discards ${out.length} cards and draws as many`);
+      return;
+    }
     toDiscard(s, p.hand, p.id);
     p.hand = s.deck.splice(0, ix.content.handSize);
     s.mulligan = null;
@@ -129,6 +154,7 @@ function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
   const p = s.players[cmd.player];
 
   if (s.phase.type === 'draft' && cmd.type !== 'draft') err('Finish the Leaders & Lore draft first');
+  if (s.phase.type === 'campaignSetup' && cmd.type !== 'place') err('Place your starting pieces first');
   if (s.phase.type === 'decide' && cmd.type !== 'decide') err('A card effect is waiting for a choice');
   switch (cmd.type) {
     case 'draft': {
@@ -149,8 +175,14 @@ function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
       return;
     }
 
+    case 'place': {
+      log(s, placeStartingPieces(ix, s, p.id, cmd.system, cmd.building, () => startChapter(ix, s)));
+      return;
+    }
+
     case 'pass': {
       if (s.phase.type !== 'lead') err('Only the initiative holder can pass, before leading');
+      discardUndealt(s);
       s.consecutivePasses += 1;
       const holders = s.players.filter((x) => x.hand.length > 0).length;
       log(s, `P${p.id} passes the initiative`);
@@ -166,7 +198,9 @@ function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
     case 'lead': {
       if (s.phase.type !== 'lead') err('Not the lead step');
       s.mulligan = null;
+      discardUndealt(s);
       s.consecutivePasses = 0;
+      if (isEventCard(ix, cmd.card)) err('An Event card cannot lead');
       const def = card(ix, p.hand, cmd.card);
       const play: Play = { player: p.id, card: def.id, mode: 'lead', faceUp: true };
       let declared: { amb: AmbitionId; was: boolean } | null = null;
@@ -197,6 +231,12 @@ function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
     case 'follow': {
       if (s.phase.type !== 'follow') err('Not the follow step');
       const leadSuit = s.round.leadSuit!;
+      if (cmd.mode === 'event') {
+        followWithEvent(ix, s, p.id, cmd.card, cmd.seizeWith, cmd.declare);
+        return;
+      }
+      if (isEventCard(ix, cmd.card)) err('An Event card cannot Surpass, Pivot or Copy');
+      if (cmd.seizeWith !== undefined && isEventCard(ix, cmd.seizeWith)) err('An Event card cannot be discarded to seize the initiative');
       const def = card(ix, p.hand, cmd.card);
       if (cmd.seizeWith !== undefined) {
         if (s.round.seizedBy !== null) err('Initiative already seized this round');
@@ -354,6 +394,11 @@ function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
         awaitAllocation(s, r);
         return;
       }
+      if (isEventDecision(decision)) {
+        log(s, `P${p.id} ${decideEvent(ix, s, p.id, decision, cmd.args ?? {})}`);
+        runEvent(ix, s, () => afterRound(ix, s));
+        return;
+      }
       let text: string;
       if (decision.effect === 'whenSecured') text = resolveWhenSecured(ix, s, p.id, decision.card, cmd.args ?? {});
       else {
@@ -427,6 +472,44 @@ function awaitAllocation(s: GameState, r: ActionResult): void {
   if (r.pendingBattle && s.phase.type === 'actions') s.phase = { type: 'allocate', battle: r.pendingBattle, budget: s.phase.budget };
 }
 
+/** Act setup step K (p. 6): the cards left after dealing (and the mulligan) go to the action discard. */
+function discardUndealt(s: GameState): void {
+  if (!s.campaign?.discardUndealt) return;
+  delete s.campaign.discardUndealt;
+  toDiscard(s, s.deck.splice(0));
+}
+
+/**
+ * Following with an Event card (campaign rulebook p. 12): "you may take
+ * actions exactly like you played the lead card" (its suit and pips).
+ * "However, your Event card gives you no actions if another Event card was
+ * played earlier this round or if the Imperial Council was secured earlier
+ * this round" (Prelude actions still allowed). It cannot be discarded to
+ * seize, nor declare an ambition.
+ */
+function followWithEvent(ix: ContentIndex, s: GameState, p: PlayerId, cardId: string, seizeWith: string | undefined, declare: boolean | undefined): void {
+  const pl = s.players[p];
+  if (!isEventCard(ix, cardId)) err(`${cardId} is not an Event card`);
+  if (!pl.hand.includes(cardId)) err(`Card ${cardId} not in hand`);
+  if (declare) err('An Event card cannot declare an ambition');
+  if (seizeWith !== undefined) {
+    if (isEventCard(ix, seizeWith)) err('An Event card cannot be discarded to seize the initiative');
+    if (s.round.seizedBy !== null) err('Initiative already seized this round');
+    card(ix, pl.hand, seizeWith);
+    removeFromHand(pl.hand, seizeWith);
+    toDiscard(s, [seizeWith], p);
+    s.round.seizedBy = p;
+    log(s, `P${p} seizes the initiative`);
+  }
+  const lead = ix.actionCards.get(s.round.plays.find((x) => x.mode === 'lead')!.card!)!;
+  const none = s.round.eventBy !== undefined || s.campaign?.councilTucked !== undefined;
+  removeFromHand(pl.hand, cardId);
+  s.round.eventBy ??= p;
+  s.round.plays.push({ player: p, card: cardId, mode: 'event', faceUp: true, seized: seizeWith !== undefined });
+  log(s, none ? `P${p} plays an Event card: no actions (an Event or the Imperial Council came first this round)` : `P${p} plays an Event card like the lead card`);
+  s.phase = { type: 'actions', budget: { player: p, kinds: ix.content.suits[s.round.leadSuit!], remaining: none ? 0 : lead.pips } };
+}
+
 /** The lead card's number: what a Surpass must beat (0 once an ambition is declared on it). */
 function leadNumber(ix: ContentIndex, s: GameState): number {
   const lead = s.round.plays.find((pl) => pl.mode === 'lead')!;
@@ -454,7 +537,7 @@ export function roundWinner(ix: ContentIndex, s: GameState): PlayerId {
   let winner = s.round.leader;
   let best = -Infinity;
   for (const pl of s.round.plays) {
-    if (!pl.card || !pl.faceUp || pl.mode === 'pivot') continue;
+    if (!pl.card || !pl.faceUp || pl.mode === 'pivot' || pl.mode === 'event') continue;
     const def = ix.actionCards.get(pl.card)!;
     if (def.suit !== s.round.leadSuit) continue;
     const v = pl.zeroed ? 0 : def.number;
@@ -477,8 +560,22 @@ function endRound(ix: ContentIndex, s: GameState): void {
     log(s, `P${a.owner} takes ${a.actionCard} into hand (${a.guild})`);
   }
   for (const pl of s.round.plays) if (pl.card && !taken.has(pl.card)) toDiscard(s, [pl.card], pl.faceUp ? undefined : pl.player);
+  // Campaign p. 14: the secured Imperial Council goes back to the Court, Decided (its four steps resolve from M2).
+  const council = returnCouncil(s);
+  if (council !== null) log(s, `The Imperial Council returns to the Court, Decided; P${council} resolves it`);
+  // p. 13: "If the Imperial Council is secured during the same round as any Event cards are played, resolve the Council".
+  if (s.campaign && council !== null) s.campaign.pendingEvent = { kind: 'council', player: council };
+  else if (s.campaign && s.round.eventBy !== undefined) s.campaign.pendingEvent = { kind: 'event', player: s.initiative };
   log(s, `Round ends; initiative to P${s.initiative}`);
   resetRound(s);
+  // Campaign p. 13: the event resolves "just after checking whether initiative changes", before the next lead.
+  s.phase = { type: 'lead' };
+  startEvent(s);
+  runEvent(ix, s, () => afterRound(ix, s));
+}
+
+/** After the round (and its event, if any): the initiative holder leads, or passes when out of cards. */
+function afterRound(ix: ContentIndex, s: GameState): void {
   if (s.players[s.initiative].hand.length === 0) passInitiative(ix, s, s.initiative);
   else s.phase = { type: 'lead' };
 }
@@ -534,8 +631,11 @@ export function endChapter(ix: ContentIndex, s: GameState): void {
   s.ambitions = emptyAmbitionBoard(c, s.chapter + 1);
 
   const target = c.powerToWin[s.playerCount];
-  const reached = s.players.some((p) => p.power >= target);
-  if (reached || s.chapter >= c.chapters) {
+  // Campaign p. 8: an Act lasts its chapters; "Power thresholds do not end an Act early". (The Intermission comes with M4.)
+  const acts = s.campaign ? c.campaign?.acts : undefined;
+  const reached = !acts && s.players.some((p) => p.power >= target);
+  const chapters = acts ? acts[(['I', 'II', 'III'] as const)[s.campaign!.act - 1]].chapters : c.chapters;
+  if (reached || s.chapter >= chapters) {
     s.phase = { type: 'gameOver', winners: gameWinners(c.gameEndTieBreak, s) };
     log(s, `Game over; winners ${s.phase.winners.map((w) => 'P' + w).join(', ')}`);
     return;
@@ -543,12 +643,20 @@ export function endChapter(ix: ContentIndex, s: GameState): void {
   startChapter(ix, s);
 }
 
-/** Resources kept on a player's cards that count toward an ambition. */
+/**
+ * Resources kept off the player board that count toward an ambition: on the
+ * player's cards, and in the campaign the Imperial Trust on the First Regent
+ * tile (campaign rulebook p. 27: "count everything in your play area,
+ * including on cards and on tiles such as the First Regent tile"; "Frozen
+ * resources still add to your ambitions!").
+ */
 export function cartelMetric(ix: ContentIndex, s: GameState, p: PlayerId, a: AmbitionId): number {
   const m = ix.content.ambitionMetrics[a];
   if (m.kind !== 'resources') return 0;
   const kept = cartelSupply(ix, s, p);
-  return (m.resources ?? []).reduce((n, r) => n + (kept[r] ?? 0), 0);
+  const wanted = m.resources ?? [];
+  const trust = s.campaign?.firstRegent === p ? s.campaign.trust.filter((r) => wanted.includes(r)).length : 0;
+  return wanted.reduce((n, r) => n + (kept[r] ?? 0), 0) + trust;
 }
 
 /** Card effects right after scoring: discarding resources (design/gdd/card-effects.md "Scoring"). */
@@ -585,16 +693,7 @@ function cleanUp(ix: ContentIndex, s: GameState): void {
     AMBITIONS.some((a) => c.ambitionMetrics[a].kind === kind && s.ambitions.declared[a].length > 0);
   if (scored('trophies')) {
     for (const p of s.players) {
-      for (const t of p.trophies) {
-        const owner = s.players[t.owner];
-        if (t.piece === 'ship') owner.supply.ships += 1;
-        else if (t.piece === 'starport') owner.supply.starports += 1;
-        else if (t.piece === 'agent') owner.supply.agents += 1;
-        else {
-          owner.supply.cities += 1;
-          returnToSupply(s, ...onCityReturned(c, owner));
-        }
-      }
+      for (const t of p.trophies) returnPiece(ix, s, t.owner, t.piece);
       p.trophies = [];
     }
     log(s, 'Trophies return to their owners');

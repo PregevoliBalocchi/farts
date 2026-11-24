@@ -10,6 +10,7 @@ import {
   indexContent,
   newGame,
   openSlots,
+  ransackable,
 } from '../game/engine';
 import type { Allocation, Command, ContentIndex, GameContent, GameState, PendingBattle, PlayerCount, PlayerId } from '../game/engine';
 import { loadContent } from './content';
@@ -200,7 +201,7 @@ export function mountDebug(root: HTMLElement, online?: OnlineOptions) {
   function defaultAllocation(b: PendingBattle): Allocation {
     const sys = state.map[b.system];
     const att = { ...(sys.ships[b.attacker] ?? { fresh: 0, damaged: 0 }) };
-    const def = { ...(sys.ships[b.target] ?? { fresh: 0, damaged: 0 }) };
+    const def = { ...((typeof b.target === 'number' ? sys.ships[b.target] : undefined) ?? { fresh: 0, damaged: 0 }) };
     const blds = sys.buildings.map((x, i) => ({ i, owner: x.owner, type: x.type, dmg: x.damaged, gone: false }));
     const shipHit = (st: { fresh: number; damaged: number }) => {
       if (st.fresh > 0) { st.fresh--; st.damaged++; return 'fresh' as const; }
@@ -225,7 +226,7 @@ export function mountDebug(root: HTMLElement, online?: OnlineOptions) {
     }
     const buildingHits: number[] = [];
     for (let i = 0; i < b.totals.buildingHit; i++) { const bi = bldHit(); if (bi !== null) buildingHits.push(bi); }
-    const eligible = state.court.map((c, i) => ((c.agents[b.target] ?? 0) > 0 ? i : -1)).filter((i) => i >= 0);
+    const eligible = typeof b.target === 'number' ? ransackable(state, b.target) : [];
     const ransack = destroyedCities && eligible.length ? Array.from({ length: Math.min(destroyedCities, eligible.length) }, (_, i) => eligible[i]) : [];
     return { selfHits, hits, buildingHits, raid: [], ...(ransack.length ? { ransack } : {}) };
   }

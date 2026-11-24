@@ -1,6 +1,6 @@
 // Player board: slots freed by cities, keys, city bonus, prelude rules (design/gdd/core-loop.md §3.7).
 import { describe, expect, it } from 'vitest';
-import { arrangeResources, cityBonusPower, dispatch, endArranging, gainResource, heldResources, onCityReturned, openSlots, scoreAmbitions } from '../../../src/game/engine';
+import { arrangeResources, cityBonusPower, dispatch, endArranging, gainResource, heldResources, onCityReturned, openSlots, returnTrophy, scoreAmbitions } from '../../../src/game/engine';
 import type { GameState } from '../../../src/game/engine';
 import { content, game, index, setHands } from './fixture';
 
@@ -101,7 +101,9 @@ describe('resource slots', () => {
     expect(scoreAmbitions(c, s).gains).toEqual([3, 3]);
   });
 
-  it('a destroyed city covers its slot again and the token there is lost', () => {
+  // Base rulebook: a destroyed city "goes in Mikah's Trophies box" (p. 15); "If a city returns to your player
+  // board and covers a resource slot, rearrange and discard resources" (p. 17) when trophies return (p. 19).
+  it('a destroyed city waits in the Trophies box, then covers its slot again and the token there is lost', () => {
     let s = fresh();
     setHands(s, [['suitB-2'], ['suitA-4']]);
     s.map['c3-p1'].ships = { 0: { fresh: 3, damaged: 0 } };
@@ -113,6 +115,10 @@ describe('resource slots', () => {
     s = dispatch(ix2, s, { type: 'lead', player: 0, card: 'suitB-2' });
     s = dispatch(ix2, s, { type: 'action', player: 0, action: { kind: 'battle', system: 'c3-p1', target: 1, dice: { raid: 1 } } });
     s = dispatch(ix2, s, { type: 'allocate', player: 0, allocation: { selfHits: [], hits: [], buildingHits: [0] } });
+    expect(s.players[1].supply.cities).toBe(4);
+    expect(s.players[0].trophies).toEqual([{ owner: 1, piece: 'city' }]);
+    expect(heldResources(s.players[1])).toEqual(['fuel', 'material', 'relic']);
+    returnTrophy(ix2, s, 0, 0);
     expect(s.players[1].supply.cities).toBe(5);
     expect(heldResources(s.players[1])).toEqual(['fuel', 'material']);
   });
