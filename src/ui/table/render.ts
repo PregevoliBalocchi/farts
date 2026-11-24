@@ -96,7 +96,7 @@ export function systemTag(s: { id: string; cluster?: string; kind?: string; reso
  * layer); `open`: the drop-down open under its button (log or help);
  * `flat`: whether the planets are drawn in 2D as on the board (null: no such pictures).
  */
-export function header(v: TableView, t: Translate, exampleContent: boolean, promptText: string, control: boolean | null = null, open: 'log' | 'help' | null = null, flat: boolean | null = null): string {
+export function header(v: TableView, t: Translate, exampleContent: boolean, promptText: string, control: boolean | null = null, open: 'log' | 'help' | 'piles' | null = null, flat: boolean | null = null): string {
   const supply = v.supply.map((s) => `<span title="${esc(t(`resource.${s.resource}`))}">${resIcon(s.resource, t)}<b class="num">${s.count}</b></span>`).join('');
   const declared = v.ambitions.filter((a) => a.markers.length).map((a) => t(`ambition.${a.id}`));
   const lead = v.lead ? t('header.lead', { card: cardLabel(t, v.lead) }) : '';
@@ -111,6 +111,7 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, prom
     <div class="hd prompt"><span class="pr-text">${esc(promptText)}</span>${notes.length ? `<span class="pr-notes">${esc(notes.join(' · '))}</span>` : ''}</div>
     <div class="hd tools">
       ${exampleContent ? `<span class="content-note">${esc(t('content.example'))}</span>` : ''}
+      ${button('piles', '', { cls: `icon sq${open === 'piles' ? ' on' : ''}`, title: t('btn.piles'), html: icon('cards') })}
       <span data-region="recent">${button('log', '', { cls: `icon sq${open === 'log' ? ' on' : ''}`, title: `${t('btn.log')} · ${t('recent.last')} ${last}`, html: icon('log') })}</span>
       ${control !== null ? `<button type="button" class="btn icon sq${control ? ' on' : ''}" data-act="map-control" title="${esc(t('btn.control'))}" aria-label="${esc(t('btn.control'))}" aria-pressed="${control}">${icon('control')}</button>` : ''}
       ${flat !== null ? `<button type="button" class="btn icon sq${flat ? ' on' : ''}" data-act="map-planets" title="${esc(t('btn.planets2d'))}" aria-label="${esc(t('btn.planets2d'))}" aria-pressed="${flat}">${icon('planet')}</button>` : ''}
@@ -396,6 +397,28 @@ export function actionCard(ix: ContentIndex, c: ActionCardView, t: Translate, ex
   const title = `${known ? cardLabel(t, c) : label} · ${t('card.pips', { n: c.pips })}${c.kinds.length ? ` · ${c.kinds.map((k) => t(`action.${k}`)).join(', ')}` : ''}`;
   const top = c.number > 0 ? `<span class="n">${c.number}</span>` : `<span class="n word">${esc(label)}</span>`;
   return `<div class="acard ${known ? suitClass(ix, c.suit) : 'su-x'} ${extra}" title="${esc(title)}">${top}<span class="pips">${pips}</span><span class="kinds">${kinds}</span>${amb}</div>`;
+}
+
+/**
+ * The decks and discard piles, for the header drop-down: the action discard
+ * (face-down cards as card backs, unless the local seat discarded them), the
+ * Court discard, and the Court deck's contents by name. Court cards zoom on hover.
+ */
+export function pilesPanel(ix: ContentIndex, v: TableView, t: Translate): string {
+  const p = v.piles;
+  const section = (title: string, n: number, note: string, row: string) =>
+    `<section class="pile"><div class="pile-head">${esc(title)} <b class="num">${n}</b></div><div class="pile-note">${esc(note)}</div><div class="pile-row">${row || `<span class="pile-empty">${esc(t('empty'))}</span>`}</div></section>`;
+  const discard = p.discard
+    .map((d) => {
+      if (!d.card) return `<div class="facedown pile-card" title="${esc(t('piles.faceDown'))}"></div>`;
+      return d.faceDown
+        ? `<span class="pile-fd" title="${esc(t('piles.faceDownMine'))}">${actionCard(ix, d.card, t, 'pile-card')}</span>`
+        : actionCard(ix, d.card, t, 'pile-card');
+    })
+    .join('');
+  const court = (ids: string[]) => ids.map((id) => `<span class="pile-court" data-zoom="${esc(id)}" tabindex="0">${cardFaceById(id)}</span>`).join('');
+  const secret = p.courtDeckSecret ? `<span class="pile-secret">${esc(t('piles.secret', { n: p.courtDeckSecret }))}</span>` : '';
+  return `<div class="piles">${section(t('piles.discard'), p.discard.length, t('piles.discardNote'), discard)}${section(t('piles.courtDiscard'), p.courtDiscard.length, t('piles.courtDiscardNote'), court(p.courtDiscard))}${section(t('piles.courtDeck'), p.courtDeck.length + p.courtDeckSecret, t('piles.courtDeckNote'), court(p.courtDeck) + secret)}</div>`;
 }
 
 /** An ambition marker: a small hexagon with its first-place value over its second-place one. */

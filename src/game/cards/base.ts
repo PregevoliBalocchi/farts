@@ -35,6 +35,7 @@ import {
   stealResource,
   stealResourceOfType,
   gainResource,
+  toDiscard,
   weaponIcons,
 } from '../engine';
 import type { AmbitionId, CardEffect, DeclareGift, EffectContext, EffectRegistry, GameState, PlayerId, PreludeAbility, Resource } from '../engine';
@@ -297,7 +298,7 @@ export const BASE_EFFECTS: EffectRegistry = {
             hand.splice(hand.indexOf(c), 1);
           }
           // FAQ: the discarded cards are shuffled before going on the discard pile.
-          s.discard.push(...shuffle(s, cards));
+          toDiscard(s, shuffle(s, cards), ctx.player);
           // Draw from the bottom of the action discard: this card counts too.
           const drawn = s.discard.splice(0, cards.length + 1);
           hand.push(...drawn);

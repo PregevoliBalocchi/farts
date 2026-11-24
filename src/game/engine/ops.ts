@@ -9,6 +9,18 @@ import { declareAmbition } from './ambitions';
 import type { ContentIndex } from './setup';
 import type { AmbitionId, GameState, PlayerId, Resource, ShipStack, SystemState } from './types';
 
+/**
+ * Puts action cards on top of the action discard. Cards put there face down
+ * (`faceDownBy`: who discards them) stay secret: `discardHidden` keeps who may see each one.
+ */
+export function toDiscard(s: GameState, cards: string[], faceDownBy?: PlayerId): void {
+  for (const c of cards) {
+    s.discard.push(c);
+    if (faceDownBy !== undefined) (s.discardHidden ??= {})[c] = faceDownBy;
+    else if (s.discardHidden) delete s.discardHidden[c];
+  }
+}
+
 /** Places up to `n` fresh ships from the player's supply in a system. Returns how many were placed. */
 export function placeShips(s: GameState, p: PlayerId, system: string, n: number): number {
   const sys = s.map[system] ?? fail(`Unknown system ${system}`);

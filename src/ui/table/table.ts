@@ -36,7 +36,7 @@ import type { Intent, MoveIntent } from './intent';
 import { place, REGIONS, setStage, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  actionCard, button, cardLabel, playedCard, playedText, courtPanel, COURT_SORTS, type CourtSort, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, preludeTab, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon,
+  actionCard, button, cardLabel, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, preludeTab, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon,
 } from './render';
 import { legal, othersTurn, tableView, whyNot } from './view';
 import type { TableView } from './view';
@@ -45,7 +45,7 @@ import type { TableView } from './view';
 type Modal = { type: 'settings' } | { type: 'decide'; options: DecisionOption[]; chosen?: string[] };
 
 /** A drop-down under its header button: the log or the map help. */
-type Drop = 'log' | 'help';
+type Drop = 'log' | 'help' | 'piles';
 
 /** Lines of the log the drop-down shows (the latest; it fits under the header with no scroll bar). */
 const LOG_LINES = 14;
@@ -1003,8 +1003,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       .reverse()
       .map((l) => `<li><span class="num">${l.chapter}</span>${esc(say(l.text))}</li>`)
       .join('');
-    const body = drop === 'log' ? `<ol class="drop-log">${lines || `<li>${esc(t('empty'))}</li>`}</ol>` : `<p class="drop-help">${esc(t('map3d.hint'))}</p>`;
-    const title = drop === 'log' ? t('log.title') : t('btn.help');
+    const body = drop === 'log'
+      ? `<ol class="drop-log">${lines || `<li>${esc(t('empty'))}</li>`}</ol>`
+      : drop === 'piles'
+        ? pilesPanel(ix, tableView(ix, state, local(), lang), t)
+        : `<p class="drop-help">${esc(t('map3d.hint'))}</p>`;
+    const title = drop === 'log' ? t('log.title') : drop === 'piles' ? t('btn.piles') : t('btn.help');
     return `<div class="drop-shade" data-act="drop-close"></div><div class="drop-win d-${drop}" role="dialog" aria-label="${esc(title)}"><div class="drop-title">${esc(title)}</div>${body}</div>`;
   }
 
@@ -1531,6 +1535,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         board3d?.setPlanetMode(flatPlanets ? '2d' : '3d');
         break;
       case 'help':
+      case 'piles':
       case 'log':
         drop = drop === d.act ? null : (d.act as Drop);
         break;
