@@ -5,7 +5,9 @@
 // hexagon, arrowhead) on the ring, and the building slots. Systems out of play
 // are shaded. Drawn on a canvas in the board picture's pixel frame.
 
-import type { BoardCalibration } from './board3d-layout';
+import { BOARD_DEPTH, type BoardCalibration } from './board3d-layout';
+import { roundedTriangle } from './model-fx';
+import models from './models.json';
 
 /** The board's traced line art and zones, in picture pixels (board.lines.json). */
 export interface BoardLines {
@@ -432,10 +434,12 @@ export function drawInfoLayer(cv: HTMLCanvasElement, lines: BoardLines, calib: B
     g.restore();
   }
 
-  // Building slots: the board's rounded triangles.
+  // Building slots: the board's rounded triangles, exactly the outline of a city's or starport's base standing on
+  // them (production/base-fixes.md #3).
+  const slotShape = calib ? baseOutline(calib.height / BOARD_DEPTH) : [];
   for (const [id, sys] of Object.entries(calib?.systems ?? {})) {
     if (out(id)) continue;
-    for (const p of sys.slots ?? []) slotTriangle(g, p.x, p.y, 30);
+    for (const p of sys.slots ?? []) slotTriangle(g, p.x, p.y, slotShape);
   }
 
   // Each planet's resource icon on its rim: a dark token ringed in the resource's colour.
@@ -567,20 +571,17 @@ function bridgeArrow(g: CanvasRenderingContext2D, pts: [number, number][]): void
   g.restore();
 }
 
-/** A rounded triangle (pointing up) of circumradius `r` centred on x, y. */
-function slotTriangle(g: CanvasRenderingContext2D, x: number, y: number, r: number): void {
-  const pts = [0, 1, 2].map((i) => {
-    const a = -Math.PI / 2 + (i * 2 * Math.PI) / 3;
-    return [x + r * Math.cos(a), y + r * Math.sin(a)] as const;
-  });
-  const round = r * 0.28;
+/** A building base's outline (models.json `base`), in picture pixels at `pxPerUnit`, centred like the map's slot points. */
+function baseOutline(pxPerUnit: number): { x: number; z: number }[] {
+  const { side, radius } = models.base;
+  return roundedTriangle(side * pxPerUnit, radius * pxPerUnit, 6);
+}
+
+/** A building slot: the base's rounded triangle (`shape`, pointing away from the viewer) centred on x, y. */
+function slotTriangle(g: CanvasRenderingContext2D, x: number, y: number, shape: { x: number; z: number }[]): void {
+  if (!shape.length) return;
   g.beginPath();
-  g.moveTo((pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2);
-  for (let i = 1; i <= 3; i++) {
-    const [cx, cy] = pts[i % 3];
-    const [nx, ny] = pts[(i + 1) % 3];
-    g.arcTo(cx, cy, (cx + nx) / 2, (cy + ny) / 2, round);
-  }
+  shape.forEach((p, i) => (i ? g.lineTo(x + p.x, y + p.z) : g.moveTo(x + p.x, y + p.z)));
   g.closePath();
   g.fillStyle = 'rgba(6,6,10,0.55)';
   g.fill();

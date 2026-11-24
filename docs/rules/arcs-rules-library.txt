@@ -1,0 +1,1112 @@
+Source: https://rules.buriedgiant.com/?product=arcs&locale=en-US&printing=p1 (Buried Giant Studios Rules Library, Arcs + Blighted Reach, en-US, printing p1)
+Retrieved: 2026-11-24
+
+Introduction
+What's in the Box
+Setup
+Core Concepts
+Playing a Chapter
+Ending a Chapter
+Standard Actions
+Other Actions
+Resources
+Guild Cards
+Leaders & Lore
+The Campaign
+Campaign Rules & Terms
+The Empire
+Blight & the Free States
+Events & the Imperial Council
+Summits
+Crises
+Edicts
+Flagships
+Intermission
+Fine Print
+Appendix
+Updated Oct 8th, 2025
+1.
+Introduction
+In Arcs, you lead a spacefaring society through an epic saga, as you try to survive in the harsh and dangerous Reach at the galaxy's edge. A game of Arcs lasts until someone has enough Power—essentially points. In games with 4 players, someone needs to have at least 27 Power. With 3 players, 30 Power. With 2 players, 33 Power. When the game ends, the player with the most Power wins.
+
+You gain Power by completing ambitions, which are objectives that you declare in play. These are scored at the end of the chapter, when everyone runs out of action cards. The game lasts a varying number of chapters, usually three to five.
+
+Your first game of Arcs will take about 45 minutes per player. After you play a few times, a game should take about 30 minutes per player.
+
+If you want to learn Arcs by watching a video, click here.
+2.
+What's in the Box
+2.1
+Map
+The map of the Reach is where the action happens. You can move your ships around it, battle Rivals for control over its systems, and tax resources from the cities you build on its planets.
+2.2
+Player Pieces
+Each player has the following pieces. The box contains pieces for 4 players.
+2.2.1
+Player Board.This board holds resources, your unbuilt cities, and Rival pieces you take as Trophies and Captives.
+2.2.2
+Starports.Starports are built on planets and are used to build ships. Each player has 5 starports.
+2.2.3
+Cities.Cities are built on planets and can be taxed to gain resource tokens onto your player board. Each player has 5 cities.
+2.2.4
+Ships.Ships can move around the map and engage in battles. Each player has 15 ships.
+2.2.5
+Agents.Agents are placed on cards in the Court, a card row next to the map. Once you have the most agents on a card in the Court, you can take it. Each player has 10 agents.
+2.2.6
+Power Marker.This marker tracks your current Power on the bottom map edge. The second marker is used in expansions to track negative Power and very high Power. Each player has 2 power markers.
+2.2.7
+Objective Marker.This shows how close you are to completing your Fate's objective.
+2.2.8
+Flagship Piece.Some Fates turn you into a Flagship, adding this piece to the map.
+2.2.9
+Flagship Board.Some Fates turn you into a Flagship, giving you this board.
+2.3
+Cards
+2.3.1
+Action.These cards are played to take actions and declare ambitions. With 2 or 3 players, you don't use the “1” and “7” action cards. There are 28 action cards.
+2.3.2
+Setup.One of these cards is used in setup to place players' starting pieces and cover parts of the map. There are 12 setup cards, 4 each for 2-4 players.
+2.3.3
+Leader.These cards give special powers and show a player's starting pieces and resources. They are used in Leaders & Lore mode (11). There are 8 leader cards in the base game and 8 leader cards in the Leaders & Lore pack.
+2.3.4
+Guild.These cards represent the support of guildmasters and task forces. They are gained from the Court, often give new actions, and can be stolen.
+Base Game.There are 25 Guild cards for the base game, marked “BC” in their bottom-left corner.
+Campaign.There are 10 Guild cards for the campaign game, marked “CC” in their bottom-left corner.
+2.3.5
+Vox.These cards represent incidents in the Reach that you can turn to your own ends. They are gained from the Court and resolve immediately.
+Base Game.There are 6 Vox cards for the base game, marked “BC” in their bottom-left corner.
+Campaign.There are 5 Vox cards for the campaign game, marked “CC” in their bottom-left corner.
+2.3.6
+Lore.These cards represent long-lost technologies and the intangible qualities of leadership, charm, and rank. They are used in Leaders & Lore mode (11). There are 14 lore cards in the base game and 14 lore cards in the Leaders & Lore pack.
+2.3.7
+Event.Two or three of these new action cards are added to the action deck during campaign setup. There are 3 Event cards.
+2.3.8
+Imperial Council.This new card in the Court during campaign lets players take advantage of Imperial politics. It is marked 01.
+2.3.9
+Edict.These are put in the rules booklet and may resolve during events. They are marked 02–05. There are 4 Edict cards.
+2.3.10
+Regent/Outlaw Title.In the campaign, every player starts as an Imperial Regent and might become an Outlaw. They are marked 06–09. There are 4 Regent/Outlaw Title cards.
+2.3.11
+Flagship Upgrades (4).These aid cards give the rules for Flagship Upgrades, marked 10–13. There are 4 Flagship Upgrades cards.
+2.4
+Fates
+2.4.1
+Cards.These tarot-size cards show your Fate, which can change over time. There are 24 Fate cards, 8 each of A, B, and C.
+2.4.2
+Sets.Each Fate has a set of many cards and pieces you will use in play.
+2.4.3
+Set Dividers.Each Fate Set is stored behind the divider of matching number.
+2.5
+Other Pieces
+2.5.1
+Resource Tokens.Resources represent both assets and the people skilled in using them. They add to ambitions and can be spent for special actions. There are 25 resource tokens, 5 each of Material, Fuel, Weapons, Relics, and Psionic.
+2.5.2
+Battle Dice.These dice are used to resolve battle. There are 18 battle dice, 6 each of Assault, Skirmish, and Raid.
+2.5.3
+Chapter Marker.This marker tracks the current chapter of the game on the map.
+2.5.4
+Ambition Markers.These markers show which ambitions are currently declared. They start on their blue side with lower numbers. There are 3 ambition markers.
+2.5.5
+Zero Marker.This marker covers the card number of the lead card, making it 0, when an ambition is declared.
+2.5.6
+Initiative Marker.This marker shows which player will take the first turn of a round.
+2.5.7
+Path Markers.These are added to the map during setup. They cover gates, making them out of play and connecting the gates of neighboring clusters. There are 4 path markers, 2 each of long and short.
+2.5.8
+Out-of-play Markers.These are added to the map during setup. They cover planets, making them out of play for the game. There are 6 out-of-play markers.
+2.5.9
+Blight Tokens.The Blight is a mysterious entity spreading through the Reach. There are 24 Blight tokens.
+2.5.10
+Free Cities & Starports.Players can act with Free buildings they control. There are 28 Free cities and 14 Free starports.
+2.5.11
+Imperial Ships.These ships control systems for the Empire, and Regents can act with them. There are 15 Imperial ships.
+2.5.12
+Number & Event Dice.These are rolled in setup and during some events in play.
+2.5.13
+Chapter Track Tile.This double-sided tile covers the chapter track on the map.
+2.5.14
+First Regent Tile.This shows which Regent is the First Regent and holds the Imperial Trust.
+2.5.15
+Rules Booklet.This booklet holds various cards that are added in play.
+2.5.16
+Overflow Markers.These hold pieces from crowded parts of the map between sessions. There are 4 overflow markers.
+2.5.17
+Other Dividers.You can store cards and pieces behind these dividers (21.7.1). There are 6 other dividers.
+2.5.18
+Aid Sheets.
+Base Game.These sheets summarize how to play and what actions you can take. There are 4 aid sheets for the base game.
+Campaign.These aids give rules for campaign play, ending games, and setting up later games. There are 2 aid sheets for the campaign.
+2.5.19
+Log Sheet Pad.These sheets record players' details between games.
+3.
+Setup
+3.1
+Base Game
+If you are starting a non-campaign game, use this section. This section assumes that you are not using Leaders & Lore (11.1).
+3.1.1
+Step 1. Set Up Table
+Map, Dice, and Tokens.Place the map and collect the 18 battle dice and 25 resource tokens.
+Initiative Marker.Give the initiative marker to a random player.
+Action Deck.Shuffle the 20 action cards marked "2" through "6" to start the action deck.
+Action Deck (4 Players Only).Shuffle the 8 action cards marked "1" and "7" into the action deck. (Otherwise, return them to the box.)
+Ambition Markers.Place the 3 ambition markers on their blue, lower-numbered sides in the Available Markers section of the map.
+Chapter Marker.Place the chapter marker on the "1" space of the Chapter track on the map.
+Zero Marker.Place the zero marker in the Ambition Declared slot on the map.
+Court Deck and Row.Shuffle all 6 Vox and 25 Guild cards to make the Court deck. Draw 3 cards (2 players) or 4 cards (3–4 players) from this deck to make a face-up Court row.
+Setup Card.Shuffle the setup cards that list your number of players. Draw 1 setup card.
+Path and Out-of-Play Markers.In the 2 clusters (2–3 players) or 1 cluster (4 players) on the map marked Out of Play on the setup card, place a path marker over its numbered gate and place 3 out-of-play markers over the planets touching that gate.
+Resources on Ambitions (2 Players Only).Place the 6 resource tokens matching the 6 planets covered by out-of-play markers onto the ambition boxes:
+- Material and Fuel go on Tycoon.
+- Weapons go on Warlord.
+- Relics go on Keeper.
+- Psionics go on Empath.
+3.1.2
+Step 2. Set Up Players
+Player Pieces.Each player chooses a color, collects the matching player board, 5 cities, 5 starports, 15 ships, and 10 agents, and places the cities in the triangle slots along the top of their player board.
+Power Marker.Each player puts their Power marker on the "0" Power track space on the map.
+Starting Placement.Players simultaneously place their starting pieces onto the map as follows. The player with the initiative marker performs the following steps. Then, going clockwise from the player with initiative, the 2nd, 3rd, and 4th players set up in the same way in the systems marked 2A–C, 3A–C, and 4A–C on the setup card, respectively.
+- Place 3 ships and 1 city in the system marked 1A on the setup card. Place the leftmost city from your player board.
+- Place 3 ships and 1 starport in the system marked 1B.
+- Place 2 ships in the system (3–4 players) or 2 systems (2 players) marked 1C.
+Starting Resources.Each player gains the 2 resource tokens matching the planet icons in their A and B systems, putting them in the leftmost and next leftmost circle slots on their player board, respectively.
+Starting Hand.Each player draws 6 action cards into their hand.
+2 Players Only: The player without initiative may discard all 6 action cards in their hand and draw 6 new ones.
+Action Discard Pile.Discard all action cards not in players' hands into a facedown action discard pile on the map, then shuffle it.
+3.2
+Campaign (Act I)
+If you are starting a campaign from the beginning, use this section. Otherwise, use Act II & III Setup (3.2). Campaign setup is very different from single session setup. Here are the important changes:
+Do not use setup cards. No clusters will be out of play, and players place their starting pieces differently.
+Use the Guild and Vox cards specific to the campaign Court (marked "CC"). Do not use the cards for the base Court (marked "BC").
+Use the same deck of lore cards as the base game (marked "L"), but you will shuffle lore into the Court deck after dealing the Court.
+3.2.1
+Step 1. Set Up Table
+Map, Dice, Tokens, and Free Pieces.Place the map on the table and collect the 18 battle dice, 25 resource tokens, 24 Blight tokens, 28 Free cities, and 14 Free starports.
+Initiative Marker.Give the initiative marker to a random player.
+Action Deck .Shuffle the 20 action cards marked "2" through "6" to start the action deck.
+Action Deck (4 Players Only).Shuffle the 8 action cards marked "1" and "7" into the action deck.
+Event Cards.Shuffle 2 Event action cards (2–3 players) or 3 Event action cards (4 players) into the action deck.
+Ambition Markers.Place the 3 ambition markers on their blue, lower-numbered sides in the Available Markers section of the map.
+Chapter Track Tile and Marker.Place the Chapter track tile to cover the chapter track on the map, with its "Act I & II" side face up, and place the chapter marker on its "1" space.
+Zero Marker.Place the zero marker in the Ambition Declared slot on the map.
+Court Deck and Row.Shuffle all 15 campaign Vox and Guild cards (marked "CC") to make the Court deck. Deal 3 cards (2 players) or 4 cards (3–4 players) from it into the Court row.
+Lore Cards.Shuffle 1 lore card per player at random from the lore deck into the Court deck. Use the same lore deck as you use in the base game. You can add any lore cards you want from expansion packs.
+Imperial Council Card.Place the Imperial Council card (01) on its In Session side as the leftmost Court card.
+Guild Envoys Depart (2 Players Only).Slide the Guild Envoys Depart edict card (02) into the first slot in the rules booklet.
+Govern Edict Cards.Shuffle the 3 Govern the Imperial Reach edict cards (03–05) face down, flip them all over, and slide them all face up into the first available slot in the rules booklet.
+Imperial Ships.Roll the number die, then set up the 2 Imperial clusters—in the rolled cluster and the next clockwise cluster, place 1 Imperial ship in each system. (8 total.)
+Free Cities.Roll the event die. Place 1 Free city on each planet of the rolled planet ID symbol outside the Imperial clusters.
+Damaged Blight.Place 1 damaged Blight (shaded side) in each system outside the Imperial clusters.
+Resources on Ambitions (2 Players Only).Place the 6 resource tokens matching the planets in Imperial clusters onto the ambition boxes:
+- Material and Fuel go on Tycoon.
+- Weapons go on Warlord.
+- Relics go on Keeper.
+- Psionics go on Empath.
+3.2.2
+Step 2. Set Up Players
+Player Pieces.Each player chooses a color, collects the player board, 15 ships, 5 cities, 5 starports, and 10 agents of that color, and places those cities in the 5 triangle slots along the top of their player board.
+Fate Cards and Sets.Each player draws 2 "A" Fate cards ("A" on card back) and chooses one secretly. After everyone chooses, reveal them and take the matching Fate Sets (2.4).
+Objective Card Setup.Each player sets up based on the Setup side of their objective card—the first card in their Fate Set—then flips the card to its Objective side.
+Objective Marker.Each player places their objective marker on the Power track space shown by the large clock on their objective card.
+Power Marker.Each player puts their Power marker on the "0" Power track space on the map.
+Regent/Outlaw Title Card.Each player takes a Regent/Outlaw title card (06–09) and tucks it partially under their Fate card with its Regent side up. If no one has the First Regent tile from their setup, the player with initiative takes it.
+First Placement.In turn order, each player places 3 ships and 1 building in an empty building slot at a planet with an Imperial ship and gains 1 resource token of that planet type. (The planet can have Rival pieces.)
+Second Placement.Repeat the previous step but in reverse turn order—start with the last player in turn order and go counterclockwise.
+Remaining Free Cities.Place Free cities in all empty building slots on planets with Imperial ships. (With 4 players, you might not place any.)
+Starting Hand.Each player draws 6 action cards into their hand.
+2 Players Only: The player without initiative may discard all of the action cards in their hand except Events and draw the same number of new cards from the action deck.
+Action Discard Pile.Discard all action cards not in players' hands into the action discard pile on the map.
+3.3
+Campaign (Act II & III)
+Set up Act II or III so it's the same as the previous Act, including Power, with these changes:
+3.3.1
+Ambition Markers.In Act II, flip the lowest-Power ambition marker to its higher-Power side. In Act III, flip the two lowest-Power ones to their higher-Power sides. The others start on their lower-Power sides.
+3.3.2
+Court Deck and Imperial Council.Shuffle the Court deck and deal 3 cards (2 players) or 4 cards (3–4 players) from it into the Court. Flip the Imperial Council card to In Session.
+3.3.3
+Blight on Gates.Place 1 damaged Blight on each gate that has no Blight and no ships.
+3.3.4
+Blight on Planets.Roll the event die. In each cluster, place 1 damaged Blight at the planet with the rolled ID symbol if it has no Blight. If it does have Blight, place 1 damaged Blight at each planet in its cluster with no Blight.
+3.3.5
+Resources on Ambitions (2 Players Only).Roll the number die twice. Place the 6 resource tokens matching the planets in the 2 rolled clusters onto ambition boxes as in 3.2.1.XVII. (If the resource supply empties, just place as much as you can.)
+3.3.6
+Objective Card Setup and Resources.Each player sets up using the Setup side of their objective card, then flips it to its Objective side. Each player may also rearrange their resource tokens. If player setups affect each other, resolve them in turn order. (To speed up setup, feel free to do all this simultaneously!)
+3.3.7
+Objective Marker.Each player places their objective marker on the Power track space as shown at the top of their objective card. In Act III, only players with a "C" Fate do this step.
+3.3.8
+Chapter Track and Action Cards.Place the Chapter track tile on its side that lists the current Act. Place the chapter marker on its "1" space. Draw and discard action cards exactly as in 3.2.2.X-3.2.2.XI.
+4.
+Core Concepts
+4.1
+The Arc of Play
+In a game of Arcs, you play through a number of chapters, usually three to five. Each chapter is made up of several rounds.
+
+Broadly, in a round, each player will take one turn by playing an action card to do various actions, starting with the player who has initiative. After everyone takes a turn, players check who gets initiative for the next round. You'll learn more in Playing a Chapter (5)!
+
+Keep playing rounds until everyone runs out of action cards in their hand. At this point, the chapter ends, players gain Power from ambitions they fulfilled, and everyone draws a new hand of cards. You'll learn more in Ending a Chapter (6)!
+4.2
+Power & Ambitions
+Players gain Power by fulfilling ambitions. The player with the initiative marker may choose to declare the ambition shown on the action card they play on their turn, marking the matching ambition box on the right map edge.
+
+At the end of the chapter, players gain Power from declared ambitions that they fulfilled best. It doesn't matter whether another player declared an ambition—anyone can fulfill it.
+4.3
+The Map
+4.3.1
+Clusters.The map is made of 6 clusters. Each cluster has 4 systems: 3 planets and 1 gate, which lists the cluster number.
+4.3.2
+Adjacency.A system is adjacent to other systems sharing a thin border. Adjacency is most important when moving (7.3).
+Gates.Each gate is adjacent to the 3 planets in its cluster and to the gates of its 2 neighboring clusters.
+Planets.Each planet is adjacent to the gate in its cluster, and it is adjacent to one or both neighboring planets. Planets separated by a thick, irregular border are not adjacent.
+4.3.3
+Planets.Each planet has a planet type, along with 1 or 2 building slots where you can build cities and starports. (Each planet also has an ID symbol of , , or , used in expansions.)
+4.3.4
+Out of Play.In setup, 1 or 2 clusters are covered with out-of-play markers on its planets and a path marker on its gate. These clusters are out of play in every way. The path marker joins together the gates of the two neighboring clusters, allowing for movement between them in a single move. The center of the map with the Arcs logo is not in play.
+4.4
+Resources & Cities
+There are 5 types of resources matching the 5 planet types. Usually, you gain them by taxing cities (Tax, 7.1) and raiding Rivals in battle (Battle, 7.7).
+
+Resources can be spent for various actions (Resources, 9), and some of them add to the Tycoon, Keeper, and Empath ambitions (6.2.1).
+
+You hold resource tokens in the resource slots on your player board. As you build cities, you open resource slots and uncover Power bonuses for winning ambitions.
+4.5
+Agents & The Court
+Your agents are the bureaucrats and diplomats that administer your cities and influence powerful interests in the Reach.
+
+Through play, you can place agents on cards in the Court, a row of cards along the edge of the map (Influence, 7.5). If you have the most agents on a card in the Court, you can take it (Secure, 7.6).
+4.6
+Damage & Control
+4.6.1
+Fresh.Pieces start off fresh—ships are fresh when standing upright, and buildings are fresh on their fully colored side.
+4.6.2
+Damaged and Destroyed.By battling, fresh pieces can become damaged, shown by flipping or tipping it over. If a damaged piece is damaged again, it is destroyed, removing it from the map.
+4.6.3
+Control.You control a system and its contents if you have more fresh ships there than each Rival (other player). On a tie, no one controls the system.
+Benefits of Control.Controlling a system lets you tax Rival cities there and capture their agents, restricts how their ships move, and damages pieces they build (7.1-7.3).
+4.7
+Trophies & Captives
+4.7.1
+Trophies.If you destroy a Rival's pieces, put them in the Trophies box on your player board. Trophies add to the Warlord ambition. Actions such as Battle (7.7) let you destroy Rival pieces.
+4.7.2
+Captives.If you capture a Rival's agents, put them in the Captives box on your player board. Captives add to the Tyrant ambition. Actions such as Tax (7.1) and Secure (7.6) let you capture Rival agents.
+5.
+Playing a Chapter
+A game of Arcs lasts up to 5 chapters. In each chapter, you play some number of rounds. In a round, each player takes one turn, starting with the player with the initiative marker. Broadly, on your turn, you must play 1 action card, which lets you take one or more actions. At the end of the round, the initiative marker might go to a new player based on which cards were played. Keep playing rounds until everyone runs out of action cards. At this point, the chapter ends (6).
+5.1
+Step 1: Player with Initiative Takes Turn
+5.1.1
+Lead Card.As the player with initiative, you must play one action card face up as the lead card. You may take one action (7) for each action pip on the lead card based on its suit:
+Administration pips can tax, repair, or influence.
+Aggression pips can battle, move, or secure.
+Construction pips can build or repair.
+Mobilization pips can move or influence.
+Place the card in the “Lead” card slot on the left map edge, so players can reference it during the round.
+5.1.2
+Passing Initiative.If you have the initiative, but you have no cards in your hand or just choose to skip your turn, you must pass the initiative. When you pass the initiative, give the initiative marker to the next clockwise player who has any cards in their hand, then immediately end the round. The player who now has initiative will play the lead card of the new round.
+Early Chapter End.If everyone with cards in their hand passes consecutively, discard all action cards and end the chapter (6).
+5.1.3
+Declaring an Ambition.If you have the initiative, you may declare the ambition shown on your lead card before taking any actions. Then, place the zero marker onto the lead card to cover the card number in its top-left corner—its card number is now 0.
+Declaration.To declare an ambition, take the highest-number ambition marker from the Available Markers section on the right map edge, and place it in the ambition box of the declared ambition.
+Ambitions by Card.Most action cards have an ambition, depending on their card number:
+- The “1” cards have no ambition. (Four players only.)
+- The “2” through 6” cards let you declare the matching ambition. (They are listed in 6.2.1.)
+- The “7” cards let you declare any ambition. (Four players only.)
+Ambitions are Limited.You cannot declare an ambition if all ambitions markers are already placed.
+5.2
+Step 2: Other Players Take Turns
+5.2.1
+Turn Order.After the player with initiative takes their turn, each other player in clockwise order takes a turn. Players with no cards in their hand skip their turn.
+5.2.2
+Non-Lead Card.On your turn, you must play an action card in one of three ways: Surpass, Copy, or Pivot. Place the card in the “Surpass, Copy, or Pivot” card slot on the left map edge, so players can reference it during the round.
+Surpass.Play an action card face up of the lead card's suit. Its card number must be higher than the lead card. You may take actions up to the number of action pips on your card.
+Copy.Play any action card face down. You may take only one action of the lead card.
+Pivot.Play an action card face up that is not of the lead card's suit. It can have any card number. You may take only one action on your card.
+5.2.3
+Seizing the Initiative.When you play a card, before taking any actions, you can seize the initiative from the player who holds it by doing one of the following:
+You may choose to play an extra action card. Place it face down beside the card you played as a reminder. You do not get actions for it.
+You Surpass with a “7” action card. You still get to take its actions. (Only four-player games have “7” cards.)
+Seize the Initiative.To seize the initiative, take the initiative marker and lay it down to show it is seized. For the rest of this round, players cannot seize the initiative.
+No Self Seize.The player with initiative cannot seize the initiative.
+5.3
+Step 3: Check Initiative
+After everyone has taken a turn, check whether the initiative marker goes to a new player.
+5.3.1
+Surpassed.If no one seized the initiative this round, give the initiative to the player who Surpassed with the highest card number. If no one Surpassed, the initiative stays with its holder.
+5.3.2
+Seized.If someone seized the initiative this round, that player keeps the initiative.
+5.4
+Step 4: Discard Cards & Check for New Round
+5.4.1
+Discard Cards.Discard all played action cards, and any action card used to seize the initiative, into the action discard pile on the map face down.
+5.4.2
+End of Round.If any players have any action cards left in their hand, start the next round. Otherwise, end the chapter (6).
+6.
+Ending a Chapter
+6.1
+End Condition
+The chapter ends when everyone runs out of action cards or when everyone with cards passes the initiative.
+6.2
+End Procedure
+When the chapter ends, resolve the following steps:
+6.2.1
+Step 1: Score Ambitions.Score each ambition that has any number of ambition markers in its ambition box on the map:
+Tycoon. Have the most total Fuel and Material icons from resources and Guild cards.
+Tyrant. Have the most Captives on your player board (gained from taxing and securing).
+Warlord. Have the most Trophies on your player board (gained in battle).
+Keeper. Have the most Relic icons from resources and Guild cards.
+Empath. Have the most Psionic icons from resources and Guild cards.
+The player who gets first place for the ambition gains the higher Power shown on all its ambition markers. The player who gets second place for it gains the lower Power shown on all its ambition markers. Show the Power you gained by advancing your Power marker on the Power track on the bottom edge of the map.
+Ties.On a tie for first place, all tied players get second place. (Other players do not place and gain no Power.) On a tie for second place, the tied players do not place and gain no Power.
+Qualifying.You cannot gain Power from an ambition if you have none of the thing it is counting. (For example, if Warlord is declared and nobody has Trophies, nobody gains Power.)
+Bonus City Power.Each time you get first place in an ambition (not tied), gain 2 extra Power if the “+2 to won ambitions” city slot on your player board is uncovered, or gain 5 extra if both the “+2 to won ambitions” and “+3 to won ambitions” city slots on your player board are uncovered.
+Two-Player Scoring.During setup with 2 players, 6 resources matching the planets with out-of-play markers are placed on the ambition boxes. For scoring, count these resources as if a third player had them. Weapons on the Warlord box count as Trophies. Otherwise, these resources are out of play.
+6.2.2
+Step 2: Clean Up & Flip Ambition.Resolve the following steps:
+Step 1: Warlord and Tyrant.If Warlord was scored, return all Trophies. If Tyrant was scored, return all Captives.
+Step 2: Return Ambitions.Return all ambition markers to the Available Markers spaces on the map.
+Step 3: Flip Ambition.Flip over the ambition marker with the lowest Power that hasn't been flipped yet to its side with more Power.
+6.2.3
+Step 3: End Game or Advance Chapter.The game ends if any player has at least 27 Power (4 players), 30 Power (3 players), or 33 Power (2 players), or if the chapter marker is currently on Chapter 5.
+Determining a Winner.If the game ends, the player with the most Power is the winner. On a tie, the tied player earliest in turn order is the winner.
+Next Chapter.If the game does not end, advance the chapter marker to the next space.
+6.2.4
+Step 4: Draw Cards.Shuffle all of the action cards. Each player draws a hand of 6 action cards. Discard all action cards not in players' hands into the action discard pile on the map face down, then shuffle it. The player with initiative starts the next chapter.
+Two-Player Mulligans.In games with 2 players, after drawing, the player without initiative may discard their hand of 6 action cards to draw a new hand of 6 action cards. They must accept this new hand.
+7.
+Standard Actions
+7.1
+Tax
+The Tax action appears on Administration cards.
+7.1.1
+Tax.To take this action, resolve the following steps:
+Step 1.Choose a Loyal city or choose a Rival city you control.
+Step 2.Gain 1 resource of the city's planet type from the supply.
+Step 3.If you tax a Rival city, you also capture 1 agent of that Rival from their supply, even if you didn't gain the resource.
+Captives.Place captured agents in the Captives box on your player board. They add to your Tyrant ambition (6).
+7.1.2
+Tax Limit.You cannot tax a city more than once per turn.
+7.2
+Build
+The Build action appears on Construction cards.
+7.2.1
+Build.You may build a building or a ship:
+Building: Place 1 starport or city in an empty building slot in a system with a Loyal piece. When building a city, use the leftmost city on your player board.
+Ship: Place 1 ship at a Loyal starport. Each starport can only build one ship per turn.
+7.2.2
+Control.When you build anything in a system that is controlled by anyone other than you, place the piece damaged.
+7.3
+Move
+The Move action appears on Mobilization and Aggression cards.
+7.3.1
+Move.Move any number of Loyal ships from one system to an adjacent system.
+7.3.2
+Catapult Move.If you move from a system with a Loyal starport, you may take Catapult moves—keep moving the ships as much as you want, dropping them off as you want, until they move to a gate controlled by anyone else or they move to any planet.
+7.3.3
+Out-of-Play Clusters.You cannot move into any systems in out-of-play clusters. The path marker placed on out-of-play gates makes its two neighboring gates adjacent.
+7.4
+Repair
+The Repair action appears on Construction and Administration cards.
+7.4.1
+Repair.Stand up 1 damaged Loyal ship, or flip over 1 damaged Loyal building. (This can be anywhere on the map!)
+7.5
+Influence
+The Influence action appears on Mobilization and Administration cards.
+7.5.1
+Influence.Place 1 agent on any card in the Court. (The Court is the card row along the map edge.)
+7.6
+Secure
+The Secure action appears on Aggression cards.
+7.6.1
+Secure.To take this action, resolve the following steps:
+Step 1.Take 1 card from the Court if you have more Loyal agents on it than each Rival. Return all Loyal agents on it to your supply, and capture all Rival agents from the secured card.
+Captives.Put agents you capture in the Captives box on your player board. They add to your Tyrant ambition (6).
+Step 2.Resolve its When Secured action, if any. If it says to discard it, place it in a face-up Court discard pile near the Court deck.
+Step 3.Draw a card from the Court deck and place it face up in the Court in the same spot as the secured card.
+7.7
+Battle
+The Battle action appears on Aggression cards.
+7.7.1
+Battle.To take this action, resolve the following steps:
+Step 1: Choose Battle System.Choose 1 system that has any Loyal ships. This is the battle system. These are your attacking ships.
+Step 2: Choose Defender.Choose 1 Rival whose pieces are in the battle system. These are their defending pieces.
+Step 3: Collect Dice.For each attacking ship, you may collect 1 assault, skirmish, or raid die.
+- Assault dice damage the defender quickly at some cost to you.
+- Skirmish dice damage the defender slowly but keep you safe.
+- Raid dice steal stuff from the defender and might damage them but are risky.
+Raid Dice Limit.You can only collect raid dice if there are defending buildings or if the defender has no Loyal buildings in any systems on the map.
+Step 4: Roll and Resolve Dice.Roll the collected dice. You must resolve all rolled faces in this order:
+Step 1.Hit any of your attacking ships once per .
+Step 2.If you rolled any number of , the defender intercepts you—hit any of your attacking ships once per fresh defending ship. (This can only happen once per battle!)
+Step 3.Hit any of their defending ships once per . Once no defending ships remain, hit any of their defending buildings instead.
+Step 4.Hit any of their defending buildings once per .
+Step 5.Raid their resources and cards by spending , if you have any attacking ships left (Raiding, 7.7.5).
+7.7.2
+Damaging Pieces.If you hit a fresh piece, it becomes damaged—tip it over if it's a ship or flip it over if it's a building.
+7.7.3
+Destroying Pieces.If you hit a damaged piece, it is destroyed—remove it. The attacker takes destroyed defending pieces as Trophies. The defender takes destroyed attacking pieces as Trophies.
+Trophies.Place pieces taken as Trophies in the Trophies box on the respective player board. These add to the Warlord ambition (6).
+7.7.4
+Destroying Cities.If you destroy a city—even outside battle—do the following:
+Step 1: Provoke Outrage.Discard all resources and Guild cards you have of that city's planet type, placing the discarded cards in a face-up Court discard pile near the Court deck. Place an agent to cover the Outrage icon of that city's planet type on your player board—that resource is now Outraged.
+Outrage.You cannot spend Outraged resources for their normal Prelude action (7.7.4).
+Step 2: Ransack the Court.Secure any card that has any number of the defender's agents. Take all Rival agents on the card as Trophies, not Captives.
+7.7.5
+Raiding.If any attacking ships remain after taking hits, you may spend  you rolled to steal resources and Guild cards from the defender, one at a time, by spending the number  of in its raid cost, shown above the resource slot on the player board or in the top-left corner of the Guild card (10.2.3).
+8.
+Other Actions
+8.1
+Prelude Actions
+Many cards and all resources (9) give Prelude actions. On cards, these actions begin with “Prelude:”
+8.1.1
+Timing.Your Prelude begins once you play an action card and ends once you spend an action pip from your played card.
+8.1.2
+Limits.You can take any number of Prelude actions, with two limits:
+Resources spent in Prelude return to the supply at the end of your Prelude, so you cannot regain them until then.
+You cannot use Prelude actions on cards that you secured from the Court in the same Prelude.
+8.1.3
+Discarding Cards.Some Prelude actions on cards make you discard the card. Place it in a face-up Court discard pile near the Court deck.
+8.2
+New Actions
+Cards can give you a new action followed by the name of a standard action in parentheses, such as Assassinate (Battle). When you would take the standard action by spending an action pip or resource, you may instead take the new action.
+8.3
+Modifiers
+Cards can give you modifiers to standard actions, which are shown in bold, such as “In battle, collect 1 extra die.”
+8.3.1
+New Actions.Modifiers do not modify new actions, but they do modify standard actions that are within new actions.
+8.3.2
+Play Steps.Modifiers can also affect critical play steps, such as setup (3.1), scoring (6.2.1), declare an ambition (5.1), and seize the initiative (5.2.3).
+9.
+Resources
+9.1
+Prelude Actions
+In your turn's Prelude (8.1), you may spend any number and mix of your resource tokens to optionally use their actions:
+Material: Take a Build or Repair action.
+Fuel: Take a Move action.
+Weapon: This turn, you may spend any action pips from your card play to take Battle actions.
+Relic: Take a Secure action.
+Psionic: Take an action listed on the lead card.
+9.2
+Slots
+Resources are held in resource slots.
+9.2.1
+Placing Resources.When you take a resource, place it in an empty resource slot of yours. At this time, you may rearrange any resources in your resource slots, but you must discard resources you cannot hold.
+Returning Cities.If a city returns to your player board and covers a resource slot, rearrange and discard resources as described in 9.2.1.
+9.2.2
+Raid Cost.Each resource slot has a raid cost: the number of  attacker in battle must spend to steal the resource.
+9.3
+Resources on Cards
+9.3.1
+Access.Some cards say they hold resources. These resources can be spent and add to ambitions, but they cannot be stolen in battle unless explicitly allowed. If a card holding resources is stolen, the resources on the card stay on it. If it is buried, discarded, or scrapped, the resources on it return to the supply.
+9.3.2
+Removal.If a card holding resources is stolen, the resources on the card stay on it. If it is buried, discarded or scrapped, the resources on it return to the supply.
+10.
+Guild Cards
+10.1
+Acquisition
+You can gain Guild cards by influencing them in the Court and then securing them (7.6).
+10.2
+Card Anatomy
+Guild cards have 3 parts: their suit, rules, and raid cost.
+10.2.1
+Suit.This suit icon matches 1 of the 5 resources. It adds to ambitions just like resources—Material and Fuel cards add to the Tycoon ambition, Relic cards add to the Keeper ambition, and Psionic cards add to the Empath ambition. Weapon cards do not add to any ambitions.
+10.2.2
+Rules.Guild cards give new actions and modifiers (8.2-8.3).
+10.2.3
+Raid Cost.This shows how many  an attacker must spend in battle in order to steal the card.
+11.
+Leaders & Lore
+After playing a game or two, you're ready to play with Leaders and Lore! This mode gives players wild, unique abilities, but they can be hard to handle if you're starting out. Really, don't play your first game with Leaders and Lore.
+Your leader card gives you unique powers, starting pieces, and starting resources.
+Lore cards give persistent powers. They don't have a guild icon or raid cost, so they do not add to ambitions and cannot be stolen.
+11.1
+Setup
+Replace the Starting Placement (3.1.2.III) and Starting Resources (3.1.2.IV) steps of the base game setup with the following:
+11.1.1
+Step 1.Lay out lore cards and leader cards in face-up rows, each with cards equal to the players plus one.
+11.1.2
+Step 2.In reverse turn order—start with the player to the right of the player with initiative, and go counterclockwise—each player may take 1 leader or lore card.
+11.1.3
+Step 3.Continue this until each player has 1 leader card and 1 lore card. You cannot take a leader card if you already have one, and you cannot take a lore card if you already have one.
+Extra Lore.If you want to increase chaos and uniqueness even more, you can let players choose a second lore card. Just add 1 extra lore card per player to the starting row, and keep choosing cards until each player has 1 leader card and 2 lore cards.
+11.1.4
+Step 4.Each player places their starting pieces onto the map in the systems marked on the setup card as shown in the A, B, and C boxes shown on their leader card. Pips under a ship icon show how many ships to place.
+11.1.5
+Step 5.Each player gains the 2 resource tokens shown on their leader card, placing them in their 2 leftmost resource slots in the order shown.
+11.1.6
+Step 6.If any leaders have extra setup steps, players perform them in turn order.
+12.
+The Campaign
+12.1
+The Blighted Reach
+The galaxy is in crisis. The Empire is crumbling. The Blight is spreading through the Reach, destroying everything it touches. What is it? What does it want?
+
+Some believe this is the end. Others, just the beginning. In this time of chaos, new movements bloom loud like desert flowers, promising safety, liberation, communion, or simply the honor of glorious death in the struggle. What will you promise? What is your Fate?
+
+We strongly recommend you play at least one game of single-session Arcs before the campaign. All players should be comfy with the base game. Otherwise, expect a long, tedious first game.
+12.2
+Acts
+A campaign of Arcs lasts for three games, called Acts. Campaign Acts end differently from single-session games.
+12.2.1
+Fixed Length.Don't end an Act after 5 chapters. Instead, Acts I and II end after 3 chapters, and Act III ends after 4 chapters. Don't end an Act early if a player gains enough Power. Ignore the thresholds on the Power track.
+12.3
+Fates
+While setting up Act I, you choose an “A” Fate. You might play this Fate for all three Acts or switch to a new one. If you switch Fate after Act I, you'll choose a “B” Fate, and if you switch Fate after Act II, you'll choose a “C” Fate.
+12.4
+Determining a Winner
+At the end of Act III, the winner is the player with the most Power accumulated over all three Acts. You can also win by completing a final objective (12.8).
+12.4.1
+Tiebreakers.Break a Power tie in favor of “A” Fates over “B” Fates, and “B” Fates over “C” Fates. Break a further tie in turn order.
+12.5
+Objective
+In Acts I and II, your Fate gives you an objective. During setup, place your objective marker on the starting space on the Power track shown at the top of your objective card. Sometimes, the starting space changes based on the number of players, shown by the  symbols.
+12.5.1
+Completion.Your objective card gives you ways to advance your objective marker, moving it down the Power track toward 0 Power. When it reaches 0 Power, you complete your objective.
+12.5.2
+Winning Ambitions.Some objectives want you to win an ambition—this means you get first place, so you're not tied.
+12.6
+Intermission
+After Acts I and II, there is an Intermission. In it, you gain a bonus for completing your objective, you might choose a new Fate, and most damaged pieces are destroyed. If you failed your objective, you lose Power equal to the space of your objective marker on the Power track.
+12.7
+Grand Ambitions
+In Act III, “A” or “B” Fates give two grand ambitions, shown by gold crosshairs. These give you more ways to gain Power and do not use the objective marker.
+12.7.1
+Timing.At the end of a chapter, grand ambitions are scored at the same time as declared ambitions.
+12.7.2
+Amount.If you fulfilled one grand ambition, gain the lower amount of Power shown under the current chapter on the Chapter track. If you fulfilled both, gain the higher amount.
+12.7.3
+Personal.Your grand ambitions are always active—you do not need to declare them. Rivals cannot gain Power from them.
+12.8
+Final Objective
+In Act III, “C” Fates have a final objective.
+12.8.1
+Outright Victory.At the end of a chapter, after scoring ambitions, you win the game if your final objective is complete by having your objective marker at “0” and you have at least 1 Power.
+12.8.2
+Tiebreakers.Winning by completing a final objective supersedes winning by having the most Power. If multiple players would win the game by completing their final objective, the winner is the player among them with the most Power.
+12.8.3
+Power Victory.If you have a final objective, you can still win at the end of Chapter 4 by simply having the most Power.
+12.9
+Rules Booklet
+As you play, your Fate will add many cards to the rules booklet. The booklet is double-sided. You can use one side for Edict cards and the other side for Law and Summit cards. In rare cases where you run out of space on one side for a specific card type, you can use the other side. As you add cards to this booklet, make sure to explain them aloud, since these rules affect everyone.
+13.
+Campaign Rules & Terms
+13.1
+Protected Guild Cards
+Some Guild cards in the campaign are protected, shown by an “X” icon in place of their raid cost.
+13.1.1
+Cannot Remove.Protected Guild cards cannot be removed from the holder's play area unless the holder Provokes Outrage of its suit or if the Guild card is referenced explicitly by name.
+13.2
+Attaching Cards
+13.2.1
+One Each.If you are prompted to attach a card, place above a card in the Court that does not have an attached card.
+13.2.2
+Securing.When you secure a card, also secure its attached card. If both have When Secured actions, resolve them in either order.
+13.2.3
+Forced Attach.If you are forced to attach a card but you cannot fulfill all of the requirements to attach it, you still attach it, ignoring the fewest requirements to attach it.
+13.2.4
+Removal from Court.If a card is removed from the Court in any way and it has an attached card, refill the Court by sliding down the attached card. Place all agents from the removed card onto the previously attached card. If an attached card is removed, nothing happens to the card it was attached to.
+13.3
+Resources
+13.3.1
+Frozen.Some resources are frozen. The player holding the frozen resources cannot remove them from the freezing piece except with scrap or in ways stated by the freezing piece or other pieces that reference it. (For example, Govern the Imperial Reach can let the First Regent give Weapons from the Imperial Trust.)
+13.3.2
+Counting.When you are prompted to count how many resources you have, count everything in your play area, including on cards and on tiles such as the First Regent tile.
+13.4
+Harm
+Some rules refer to harm—this means choosing as defender in battle, damaging, destroying, or hitting, except against yourself.
+13.5
+Tokens
+Many Fates add new punchboard tokens.
+13.5.1
+Cannot Harm.These tokens cannot be harmed unless they say otherwise.
+13.5.2
+Not Loyal.By default, tokens added by Fates are not Loyal. However, some do say they are Loyal—you treat them as being your player color, and Rivals treat them as Rival pieces. You can build buildings at Loyal tokens, you can repair damaged Loyal tokens, and they fulfill the need for Loyal pieces found in rules such as the Empire's Presence Law (14.1.2).
+14.
+The Empire
+Everyone starts as a Regent of a crumbling galactic Empire, shown by their Regent title card tucked into their Fate card.
+
+One Regent is the First Regent, who governs the Empire (14) and holds the Imperial Trust (19.2.1), resources they collect from Regents as tribute for the distant Emperor.
+
+A Regent can become an Outlaw by calling a Summit (17). Outlaws can be attacked by the Empire, but they can battle Regents freely and don't pay into the Imperial Trust.
+14.1
+Control & Command
+14.1.1
+Imperial Sovereignty.The Empire controls all systems that have any number of fresh Imperial ships, ignoring all players' Loyal ships.
+14.1.2
+Presence Law.On a Regent's turn, they Command the Imperial Fleet following the Presence Law: In systems with Loyal pieces, they control the system if it is Empire-controlled and can take actions with Imperial ships there—move and repair them, battle with them, build at them, and tax cities they control.
+Ignoring the Presence Law.If a rule lets you ignore the Presence Law, you Command the Imperial Fleet in all systems, even those with no Loyal pieces.
+14.1.3
+First Regent's Privilege.The First Regent controls all Empire-controlled systems for the purpose of ambitions, objectives, and events (16).
+14.2
+Movement
+14.2.1
+Movement Law.Regents follow the Movement Law: Regents can only move 1 Imperial ship for each Loyal ship they are moving along with them at the same time to the same system.
+14.2.2
+Catapult Move.
+Empire Control.Empire control of gates ends the Catapult moves of Outlaw pieces, but not Regent or Imperial pieces.
+Regent Control.Regent control of gates ends the Catapult moves of Outlaw pieces and Rival Regent pieces alone, but not Imperial pieces or mixed Regent and Imperial pieces.
+Outlaw Control.Outlaw control of gates ends the Catapult moves of Regent and Imperial pieces alike.
+14.3
+Battle, Harm, & Taxing
+14.3.1
+Truce Law.Regents follow the Truce Law: Regents cannot harm Imperial ships except for hits they take as attacking ships in battle, and they cannot harm or tax Rival Regents in systems with Imperial ships.
+14.3.2
+Empire May Attack.When a Regent attacks in battle, they may add Imperial ships in the battle system to their attacking ships.
+14.3.3
+Empire Must Defend.When a Regent defends in battle, they must add Imperial ships in the battle system to their defending ships.
+14.4
+Outlaw Battles
+14.4.1
+Battling the Empire.Outlaws may choose either a Regent or the Empire as defender. If the Empire is defending, the defending pieces are the Imperial ships in the battle system.
+Trophies.If the Empire is defending, the First Regent takes any destroyed pieces of the Outlaw as Trophies. If there is no First Regent, they return to the Outlaw.
+15.
+Blight & the Free States
+15.1
+The Blight
+The Blight is a mysterious entity spreading through the Reach. No one knows what it wants or how to communicate with it. In Crises (18), the Blight hits ships. In the Intermission (21), it destroys buildings in systems with no ships.
+15.1.1
+Harming & Trophies.Blight can be harmed—battled, hit, damaged, and destroyed. However, it is Tough—it takes 2 hits to damage or destroy. One hit does nothing. Take Blight that you destroy as Trophies.
+15.1.2
+Battling.If you choose the Blight as defender in battle, all Blight in the battle system are defending pieces. Blight is hit with  but not . Blight does not intercept.
+15.1.3
+Catapult Movement.Players taking a Catapult move must end it if they move into a gate with fresh or damaged Blight, like if a Rival controlled the gate.
+15.1.4
+Empty Supply.If you must place Blight but the supply is empty, take it from the player who has the most Blight Trophies.
+15.2
+The Free States
+As the Empire crumbles, some people have escaped its grip, declared independence, and formed the Free States.
+15.2.1
+Actions.You may take actions with Free buildings that you control—tax Free cities, build ships at Free starports and Catapult move from them, and repair Free cities and starports.
+15.2.2
+Harming & Trophies.Just like players' buildings, Free buildings can be harmed—battled, hit, damaged, and destroyed. Take Free buildings you destroy as Trophies.
+15.2.3
+Battling.If you choose the Free States as defender in battle, all Free buildings in the battle system are defending pieces. They take hits from rolled dice like players' buildings.
+15.2.4
+Raiding.You may raid the Free States. You may gain exactly 1 resource matching its planet type by spending . This counts as stealing. You cannot gain multiple resources from the Free States in the same battle.
+15.2.5
+Empty Supply.In the rare event that you must place a Free building but the supply is empty, use a proxy piece.
+16.
+Events & the Imperial Council
+There are three kinds of events: Summits, Crises, and Edicts.
+During a Summit, players can make deals to exchange pieces and favors in a freeform manner.
+During the Crises, the Blight attacks ships on the map, and some Guild and Vox cards cause chaos.
+During the Edicts, the First Regent governs the Empire. Over time, more Edicts are added.
+Events can be triggered by playing an Event card or securing the Imperial Council card from the Court (16.3).
+16.1
+Event Cards
+Event cards are a new kind of action card added during setup.
+16.1.1
+Playing an Event Card.On your turn, you may play an Event card. You cannot Lead it, Copy with it, or discard it to seize the initiative.
+16.1.2
+Actions from an Event Card.When you play an Event card, you may take actions exactly like you played the lead card.
+Limitations.Your Event card gives you no actions if another Event card was played earlier this round or if the Imperial Council was secured earlier this round and is currently tucked (16.3).
+16.1.3
+Cannot Scrap.Event cards cannot be scrapped.
+16.1.4
+Two-Player Mulligans.When you take a mulligan in a two-player game, you must keep any Event cards in your hand and only draw the number of action cards you discarded.
+16.2
+Resolving the Event
+16.2.1
+Resolution.At the end of a round where any Event cards were played, do the following just after checking whether initiative changes:
+Step 1.The player with initiative may call the Summit (17).
+Step 2.The player with initiative rolls the event and number dice and resolves the event die as follows:
+- If  is rolled, resolve Crises (18).
+- If  is rolled, resolve Edicts (19).
+16.2.2
+Imperial Council Overrides Events.If the Imperial Council (16.3) is secured during the same round as any Event cards are played, resolve the Council and do not resolve the Event card.
+16.3
+Imperial Council
+The Imperial Council is a card in the Court with two sides: In Session and Decided. In each Act, it starts In Session. Securing the Imperial Council flips it to its Decided side.
+It flips back to In Session at the start of an Act (3.2), and you can flip it to In Session if you call a Summit and Petition the Council (17.1.2).
+If it flips while tucked under a card, return it to the Court.
+16.3.1
+In Session.While the Imperial Council is In Session, players may influence and secure it.
+16.3.2
+Decided.While the Imperial Council is Decided, players cannot influence or secure it.
+16.3.3
+Securing the Council.When you secure the Council, flip it to Decided and tuck it under your played card as a reminder to resolve it later. At the end of that round, return the Imperial Council card to the Court on its Decided side, then resolve the following:
+Step 1: Summit.You may call a Summit (17).
+Step 2: Become First Regent.If you're a Regent, take the First Regent tile, keeping all resources on the Imperial Trust (19.2.1).
+Step 3: Steal from Empire.If you're an Outlaw, steal resources from the Imperial Trust on the First Regent tile, up to your number of empty resource slots. The First Regent loses 1 Power for each resource stolen.
+Step 4: Crises or Edicts.You must choose to resolve either the Crises (18) or the Edicts (19).
+16.3.4
+Event Cards.If the Imperial Council is secured in the same round as Event cards (16.1) are played, resolve the Council and ignore the Event cards.
+16.3.5
+Intrigue.If the Imperial Council flips while tucked under a card, return it to the Court. (You no longer resolve it at the end of this round!)
+16.3.6
+Immunity.The Imperial Council cannot be buried, scrapped, or discarded.
+17.
+Summits
+Event cards and the Imperial Council let players call the Summit. It has two parts: Call to Order, then Negotiations.
+
+Broadly, in the Call to Order you can return Favors—Rival agents you have collected on your Fate card—to your Rivals to force them to take Negotiation actions, and you can interact with Imperial politics.
+
+Then, in Negotiations, everyone can take Negotiation actions in a freeform manner, including giving each other Favors that can be returned in later Summits.
+17.1
+Call to Order
+The player who called the Summit may take any number of Call to Order actions, listed below:
+17.1.1
+Return Favors.Return a Rival's Favors to their supply to force them to take Negotiation actions (17.2.1) you choose, targeting you, in the way you choose. By default, each Negotiation action you force costs 1 Favor.
+17.1.2
+Petition the Council.Flip the Imperial Council card to its In Session side.
+17.1.3
+Leave the Empire.Flip your Regent title card to Outlaw. If you are the First Regent, give the First Regent tile to the Regent with the most Power. Resources stay in the Imperial Trust. If there are no Regents, return all resources from the Imperial Trust to the supply, lose 1 Power per resource returned, and place the First Regent tile in the supply.
+17.1.4
+Revive the Empire.If there are no Regents, flip your Outlaw title card to Regent and take the First Regent tile.
+17.2
+Negotiations
+After the Call to Order, all players may take any number of Negotiation actions listed below in a freeform manner. Each Negotiation action affects a Rival. To take a Negotiation action, you need the consent of the affected Rival.
+17.2.1
+Negotiation Actions.
+Cede Control.Replace 1 Loyal piece on the map with 1 Rival piece of that type. You can only replace a Loyal building if no Loyal ships are in its system, and you cannot replace your last city, starport, or ship on the map.
+Delegate Authority.Replace 1 Loyal agent on a card in the Court with a Rival's agent.
+Promise Favor.Give 1 Loyal agent from your supply to a Rival, placing it on their Fate card. Rival agents on a Fate card are called Favors.
+Transfer Asset.Give 1 Captive, Trophy, Favor, or resource you have to a Rival. If it is their Loyal piece, return it to their supply. Forcing you to give a resource with Return Favors (17.1.1) costs Favors equal to its raid cost.
+Invite to Empire.If you're the First Regent, flip an Outlaw's title card to Regent.
+17.2.2
+Multipart Negotiations.You may agree with any players to simultaneously take any number of Negotiation actions that can be resolved immediately.
+17.2.3
+Ending Negotiations.If no one is negotiating, the player who called the Summit may call for them to start negotiating, wait briefly, and then count down from five seconds. If no one starts negotiating, the Summit ends.
+18.
+Crises
+Event cards and the Imperial Council can trigger the Crises. When the Crises are triggered, resolve the Blight Crises, then Fate Crises, and finally Court Crises.
+18.1
+Blight Crises
+Each system with Blight has a Blight Crisis—each fresh Blight there deals 3 hits, and each damaged Blight there deals 1 hit.
+18.1.1
+Hit Priority.The Blight deals hits to Imperial ships first. If no Imperial ships remain, it deals each remaining hit to the Loyal ships of every player in its system. In both cases, fresh ships take hits before damaged ships.
+18.2
+Fate Crises
+Some Fates add cards with Crisis text that are held by players. Resolve all of these cards in turn order.
+18.3
+Court Crises
+The player with initiative rolls the event and number dice unless they were just rolled to resolve an Event card. Resolve the Crisis text on each Vox card in the Court from left to right.
+18.3.1
+Attached Cards.If a Vox card has another Vox card attached to it (13.2), resolve the attached card first.
+18.3.2
+Event & Number Dice.Some Crises determine how they resolve using the icon and number on the event and number dice. Here are the key phrases that refer to these dice:
+Rolled Cluster.The cluster rolled on the number die.
+Planets of the Rolled Symbol.Each planet with the planet ID symbol (//) rolled on the event die.
+Rolled Planet.The planet in the cluster rolled on the number die and the ID (//) rolled on the event die.
+If // Was Rolled.Check whether this symbol was rolled on the event die.
+18.3.3
+Removing Cards.If a Crisis removes a card from the Court, return all agents on it and draw a card from the Court deck to refill the Court.
+19.
+Edicts
+Event cards and the Imperial Council can trigger the Edicts. Resolve all Edicts in order from lowest number to highest.
+
+The game starts with Govern the Imperial Reach (Edict 03) and Guild Envoys Depart (Edict 00) in two-player games.
+19.1
+Govern the Imperial Reach
+The First Regent must either enforce or change the Imperial Policy shown on this edict card.
+If they enforce it, they collect the listed Imperial Demand and then take the listed Imperial Action, as described through the rest of this section.
+If they change it, they choose a new Govern the Imperial Reach edict card to place on top of the other two cards.
+19.2
+Collect Imperial Demand
+The First Regent must take 1 piece from each Regent as shown by the Demand of the Imperial Policy, as follows:
+Peace: Relics or Psionics
+Escalation: Material, Fuel, or Weapons
+War: Trophies or Captives, but not Regent or Imperial pieces
+19.2.1
+Resources.Resources go on the First Regent tile, adding to the Imperial Trust. The First Regent must also add 1 resource shown by the Demand to the Trust, if they have it. (These resources have no raid cost, so they cannot be stolen in battle. However, cards such as Silver-Tongues can steal them, and Outlaws can steal them by securing the Imperial Council – see 16.3. These resources return to the supply during the Intermission – see 21.3.2.)
+Frozen.Resources in the Imperial Trust are frozen except for Imperial Actions (13.3.1).
+19.2.2
+Trophies & Captives.Trophies and Captives go in the First Regent's Trophies and Captives boxes, respectively. The First Regent does not need to take a Trophy or Captive from themself.
+19.2.3
+Shortfall.If a Rival Regent has no pieces shown by the Demand, the First Regent must take 1 agent from the Rival's supply as a Favor. If they have no agents, the First Regent may make them an Outlaw.
+19.3
+Take Imperial Action
+After the Imperial Demand, the First Regent must take the Imperial Action, as follows:
+19.3.1
+In Peace, Celebrate Regency.Each Regent gains the bonus city Power shown on all uncovered city slots on their player board.
+19.3.2
+In Escalation, Requisition Ships.Place 2 fresh Imperial ships in an Empire-controlled system. If no systems are controlled by the Empire, place them at a Loyal starport instead.
+19.3.3
+In War, Distribute Arms.Give 1 Weapon to each Regent from the supply. If the supply is empty, give it from the Imperial Trust.
+19.4
+Guild Envoys Depart
+This card is only used in two-player games.
+
+Bury all Guild cards in the Court with no agents on them, then refill the Court.
+20.
+Flagships
+Some Fates give you a Flagship board, piece, and aid card. When you get a Flagship, you also replace all of your Loyal buildings on the map with Free buildings of the same type.
+20.1
+Setup
+Flagship setup is described on the back of the Flagship board. It has been reproduced here for convenience.
+20.1.1
+Step 1: Place Flagship.Place a Loyal Flagship piece in a system with Loyal pieces.
+20.1.2
+Step 2: Abandon Buildings.Replace all Loyal cities and starports on the map with Free cities and starports, respectively.
+20.1.3
+Step 3: Take Aid Card.Take a Flagship Upgrades card.
+20.1.4
+Step 4: Flip Board.Flip over the Flagship board and place it below your player board.
+20.2
+General Rules
+Playing a Flagship has some new rules:
+20.2.1
+Fresh Loyal Ship.Your Flagship is a fresh Loyal ship that cannot be removed from the map.
+20.2.2
+Building Buildings.You cannot build Loyal cities or starports on the map. Instead, you can build them on your Flagship board as Upgrades and Armor. (Upgrades & Armor, 20.3)
+20.2.3
+Building Ships.You can only build up to 1 ship at your Flagship per turn, ignoring the number of starports on your Flagship board.
+20.2.4
+Battle with Starports.In battle, your Flagship collects a variable number of dice, does not deal hits for intercept by default, and doesn’t protect buildings on planets. (Defending, 20.4.3)
+20.3
+Upgrades & Armor
+Your Flagship board has 6 Upgrade slots, each with an Armor slot above it, that you can build Loyal buildings in.
+Upgrades give benefits (20.3.4). While an Upgrade has Armor, the Upgrade cannot be hit or destroyed.
+20.3.1
+Building.To build an Upgrade or Armor, your Flagship must be at a planet of the type shown on its slot.
+Building Armor.You can only build Armor if you have its Upgrade and it is fresh.
+20.3.2
+Repairing.When you repair your Flagship, repair an Upgrade or Armor.
+20.3.3
+Unlike Map Buildings.Upgrades and Armor do not work like buildings on the map:
+Cannot be Taxed.Players cannot tax cities on Flagships.
+Cannot Build or Catapult.Players cannot use starports on Flagships to build ships or Catapult move.
+Destroying Cities.Destroying cities on Flagships does not Provoke Outrage or Ransack the Court.
+Cannot be Replaced.They cannot be replaced with non-Loyal pieces, such as Free buildings.
+20.3.4
+Upgrade Benefits.This section lists the Flagship's Upgrades. The resource types in parentheses are the planet types that your Flagship must be at in order to build the Upgrade and Armor, respectively.
+Ship Crane.You may build up to 2 ships per turn in your Flagship's system. Building this upgrade requires your flagship to be at a Material planet, and building this upgrade's armor requires your flagship to be at a Fuel planet.
+Defense Array.When your Flagship is defending in battle, it deals intercept hits equal to the number of fresh starports on its Flagship board. Building this upgrade requires your flagship to be at a Weapon planet, and building this upgrade's armor requires your flagship to be at a Psionic planet.
+Slipstream Drive.Once per turn, in your Prelude, you may Catapult move either your Flagship alone or other ships from your Flagship. Building this upgrade requires your flagship to be at a Fuel planet, and building this upgrade's armor requires your flagship to be at a Relic planet.
+Control Array.While your Flagship is in a gate, you may tax any cities in its cluster like they are Loyal. Building this upgrade requires your flagship to be at a Psionic planet, and building this upgrade's armor requires your flagship to be at a Material planet.
+Tractor Beam.When your Flagship is defending in battle, the attacker cannot collect raid dice. Building this upgrade requires your flagship to be at a Relic planet, and building this upgrade's armor requires your flagship to be at a Weapon planet.
+Hull.This Upgrade has no unique benefit, but building cities will open resource slots, and building starports will let you collect more dice in battle. You can build this upgrade and its armor when you flagship is at any planet.
+20.4
+Flagship Battles
+There are a few key rules when battling with Flagships:
+When attacking with a Flagship, its Armor and Upgrades are hit like ships.
+When defending with a Flagship, its Armor and Upgrades are hit like buildings.
+20.4.1
+Hit Armor First.Armor is always hit before its Upgrade.
+20.4.2
+Attacking.
+Collecting Dice.When attacking, your Flagship collects dice up to your number of fresh starports on Upgrades and Armor.
+Taking Hits as Attacker.While attacking, Upgrades and Armor are hit like ships:
+- You must take hits from  and  with Upgrades and Armor if no other attacking ships remain.
+- You can choose to take hits with Upgrades and Armor instead of other attacking ships.
+20.4.3
+Defending.
+Raid Dice Limit.While you have a Flagship, Rivals who battle you have a different Raid Dice Limit: they can only collect raid dice if there are defending buildings or a defending Flagship.
+Does Not Intercept.If the attacker rolls a , your Flagship does not intercept unless it has a Defense Array (20.3.4.II).
+Taking Hits as Defender.While defending, Upgrades and Armor are hit like buildings:
+- The attacker hits your Upgrades and Armor with .
+- If the Flagship is the only remaining defending ship, the attacker hits Upgrades and Armor with .
+- Defending buildings on a planet can be hit with  or with  if the Flagship is the only remaining defending ship.
+20.5
+Flagships in Events
+20.5.1
+Taking Hits.When taking hits in a Crisis, your Flagship only takes hits if no other fresh Loyal ships remain in the system. Take each hit to your Flagship with your rightmost Armor. If no Armor remains, take the hit with its rightmost Upgrade.
+20.5.2
+Cannot Cede.In Summits, you cannot use Cede Control to replace Loyal buildings on your Flagship board with Rival pieces.
+20.6
+Cards & Flagships
+Cards work with Flagships as follows:
+20.6.1
+Building Checks.Cards that check for Loyal buildings in a system—like Force Beams, Gate Ports, and Hidden Harbors—count Upgrades and Armor as in your Flagship's system unless the card says “on the map.”
+20.6.2
+Building on the Map.Cards that build Loyal buildings outside building slots—like Gate Ports and Cloud Cities—do let you place Loyal buildings on the map again.
+20.6.3
+Ship Improvements.Cards that improve your Loyal ships—like Sprinter Drives and Mirror Plating—do improve your Flagship, since it is a fresh Loyal ship.
+20.6.4
+Dice Collection.Cards that collect dice for Loyal ships like in battle—like Galactic Rifles—let your Flagship collect 1 die per fresh starport on your Flagship board.
+20.7
+Resettling Flagships
+The “C” Fates let you Resettle if you have a Flagship:
+20.7.1
+Step 1.Clear your Flagship board and return it to the box. Replace your Loyal Flagship piece with a Loyal ship.
+20.7.2
+Step 2.Place 1 city and 1 starport in empty building slots on the map. If there are none, replace Free buildings.
+20.7.3
+Step 3.If you have fewer than 8 Loyal ships on the map, place ships in systems with Loyal pieces until you have 8 Loyal ships on the map.
+21.
+Intermission
+The Intermission happens at the end of Act I and Act II. Resolve all of the following steps in order.
+21.1
+A. Resolve Fate
+21.1.1
+Step 1.Each player resolves the Resolution card in their Fate Set for the current Act. Based on whether you completed or failed your objective, you'll do things like gain or discard cards, add cards to the Court deck, or add cards to the rules booklet.
+21.1.2
+Step 2.Each player who failed their objective loses Power equal to the space of their objective marker on the Power track.
+21.2
+B. Clear Court
+21.2.1
+Step 1.Return all cards in the Court except the Imperial Council to the Court deck.
+21.2.2
+Step 2.Return all agents from the Court to their players.
+21.2.3
+Step 3.Scrap the Court discard pile.
+21.3
+C. Clear Pieces
+21.3.1
+Step 1.Return all Trophies and Captives.
+21.3.2
+Step 2.Return all frozen resources (13.3.1), including from the Imperial Trust on the First Regent tile, to the supply.
+21.3.3
+Step 3.2 Players Only: Return all resources from ambition boxes to the supply.
+21.4
+D. Repair & Destroy Pieces
+21.4.1
+Step 1.Repair all damaged Blight.
+21.4.2
+Step 2.Destroy all damaged ships, buildings, and Flagship Upgrades and Armor.
+21.4.3
+Step 3.Destroy all buildings in systems that have Blight and no ships.
+21.5
+E. Shift Initiative & Power
+21.5.1
+Step 1.Give the initiative marker to the player with the most Power.
+21.5.2
+Step 2.Each player who has more than 1 Power loses half their Power, rounding to lose less Power.
+Conceding.In games with 2 players, if your Rival has at least 15 Power more than you after halving Power, we recommend that you concede unless you feel confident.
+21.6
+F. Choose Fate
+21.6.1
+Step 1.Each player who completed their objective draws 1 Fate card. Each player who failed it returns their Fate card to the box and draws 2 Fate cards.
+If you are finishing Act I, draw from the “B” Fates.
+If you are finishing Act II, draw from the “C” Fates.
+21.6.2
+Step 2.Each player secretly chooses 1 Fate card from their 2 Fate cards to play in the next Act. Then, everyone reveals their chosen Fate card simultaneously and returns their unchosen Fate card to the box.
+Switching Fates.If you choose a new Fate card, do the following:
+- Return your current Fate card to the box.
+- Scrap the rest of your Fate Set that is not in play. Don't scrap anything that is in play, including your Flagship if you have one.
+- Return all Favors you have to your Rivals.
+- Take the new Fate Set for your Fate from the box.
+
+21.7
+Next Act?
+At this point, discuss with everyone whether you want to play the next Act or pack up the game so you can play it later.
+21.7.1
+Next Act.If you are playing the next Act, set it up as described in Act II & III Setup (3.2).
+21.7.2
+Packing Up.If you are packing up, follow these steps. (Note that you won't be able to play a single-session game of Arcs until you finish the campaign or choose to abandon it!)
+
+For the next Act, preserve everything on the map, in the general supply, and in everyone's play areas as follows:
+Step 1.Use a log sheet to record your names, colors, Fates, Power, Outrage, and Flagship Upgrades and Armor. If a Fate has you record more details, use the blank spaces on the back of the log sheet.
+Step 2.Use the 2 map trays to store the pieces on the map. The trays have sections for each planet (marked with its ID symbol) and each gate (marked “G”).
+Step 3.If a system has too many pieces to fit in the tray, put an overflow marker in its tray section and put pieces from the system in a bag with the matching overflow marker.
+Step 4.Use the 4 player trays to store the players' play areas. In your tray, use the large well to hold cards in play stacked on top of the cards remaining in your Fate Set. Use the small well to hold everything else in your play area except your player board and Flagship board. You don't need to track the order of your resources.
+Step 5.Keep all of the cards in the rules booklet.
+22.
+Fine Print
+This section covers some technical parts of play.
+22.1
+Tiebreakers & Choice Order
+22.1.1
+Tiebreakers.If you have a tie and its tiebreaker is not specified, break the tie in turn order. Likewise, if players must make a decision in an unclear order, resolve it in turn order. (Start with the player with initiative and go clockwise.)
+22.1.2
+Choice Order.If multiple things happen at the same time but must be resolved in order, the player taking their turn chooses their order. If no one is taking a turn, the player with initiative chooses.
+22.2
+Elimination & Concession
+22.2.1
+Elimination.Rarely, a player will have no starports or ships on the map. If this happens, they place 3 fresh ships in any gate at the end of their turn.
+22.2.2
+Concession.Sometimes, usually in games with 2 players, it may become clear that a player has won. Feel free to concede!
+22.3
+Pieces & Piece Limits
+22.3.1
+Limits.Pieces are limited by the contents of the box with one exception: if you need an agent to place on an Outrage slot but none are in your supply, use a placeholder piece until an agent enters your supply, then place the agent.
+22.3.2
+Loyal by Default.If a rule makes you place pieces, this refers to fresh Loyal pieces by default.
+22.3.3
+Origins.Pieces that you place and return come from and go to their original supply by default except for cities: cities come from the leftmost filled city slot on their original player board, and go to the rightmost empty city slot. (Remember, pieces often go to Trophies and Captives instead of back to supplies.)
+22.3.4
+Do as Much as Possible.If you must place or return more pieces than possible, do the maximum possible.
+22.3.5
+Replace.If you replace a piece, return it and place another piece in its place. If the old piece was damaged, the new piece is placed damaged. (Replacing a piece does not destroy it.)
+22.4
+Rules Hierarchy
+22.4.1
+Rulebook.This rulebook supersedes the aid sheets and player boards.
+22.4.2
+Cards.Cards supersede this rulebook, but any rule that uses the term cannot is absolute—it cannot be superseded unless explicitly named using the term ignore. (For example, “You ignore Outrage when spending Material for its Prelude action.”)
+22.4.3
+Clarifications.Sidebars as well as text written in italics and parentheses (like this) are clarifications and reminders, which are superseded by the core rules they reference.
+22.5
+Negotiations
+22.5.1
+Agreements.Players may make deals and promises, but they are not binding.
+22.5.2
+Transfer of Pieces.Players cannot give each other pieces unless a rule allows it.
+22.6
+Private Information
+22.6.1
+Hands.Players cannot show the action cards in their hand to anyone else.
+22.7
+Turn Etiquette
+22.7.1
+Sequencing.Though declaring an ambition and seizing the initiative happen before any other actions, we usually let people do them during their turn as long as new info hasn't been revealed—such as rolling dice or drawing a card—and any relevant modifiers are followed. Don't get bogged down in technicalities unless it changes the game. Arcs thrives when the game flows!
+22.8
+Split Discard Piles
+Normally, all action cards are discarded face down, even ones played face up. This speeds up play but it favors players with good memory. If you're running a tournament or want a more strategic but slower game, you can split the action discard into two piles — one for cards played face down, and one for cards played face up.
+22.8.1
+Drawing.If you're prompted to draw from the action discard pile, draw from the facedown pile. In the rare circumstance that it doesn't have enough cards, shuffle the piles together first.
+23.
+Appendix
+23.1
+Glossary
+23.1.1
+Adjacent.Shares a thin border (The Map, 4.3.2).
+23.1.2
+Building.Cities and starports.
+23.1.3
+Bury.Place on the bottom of the Court deck.
+23.1.4
+Capture.Place the prompted piece in the Captives box on your player board.
+23.1.5
+Chapter.The time in which players play rounds until they all run out of action cards.
+23.1.6
+Clear.Return all pieces from the prompted area.
+23.1.7
+Control.You control a system and its contents if you have more fresh ships there than each Rival. On a tie, no one controls the system.
+23.1.8
+Damaged.Not fresh—a tipped ship or a building on its darker side.
+23.1.9
+Destroy.Return a fresh or damaged piece from the map. (It often goes to a Trophies box.)
+23.1.10
+Empty.Has no pieces in or on it.
+23.1.11
+Fresh.Not damaged—an upright ship or a building on its lighter side.
+23.1.12
+Gain.Add the specified piece to your play area from its supply. (You can't gain it if its supply is empty.)
+23.1.13
+Give.Add the specified piece to a Rival play area.
+23.1.14
+Hit.Tip over a fresh piece on the map, or remove a damaged piece from the map.
+23.1.15
+Loyal.Of your player color.
+23.1.16
+Out of Play.Cannot be interacted with.
+23.1.17
+Piece.Any component in the game.
+23.1.18
+Place.See Pieces & Piece Limits (22.3).
+23.1.19
+Play Area.On and around your player board. (Most pieces go in specific parts of your play area.)
+23.1.20
+Prelude.See Prelude Actions (8.1).
+23.1.21
+Replace, Return.See Pieces & Piece Limits (22.3).
+23.1.22
+Rival.Of another player's color. When used alone, refers to another player.
+23.1.23
+Round.The time in which each player takes a turn.
+23.1.24
+Scrap.Make out of play permanently.
+23.1.25
+Seize the Initiative.Take the initiative marker. You cannot do this if you have the initiative marker or if someone has already seized the initiative this round.
+23.1.26
+Spend.When referring to a resource, return the spent resource to its supply.
+23.1.27
+Steal.Add the specified piece to your play area from a Rival's play area. (This is distinct from take because some rules prevent stealing.)
+23.1.28
+Supply.The general supply holds resources and other shared pieces, and players' supplies hold their Loyal ships and agents.
+23.1.29
+Swap.Give the prompted piece and take the prompted piece at the same time.
+23.1.30
+Take.Add the specified piece to your play area.
+23.1.31
+Turn.The time in which a player plays an action card and may take actions.
+23.1.32
+Turn Order.Starting with the player with initiative and going clockwise.
