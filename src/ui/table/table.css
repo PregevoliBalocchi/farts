@@ -1695,3 +1695,32 @@ button.supply:hover { border-color: var(--rule-hi); }
 .board .sp-block { grid-template-columns: auto auto; justify-content: space-between; min-width: calc(46 * var(--u)); }
 .tbl-stage .board.local.slim .pb-body.with-legend .spoils { grid-row: 2 / 5; grid-column: 1; grid-auto-flow: row; align-content: start; justify-content: stretch; gap: calc(4 * var(--u)); }
 .tbl-stage .board.tipboard .pb-body.with-legend .spoils { grid-auto-flow: row; align-content: start; }
+
+/* ---- Board layout fixes (2026-11-24): everything inside its frame, cities apart, avatars alike ---- */
+
+/* Leader avatars: about the same area each (S² in board units), from their own proportions (--ar, set by
+   sizeAvatars); the right edge on the face column's edge so it never reaches the slots, the foot on the
+   column's floor so it never covers trophies and captives; above the board it may rise freely. */
+.tbl-stage .board .pb-face { position: relative; align-self: stretch; justify-self: stretch; }
+.tbl-stage .board .portrait.leader.bust { position: absolute; inset: 0; width: auto; height: auto; }
+.tbl-stage .board .portrait.leader.bust img, .tbl-stage .board.local.slim .portrait.leader.bust img {
+  --s: calc(80 * var(--u));
+  position: absolute; left: auto; right: 0; bottom: 0; transform: none; max-width: none;
+  width: calc(var(--s) * sqrt(var(--ar, .85))); height: calc(var(--s) / sqrt(var(--ar, .85))); object-fit: contain; object-position: 100% 100%; }
+.tbl-stage .board .portrait.leader.bust:hover img, .tbl-stage .board .portrait.leader.bust:focus-visible img { transform: scale(1.05); transform-origin: 100% 100%; }
+
+/* The slots: evenly spread along the row; each city triangle no wider than the room it has, so none touches the next */
+.tbl-stage .board:not(.rband) .slots { justify-content: space-between; gap: calc(3 * var(--u)); }
+.board .cover .tri { width: calc(44 * var(--u)); height: calc(41 * var(--u)); }
+.board .cover.bonus { width: calc(44 * var(--u)); }
+.board .cover.bonus .on-city .pc { width: calc(36 * var(--u)); height: calc(36 * var(--u)); }
+.board .cover .on-city .pc { width: calc(38 * var(--u)); height: calc(38 * var(--u)); }
+.tbl-stage .board.rband .slots { gap: calc(4 * var(--u)); }
+
+/* The name bar and its power ring stay inside the board's frame */
+.tbl-stage .board .name-bar .pow { width: calc(32 * var(--u)); height: calc(32 * var(--u)); right: calc(6 * var(--u)); }
+.tbl-stage .board.local.slim .sp-block { padding: calc(1 * var(--u)) calc(6 * var(--u)); line-height: 1; }
+.tbl-stage .board.local.slim .sp-block .num { font-size: calc(16 * var(--u)); }
+.tbl-stage .board.local.slim .sp-block .ic { width: calc(18 * var(--u)); height: calc(18 * var(--u)); }
+.tbl-stage .board.slim .pb-body.with-legend { row-gap: calc(2.5 * var(--u)); }
+.tbl-stage .board .pb-face { margin-top: 0; }
