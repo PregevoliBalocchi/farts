@@ -150,6 +150,7 @@
   "btn.confirm": "Confirm",
   "btn.undo": "Undo",
   "btn.help": "How to move the map",
+  "gpu.software": "The browser is drawing without the graphics card, so the game is slow: turn on hardware acceleration in the browser settings and restart it.",
   "btn.control": "Show who controls each system",
   "btn.log": "Log",
   "btn.settings": "Settings",

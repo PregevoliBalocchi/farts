@@ -33,6 +33,7 @@ import { SEAT_PAINT } from './pieces3d';
 import { buildPlanet, planetPalette, roomAround, turnPlanets } from './planets3d';
 import type { Planet } from './planets3d';
 import { starfield } from './starfield';
+import { createRenderer, drawRatio, FrameWatch, gpu, LITE_FRAME_MS } from './gpu';
 import type { TableView } from './view';
 
 const calibFiles = import.meta.glob('../../../assets/ui/map/board.json', { eager: true, import: 'default' }) as Record<string, unknown>;
@@ -150,6 +151,12 @@ export class Board3D {
   private piecesKey = '';
   private last: TableView | null = null;
   private dirty = true;
+  /** The lamp whose shadows the pieces cast (off when drawing lighter). */
+  private lamp!: THREE.DirectionalLight;
+  /** Watches the animation's frame rate: too slow, and the map draws lighter. */
+  private readonly watch = new FrameWatch();
+  /** When the last frame was drawn (milliseconds). */
+  private lastDraw = 0;
   private pulsing = false;
   /** Ship groups as last drawn, to fly the ones that moved when the map changes. */
   private shipsAt: ShipGroupAt[] = [];
@@ -212,9 +219,9 @@ export class Board3D {
 
     // Lights: an even sky so the board picture keeps its colours, a lamp for the pieces' shadows.
     this.scene.add(new THREE.HemisphereLight('#ffffff', '#3a3530', 1.9));
-    const lamp = new THREE.DirectionalLight('#fff4e4', 1.5);
+    const lamp = (this.lamp = new THREE.DirectionalLight('#fff4e4', 1.5));
     lamp.position.set(-5, 14, 7);
-    lamp.castShadow = true;
+    lamp.castShadow = !gpu.lite;
     lamp.shadow.mapSize.set(2048, 2048);
     Object.assign(lamp.shadow.camera, { left: -12, right: 12, top: 8, bottom: -8, near: 1, far: 40 });
     lamp.shadow.camera.updateProjectionMatrix();
@@ -223,7 +230,7 @@ export class Board3D {
 
     if (this.space) {
       // Space: stars far below, planets under the glass, the pieces' shadows on the glass.
-      this.scene.add(starfield(60, 44, 7000, 7, Math.min(2, window.devicePixelRatio || 1)), this.planetGroup);
+      this.scene.add(starfield(60, 44, 7000, 7, drawRatio(window.devicePixelRatio)), this.planetGroup);
       const catcher = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.ShadowMaterial({ opacity: 0.32, depthWrite: false }));
       catcher.rotation.x = -Math.PI / 2;
       catcher.position.y = 0.0005;
@@ -373,7 +380,7 @@ export class Board3D {
    * rectangle: where the map should be centred (the area free of panels).
    */
   resize(w: number, h: number, pixelRatio: number, focus: Rect): void {
-    this.renderer.setPixelRatio(Math.min(2, pixelRatio));
+    this.renderer.setPixelRatio(drawRatio(pixelRatio));
     this.renderer.setSize(w, h, false);
     this.size2 = { w, h };
     this.focus = focus;
@@ -946,8 +953,26 @@ export class Board3D {
     this.dirty = true;
   }
 
+  /**
+   * Draws lighter from now on (the graphics card cannot keep up): one pixel
+   * per screen pixel, no shadows, animations at about 30 frames a second.
+   */
+  private goLite(): void {
+    if (gpu.lite && !this.lamp.castShadow) return;
+    gpu.lite = true;
+    this.lamp.castShadow = false;
+    this.renderer.setPixelRatio(1);
+    this.renderer.setSize(this.size2.w, this.size2.h, false);
+    fxViewHeight.value = this.size2.h;
+    this.dirty = true;
+  }
+
   private frame(t: number): void {
     this.stepPan(t);
+    // Something moves on its own every frame: the map is animating.
+    const animating = this.opts.motion && (!!this.planets.length || (hasModels() && !!this.pieces.children.length) || !!this.route || this.pulsing);
+    // Drawing lighter, an animation is drawn about 30 times a second, not at the screen's rate.
+    if (gpu.lite && animating && t - this.lastDraw < LITE_FRAME_MS) return;
     if (this.planets.length && this.opts.motion) {
       turnPlanets(this.planets, t / 1000);
       this.dirty = true;
@@ -969,6 +994,8 @@ export class Board3D {
     if (!this.dirty) return;
     this.dirty = false;
     this.renderer.render(this.scene, this.camera);
+    this.lastDraw = t;
+    if (animating && this.watch.tick(t)) this.goLite();
   }
 
   /**
@@ -1159,7 +1186,7 @@ function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'la
 export function createBoard3D(ix: ContentIndex, opts: Board3DOptions): Board3D | null {
   let renderer: THREE.WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer = createRenderer({ antialias: true });
   } catch {
     return null;
   }

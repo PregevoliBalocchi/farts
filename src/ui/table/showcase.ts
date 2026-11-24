@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { pickLang, translator } from '../../i18n';
+import { createRenderer, drawRatio, gpu } from './gpu';
 import { loadKitPieces, piece } from './kitpieces';
 import { paintedWood, SEAT_PAINT } from './pieces3d';
 import type { PieceKind } from './pieces3d';
@@ -34,13 +35,13 @@ export function mountPieces(root: HTMLElement): void {
 
   let renderer: THREE.WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = createRenderer({ antialias: true });
   } catch {
     wrap.textContent = 'WebGL';
     return;
   }
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
-  renderer.shadowMap.enabled = true;
+  renderer.setPixelRatio(drawRatio(window.devicePixelRatio));
+  renderer.shadowMap.enabled = !gpu.lite;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   wrap.appendChild(renderer.domElement);
 

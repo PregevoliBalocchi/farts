@@ -5,6 +5,7 @@
 // small transparent renderer, reused for every card.
 
 import * as THREE from 'three';
+import { createRenderer, drawRatio, gpu } from './gpu';
 import { agentLayout, headingSway } from './model-fx';
 import { loadModels, modelPiece } from './models3d';
 
@@ -27,11 +28,11 @@ export class CourtAgents3D {
   private shown: CardAgents[] = [];
 
   constructor(private readonly motion: boolean) {
-    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    this.renderer = createRenderer({ alpha: true, antialias: true });
+    this.renderer.setPixelRatio(drawRatio(window.devicePixelRatio));
     this.renderer.setSize(AGENTS_VIEW.w, AGENTS_VIEW.h, false);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = !gpu.lite;
     this.renderer.setClearColor(0x000000, 0);
     this.canvas = this.renderer.domElement;
     this.canvas.className = 'zoom-agents';

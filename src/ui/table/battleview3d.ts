@@ -16,6 +16,7 @@ import { seatColor } from './assets';
 import type { BattleAfter, BattlePick, HitEvent, Shot } from './battle';
 import { hitEvents, volleyPlan } from './battle';
 import { BattleFx } from './battlefx3d';
+import { createRenderer, drawRatio } from './gpu';
 import { piece } from './kitpieces';
 import { fleetFormation, rng } from './model-fx';
 import { SEAT_PAINT } from './pieces3d';
@@ -111,8 +112,8 @@ export class BattleView3D {
   private planetSide: number = ORBIT.sideMin;
 
   constructor(private readonly motion: boolean) {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    this.renderer = createRenderer({ antialias: true, alpha: false });
+    this.renderer.setPixelRatio(drawRatio(window.devicePixelRatio));
     this.renderer.setSize(BATTLE_VIEW.w, BATTLE_VIEW.h, false);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.canvas = this.renderer.domElement;

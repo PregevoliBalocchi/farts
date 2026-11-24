@@ -150,6 +150,7 @@
   "btn.confirm": "Conferma",
   "btn.undo": "Annulla mossa",
   "btn.help": "Come muovere la mappa",
+  "gpu.software": "Il browser sta disegnando senza scheda grafica, per questo il gioco è lento: attiva l'accelerazione hardware nelle impostazioni del browser e riavvialo.",
   "btn.control": "Mostra chi controlla i sistemi",
   "btn.log": "Registro",
   "btn.settings": "Impostazioni",

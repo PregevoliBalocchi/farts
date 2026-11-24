@@ -20,6 +20,7 @@ import type { BattlePick } from './battle';
 import { BATTLE_VIEW, BattleView3D } from './battleview3d';
 import { battleScenario } from './scenario';
 import { createBoard3D } from './board3d';
+import { gpu } from './gpu';
 import type { RoutePreview, ShipGlow } from './board3d';
 import type { Allocation, BattleRef } from '../../game/engine';
 import { AGENTS_VIEW, CourtAgents3D } from './courtagents3d';
@@ -246,6 +247,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     // Behind the stage, as large as the window: the interface is drawn in front of it.
     shell.classList.add('has-3d');
     shell.insertBefore(board3d.canvas, stage);
+    // No graphics card in use: the map draws lighter, and the player learns how to get it back.
+    if (gpu.software) window.setTimeout(() => showToast(t('gpu.software')), 1500);
   }
   calib.order = ix.content.map.systems.map((x) => x.id);
   fit();
