@@ -1356,7 +1356,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .drop-help { margin: 0; font-size: 15px; line-height: 1.4; }
 
 /* Hover cards: a rival's board, an ambition row, a map system. */
-.tbl-stage .hover-tip { position: absolute; z-index: 95; width: max-content; max-width: 360px; padding: 10px 14px 12px; display: grid; gap: 6px; pointer-events: none;
+.tbl-stage .hover-tip { position: absolute; z-index: 95; width: max-content; max-width: 360px; padding: 10px 14px 12px; display: grid; gap: 6px; pointer-events: auto;
   border: 2px solid transparent; border-radius: 8px; background: var(--dg-frame-bg) padding-box, var(--dg-frame-gold) border-box; color: var(--dg-text);
   box-shadow: inset 0 0 0 1px #000d, 0 0 0 1px #000, 0 12px 30px #000d; font-size: 14px; }
 .tbl-stage .hover-tip[hidden] { display: none; }
@@ -1595,3 +1595,20 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .board.rband .o-space .o-agent .pc { width: 12px; height: 15px; }
 /* The slim local board with its Prelude row: rows packed so the name bar stays on the board */
 .tbl-stage .board.slim .pb-body.with-legend { align-content: start; row-gap: calc(4 * var(--u)); padding-top: calc(4 * var(--u)); padding-bottom: calc(2 * var(--u)); }
+
+/* The action box: the card's actions in one row of equal buttons, a card's variant of an action under it; the Prelude box before them */
+.tbl-stage .region.actions .act-row { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.tbl-stage .region.actions .act-col { display: grid; gap: 6px; align-content: start; }
+.tbl-stage .region.actions .act-row .btn.kind-btn { min-height: 66px; padding: 6px; }
+.tbl-stage .region.actions .act-row .kb-why { font-size: 11px; }
+.tbl-stage .region.actions .btn.variant { min-height: 26px; padding: 2px 6px; font-size: 12px; font-weight: 600; line-height: 1.15; }
+.tbl-stage .region.actions .btn.variant.lit { border-color: #b8862a; box-shadow: 0 0 0 1px #f3c463, 0 0 10px rgba(255, 196, 100, .6); }
+.tbl-stage .region.actions .pre-btn .pb-ic { display: inline-flex; align-items: center; gap: 3px; }
+.tbl-stage .region.actions .pre-btn .pb-ic .ic { width: 28px; height: 28px; }
+.tbl-stage .region.actions .pre-btn .pb-ic .num { font-size: 13px; }
+.tbl-stage .region.actions .pre-btn:not(:disabled) { box-shadow: 0 0 0 1px #f3c463, 0 0 10px rgba(255, 196, 100, .45); }
+.tbl-stage .region.actions .act-row + .btn-grid.one { margin-top: 10px; }
+.tbl-stage .region.actions .ctx-head .hint.small { font-size: 12px; }
+.tbl-stage .region.actions .ctx-head .btn.link, .tbl-stage .region.actions .ctx-head .btn.link:hover:not(:disabled) { margin-left: auto; min-height: 0; padding: 2px 6px; background: none; border: 0; box-shadow: none; color: var(--dg-gold); font-size: 13px; text-decoration: underline; }
+.tbl-stage .region.actions .pre-btn .pb-card { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; border: 2px solid var(--dg-gold); background: #070b17; }
+.tbl-stage .region.actions .pre-btn .pb-card img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.8); transform-origin: 50% 32%; }

@@ -211,8 +211,8 @@ function nebula(g: CanvasRenderingContext2D, id: string, d: string, t: SectorTin
 /**
  * The curved arrow between gates `a` and `b` linked across systems out of
  * play: points (picture pixels) along the ring, the way that crosses only
- * gates out of play, stopping short of the two gates' numbers. Null when
- * either gate is unknown.
+ * gates out of play, ending just outside the two gates' spaces (never inside
+ * them). Null when either gate is unknown.
  */
 export function bridgeArc(lines: BoardLines, inPlay: ReadonlyMap<string, boolean>, a: string, b: string, steps = 48): [number, number][] | null {
   const r = lines.ring;
@@ -246,17 +246,48 @@ export function bridgeArc(lines: BoardLines, inPlay: ReadonlyMap<string, boolean
   const shorter = up <= TAU - up ? 1 : -1;
   const dir = okUp && okDown ? shorter : okUp ? 1 : okDown ? -1 : shorter;
   const span = dir === 1 ? up : TAU - up;
-  const gap = Math.min(0.24, span * 0.2);
-  const out: [number, number][] = [];
-  for (let i = 0; i <= steps; i++) {
-    const f = i / steps;
-    const phi = pa.phi + dir * (gap + (span - 2 * gap) * f);
-    const rho = pa.rho + (pb.rho - pa.rho) * f;
-    const u = rho * r.rx * Math.cos(phi);
-    const w = rho * r.ry * Math.sin(phi);
-    out.push([r.cx + u * c - w * s, r.cy + u * s + w * c]);
+  const along = (gap: number, n: number) => {
+    const pts: [number, number][] = [];
+    for (let i = 0; i <= n; i++) {
+      const f = i / n;
+      const phi = pa.phi + dir * (gap + (span - 2 * gap) * f);
+      const rho = pa.rho + (pb.rho - pa.rho) * f;
+      const u = rho * r.rx * Math.cos(phi);
+      const w = rho * r.ry * Math.sin(phi);
+      pts.push([r.cx + u * c - w * s, r.cy + u * s + w * c]);
+    }
+    return pts;
+  };
+  const sa = lines.sectors[a];
+  const sb = lines.sectors[b];
+  if (sa && sb) {
+    // Finely along the whole way, then cut where it is still inside either gate's space (and a little more).
+    const fine = along(0, steps * 8);
+    const polyA = pathPoints(sa);
+    const polyB = pathPoints(sb);
+    let i0 = 0;
+    while (i0 < fine.length && inPolygon(polyA, fine[i0])) i0++;
+    let i1 = fine.length - 1;
+    while (i1 > i0 && inPolygon(polyB, fine[i1])) i1--;
+    i0 += BRIDGE_PAD;
+    i1 -= BRIDGE_PAD;
+    if (i1 - i0 >= steps) return Array.from({ length: steps + 1 }, (_, k) => fine[i0 + Math.round(((i1 - i0) * k) / steps)]);
   }
-  return out;
+  return along(Math.min(0.24, span * 0.2), steps);
+}
+
+/** Fine steps left between a bridge arrow's tip and the gate's space it points at. */
+const BRIDGE_PAD = 6;
+
+/** Even-odd test of a point against a polygon. */
+function inPolygon(poly: readonly [number, number][], [x, y]: [number, number]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i];
+    const [xj, yj] = poly[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
 }
 
 /** Where a planet's resource icon goes. */
@@ -298,10 +329,10 @@ export function drawInfoLayer(cv: HTMLCanvasElement, lines: BoardLines, calib: B
 
   const out = (id: string) => st.inPlay.get(id) === false;
 
-  // The ring of gates: a faint band.
+  // The ring of gates: a faint band (none over a gate out of play: only space and the lines there).
   for (const gt of lines.gates) {
     const d = lines.sectors[gt.system];
-    if (!d) continue;
+    if (!d || out(gt.system)) continue;
     g.fillStyle = 'rgba(28,30,44,0.5)';
     g.fill(new Path2D(d));
   }
@@ -338,8 +369,9 @@ export function drawInfoLayer(cv: HTMLCanvasElement, lines: BoardLines, calib: B
   }
   s.globalCompositeOperation = 'destination-out';
   s.fillStyle = 'rgba(0,0,0,0.6)';
-  for (const sys of Object.values(calib?.systems ?? {})) {
-    if (!sys.disc) continue;
+  for (const [id, sys] of Object.entries(calib?.systems ?? {})) {
+    // A planet out of play is gone: its lines run on unbroken.
+    if (!sys.disc || out(id)) continue;
     s.beginPath();
     s.arc(sys.disc.x, sys.disc.y, sys.disc.r, 0, Math.PI * 2);
     s.fill();
@@ -370,35 +402,8 @@ export function drawInfoLayer(cv: HTMLCanvasElement, lines: BoardLines, calib: B
   g.fillStyle = `rgba(${INK_RGB},0.9)`;
   g.fill(art, 'evenodd');
 
-  // Systems out of play are gone: whatever was drawn over them is cleared to
-  // space, seams included (the mask spills over their edges, but never into a
-  // system still in play).
-  const gone = Object.entries(lines.sectors).filter(([id]) => out(id));
-  if (gone.length) {
-    const mask = document.createElement('canvas');
-    mask.width = cv.width;
-    mask.height = cv.height;
-    const m = mask.getContext('2d')!;
-    m.setTransform(k, 0, 0, k, 0, 0);
-    m.fillStyle = '#000';
-    m.strokeStyle = '#000';
-    m.lineWidth = 8;
-    m.lineJoin = 'round';
-    for (const [, d] of gone) {
-      const p = new Path2D(d);
-      m.fill(p);
-      m.stroke(p);
-    }
-    m.globalCompositeOperation = 'destination-out';
-    for (const [id, d] of Object.entries(lines.sectors)) if (!out(id)) m.fill(new Path2D(d));
-    g.save();
-    g.setTransform(1, 0, 0, 1, 0, 0);
-    g.globalCompositeOperation = 'destination-out';
-    g.drawImage(mask, 0, 0);
-    g.restore();
-  }
-
-  if (gone.length) jaggedEdges(g, lines, out);
+  // Systems out of play keep only these lines: no planet, number, symbol,
+  // slot, icon or colour is drawn over them below, so they read as empty space.
 
   // The map has no hard edge: its colours and lines fade out towards the
   // picture's borders. What players read or use (symbols, gate numbers, slots,
@@ -493,67 +498,6 @@ function pathPoints(d: string): [number, number][] {
   const pts: [number, number][] = [];
   for (let i = 0; i + 1 < n.length; i += 2) pts.push([n[i], n[i + 1]]);
   return pts;
-}
-
-/** Sides of a sector longer than this (picture pixels) are straight cuts, not traced cracks. */
-const STRAIGHT_SIDE = 70;
-/** A broken edge: a corner about every `step` pixels, bitten `min`..`max` pixels into the sector. */
-const JAG = { step: 24, min: 4, max: 20 } as const;
-
-/**
- * Where a system in play borders one out of play along a straight side, the
- * side is broken into a jagged edge (bitten into the system in play) and
- * inked like the board's cracks, so the map ends on a torn edge everywhere.
- */
-function jaggedEdges(g: CanvasRenderingContext2D, lines: BoardLines, out: (id: string) => boolean): void {
-  const probe = document.createElement('canvas').getContext('2d')!;
-  const gonePaths = Object.entries(lines.sectors).filter(([id]) => out(id)).map(([, d]) => new Path2D(d));
-  const inGone = (x: number, y: number) => gonePaths.some((p) => probe.isPointInPath(p, x, y));
-  for (const [id, d] of Object.entries(lines.sectors)) {
-    if (out(id)) continue;
-    const own = new Path2D(d);
-    const pts = pathPoints(d);
-    const rand = seeded(`edge:${id}`);
-    pts.forEach((a, i) => {
-      const b = pts[(i + 1) % pts.length];
-      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-      if (len < STRAIGHT_SIDE) return;
-      // The side's normal pointing into this sector.
-      let nx = -(b[1] - a[1]) / len;
-      let ny = (b[0] - a[0]) / len;
-      const mx = (a[0] + b[0]) / 2;
-      const my = (a[1] + b[1]) / 2;
-      if (!probe.isPointInPath(own, mx + nx * 4, my + ny * 4)) {
-        nx = -nx;
-        ny = -ny;
-      }
-      if (!inGone(mx - nx * 6, my - ny * 6)) return;
-      const n = Math.max(3, Math.round(len / JAG.step));
-      const jag: [number, number][] = [a];
-      for (let j = 1; j < n; j++) {
-        const t = (j + (rand() - 0.5) * 0.7) / n;
-        const bite = JAG.min + (JAG.max - JAG.min) * rand() * (j % 2 ? 1 : 0.45);
-        jag.push([a[0] + (b[0] - a[0]) * t + nx * bite, a[1] + (b[1] - a[1]) * t + ny * bite]);
-      }
-      jag.push(b);
-      const shape = new Path2D();
-      jag.forEach(([x, y], j) => (j ? shape.lineTo(x, y) : shape.moveTo(x, y)));
-      // Clear what lies between the straight side and the broken edge (a little beyond the side too).
-      const cut = new Path2D(shape);
-      cut.lineTo(b[0] - nx * 5, b[1] - ny * 5);
-      cut.lineTo(a[0] - nx * 5, a[1] - ny * 5);
-      cut.closePath();
-      g.save();
-      g.globalCompositeOperation = 'destination-out';
-      g.fill(cut);
-      g.restore();
-      g.strokeStyle = `rgba(${INK_RGB},0.9)`;
-      g.lineWidth = 2.4;
-      g.lineJoin = 'miter';
-      g.stroke(shape);
-    });
-  }
-  g.lineJoin = 'round';
 }
 
 /** Width of the fade at the map's borders, in picture pixels. */

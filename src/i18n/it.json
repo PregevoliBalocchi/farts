@@ -1,5 +1,9 @@
 {
   "play.preludeShort": "Preludio: tocca una tua risorsa per spenderla",
+  "play.cardActions": "Azioni della carta",
+  "play.toActions": "Passa alle azioni della carta",
+  "play.backToPrelude": "◀ Preludio",
+  "play.preludeHint2": "Prima di usare la carta: spendi risorse o usa poteri",
   "play.declareShort": "Dichiara",
   "amb.box": "Riquadro Ambizione (2 giocatori)",
   "amb.marker": "Segnalino: {first} al primo, {second} al secondo",
