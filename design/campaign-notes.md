@@ -672,7 +672,8 @@ States: 1 key gains the 1 resource; Act III grand-ambition values 2/4, 3/8,
 4/14, 5/20 confirmed.
 
 Still open:
-- Fate texts for sets 2–24 are in `PG/` (only fate-a-01 summarised).
+- ~~Fate texts~~: all 24 sets transcribed into `campaign.fateCards` (one entry per physical card; Setup/Objective is one two-sided card) (2026-11-24,
+  `tools/cards/install-fates.py`; see `design/campaign-plan.md` M0).
 - Owner's modified game board and player board: to be worked out with trials.
 - Action card art: the owner sent angled photos (12 of 28 cards); the UI will
   draw action cards from data instead (number, suit, pips, ambition icon).

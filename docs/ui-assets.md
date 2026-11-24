@@ -27,7 +27,7 @@ the kit changes, then commit the result.
 | Folder | What | Used for |
 |---|---|---|
 | `icon/` | resource and dice icons | resource icons everywhere in the interface (`icon.<name>`) |
-| `token/` | resource, ambition and initiative tokens | reserved for the panels |
+| `token/` | resource, ambition and initiative tokens; the campaign's Blight, First Regent, chapter track and Edenguard/Blightkin tiles (from the punchboard, below) | reserved for the panels |
 | `dice/` | dice faces | reserved for battles |
 | `piece/` | ships, agents, flagships, cities, starports per seat | the 3D pieces |
 | `cardkit/` | Guild frames per resource, the Vox paper, the Lore frame, the footer band, the key-cost tabs | Court and Lore cards drawn from the kit (`src/ui/table/cardface.ts`) |
@@ -158,8 +158,29 @@ campaign at a much higher resolution than the scans we had. Three tools in
 | Illustrations | `npm run assets:art` | `assets/cards/art/<id>.webp`, cut from the new pictures |
 | Avatars | `python tools/cards/cut-leaders.py` | `assets/cards/avatar/leader-nn.webp` (committed): each leader's character on a clear background. The seat boards draw it with no frame, rising out of the board's top edge (key `avatar.<card id>`) |
 
-The rest of the catalogue (setup cards, campaign Fates, rulebook pages, the
-site's FAQ) is not used by the game yet.
+The rest of the catalogue (setup cards, rulebook pages, the site's FAQ) is
+not used by the game yet.
+
+### Campaign Fate sets (2026-11-24)
+
+| Step | Command | Result |
+|---|---|---|
+| Transcribe | (by hand, from the pictures) | one JSON line per picture of the 24 Fate pages: kind, name, printed number, text, Crisis, resource, keys, objective target, grand ambitions |
+| Install | `python tools/cards/install-fates.py <transcription.jsonl> assets/cards/source/arcsfates` | `campaign.fates` and `campaign.fateCards` in `data/content.json`: one entry per physical card (342, one copy each, as many per set as its divider on the punchboard shows), id `fate-a-01-05`; a two-sided card keeps its other side in `back` (every Setup card has its Objective on the back; 51 two-sided cards). Each Fate also lists its card count and its pieces (count, and sides when two-sided). Pictures at `assets/cards/fates/<id>.jpg` and `<id>-back.jpg` (**local only**) |
+
+Steward card 15 is the corrected Navy Reprisal from the reference, not the
+Event misprinted on every physical copy (owner's decision, FAQ 7). Card texts
+may use `{obj}` (objective clock) and `{arrowhead}` / `{hexagon}` /
+`{crescent}` (planet ID symbols) besides `{key}`.
+
+### Campaign tokens from the punchboard
+
+`python tools/cards/punchboard-tokens.py` cuts the flat tiles the table uses
+for the campaign (owner's decision: tiles now, 3D models later) out of
+`docs/rules/Arcs_Campaign_Punchboard.pdf`: `token/blight`, `first-regent`,
+`chapter-1-2`, `ambition-edenguard`, `ambition-blightkin`. The PDF has front
+sides only (no damaged Blight, no Act III chapter side). Free cities and
+starports and the Imperial ship already come from the kit (`piece/`).
 
 
 ## 2D planets (cut from the board picture)
