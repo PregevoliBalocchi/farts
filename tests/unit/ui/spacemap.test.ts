@@ -126,6 +126,24 @@ describe('arrow between gates linked across a cluster out of play', () => {
     expect(Math.hypot(last[0] - gate('c4-gate').x, last[1] - gate('c4-gate').y)).toBeGreaterThan(30);
   });
 
+  it('never enters the spaces of the two gates it joins', () => {
+    const inZone = (d: string, x: number, y: number) => {
+      const n = d.match(/-?\d+(\.\d+)?/g)!.map(Number);
+      let hit = false;
+      for (let i = 0, j = n.length - 2; i < n.length; j = i, i += 2) {
+        const [xi, yi, xj, yj] = [n[i], n[i + 1], n[j], n[j + 1]];
+        if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+      }
+      return hit;
+    };
+    const pts = bridgeArc(lines, new Map([['c1-gate', false]]), 'c5-gate', 'c2-gate')!;
+    expect(pts.length).toBeGreaterThan(6);
+    for (const [x, y] of pts) {
+      expect(inZone(lines.sectors['c5-gate'], x, y)).toBe(false);
+      expect(inZone(lines.sectors['c2-gate'], x, y)).toBe(false);
+    }
+  });
+
   it('gives nothing for an unknown gate', () => {
     expect(bridgeArc(lines, new Map(), 'c2-gate', 'nowhere')).toBeNull();
   });

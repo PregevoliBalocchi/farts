@@ -46,8 +46,11 @@ test('leading a card and ending the turn passes play to the next seat', async ({
   await expect(page.locator('[data-region="actions"]')).toBeVisible();
   await page.getByRole('button', { name: 'Lead', exact: true }).click();
   expect(await phase(page)).toBe('actions');
-  // Then the actions of the led card, as buttons with their icons.
-  await expect(page.locator('[data-region="actions"] [data-act="kind"]').first()).toBeVisible();
+  // First the Prelude: the resources held, to spend before the card; then on to the card's actions.
+  await expect(page.locator('[data-region="actions"] [data-act="spend"]').first()).toBeVisible();
+  await page.getByRole('button', { name: "On to the card's actions" }).click();
+  // Then the actions of the led card, as one row of buttons with their icons.
+  await expect(page.locator('[data-region="actions"] .act-row [data-act="kind"]').first()).toBeVisible();
   await page.getByRole('button', { name: 'End turn' }).click();
   expect(await phase(page)).toBe('follow');
   expect(errors).toEqual([]);
@@ -70,6 +73,10 @@ test('hovering a rival band shows its hover card, with no window to close', asyn
   await page.locator('.board.rband').first().hover();
   await expect(page.locator('.hover-tip')).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  // The mouse can leave the band for the card itself: the card stays open.
+  await page.locator('.hover-tip').hover();
+  await page.waitForTimeout(600);
+  await expect(page.locator('.hover-tip')).toBeVisible();
 });
 
 test('hotseat covers the screen between players until the next one is ready', async ({ page }) => {

@@ -12,7 +12,7 @@ import { LANGS, pickLang, translator } from '../../i18n';
 import { messageTranslator } from '../../i18n/messages';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
-import { assetUrl, cardArt, icon, seatColor, seatIcon, setSeatColors } from './assets';
+import { assetUrl, cardArt, cardCut, icon, seatColor, seatIcon, setSeatColors } from './assets';
 import { cardFaceById, cardWords, courtCardFace, faceOf, fitCardText, hasKitFace, setFaceSource } from './cardface';
 import { loadCardFonts } from './cardfonts';
 import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceKey, facePicture, hitsLeft } from './battle';
@@ -36,7 +36,7 @@ import type { Intent, MoveIntent } from './intent';
 import { place, REGIONS, setStage, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  actionCard, button, cardLabel, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, preludeTab, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon,
+  actionCard, button, cardLabel, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, preludeTab, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon,
 } from './render';
 import { legal, othersTurn, tableView, whyNot } from './view';
 import type { TableView } from './view';
@@ -49,6 +49,8 @@ type Drop = 'log' | 'help' | 'piles';
 
 /** Lines of the log the drop-down shows (the latest; it fits under the header with no scroll bar). */
 const LOG_LINES = 14;
+/** How long a hover card waits before closing once the mouse leaves what it is about (time to reach the card). */
+const TIP_LINGER_MS = 260;
 
 /** Handle returned to main.ts (and window.game for automated checks). */
 export interface TableHandle {
@@ -163,6 +165,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let courtSort: CourtSort = 'got';
   /** The own Court opened leftwards over the bar, to see all of it. */
   let mineOpen = false;
+  /** The turn (see turnKey) whose Prelude the local player closed to take the card's actions. */
+  let preludeLeft = '';
   try {
     controlLayer = localStorage.getItem('arcs.controlLayer') === '1';
     flatPlanets = localStorage.getItem('arcs.planets2d') === '1';
@@ -232,7 +236,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         picture: params.get('map') === 'picture',
         showSpots: params.get('debug') === 'spots',
         onPick: (id, shipOf) => pickSystem(id, shipOf),
-        onHover: (id, x, y) => (id ? showTip(`sys:${id}`, { x, y }) : hideTip()),
+        onHover: (id, x, y) => (id ? showTip(`sys:${id}`, { x, y }) : hideTipSoon()),
         onView: () => placeMenu(),
         ...(calibrating
           ? {
@@ -508,6 +512,98 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         return button('kind', t(`action.${k}`), { args: { kind: k, ...(prelude ? { prelude } : {}) }, cls: 'kind-btn', disabled: !enabled || !!why, html, title: why ?? t(`action.${k}`) });
       })
       .join('');
+  }
+
+  /** Who is taking actions with which card this round: a Prelude closed on one turn stays open on the next. */
+  function turnKey(v: TableView): string {
+    return `${state.chapter}|${v.active}|${v.plays.map((p) => p.card?.card ?? '-').join(',')}`;
+  }
+
+  /** What the local player can do in the Prelude now: each resource type held (once), and the card powers. */
+  function preludeChoices(v: TableView): { resources: { resource: Resource; slot: number; count: number; why: string | null }[]; powers: { card: string; ability: string }[] } {
+    const me = local();
+    const byType = new Map<Resource, { resource: Resource; slot: number; count: number; why: string | null }>();
+    for (const s of v.players[me].slots) {
+      if (!s.resource || s.locked) continue;
+      const have = byType.get(s.resource);
+      if (have) have.count++;
+      else byType.set(s.resource, { resource: s.resource, slot: s.index, count: 1, why: spendReason(v, s.resource) });
+    }
+    const seen = new Set<string>();
+    const powers = powersNow()
+      .filter((o) => o.kind === 'prelude')
+      .filter((o) => !seen.has(`${o.card}|${o.ability}`) && !!seen.add(`${o.card}|${o.ability}`))
+      .map((o) => ({ card: o.card, ability: o.ability }));
+    return { resources: [...byType.values()], powers };
+  }
+
+  /** Why a resource cannot be spent in the Prelude now (null: it can). */
+  function spendReason(v: TableView, r: Resource): string | null {
+    const me = local();
+    const rule = content.resourceActions[r];
+    if ('grantKind' in rule) {
+      const w = whyNot(ix, state, { type: 'prelude', player: me, resource: r });
+      return w === null ? null : say(w);
+    }
+    const kinds = 'actions' in rule ? rule.actions : (v.lead?.kinds ?? []);
+    const reasons = kinds.map((k) => kindReason(v, k, r));
+    return reasons.some((x) => x === null) ? null : (reasons[0] ?? t('prelude.state.none'));
+  }
+
+  /** A power's name as the card prints it (its id when there is no text for it). */
+  function powerName(ability: string): string {
+    const s = t(`power.${ability}`);
+    return s === `power.${ability}` ? ability : s;
+  }
+
+  /** The Prelude box: every resource that can be spent and every card power usable now, then on to the card's actions. */
+  function preludeBox(stars: string, pre: ReturnType<typeof preludeChoices>): string {
+    const res = pre.resources
+      .map((x) => {
+        const html = `<span class="pb-ic">${resIcon(x.resource, t)}${x.count > 1 ? `<b class="num">×${x.count}</b>` : ''}</span><span class="kb-name">${esc(t(`resource.${x.resource}`))}</span><span class="kb-why">${esc(x.why ?? t(`prelude.act.${x.resource}`))}</span>`;
+        return button('spend', t(`resource.${x.resource}`), { args: { slot: x.slot }, cls: 'kind-btn pre-btn', disabled: !!x.why, html, title: x.why ?? `${t(`resource.${x.resource}`)}: ${t(`prelude.act.${x.resource}`)}` });
+      })
+      .join('');
+    const powers = pre.powers
+      .map((p) => {
+        const art = cardCut(p.card) ?? cardArt(p.card);
+        const pic = art ? `<span class="pb-card"><img src="${esc(art)}" alt=""></span>` : icon('court');
+        const html = `<span class="pb-ic">${pic}</span><span class="kb-name">${esc(cardName(p.card))}</span><span class="kb-why">${esc(powerName(p.ability))}</span>`;
+        return `<button type="button" class="btn kind-btn pre-btn card" data-act="power-card" data-card="${esc(p.card)}" data-ability="${esc(p.ability)}" data-zoom="${esc(p.card)}" title="${esc(powerName(p.ability))}">${html}</button>`;
+      })
+      .join('');
+    const n = pre.resources.length + pre.powers.length;
+    return `<div class="ctx-head">${stars}<span class="ctx-title">${esc(t('prelude.row'))}</span><span class="hint small">${esc(t('play.preludeHint2'))}</span></div>
+      <div class="act-row pre-grid" style="--n:${Math.min(n, 4)}">${res}${powers}</div>
+      <div class="btn-grid one">${button('to-actions', t('play.toActions'), { cls: 'primary' })}</div>`;
+  }
+
+  /**
+   * The actions as one row of equal buttons; under each, the card actions
+   * that can be taken in its place (lit when usable now).
+   */
+  function kindRow(v: TableView, kinds: ActionKind[], prelude: Resource | undefined, variants: boolean): string {
+    const usable = new Set(variants ? powersNow().filter((o) => o.kind === 'action').map((o) => `${o.card}|${o.ability}`) : []);
+    const mine = variants ? cardActions() : [];
+    const cols = kinds
+      .map((k) => {
+        const extra = mine
+          .filter((x) => x.as === k)
+          .map((x) => {
+            const lit = usable.has(`${x.card}|${x.name}`);
+            return `<button type="button" class="btn variant${lit ? ' lit' : ''}" data-act="power-card" data-card="${esc(x.card)}" data-ability="${esc(x.name)}" data-zoom="${esc(x.card)}" title="${esc(`${cardName(x.card)}: ${powerName(x.name)}`)}"${lit ? '' : ' disabled'}>${esc(powerName(x.name))}</button>`;
+          })
+          .join('');
+        return `<div class="act-col">${kindButtons(v, [k], prelude, true)}${extra}</div>`;
+      })
+      .join('');
+    return `<div class="act-row" style="--n:${kinds.length}">${cols}</div>`;
+  }
+
+  /** The local player's card actions ("Name (Kind)"), with the action they stand for. */
+  function cardActions(): { card: string; name: string; as: ActionKind }[] {
+    const pl = state.players[local()];
+    return [...pl.court, ...pl.lore, ...(pl.leader ? [pl.leader] : [])].flatMap((card) => Object.entries(effectOf(ix, card)?.actions ?? {}).map(([name, a]) => ({ card, name, as: a.as })));
   }
 
   /** One thing the map menu offers: a piece picture, a label, and the command (or why it cannot be done). */
@@ -957,14 +1053,17 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           return `<div class="ctx-head"><span class="ctx-title">${esc(t('play.actionsDone'))}</span></div>
             <div class="btn-grid one">${button('end-turn', t('play.endTurn'), { cls: 'primary end-big', disabled: !can({ type: 'endTurn', player: me }) })}</div>`;
         }
-        // Actions left as stars; the suit's actions as buttons; prelude by clicking a resource on the board.
+        // Actions left as stars. First the Prelude (resources to spend, card powers), then the card's actions.
         const stars = `<span class="ctx-pips" title="${esc(prompt(v))}">${Array.from({ length: b.remaining }, () => icon('pip')).join('')}</span>`;
-        const prelude = b.preludeOpen && v.players[me].slots.some((s) => s.resource && !s.locked) ? `<div class="hint small">${esc(t('play.preludeShort'))}</div>` : '';
-        // Ending the turn is the confirm button in the bottom-right corner; card powers are the lit row under the buttons.
-        return `<div class="ctx-head">${stars}${prelude}</div><div class="btn-grid kind-row">${kindButtons(v, b.kinds, undefined, b.remaining > 0)}</div>`;
+        const pre = preludeChoices(v);
+        const inPrelude = b.preludeOpen && (pre.resources.length > 0 || pre.powers.length > 0);
+        if (inPrelude && preludeLeft !== turnKey(v)) return preludeBox(stars, pre);
+        const back = inPrelude ? button('to-prelude', t('play.backToPrelude'), { cls: 'link' }) : '';
+        // Ending the turn is the confirm button in the bottom-right corner.
+        return `<div class="ctx-head">${stars}<span class="ctx-title">${esc(t('play.cardActions'))}</span>${back}</div>${kindRow(v, b.kinds, undefined, true)}`;
       }
       case 'choose':
-        return `<div class="ctx-head"><span class="ctx-title">${esc(t('play.preludeWith', { res: t(`resource.${i.prelude}`) }))}</span></div><div class="btn-grid kind-row">${kindButtons(v, i.kinds, i.prelude, true)}${cancel}</div>`;
+        return `<div class="ctx-head"><span class="ctx-title">${esc(t('play.preludeWith', { res: t(`resource.${i.prelude}`) }))}</span></div>${kindRow(v, i.kinds, i.prelude, false)}<div class="btn-grid one">${cancel}</div>`;
       case 'system':
       case 'from':
       case 'to':
@@ -1231,7 +1330,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="region mine${mineOpen ? ' open' : ''}" data-region="mine" style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 26, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen)}</div>
       <div class="region hand" data-region="hand" style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>
       <div class="region confirm" data-region="confirm" style="${place(REGIONS.confirm)}">${turnButtons}</div>
-      ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div>${preludeTab(preludes, t, true)}</div>` : ''}
+      ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div>${v.phase === 'actions' ? '' : preludeTab(preludes, t, true)}</div>` : ''}
       <div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>
       ${modalHtml(v)}
       ${dropHtml()}
@@ -1375,6 +1474,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         intent = IDLE;
         sysMenu = null;
         break;
+      case 'to-actions':
+        preludeLeft = turnKey(v);
+        break;
+      case 'to-prelude':
+        preludeLeft = '';
+        break;
       case 'menu-close':
         sysMenu = null;
         if (intent.step === 'system') intent = IDLE;
@@ -1452,7 +1557,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         return;
       case 'power-card': {
         // A lit card: its one use at once, or its choices beside it.
-        const options = powersNow().filter((o) => o.card === d.card);
+        const options = powersNow().filter((o) => o.card === d.card && (!d.ability || o.ability === d.ability));
         if (options.length === 1) return void send(options[0].cmd);
         powerMenu = options.length ? { card: d.card!, options } : null;
         break;
@@ -1652,6 +1757,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (!tip || !target) return;
     // Nothing over an open menu, window or drop-down.
     if (sysMenu || modal || drop || powerMenu) return hideTip();
+    clearTimeout(tipTimer);
     const key = `${raw}|${state.log.length}`;
     if (tip.dataset.key !== key) {
       const html = tipHtml(ix, withSay(tableView(ix, state, local(), lang)), target, t);
@@ -1674,8 +1780,18 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     tip.style.top = `${Math.max(8, Math.min(STAGE.h - th - 8, y + (r.height / scale) / 2 - th / 2))}px`;
   }
   function hideTip(): void {
+    clearTimeout(tipTimer);
     const tip = stage.querySelector<HTMLElement>('.hover-tip');
     if (tip) tip.hidden = true;
+  }
+  /**
+   * Hides the hover card after a moment, so the mouse can cross the gap onto
+   * it: pointing at the card itself keeps it open (and readable, its cards zoomable).
+   */
+  let tipTimer = 0;
+  function hideTipSoon(): void {
+    clearTimeout(tipTimer);
+    tipTimer = window.setTimeout(hideTip, TIP_LINGER_MS);
   }
   const tipTarget = (e: Event) => {
     const el = e.target as Element;
@@ -1683,9 +1799,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     return el.closest('[data-zoom]') ? null : el.closest<HTMLElement>('[data-tip]');
   };
   stage.addEventListener('mouseover', (e) => {
+    // On the open card itself: it stays, whatever is inside it.
+    if ((e.target as Element).closest('.hover-tip')) return void clearTimeout(tipTimer);
     const el = tipTarget(e);
     if (el) showTip(el.dataset.tip!, el);
-    else if (!(e.target as Element).closest('canvas')) hideTip();
+    else if (!(e.target as Element).closest('canvas')) hideTipSoon();
   });
   stage.addEventListener('focusin', (e) => {
     const el = tipTarget(e);

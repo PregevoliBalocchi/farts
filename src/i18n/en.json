@@ -1,5 +1,9 @@
 {
   "play.preludeShort": "Prelude: tap one of your resources to spend it",
+  "play.cardActions": "The card's actions",
+  "play.toActions": "On to the card's actions",
+  "play.backToPrelude": "◀ Prelude",
+  "play.preludeHint2": "Before using the card: spend resources or use powers",
   "play.declareShort": "Declare",
   "amb.box": "Ambition box (2 players)",
   "amb.marker": "Marker: {first} to first, {second} to second",
