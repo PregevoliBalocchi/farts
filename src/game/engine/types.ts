@@ -432,8 +432,14 @@ export interface GameState {
   initiative: PlayerId;
   players: PlayerState[];
   deck: string[];
+  /** Action discard pile, bottom first (the last card is the top). */
   discard: string[];
+  /** Action cards in the discard that went there face down (copied, seized with, discarded hands): card -> who put it there. Only they may look at it. */
+  discardHidden?: Record<string, PlayerId>;
   courtDeck: string[];
+  /** Cards put in the Court deck in secret (campaign): nobody may see they are there. */
+  courtDeckSecret?: string[];
+  /** Court discard pile, bottom first. */
   courtDiscard: string[];
   court: CourtSlot[];
   map: Record<string, SystemState>;

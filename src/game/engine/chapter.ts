@@ -20,7 +20,7 @@ import type { DeclareGift } from './declare';
 import { HANDLERS } from './actions';
 import type { MovePayload } from './actions';
 import { effectOf, hasPassive, isDeclared, ownedEffects } from './effects';
-import { cartelSupply } from './ops';
+import { cartelSupply, toDiscard } from './ops';
 import type { ActionPayload, ActionResult, Allocation } from './actions';
 import { shuffle } from './rng';
 import { gainFromSupply, onCityReturned, returnToSupply, takeResourceAt } from './board';
@@ -103,7 +103,7 @@ function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
   if (cmd.type === 'mulligan') {
     if (s.mulligan !== cmd.player) err(`P${cmd.player} cannot redraw`);
     const p = s.players[cmd.player];
-    s.discard.push(...p.hand);
+    toDiscard(s, p.hand, p.id);
     p.hand = s.deck.splice(0, ix.content.handSize);
     s.mulligan = null;
     log(s, `P${cmd.player} discards the starting hand and draws a new one`);
@@ -188,7 +188,7 @@ function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
         if (cmd.seizeWith === cmd.card) err('Seize with a different card');
         card(ix, p.hand, cmd.seizeWith);
         removeFromHand(p.hand, cmd.seizeWith);
-        s.discard.push(cmd.seizeWith);
+        toDiscard(s, [cmd.seizeWith], p.id);
         s.round.seizedBy = p.id;
         log(s, `P${p.id} seizes the initiative`);
       }
@@ -461,7 +461,7 @@ function endRound(ix: ContentIndex, s: GameState): void {
     taken.add(a.actionCard);
     log(s, `P${a.owner} takes ${a.actionCard} into hand (${a.guild})`);
   }
-  for (const pl of s.round.plays) if (pl.card && !taken.has(pl.card)) s.discard.push(pl.card);
+  for (const pl of s.round.plays) if (pl.card && !taken.has(pl.card)) toDiscard(s, [pl.card], pl.faceUp ? undefined : pl.player);
   log(s, `Round ends; initiative to P${s.initiative}`);
   resetRound(s);
   if (s.players[s.initiative].hand.length === 0) passInitiative(ix, s, s.initiative);
@@ -513,7 +513,7 @@ export function endChapter(ix: ContentIndex, s: GameState): void {
   afterScoring(ix, s);
   cleanUp(ix, s);
   for (const p of s.players) {
-    s.discard.push(...p.hand);
+    toDiscard(s, p.hand, p.id);
     p.hand = [];
   }
   s.ambitions = emptyAmbitionBoard(c, s.chapter + 1);
@@ -600,6 +600,7 @@ export function startChapter(ix: ContentIndex, s: GameState): void {
   s.ambitions = emptyAmbitionBoard(c, s.chapter);
   s.deck = shuffle(s, [...s.deck, ...s.discard]);
   s.discard = [];
+  delete s.discardHidden;
   for (const p of s.players) {
     if (s.deck.length < c.handSize) throw new Error('Deck too small to deal');
     p.hand = s.deck.splice(0, c.handSize);

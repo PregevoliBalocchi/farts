@@ -125,6 +125,19 @@ export interface CourtCardView {
   agents: { player: PlayerId; count: number }[];
 }
 
+/**
+ * The decks and discard piles as the local seat may see them: discards top
+ * first; a card discarded face down shows only to whoever discarded it; the
+ * Court deck's contents in a fixed order (never its real one), without the
+ * cards put in it in secret.
+ */
+export interface PilesView {
+  discard: { card: ActionCardView | null; faceDown: boolean }[];
+  courtDiscard: string[];
+  courtDeck: string[];
+  courtDeckSecret: number;
+}
+
 /** A system on the map, with its pieces. */
 export interface SystemView {
   id: string;
@@ -164,6 +177,8 @@ export interface TableView {
   markersLeft: { id: string; first: number; second: number }[];
   court: CourtCardView[];
   courtDeck: number;
+  /** What the local seat may look at in the decks and discard piles. */
+  piles: PilesView;
   hand: HandCardView[];
   /** The local player's turn budget, when they are taking actions. */
   budget: { remaining: number; kinds: ActionKind[]; preludeOpen: boolean } | null;
@@ -205,6 +220,23 @@ function actionCard(ix: ContentIndex, id: string): ActionCardView | null {
   const d = ix.actionCards.get(id);
   if (!d) return null;
   return { card: id, suit: d.suit, number: d.number, pips: d.pips, kinds: ix.content.suits[d.suit] ?? [] };
+}
+
+/** See `PilesView`. */
+export function pilesView(ix: ContentIndex, s: GameState, local: PlayerId, lang = 'en'): PilesView {
+  const hidden = s.discardHidden ?? {};
+  const secret = new Set(s.courtDeckSecret ?? []);
+  const name = (id: string) => cardWords(ix.courtCards.get(id), lang).name ?? id;
+  return {
+    discard: [...s.discard].reverse().map((id) => {
+      const by = hidden[id];
+      const faceDown = by !== undefined;
+      return { card: !faceDown || by === local ? actionCard(ix, id) : null, faceDown };
+    }),
+    courtDiscard: [...s.courtDiscard].reverse(),
+    courtDeck: s.courtDeck.filter((id) => !secret.has(id)).sort((a, b) => name(a).localeCompare(name(b)) || a.localeCompare(b)),
+    courtDeckSecret: s.courtDeck.filter((id) => secret.has(id)).length,
+  };
 }
 
 function playerView(ix: ContentIndex, s: GameState, id: PlayerId): PlayerView {
@@ -357,6 +389,7 @@ export function tableView(ix: ContentIndex, s: GameState, local: PlayerId, lang 
       };
     }),
     courtDeck: s.courtDeck.length,
+    piles: pilesView(ix, s, local, lang),
     hand: s.players[local].hand
       .map((id) => actionCard(ix, id))
       .filter((x): x is ActionCardView => x !== null)
