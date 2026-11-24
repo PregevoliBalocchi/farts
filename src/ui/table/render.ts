@@ -146,7 +146,10 @@ function stats(p: PlayerView, t: Translate, cities: boolean): string {
 
 /** Captives and trophies, one under the other. */
 function spoils(p: PlayerView, t: Translate): string {
-  return `<div class="spoils"><span class="st" title="${esc(t('stat.captives'))}">${icon('ambCaptives', '', t('stat.captives'))}<b class="num">${p.stats.captives}</b></span><span class="st" title="${esc(t('stat.trophies'))}">${icon('ambTrophies', '', t('stat.trophies'))}<b class="num">${p.stats.trophies}</b></span></div>`;
+  // Two blocks, each its icon, name and count; pointing at one shows whose pieces they are.
+  const block = (what: 'trophies' | 'captives', glyph: IconName, n: number) =>
+    `<span class="sp-block sp-${what}${n ? '' : ' none'}" data-tip="spoils:${p.id}-${what}" tabindex="0">${icon(glyph, '', t(`stat.${what}`))}<span class="sp-name">${esc(t(`stat.${what}`))}</span><b class="num">${n}</b></span>`;
+  return `<div class="spoils">${block('trophies', 'ambTrophies', p.stats.trophies)}${block('captives', 'ambCaptives', p.stats.captives)}</div>`;
 }
 
 /** The name bar under a seat board: seat shape, name, initiative, and power in a laurel ring. */
@@ -421,9 +424,9 @@ export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data
   const w = OWN_CARD_W;
   const fit = cards.length > 1 ? Math.min(8, Math.floor((width - cards.length * w) / (cards.length - 1))) : 0;
   const gap = open ? 8 : fit;
-  // The arrow that opens the whole Court leftwards, shown when the cards overlap (or it is open).
-  const toggle = open || fit < 8
-    ? `<button type="button" class="mine-open" data-act="mine-open" aria-expanded="${open}" title="${esc(t(open ? 'mine.collapse' : 'mine.expand'))}">${open ? '&#x25B6;' : '&#x25C0;'}</button>`
+  // The long bar on the left edge that opens the whole Court leftwards (or closes it), when there are cards.
+  const toggle = cards.length
+    ? `<button type="button" class="mine-open" data-act="mine-open" aria-expanded="${open}" title="${esc(t(open ? 'mine.collapse' : 'mine.expand'))}" aria-label="${esc(t(open ? 'mine.collapse' : 'mine.expand'))}">${open ? '&#x25B6;' : '&#x25C0;'}</button>`
     : '';
   const sorts = COURT_SORTS.map((k) => `<button type="button" class="cs-btn${k === sort ? ' on' : ''}" data-act="court-sort" data-sort="${k}" aria-pressed="${k === sort}">${esc(t(`mine.sort.${k}`))}</button>`).join('');
   // A card whose power can be used now glows and uses it on a click.
@@ -434,7 +437,7 @@ export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data
         : `<div class="mine-card k-${esc(c.kind ?? 'none')}" data-zoom="${esc(c.card)}" tabindex="0">${cardFaceById(c.card)}</div>`,
     )
     .join('');
-  return `<div class="mine-head">${toggle}<span class="mine-title">${esc(t('mine.title'))}</span><span class="mine-n num">${cards.length}</span>${sorts}</div>
+  return `${toggle}<div class="mine-head" aria-label="${esc(t('mine.title'))}">${sorts}</div>
     <div class="mine-cards" style="--w:${w}px;--gap:${gap}px">${faces || `<span class="mine-empty">${esc(t('mine.empty'))}</span>`}</div>`;
 }
 
@@ -537,8 +540,8 @@ const AMB_RULE: Record<string, string> = { captives: 'amb.rule.captives', trophi
 
 /** An ambition marker as the kit's token (its side by its values), else the drawn hexagon. */
 function ambMarker(m: { id: string; first: number; second: number }, t: Translate): string {
-  const side = m.first >= 4 ? 'back' : 'front';
-  const url = assetUrl(`token.ambition-${side}-${m.first}-${m.second}`);
+  // Each side has its own values (front 5/3, 3/2, 2/0; back 9/4, 6/3, 4/2): use the picture that shows them.
+  const url = assetUrl(`token.ambition-front-${m.first}-${m.second}`) ?? assetUrl(`token.ambition-back-${m.first}-${m.second}`);
   return url ? `<img class="amk" src="${esc(url)}" alt="${esc(t('amb.marker', { first: m.first, second: m.second }))}" title="${esc(t('amb.marker', { first: m.first, second: m.second }))}">` : hexMarker(m, t);
 }
 

@@ -30,4 +30,27 @@ describe('resource hover card', () => {
     const v = tableView(ix, s, 0);
     expect(tipHtml(ix, v, { kind: 'resource', player: 0, resource: 'fuel' }, t)).toContain('prelude.state.none');
   });
+
+  it('reads a trophies or captives target', () => {
+    expect(parseTip('spoils:1-trophies')).toEqual({ kind: 'spoils', player: 1, what: 'trophies' });
+    expect(parseTip('spoils:1-loot')).toBeNull();
+  });
+
+  it('lists the captives of a seat by whose agents they are, and says nobody when there are none', () => {
+    const s = game(ix, 3, 7, 0);
+    s.players[1].captives = [0, 2, 2];
+    const v = tableView(ix, s, 0);
+    const html = tipHtml(ix, v, { kind: 'spoils', player: 1, what: 'captives' }, t) ?? '';
+    expect(html).toContain('stat.captives');
+    expect(html.split('class="tip-row"').length - 1).toBe(2);
+    expect(tipHtml(ix, v, { kind: 'spoils', player: 1, what: 'trophies' }, t)).toContain('detail.nobody');
+  });
+
+  it('shows the board of a rival without repeating trophies, captives and cards under it', () => {
+    const v = tableView(ix, game(ix, 3, 7, 0), 0);
+    const html = tipHtml(ix, v, { kind: 'seat', player: 1 }, t) ?? '';
+    expect(html).toContain('data-tip="spoils:1-trophies"');
+    expect(html).not.toContain('tip-cards');
+    expect(html).not.toContain('class="tip-row"');
+  });
 });

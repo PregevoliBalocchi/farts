@@ -71,12 +71,12 @@ test('the settings window and the log drop-down open and close with Escape', asy
 test('hovering a rival band shows its hover card, with no window to close', async ({ page }) => {
   await open(page);
   await page.locator('.board.rband').first().hover();
-  await expect(page.locator('.hover-tip')).toBeVisible();
+  await expect(page.locator('.hover-tip:not(.hover-sub)')).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   // The mouse can leave the band for the card itself: the card stays open.
-  await page.locator('.hover-tip').hover();
+  await page.locator('.hover-tip:not(.hover-sub)').hover();
   await page.waitForTimeout(600);
-  await expect(page.locator('.hover-tip')).toBeVisible();
+  await expect(page.locator('.hover-tip:not(.hover-sub)')).toBeVisible();
 });
 
 test('hotseat covers the screen between players until the next one is ready', async ({ page }) => {

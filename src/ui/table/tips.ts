@@ -7,12 +7,11 @@ import { RESOURCES } from '../../game/engine';
 import type { ContentIndex, Resource } from '../../game/engine';
 import type { Translate } from '../../i18n';
 import { icon, seatColor, seatIcon } from './assets';
-import { cardFaceById } from './cardface';
 import { esc, pieceIcon, playerName, resIcon, systemTag, seatBoardCard } from './render';
 import type { AmbitionRowView, PlayerView, SystemView, TableView } from './view';
 
 /** What a hover card is about: a seat, a map system or an ambition. */
-export type TipTarget = { kind: 'seat'; player: number } | { kind: 'system'; id: string } | { kind: 'ambition'; id: string } | { kind: 'resource'; player: number; resource: Resource };
+export type TipTarget = { kind: 'seat'; player: number } | { kind: 'system'; id: string } | { kind: 'ambition'; id: string } | { kind: 'resource'; player: number; resource: Resource } | { kind: 'spoils'; player: number; what: 'trophies' | 'captives' };
 
 /** Reads a `data-tip` value ("seat:1", "sys:c2-p1", "amb:tyrant"), or null when it is not one. */
 export function parseTip(raw: string | undefined): TipTarget | null {
@@ -21,6 +20,8 @@ export function parseTip(raw: string | undefined): TipTarget | null {
   if (k === 'seat' && /^\d+$/.test(id)) return { kind: 'seat', player: Number(id) };
   if (k === 'sys') return { kind: 'system', id };
   if (k === 'amb') return { kind: 'ambition', id };
+  const sp = k === 'spoils' ? /^(\d+)-(trophies|captives)$/.exec(id) : null;
+  if (sp) return { kind: 'spoils', player: Number(sp[1]), what: sp[2] as 'trophies' | 'captives' };
   const res = k === 'res' ? /^(\d+)-([a-z]+)$/.exec(id) : null;
   if (res && (RESOURCES as readonly string[]).includes(res[2])) return { kind: 'resource', player: Number(res[1]), resource: res[2] as Resource };
   return null;
@@ -46,23 +47,24 @@ function countBy<T>(items: readonly T[]): Map<T, number> {
   return m;
 }
 
-/** A rival: what their board does not show (trophies and captives by owner, every card they hold). */
+/** A rival: their whole board (trophies and captives show whose they are when pointed at). */
 function seatTip(p: PlayerView, t: Translate): string {
-  const none = `<span class="tip-none">${esc(t('detail.nobody'))}</span>`;
-  const trophies = [...countBy(p.trophies.map((x) => `${x.owner}|${x.piece}`))]
-    .map(([k, n]) => {
-      const [owner, piece] = k.split('|');
-      return pieces(piece as Piece, Number(owner), n);
-    })
-    .join('');
-  const captives = [...countBy(p.captives)].map(([o, n]) => pieces('agent', o, n)).join('');
-  const cards = [...p.court, ...p.lore];
-  const faces = cards.map((c) => `<span class="tip-card">${cardFaceById(c)}</span>`).join('');
   return `<div class="tip-head">${seatTag(t, p.id)}</div>
-    ${seatBoardCard(p, t)}
-    ${line(t('stat.trophies'), trophies || none)}
-    ${line(t('stat.captives'), captives || none)}
-    ${cards.length ? `<div class="tip-cards">${faces}</div>` : ''}`;
+    ${seatBoardCard(p, t)}`;
+}
+
+/** A seat's trophies or captives: the pieces, grouped by whose they were. */
+function spoilsTip(p: PlayerView, what: 'trophies' | 'captives', t: Translate): string {
+  const groups =
+    what === 'trophies'
+      ? [...countBy(p.trophies.map((x) => `${x.owner}|${x.piece}`))].map(([k, n]) => {
+          const [owner, piece] = k.split('|');
+          return { owner: Number(owner), html: pieces(piece as Piece, Number(owner), n) };
+        })
+      : [...countBy(p.captives)].map(([o, n]) => ({ owner: o, html: pieces('agent', o, n) }));
+  const rows = groups.map((g) => line(playerName(t, g.owner), g.html)).join('');
+  return `<div class="tip-head"><span class="tip-title">${esc(t(`stat.${what}`))}</span> ${seatTag(t, p.id)}</div>
+    ${rows || `<span class="tip-none">${esc(t('detail.nobody'))}</span>`}`;
 }
 
 /** A map system: who rules it and every piece in it. */
@@ -127,6 +129,10 @@ export function tipHtml(ix: ContentIndex, v: TableView, d: TipTarget, t: Transla
     case 'resource': {
       const p = v.players[d.player];
       return p ? resourceTip(v, p, d.resource, t) : null;
+    }
+    case 'spoils': {
+      const p = v.players[d.player];
+      return p ? spoilsTip(p, d.what, t) : null;
     }
   }
 }

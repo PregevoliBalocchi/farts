@@ -98,12 +98,15 @@ describe('own Court panel', () => {
     expect(ownCourtPanel({ ...p, court: [], lore: [] }, t, 'got', data, 400)).toContain('mine-empty');
   });
 
-  it('offers the arrow that opens the Court only when the cards overlap, and lays them side by side once open', () => {
+  it('draws the bar that opens the Court whenever it holds cards, lays them side by side once open, and has no title', () => {
     const v = tableView(ix, game(ix, 3, 7, 0), 0);
     const data = (id: string) => ({ card: id, kind: 'guild', resource: null, keys: 0, name: id, text: '' });
     const few = { ...v.players[0], court: ['a', 'b'], lore: [] };
     const many = { ...v.players[0], court: 'abcdefghij'.split(''), lore: [] };
-    expect(ownCourtPanel(few, t, 'got', data, 454)).not.toContain('data-act="mine-open"');
+    const none = { ...v.players[0], court: [], lore: [] };
+    expect(ownCourtPanel(none, t, 'got', data, 454)).not.toContain('data-act="mine-open"');
+    expect(ownCourtPanel(few, t, 'got', data, 454)).toContain('data-act="mine-open"');
+    expect(ownCourtPanel(few, t, 'got', data, 454)).not.toContain('mine-title');
     expect(ownCourtPanel(many, t, 'got', data, 454)).toContain('data-act="mine-open" aria-expanded="false"');
     const open = ownCourtPanel(many, t, 'got', data, 454, new Set(), true);
     expect(open).toContain('aria-expanded="true"');

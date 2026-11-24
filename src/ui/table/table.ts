@@ -42,7 +42,7 @@ import { legal, othersTurn, tableView, whyNot } from './view';
 import type { TableView } from './view';
 
 /** The windows that still dim the table: the settings and a card's choice. */
-type Modal = { type: 'settings' } | { type: 'decide'; options: DecisionOption[]; chosen?: string[] };
+type Modal = { type: 'settings' } | { type: 'confirm-pass' } | { type: 'decide'; options: DecisionOption[]; chosen?: string[] };
 
 /** A drop-down under its header button: the log or the map help. */
 type Drop = 'log' | 'help' | 'piles';
@@ -80,6 +80,8 @@ export interface TableOnline {
   commit: (next: GameState, cmd?: Command) => Promise<void>;
   /** The seats' names and colours (a colour index 0-3 per seat), as chosen when the game was created. */
   seats?: { names?: string[]; colors?: number[] };
+  /** Where "Leave the game" in the settings window goes (the lobby), and the line about this game shown above it. */
+  exit?: { href: string; about: () => string };
 }
 
 /** Mounts the table into `root`. */
@@ -238,7 +240,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         picture: params.get('map') === 'picture',
         showSpots: params.get('debug') === 'spots',
         onPick: (id, shipOf) => pickSystem(id, shipOf),
-        onHover: (id, x, y) => (id ? showTip(`sys:${id}`, { x, y }) : hideTipSoon()),
+        // Leaving a system closes only a system's card (not one the mouse just opened elsewhere).
+        onHover: (id, x, y) => (id ? showTip(`sys:${id}`, { x, y }) : stage.querySelector<HTMLElement>('.hover-tip')?.dataset.key?.startsWith('sys:') && hideTipSoon()),
         onView: () => placeMenu(),
         ...(calibrating
           ? {
@@ -1217,6 +1220,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     el.style.top = `${Math.max(8, y - el.offsetHeight - 12)}px`;
   }
 
+  /** The settings window's last line: this game, and the way out to the lobby (games opened from it only). */
+  function exitRow(): string {
+    const exit = online?.exit;
+    if (!exit) return '';
+    return `<div class="set-exit"><span class="hint small">${esc(exit.about())}</span><a class="btn" href="${esc(exit.href)}">${esc(t('settings.leave'))}</a></div>`;
+  }
+
   function modalHtml(v: TableView): string {
     if (!modal) return '';
     let inner = '';
@@ -1231,6 +1241,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         <div class="settings-grid">
           <label for="set-lang">${esc(t('settings.lang'))}</label><select id="set-lang" data-set="lang">${langOpts}</select>
         </div>
+        ${exitRow()}
         <div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`
         : `<h2 id="modal-title">${esc(t('settings.title'))}</h2>
         <div class="settings-grid">
@@ -1240,7 +1251,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           <label for="set-players">${esc(t('settings.players'))}</label><select id="set-players" data-set="players">${countOpts}</select>
           <label for="set-seed">${esc(t('settings.seed'))}</label><input id="set-seed" type="number" min="1" value="${seed}" data-set="seed">
         </div>
+        ${exitRow()}
         <div class="modal-foot">${button('close-modal', t('btn.back'))}${button('new-game', t('settings.newGame'), { cls: 'primary' })}</div>`;
+    } else if (modal.type === 'confirm-pass') {
+      inner = `<h2 id="modal-title">${esc(t('pass.title'))}</h2>
+        <p class="hint">${esc(t('pass.sure'))}</p>
+        <div class="modal-foot">${button('close-modal', t('btn.cancel'))}${button('pass-confirm', t('play.pass'), { cls: 'primary' })}</div>`;
     } else if (modal.type === 'decide' && v.decision && keepChoice(v.decision)) {
       // Keep N of the cards drawn: the cards themselves, clicked to choose.
       const { cards, keep } = keepChoice(v.decision)!;
@@ -1412,7 +1428,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       ${curtainFor !== null ? handOver(curtainFor) : ''}
       ${toast ? `<div class="toast" role="alert">${esc(toast)}</div>` : ''}
       <div class="card-zoom" aria-hidden="true" hidden></div>
-      <div class="hover-tip" aria-hidden="true" hidden></div>`;
+      <div class="hover-tip" aria-hidden="true" hidden></div>
+      <div class="hover-tip hover-sub" aria-hidden="true" hidden></div>`;
     board3d?.update(v, valid, chosen, shipGlow(v, valid), routePreview(v), actionable(v));
     const menu = sysMenuHtml(v);
     if (menu) stage.insertAdjacentHTML('beforeend', menu);
@@ -1522,6 +1539,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         if (selected) send({ type: 'lead', player: me, card: selected, declare: true, ...(d.ambition ? { ambition: d.ambition as AmbitionId } : {}) });
         return;
       case 'pass':
+        modal = { type: 'confirm-pass' };
+        break;
+      case 'pass-confirm':
+        modal = null;
         send({ type: 'pass', player: me });
         return;
       case 'mulligan':
@@ -1905,13 +1926,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   // ---- hover cards: a rival's board, an ambition row, a map system ----
   /** Shows the hover card for `raw` ("seat:1", "amb:tyrant", "sys:c2-p1") beside the element or the point. */
-  function showTip(raw: string, at: HTMLElement | { x: number; y: number }): void {
-    const tip = stage.querySelector<HTMLElement>('.hover-tip');
+  function showTip(raw: string, at: HTMLElement | { x: number; y: number }, which = '.hover-tip:not(.hover-sub)'): void {
+    const tip = stage.querySelector<HTMLElement>(which);
     const target = parseTip(raw);
     if (!tip || !target) return;
     // Nothing over an open menu, window or drop-down.
     if (sysMenu || modal || drop || powerMenu) return hideTip();
-    clearTimeout(tipTimer);
+    if (!which.includes('hover-sub')) {
+      clearTimeout(tipTimer);
+      hideSub();
+    }
     const key = `${raw}|${state.log.length}`;
     if (tip.dataset.key !== key) {
       const html = tipHtml(ix, withSay(tableView(ix, state, local(), lang)), target, t);
@@ -1935,8 +1959,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   }
   function hideTip(): void {
     clearTimeout(tipTimer);
-    const tip = stage.querySelector<HTMLElement>('.hover-tip');
-    if (tip) tip.hidden = true;
+    for (const tip of stage.querySelectorAll<HTMLElement>('.hover-tip')) tip.hidden = true;
+  }
+  function hideSub(): void {
+    const sub = stage.querySelector<HTMLElement>('.hover-sub');
+    if (sub) sub.hidden = true;
   }
   /**
    * Hides the hover card after a moment, so the mouse can cross the gap onto
@@ -1953,8 +1980,15 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     return el.closest('[data-zoom]') ? null : el.closest<HTMLElement>('[data-tip]');
   };
   stage.addEventListener('mouseover', (e) => {
-    // On the open card itself: it stays, whatever is inside it.
-    if ((e.target as Element).closest('.hover-tip')) return void clearTimeout(tipTimer);
+    // On the open card itself: it stays; what is inside it may show its own small card beside it.
+    if ((e.target as Element).closest('.hover-tip')) {
+      clearTimeout(tipTimer);
+      if ((e.target as Element).closest('.hover-sub')) return;
+      const inner = (e.target as Element).closest<HTMLElement>('.hover-tip [data-tip]');
+      if (inner) showTip(inner.dataset.tip!, inner, '.hover-sub');
+      else hideSub();
+      return;
+    }
     const el = tipTarget(e);
     if (el) showTip(el.dataset.tip!, el);
     else if (!(e.target as Element).closest('canvas')) hideTipSoon();

@@ -1301,7 +1301,6 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .mine-card { width: var(--w, 70px); aspect-ratio: 372 / 519; border-radius: 5px; overflow: hidden; background: #0b0a08; box-shadow: 0 2px 6px #000c; cursor: zoom-in; transition: transform .12s, box-shadow .12s; }
 .tbl-stage .mine-card:hover, .tbl-stage .mine-card:focus-visible { transform: translateY(-3px); box-shadow: 0 0 0 1px #000, 0 0 12px var(--dg-glow, rgba(255, 196, 100, .7)); }
 .tbl-stage .mine-card .cface, .tbl-stage .mine-card .cf-plain { width: 100%; height: 100%; }
-.tbl-stage .mine-card .cf-text, .tbl-stage .mine-card .cf-body, .tbl-stage .mine-card .cf-foot { visibility: hidden; }
 .tbl-stage .mine-empty { align-self: center; margin: auto; color: #8a7a58; font-size: 14px; }
 
 /* The local board in the bar: no guild cards (they are in the panel above), spoils beside the reserve. */
@@ -1663,3 +1662,36 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .rival-wrap.band .play .acard .n { font-size: 24px; line-height: 1; }
 .tbl-stage .rival-wrap.band .play .acard .pips { grid-template-columns: repeat(2, 9px); }
 .tbl-stage .rival-wrap.band .play .acard .pips .ic { width: 9px; height: 9px; }
+
+/* The own Court: a long bar on the left edge opens and closes it; the sort buttons on the right, no title */
+.tbl-stage .region.mine { padding-left: 34px; }
+.tbl-stage .region.mine > .mine-open { position: absolute; left: 0; top: 0; bottom: 0; width: 24px; height: auto; margin: 0; border-radius: 6px 0 0 6px; border: 0; border-right: 1px solid var(--dg-gold-dim); background: linear-gradient(90deg, #2a1f12, #15100a); color: var(--dg-gold); font-size: 14px; display: grid; place-items: center; cursor: pointer; }
+.tbl-stage .region.mine > .mine-open:hover, .tbl-stage .region.mine > .mine-open:focus-visible { background: linear-gradient(90deg, #4a3518, #22180d); color: #ffe3a3; }
+.tbl-stage .region.mine .mine-head { justify-content: flex-end; }
+
+/* Trophies and captives: two blocks, each its icon, name and count (the pieces in a hover card) */
+.board .spoils { gap: calc(5 * var(--u)); background: none !important; box-shadow: none !important; padding: 0; }
+.board .sp-block { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: calc(5 * var(--u)); padding: calc(3 * var(--u)) calc(7 * var(--u)); border: 1px solid #3d2f1a; border-radius: calc(5 * var(--u)); background: #0c0906; cursor: help; }
+.board .sp-block:hover, .board .sp-block:focus-visible { border-color: #b8862a; }
+.board .sp-block .sp-name { font-size: calc(10 * var(--u)); letter-spacing: .06em; text-transform: uppercase; color: #c7b896; }
+.board .sp-block.none { opacity: .7; }
+.tbl-stage .board.slim .spoils { grid-row: 2 / 4; grid-auto-flow: row; align-content: center; }
+.tbl-stage .board.rband .spoils { gap: 6px; }
+.tbl-stage .board.rband .sp-block { padding: 1px 6px; gap: 4px; }
+.tbl-stage .board.rband .sp-block .sp-name { display: none; }
+.tbl-stage .hover-sub { z-index: 96; max-width: 300px; }
+.tbl-stage .set-exit { display: flex; align-items: center; gap: 12px; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid #7d5d2766; }
+.tbl-stage .set-exit .btn { text-decoration: none; }
+
+/* The cities that cover no slot stand apart, like the others */
+.board .cover { flex: none; }
+.board .cover.bonus { width: calc(40 * var(--u)); margin: 0; }
+.board .cover.bonus .on-city .pc { width: calc(38 * var(--u)); height: calc(38 * var(--u)); }
+.tbl-stage .board:not(.rband) .slots { gap: calc(2 * var(--u)); padding-left: calc(4 * var(--u)); padding-right: calc(4 * var(--u)); }
+.tbl-stage .board:not(.rband) .cover { margin: 0 calc(1 * var(--u)); }
+
+/* The local board: trophies and captives stacked in the column under the leader, like the rivals' (no names) */
+.board .sp-block .sp-name { display: none; }
+.board .sp-block { grid-template-columns: auto auto; justify-content: space-between; min-width: calc(46 * var(--u)); }
+.tbl-stage .board.local.slim .pb-body.with-legend .spoils { grid-row: 2 / 5; grid-column: 1; grid-auto-flow: row; align-content: start; justify-content: stretch; gap: calc(4 * var(--u)); }
+.tbl-stage .board.tipboard .pb-body.with-legend .spoils { grid-auto-flow: row; align-content: start; }
