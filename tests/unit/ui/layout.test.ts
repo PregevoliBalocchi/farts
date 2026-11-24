@@ -26,10 +26,13 @@ describe('elastic stage', () => {
     expect(local.y + local.h).toBe(1536 - 10);
   });
 
-  it('centres the Court row at the top and ends the bar on the right edge', () => {
+  it('centres the Court row between the rivals and the menu, and ends the bar on the right edge', () => {
     setStage(2560, 1080);
     const court = REGIONS.court;
-    expect(court.x + court.w / 2).toBe(2560 / 2);
+    const rivals = REGIONS.rivals;
+    expect(court.x).toBeGreaterThan(rivals.x + rivals.w);
+    expect(court.x + court.w).toBeLessThan(2560 - 360);
+    expect(Math.abs(court.x - (rivals.x + rivals.w) - (2560 - 360 - court.x - court.w))).toBeLessThanOrEqual(12);
     const bar = REGIONS.bar;
     expect(bar.x + bar.w).toBe(2560 - 10);
     const mine = REGIONS.mine;

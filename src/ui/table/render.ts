@@ -3,6 +3,7 @@
 // table.ts from the engine. Buttons carry `data-act` (and data-* arguments),
 // read by one delegated click handler in table.ts.
 
+import { RESOURCES } from '../../game/engine';
 import type { ContentIndex, Resource } from '../../game/engine';
 import type { Translate } from '../../i18n';
 import { assetUrl, cardArt, cardAvatar, cardCut, icon, seatColor, seatIcon } from './assets';
@@ -263,16 +264,37 @@ export function preludeTab(cards: readonly PreludeCard[], t: Translate, row = fa
  * the name bar with the power in a ring. `maxCards` 0: no guild cards (the
  * local player's are in their own panel of the bar).
  */
-function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<number>; chosen: number | null; preludes: readonly PreludeCard[]; maxCards: number; head: string }): string {
+function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<number>; chosen: number | null; preludes: readonly PreludeCard[]; maxCards: number; head: string; legend?: boolean }): string {
   return `${preludeTab(o.preludes, t)}
-    <div class="pb-body">
+    <div class="pb-body${o.legend ? ' with-legend' : ''}">
       <div class="pb-face">${o.head}</div>
       ${slotsHtml(p, t, o.spendable, o.chosen)}
+      ${o.legend ? preludeLegend(p, t) : ''}
       ${spoils(p, t)}
       ${o.maxCards > 0 ? `<div class="pb-guild">${miniCards([...p.court, ...p.lore], o.maxCards)}</div>` : ''}
-      <div class="pb-low">${stats(p, t, false)}${outrage(p, t)}</div>
+      <div class="pb-low">${stats(p, t, false)}${o.legend ? '' : outrage(p, t)}</div>
     </div>
     ${nameBar(p, t)}`;
+}
+
+/**
+ * The five Prelude actions as printed on the board: each resource with what
+ * spending it does; an Outraged one is covered by one of the seat's agents
+ * and cannot be spent.
+ */
+function preludeLegend(p: PlayerView, t: Translate): string {
+  const agent = pieceIcon('agent', p.id, t('stat.agents'));
+  const chips = RESOURCES.map((r) => {
+    const out = p.outraged.includes(r);
+    const what = out ? t('prelude.outraged') : t(`prelude.act.${r}`);
+    return `<span class="pl-chip${out ? ' out' : ''}" title="${esc(`${t(`resource.${r}`)}: ${what}`)}">${resIcon(r, t)}${out ? `<span class="pl-agent">${agent}</span>` : ''}<span class="pl-txt">${esc(what)}</span></span>`;
+  }).join('');
+  return `<div class="pl-legend" aria-label="${esc(t('prelude.row'))}">${chips}</div>`;
+}
+
+/** A seat's whole board (the hover card of a rival's band). */
+export function seatBoardCard(p: PlayerView, t: Translate): string {
+  return `<div class="board pb tipboard s-${seatColor(p.id)}">${seatBoard(p, t, { spendable: new Set(), chosen: null, preludes: [], maxCards: 9, head: leaderPortrait(p), legend: true })}</div>`;
 }
 
 function miniCards(cards: string[], max: number): string {
@@ -305,13 +327,19 @@ export function playedCard(ix: ContentIndex, v: TableView, t: Translate, player:
 }
 
 /**
- * One rival's board, drawn like the local one but smaller (hovering it shows
- * what the board does not: trophies, captives, all their cards). The card they
- * played sits beside it.
+ * One rival as a compact band: name and power, the resource slots small with
+ * the cities on them, pieces, hand, trophies and captives, Outrage, the Court
+ * cards they hold; hovering it shows their whole board. The card they played
+ * sits at its right end.
  */
 export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Translate): string {
-  return `<div class="rival-wrap"><div class="board pb rival s-${seatColor(p.id)}${p.isActive ? ' active' : ''}" data-tip="seat:${p.id}" tabindex="0" role="group" aria-label="${esc(playerName(t, p.id))}">
-    ${seatBoard(p, t, { spendable: new Set(), chosen: null, preludes: [], maxCards: 6, head: leaderPortrait(p) })}
+  const cards = [...p.court, ...p.lore];
+  return `<div class="rival-wrap band"><div class="board rband s-${seatColor(p.id)}${p.isActive ? ' active' : ''}" data-tip="seat:${p.id}" tabindex="0" role="group" aria-label="${esc(playerName(t, p.id))}">
+    ${nameBar(p, t)}
+    <div class="rb-body">
+      ${slotsHtml(p, t, new Set(), null)}
+      <div class="rb-side">${stats(p, t, false)}<div class="rb-row">${spoils(p, t)}${outrage(p, t)}${cards.length ? miniCards(cards, 5) : ''}</div></div>
+    </div>
   </div>${playedCard(ix, v, t, p.id)}</div>`;
 }
 
@@ -324,9 +352,12 @@ export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Tra
 export function localPanel(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, preludes: readonly PreludeCard[] = [], slim = false): string {
   const head = leaderPortrait(p);
   return `<div class="board pb local${slim ? ' slim' : ''} s-${seatColor(p.id)}${p.isActive ? ' active' : ''}">
-    ${seatBoard(p, t, { spendable, chosen, preludes, maxCards: slim ? 0 : 9, head })}
+    ${seatBoard(p, t, { spendable, chosen, preludes, maxCards: slim ? 0 : 9, head, legend: true })}
   </div>`;
 }
+
+/** Width of one of the local player's own Court cards (stage pixels). */
+export const OWN_CARD_W = 118;
 
 /** How the local player's own Court cards are ordered: as acquired, by type, or by resource. */
 export type CourtSort = 'got' | 'kind' | 'resource';
@@ -353,8 +384,9 @@ export function sortCourt<T extends { kind?: string | null; resource?: string | 
  */
 export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data: (id: string) => CourtFaceData, width: number, lit: ReadonlySet<string> = new Set()): string {
   const cards = sortCourt([...p.court, ...p.lore].map(data), sort);
-  const perRow = Math.max(1, cards.length > 5 ? Math.ceil(cards.length / 2) : cards.length);
-  const w = Math.max(30, Math.min(72, Math.floor((width - (perRow - 1) * 6) / perRow)));
+  // One row of whole cards, a small gap between them; when they do not fit they overlap just enough.
+  const w = OWN_CARD_W;
+  const gap = cards.length > 1 ? Math.min(8, Math.floor((width - cards.length * w) / (cards.length - 1))) : 0;
   const sorts = COURT_SORTS.map((k) => `<button type="button" class="cs-btn${k === sort ? ' on' : ''}" data-act="court-sort" data-sort="${k}" aria-pressed="${k === sort}">${esc(t(`mine.sort.${k}`))}</button>`).join('');
   // A card whose power can be used now glows and uses it on a click.
   const faces = cards
@@ -365,7 +397,7 @@ export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data
     )
     .join('');
   return `<div class="mine-head"><span class="mine-title">${esc(t('mine.title'))}</span><span class="mine-n num">${cards.length}</span>${sorts}</div>
-    <div class="mine-cards" style="--w:${w}px">${faces || `<span class="mine-empty">${esc(t('mine.empty'))}</span>`}</div>`;
+    <div class="mine-cards" style="--w:${w}px;--gap:${gap}px">${faces || `<span class="mine-empty">${esc(t('mine.empty'))}</span>`}</div>`;
 }
 
 /** Glyphs of the ambition a card of this number can declare ('any': a free choice), or [] when it declares none. */
@@ -443,19 +475,33 @@ export function ambitionsStrip(ix: ContentIndex, v: TableView, t: Translate): st
       const place = (p: number) => (a.first.includes(p) ? ' first' : a.second.includes(p) ? ' second' : '');
       const tallies = [...a.tallies]
         .sort((x, y) => y.value - x.value)
-        .map((x) => `<span class="tl s-${seatColor(x.player)}${x.value ? '' : ' zero'}${place(x.player)}" title="${esc(`${playerName(t, x.player)}: ${x.value}`)}"><b class="num">${x.value}</b><i class="dot"></i></span>`)
+        .map((x) => `<span class="tl s-${seatColor(x.player)}${x.value ? '' : ' zero'}${place(x.player)}" title="${esc(`${playerName(t, x.player)}: ${x.value}`)}"><i class="dot"></i><b class="num">${x.value}</b></span>`)
         .join('');
       const box = a.box ? `<span class="box num" title="${esc(t('amb.box'))}">▣${a.box}</span>` : '';
       const name = t(`ambition.${a.id}`);
-      return `<div class="amb-row${a.markers.length ? ' declared' : ''}" data-tip="amb:${a.id}" tabindex="0" role="group" aria-label="${esc(name)}">
-        <span class="amb-head">${n ? `<span class="amb-n num">${n}</span>` : ''}<span class="amb-g">${glyphs}</span></span>
-        <span class="amb-m">${a.markers.map((m) => hexMarker(m, t)).join('')}${box}</span>
-        <span class="amb-t">${tallies}</span></div>`;
+      const rule = AMB_RULE[a.id] ? `<span class="ab-rule">${esc(t(AMB_RULE[a.id]))}</span>` : '';
+      return `<div class="abox${a.markers.length ? ' declared' : ''}" data-tip="amb:${a.id}" tabindex="0" role="group" aria-label="${esc(name)}">
+        <span class="ab-name">${n ? `<span class="ab-n num">${n}</span>` : ''}<span class="ab-word">${esc(name)}</span></span>
+        <span class="ab-g">${glyphs}</span>
+        <span class="ab-m">${a.markers.map((m) => ambMarker(m, t)).join('')}${box}</span>
+        ${rule}
+        <span class="ab-t">${tallies}</span></div>`;
     })
     .join('');
-  const left = v.markersLeft.map((m) => hexMarker(m, t)).join('');
-  const empty = Array.from({ length: Math.max(0, 3 - v.markersLeft.length) }, () => '<span class="hexm empty"></span>').join('');
-  return `<div class="amb-left" title="${esc(t('ambitions.available'))}" aria-label="${esc(t('ambitions'))}">${left}${empty}</div><div class="amb-rows">${rows}</div>`;
+  const left = v.markersLeft.map((m) => ambMarker(m, t)).join('');
+  const empty = Array.from({ length: Math.max(0, 3 - v.markersLeft.length) }, () => '<span class="amk empty"></span>').join('');
+  return `<div class="amb-title">${esc(t('ambitions'))}</div><div class="amb-avail">${esc(t('ambitions.available'))}</div>
+    <div class="amb-left" title="${esc(t('ambitions.available'))}">${left}${empty}</div><div class="amb-rows">${rows}</div>`;
+}
+
+/** The cleanup note printed in an ambition's box (i18n key), for the ambitions that have one. */
+const AMB_RULE: Record<string, string> = { captives: 'amb.rule.captives', trophies: 'amb.rule.trophies' };
+
+/** An ambition marker as the kit's token (its side by its values), else the drawn hexagon. */
+function ambMarker(m: { id: string; first: number; second: number }, t: Translate): string {
+  const side = m.first >= 4 ? 'back' : 'front';
+  const url = assetUrl(`token.ambition-${side}-${m.first}-${m.second}`);
+  return url ? `<img class="amk" src="${esc(url)}" alt="${esc(t('amb.marker', { first: m.first, second: m.second }))}" title="${esc(t('amb.marker', { first: m.first, second: m.second }))}">` : hexMarker(m, t);
 }
 
 /** Small portrait face of a Court card: its image when present, else a drawn placeholder with its data. */
@@ -486,7 +532,10 @@ export function courtPanel(v: TableView, t: Translate, pickable: ReadonlySet<num
       return `<div class="court-slot"><button type="button" class="court-tile banner k-${esc(c.kind ?? 'none')}${pickable.has(c.slot) ? ' pickable' : ''}" data-act="court" data-slot="${c.slot}" data-zoom="${esc(c.card)}" data-agents="${esc(c.agents.map((a) => `${a.player}:${a.count}`).join(','))}" aria-label="${esc(label)}">${courtBanner(c)}</button><span class="cb-agents">${agents}</span></div>`;
     })
     .join('');
-  return `<div class="court-row" title="${esc(t('court.deck', { n: v.courtDeck }))}">${cards}</div>`;
+  const deck = `<button type="button" class="cpile deck" data-act="piles" title="${esc(`${t('piles.courtDeck')}: ${v.courtDeck}`)}"><span class="cp-stack"><i></i><i></i><i></i></span><span class="cp-n">${esc(t('piles.deckShort'))} <b class="num">${v.courtDeck}</b></span></button>`;
+  const top = v.piles.courtDiscard[0];
+  const discard = `<button type="button" class="cpile discard" data-act="piles" title="${esc(`${t('piles.courtDiscard')}: ${v.piles.courtDiscard.length}`)}"><span class="cp-stack">${top ? `<span class="cp-face">${cardFaceById(top)}</span>` : '<i class="empty"></i>'}</span><span class="cp-n">${esc(t('piles.discardShort'))} <b class="num">${v.piles.courtDiscard.length}</b></span></button>`;
+  return `<div class="court-row">${deck}${cards}${discard}</div>`;
 }
 
 /** The right column: the ambitions. */

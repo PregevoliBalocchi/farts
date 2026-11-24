@@ -1446,3 +1446,111 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .pile-court .cface, .tbl-stage .pile-court .cf-plain { width: 100%; height: 100%; }
 .tbl-stage .pile-court .cf-text, .tbl-stage .pile-court .cf-bar, .tbl-stage .pile-court .cf-foot { visibility: hidden; }
 .tbl-stage .pile-secret { align-self: center; font-size: 13px; color: #c7b896; font-style: italic; }
+
+/* ==== Layout E (prototypes/player-board, scene E; owner's pick 2026-11-24) ====
+   Rivals as compact bands (the whole board on hover); the local board with the
+   Prelude legend printed under its slots; the Court with its draw and discard
+   piles; the ambitions as the printed column; the own Court in one row; the
+   hand held free, without the bar's frame. */
+
+/* Rival bands */
+.tbl-stage .rivals { gap: 8px; }
+.tbl-stage .rival-wrap.band { height: 116px; gap: 8px; align-items: stretch; }
+.tbl-stage .board.rband { --u: .66px; flex: 1; min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 5px; padding: 6px 8px 6px; cursor: pointer; }
+.tbl-stage .board.rband .name-bar { grid-row: 1; border-radius: 4px; padding-top: 3px; padding-bottom: 3px; font-size: 13px; padding-right: 34px; }
+.tbl-stage .board.rband .name-bar .pow { width: 28px; height: 28px; font-size: 14px; right: -4px; }
+.tbl-stage .board.rband .rb-body { grid-row: 2; display: flex; gap: 8px; align-items: center; min-width: 0; }
+.tbl-stage .board.rband .slots { flex: none; padding: 2px 6px 5px; }
+.tbl-stage .board.rband .rb-side { display: grid; gap: 5px; min-width: 0; }
+.tbl-stage .board.rband .stats { font-size: 14px; gap: 9px; padding: 0; }
+.tbl-stage .board.rband .stats .ic, .tbl-stage .board.rband .stats .pc { width: 16px; height: 16px; }
+.tbl-stage .board.rband .rb-row { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.tbl-stage .board.rband .spoils { display: flex; gap: 8px; padding: 1px 6px; grid-row: auto; border-radius: 4px; }
+.tbl-stage .board.rband .spoils .ic { width: 15px; height: 15px; }
+.tbl-stage .board.rband .spoils .num { font-size: 14px; }
+.tbl-stage .board.rband .outrage { flex: none; border: 0; padding: 0; gap: 4px; }
+.tbl-stage .board.rband .outrage:empty { display: none; }
+.tbl-stage .board.rband .mini-cards { gap: 3px; }
+.tbl-stage .board.rband .mini-card.kitted { width: 22px; }
+.tbl-stage .rival-wrap.band .play { margin-top: 2px; grid-template-columns: auto; justify-items: center; gap: 3px; }
+.tbl-stage .rival-wrap.band .play .acard, .tbl-stage .rival-wrap.band .play .facedown { width: 52px; height: 88px; }
+.tbl-stage .rival-wrap.band .play .tags { display: none; }
+.tbl-stage .rival-wrap.band .play .how { text-align: center; }
+.tbl-stage .rival-wrap.band .play.none { width: 52px; height: 88px; margin-top: 2px; border: 1px dashed #7d5d2766; border-radius: 6px; }
+
+/* A rival's whole board in its hover card */
+.tbl-stage .hover-tip:has(.tipboard) { max-width: none; }
+.tbl-stage .tipboard { --u: .92px; width: 560px; margin: 2px 0 4px; }
+
+/* The Prelude legend under the slots: each resource and what spending it does; an Outraged one covered by an agent */
+.board .pb-body.with-legend { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.board .pb-body.with-legend .pl-legend { grid-row: 2; grid-column: 2; }
+.board .pb-body.with-legend .spoils { grid-row: 2 / 4; }
+.board .pb-body.with-legend .pb-guild { grid-row: 3; }
+.board .pb-body.with-legend .pb-low { grid-row: 4; }
+.board .pl-legend { display: flex; flex-wrap: wrap; gap: calc(4 * var(--u)); }
+.board .pl-chip { position: relative; display: inline-flex; align-items: center; gap: calc(4 * var(--u)); padding: calc(2 * var(--u)) calc(7 * var(--u)) calc(2 * var(--u)) calc(3 * var(--u));
+  border: 1px solid #7d5d27; border-radius: calc(5 * var(--u)); background: #000a; font-size: calc(11 * var(--u)); line-height: 1.1; color: #d9cfb8; white-space: nowrap; }
+.board .pl-chip .ic { width: calc(20 * var(--u)); height: calc(20 * var(--u)); }
+.board .pl-chip.out { border-color: #8a2a22; background: #2a0c0acc; color: #e78a7a; }
+.board .pl-chip.out > .ic { filter: grayscale(1) brightness(.6); }
+.board .pl-agent { position: absolute; left: calc(-3 * var(--u)); top: calc(-9 * var(--u)); pointer-events: none; }
+.board .pl-agent .pc { width: calc(18 * var(--u)); height: calc(22 * var(--u)); object-fit: contain; filter: drop-shadow(0 1px 2px #000); }
+
+/* The Court: draw pile on the left, discard pile on the right (both open the piles drop-down) */
+.tbl-stage .region.court .court-row { align-items: flex-start; }
+.tbl-stage .cpile { flex: none; width: 74px; display: grid; justify-items: center; gap: 5px; padding: 6px 0 0; background: none; border: 0; color: var(--dg-text); cursor: pointer; }
+.tbl-stage .cp-stack { position: relative; width: 60px; height: 84px; }
+.tbl-stage .cp-stack i { position: absolute; inset: 0; border-radius: 6px; border: 2px solid var(--dg-gold-dim); background: repeating-linear-gradient(135deg, #3a2b18 0 6px, #2a1f12 6px 12px); box-shadow: 0 2px 6px #000a; }
+.tbl-stage .cp-stack i:nth-child(2) { transform: translate(3px, -3px); }
+.tbl-stage .cp-stack i:nth-child(3) { transform: translate(6px, -6px); }
+.tbl-stage .cp-stack i.empty { background: #0006; border-style: dashed; }
+.tbl-stage .cp-face { position: absolute; inset: 0; border-radius: 6px; overflow: hidden; transform: rotate(3deg); box-shadow: 0 0 0 1px #6b5320, 0 3px 8px #000c; }
+.tbl-stage .cp-face img { width: 100%; height: 100%; object-fit: cover; }
+.tbl-stage .cp-face .cface, .tbl-stage .cp-face .cf-plain { width: 100%; height: 100%; }
+.tbl-stage .cp-face .cf-text, .tbl-stage .cp-face .cf-body, .tbl-stage .cp-face .cf-foot { visibility: hidden; }
+.tbl-stage .cp-n { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #c7b896; white-space: nowrap; }
+.tbl-stage .cp-n b { color: #f3c463; font-size: 14px; }
+.tbl-stage .cpile:hover .cp-stack, .tbl-stage .cpile:focus-visible .cp-stack { filter: brightness(1.25); }
+
+/* The ambitions as printed on the board: title, the markers still to take, one bracketed box per ambition */
+.tbl-stage .side-amb { padding: 10px 12px 12px; display: grid; gap: 7px; align-content: start; }
+.tbl-stage .side-amb .amb-title { text-align: center; font: 700 24px Georgia, "Times New Roman", serif; letter-spacing: .08em; text-transform: uppercase; color: #efe3c4; }
+.tbl-stage .side-amb .amb-title::after { content: ""; display: block; height: 2px; margin: 4px 24px 0; background: linear-gradient(90deg, transparent, var(--dg-gold) 15%, var(--dg-gold) 85%, transparent); }
+.tbl-stage .side-amb .amb-avail { text-align: center; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #b9ab8c; }
+.tbl-stage .side-amb .amb-left { justify-content: center; gap: 6px; padding-bottom: 4px; border-bottom: 0; }
+.tbl-stage .amk { height: 46px; width: auto; filter: drop-shadow(0 2px 4px #000); }
+.tbl-stage .amk.empty { height: 44px; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); background: #ffffff10; }
+.tbl-stage .amb-rows { gap: 8px; }
+.tbl-stage .abox { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 2px 6px; align-items: center; padding: 7px 10px 7px; color: var(--dg-text); cursor: pointer; }
+.tbl-stage .abox::before, .tbl-stage .abox::after { content: ""; position: absolute; inset: 0; pointer-events: none; border: 2px solid var(--dg-gold); }
+.tbl-stage .abox::before { border-right: 0; clip-path: polygon(0 0, 24% 0, 24% 2px, 2px 2px, 2px 38%, 0 38%, 0 62%, 2px 62%, 2px calc(100% - 2px), 24% calc(100% - 2px), 24% 100%, 0 100%); }
+.tbl-stage .abox::after { border-left: 0; clip-path: polygon(76% 0, 100% 0, 100% 38%, calc(100% - 2px) 38%, calc(100% - 2px) 2px, 76% 2px, 76% calc(100% - 2px), calc(100% - 2px) calc(100% - 2px), calc(100% - 2px) 62%, 100% 62%, 100% 100%, 76% 100%); }
+.tbl-stage .abox.declared { background: radial-gradient(ellipse at 50% 50%, #f3c46324, transparent 72%); }
+.tbl-stage .abox:hover::before, .tbl-stage .abox:hover::after { border-color: #f3c463; }
+.tbl-stage .abox .ab-name { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font: 700 18px Georgia, "Times New Roman", serif; letter-spacing: .06em; text-transform: uppercase; color: #efe3c4; }
+.tbl-stage .abox .ab-n { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 3px; background: #e8e0cc; color: #1a1208; font: 800 15px var(--font-ui); }
+.tbl-stage .abox .ab-g { display: flex; gap: 2px; color: var(--dg-gold); }
+.tbl-stage .abox .ab-g .ic { width: 32px; height: 32px; }
+.tbl-stage .abox .ab-m { display: flex; gap: 3px; justify-self: end; align-items: center; }
+.tbl-stage .abox .ab-m .amk { height: 36px; }
+.tbl-stage .abox .ab-m .box { font-size: 12px; color: #c7b896; }
+.tbl-stage .abox .ab-rule { grid-column: 1 / -1; font-size: 10px; line-height: 1.2; text-transform: uppercase; letter-spacing: .03em; color: #b9ab8c; }
+.tbl-stage .abox .ab-t { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 5px; }
+.tbl-stage .abox .tl { display: inline-flex; align-items: center; gap: 3px; padding: 0 6px 0 3px; border-radius: 999px; background: #0008; font-size: 13px; }
+.tbl-stage .abox .tl .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--seat); box-shadow: 0 0 0 1px #000; }
+.tbl-stage .abox .tl.zero { opacity: .45; }
+.tbl-stage .abox .tl.first { box-shadow: 0 0 0 1px #f3c463; color: #f3c463; }
+.tbl-stage .abox .tl.first::after { content: "1°"; font-size: 10px; }
+.tbl-stage .abox .tl.second { box-shadow: 0 0 0 1px #b9ab8c; }
+.tbl-stage .abox .tl.second::after { content: "2°"; font-size: 10px; color: #b9ab8c; }
+
+/* The own Court: one row of whole cards in its own frame; they overlap only when they do not fit */
+.tbl-stage .region.mine { border: 2px solid var(--dg-gold-dim); border-radius: 8px; background: linear-gradient(180deg, #1b140de8, #0d0a07f0); box-shadow: 0 6px 18px #000a; }
+.tbl-stage .mine-cards { flex-wrap: nowrap; gap: 0; align-items: flex-end; overflow: visible; }
+.tbl-stage .mine-card { flex: none; margin-left: var(--gap, 8px); }
+.tbl-stage .mine-card:first-child { margin-left: 0; }
+.tbl-stage .mine-card:hover, .tbl-stage .mine-card:focus-visible { transform: translateY(-18px) scale(1.04); z-index: 3; }
+
+/* The hand held free: no frame around the bottom bar */
+.tbl-stage .region.bar { border: 0; background: none; box-shadow: none; }

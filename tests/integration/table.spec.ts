@@ -65,9 +65,9 @@ test('the settings window and the log drop-down open and close with Escape', asy
   await expect(page.locator('.drop-win')).toHaveCount(0);
 });
 
-test('hovering a rival board shows its hover card, with no window to close', async ({ page }) => {
+test('hovering a rival band shows its hover card, with no window to close', async ({ page }) => {
   await open(page);
-  await page.locator('.board.rival').first().hover();
+  await page.locator('.board.rband').first().hover();
   await expect(page.locator('.hover-tip')).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });

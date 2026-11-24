@@ -7,7 +7,7 @@ import type { ContentIndex } from '../../game/engine';
 import type { Translate } from '../../i18n';
 import { icon, seatColor, seatIcon } from './assets';
 import { cardFaceById } from './cardface';
-import { esc, pieceIcon, playerName, systemTag } from './render';
+import { esc, pieceIcon, playerName, systemTag, seatBoardCard } from './render';
 import type { AmbitionRowView, PlayerView, SystemView, TableView } from './view';
 
 /** What a hover card is about: a seat, a map system or an ambition. */
@@ -56,6 +56,7 @@ function seatTip(p: PlayerView, t: Translate): string {
   const cards = [...p.court, ...p.lore];
   const faces = cards.map((c) => `<span class="tip-card">${cardFaceById(c)}</span>`).join('');
   return `<div class="tip-head">${seatTag(t, p.id)}</div>
+    ${seatBoardCard(p, t)}
     ${line(t('stat.trophies'), trophies || none)}
     ${line(t('stat.captives'), captives || none)}
     ${cards.length ? `<div class="tip-cards">${faces}</div>` : ''}`;
