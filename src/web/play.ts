@@ -18,11 +18,15 @@ const id = params.get('id') ?? '';
 /** ?hotseat=1: the game saved in this browser, every seat played here in turn. */
 const hotseat = params.get('hotseat') === '1';
 
+/** The latest line about this game: shown on the page before the table, then in the table's settings window. */
+let about = '';
 function say(text: string): void {
+  about = text;
   status.innerHTML = `${text} · <a href="./">torna all'ingresso</a>`;
-  // Over the table (a fixed full-screen layer) once it is mounted.
-  status.classList.toggle('over-table', root.childElementCount > 0);
+  // Once the table is up, the line and the way out live in its settings window (gear).
+  status.hidden = root.childElementCount > 0;
 }
+const exit = { href: './', about: () => about };
 
 let started = false;
 onAuthStateChanged(auth, async (user) => {
@@ -55,6 +59,7 @@ onAuthStateChanged(auth, async (user) => {
             state: g.state,
             seat,
             seats: { names: g.players.map((p, i) => seatLabel(p, i)), colors: g.colors },
+            exit,
             commit: async (next) => {
               try {
                 version = await saveMove(id, version, next, email);
@@ -86,6 +91,7 @@ async function playHotseat(): Promise<void> {
       state: game.state,
       seat: null,
       seats: { names: game.names, colors: game.colors },
+      exit,
       commit: async (next) => {
         game.state = next;
         saveHotseat(game);
