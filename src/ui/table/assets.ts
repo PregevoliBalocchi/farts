@@ -52,7 +52,7 @@ export type IconName =
   | 'material' | 'fuel' | 'weapons' | 'relic' | 'psionic'
   | 'ship' | 'city' | 'starport' | 'agent' | 'trophy' | 'captive' | 'key' | 'cards' | 'power'
   | 'log' | 'settings' | 'court' | 'undo' | 'confirm' | 'close' | 'prev' | 'next' | 'trash' | 'lock'
-  | 'pip' | 'anyAmbition' | 'control'
+  | 'pip' | 'anyAmbition' | 'control' | 'planet'
   | 'ambFuel' | 'ambMaterial' | 'ambCaptives' | 'ambTrophies' | 'ambRelic' | 'ambPsionic'
   | 'seat0' | 'seat1' | 'seat2' | 'seat3';
 
@@ -94,6 +94,7 @@ const PATHS: Record<IconName, string> = {
   // One action of a card: a four-pointed star.
   pip: '<path d="M12 1c1 6 4 9 10 11-6 2-9 5-10 11-1-6-4-9-10-11 6-2 9-5 10-11z" fill="currentColor"/>',
   control: '<path d="M6 21V4M6 4h11l-2.5 4 2.5 4H6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>',
+  planet: '<circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 15.5c-1.5 2 2.5 2.6 9 .4s10-5.3 8.6-7.2c-.6-.8-2.2-.9-4.3-.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
   anyAmbition: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M9 9.5a3 3 0 1 1 4.5 2.6c-1 .6-1.5 1.2-1.5 2.4M12 17.5v.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
   // Seat shapes: colour is never the only cue (colour-blind players).
   seat0: '<circle cx="12" cy="12" r="8" fill="currentColor"/>',

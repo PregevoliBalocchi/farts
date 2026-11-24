@@ -93,9 +93,10 @@ export function systemTag(s: { id: string; cluster?: string; kind?: string; reso
  * general supply (left); the prompt over a thin gold line, with the round's
  * lead and seize under it (centre); the menu buttons (right). `control`:
  * whether the map shows who controls each sector (null: the map has no such
- * layer); `open`: the drop-down open under its button (log or help).
+ * layer); `open`: the drop-down open under its button (log or help);
+ * `flat`: whether the planets are drawn in 2D as on the board (null: no such pictures).
  */
-export function header(v: TableView, t: Translate, exampleContent: boolean, promptText: string, control: boolean | null = null, open: 'log' | 'help' | null = null): string {
+export function header(v: TableView, t: Translate, exampleContent: boolean, promptText: string, control: boolean | null = null, open: 'log' | 'help' | null = null, flat: boolean | null = null): string {
   const supply = v.supply.map((s) => `<span title="${esc(t(`resource.${s.resource}`))}">${resIcon(s.resource, t)}<b class="num">${s.count}</b></span>`).join('');
   const declared = v.ambitions.filter((a) => a.markers.length).map((a) => t(`ambition.${a.id}`));
   const lead = v.lead ? t('header.lead', { card: cardLabel(t, v.lead) }) : '';
@@ -112,6 +113,7 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, prom
       ${exampleContent ? `<span class="content-note">${esc(t('content.example'))}</span>` : ''}
       <span data-region="recent">${button('log', '', { cls: `icon sq${open === 'log' ? ' on' : ''}`, title: `${t('btn.log')} · ${t('recent.last')} ${last}`, html: icon('log') })}</span>
       ${control !== null ? `<button type="button" class="btn icon sq${control ? ' on' : ''}" data-act="map-control" title="${esc(t('btn.control'))}" aria-label="${esc(t('btn.control'))}" aria-pressed="${control}">${icon('control')}</button>` : ''}
+      ${flat !== null ? `<button type="button" class="btn icon sq${flat ? ' on' : ''}" data-act="map-planets" title="${esc(t('btn.planets2d'))}" aria-label="${esc(t('btn.planets2d'))}" aria-pressed="${flat}">${icon('planet')}</button>` : ''}
       ${button('help', '', { cls: `icon sq${open === 'help' ? ' on' : ''}`, title: t('btn.help'), html: icon('anyAmbition') })}
       ${button('settings', '', { cls: 'icon sq', title: t('btn.settings'), html: icon('settings') })}
     </div>`;
