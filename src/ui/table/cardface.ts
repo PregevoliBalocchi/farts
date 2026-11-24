@@ -39,12 +39,16 @@ export function faceOf(ix: ContentIndex, id: string, lang = 'en'): CourtFaceData
 
 const esc = (v: unknown) => String(v).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 
-/** Icons a rules text may name in braces: {key}, {hit}, {intercept}; the fallback when the picture is missing. */
-const TEXT_ICONS: Record<string, string> = { key: '⚷', hit: '✸', intercept: '⊘' };
+/**
+ * Icons a rules text may name in braces, with the fallback when the picture is
+ * missing: {key}, {hit}, {intercept}; for the campaign's Fate cards {obj} (the
+ * objective clock) and the planet ID symbols {arrowhead}, {hexagon}, {crescent}.
+ */
+const TEXT_ICONS: Record<string, string> = { key: '⚷', hit: '✸', intercept: '⊘', obj: '⏱', arrowhead: '▲', hexagon: '⬢', crescent: '☾' };
 
 /**
  * Rules text markup to HTML: one paragraph per line, ***bold italic***,
- * **bold**, *italic*, {key} / {hit} / {intercept} for their icons. Everything
+ * **bold**, *italic*, {key} and the other names in TEXT_ICONS for their icons. Everything
  * else is escaped.
  */
 export function rulesHtml(text: string): string {
@@ -60,7 +64,7 @@ export function rulesHtml(text: string): string {
         .replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>')
         .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
         .replace(/\*(.+?)\*/g, '<i>$1</i>')
-        .replace(/\{(key|hit|intercept)\}/g, (_, name: string) => glyph(name));
+        .replace(/\{(key|hit|intercept|obj|arrowhead|hexagon|crescent)\}/g, (_, name: string) => glyph(name));
       return `<p>${html}</p>`;
     })
     .join('');
