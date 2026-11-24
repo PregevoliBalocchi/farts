@@ -14,9 +14,16 @@ describe('seat board', () => {
 
   it('leaves the outrage corner empty when nothing is Outraged', () => {
     const v = tableView(ix, game(ix, 3, 7, 0), 0);
-    const html = localPanel(v.players[0], t, new Set(), null);
+    const html = rivalPanel(ix, v, v.players[1], t);
     expect(html).toContain('class="outrage"');
     expect(html).not.toContain('o-space');
+  });
+
+  it('prints the five Prelude actions under the local slots, none Outraged', () => {
+    const v = tableView(ix, game(ix, 3, 7, 0), 0);
+    const html = localPanel(v.players[0], t, new Set(), null);
+    expect(count(html, 'class="pl-chip"')).toBe(5);
+    expect(html).not.toContain('pl-agent');
   });
 
   it('draws the prelude tab only with cards, lit ones as buttons', () => {
@@ -35,7 +42,9 @@ describe('seat board', () => {
     const html = rivalPanel(ix, v, v.players[1], t);
     expect(count(html, 'class="o-space"')).toBe(2);
     expect(count(html, 'class="o-agent"')).toBe(2);
-    expect(count(localPanel(v.players[1], t, new Set(), null), 'class="o-agent"')).toBe(2);
+    const local = localPanel(v.players[1], t, new Set(), null);
+    expect(count(local, 'class="pl-chip out"')).toBe(2);
+    expect(count(local, 'class="pl-agent"')).toBe(2);
   });
 
   it('draws the slim local board without guild cards and the prelude powers as a row', () => {
