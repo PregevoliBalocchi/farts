@@ -229,6 +229,21 @@ function outrage(p: PlayerView, t: Translate): string {
 }
 
 /** The leader's character (cut from its card) when the seat has a leader (hover or focus shows the whole card), else the seat portrait. */
+/**
+ * Gives every leader avatar under `root` its picture's proportions (`--ar`,
+ * width / height), so the CSS can size each to about the same area whatever
+ * its shape (a wide one lower, a tall one narrower).
+ */
+export function sizeAvatars(root: ParentNode): void {
+  for (const img of root.querySelectorAll<HTMLImageElement>('.portrait.leader.bust img')) {
+    const set = () => {
+      if (img.naturalWidth && img.naturalHeight) img.style.setProperty('--ar', (img.naturalWidth / img.naturalHeight).toFixed(3));
+    };
+    if (img.complete) set();
+    else img.addEventListener('load', set, { once: true });
+  }
+}
+
 function leaderPortrait(p: PlayerView): string {
   // `bust`: the character cut out of its card, with no frame: it rises out of the board's top edge.
   const avatar = p.leader ? cardAvatar(p.leader) : null;

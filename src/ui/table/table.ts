@@ -36,7 +36,7 @@ import type { Intent, MoveIntent } from './intent';
 import { place, REGIONS, setStage, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
-  actionCard, button, cardLabel, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, preludeTab, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon,
+  actionCard, button, cardLabel, sizeAvatars, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, preludeTab, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon,
 } from './render';
 import { legal, othersTurn, tableView, whyNot } from './view';
 import type { TableView } from './view';
@@ -1448,6 +1448,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const pick = draftWindow();
     if (pick) stage.insertAdjacentHTML('beforeend', pick);
     mountBattle();
+    sizeAvatars(stage);
     restoreFocus(key);
     const dialog = stage.querySelector('.modal');
     if (dialog && !dialog.contains(document.activeElement)) {
@@ -1942,6 +1943,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       if (!html) return hideTip();
       tip.innerHTML = html;
       tip.dataset.key = key;
+      sizeAvatars(tip);
     }
     tip.hidden = false;
     const s = stage.getBoundingClientRect();
