@@ -20,7 +20,7 @@ import { createRenderer, drawRatio } from './gpu';
 import { piece } from './kitpieces';
 import { fleetFormation, rng } from './model-fx';
 import { SEAT_PAINT } from './pieces3d';
-import { buildPlanet, planetPalette, turnPlanets } from './planets3d';
+import { bakePlanets, buildPlanet, planetPalette, turnPlanets } from './planets3d';
 import type { Planet } from './planets3d';
 
 /** Size of the 3D view in the battle window, in CSS pixels. */
@@ -43,6 +43,8 @@ export interface BattleScene {
 
 /** The planet under an orbital battle: radius, depth below the fleets, distance behind them, turns per minute. */
 const ORBIT = { radius: 30, below: 6, behind: 12, tilt: 0.5, spin: 0.15, light: 0.62, sideMin: 10, sideMax: 16 } as const;
+/** Cube-map face size of the battle's planet: it fills the lower part of the view. */
+const ORBIT_BAKE = 1024;
 /** Laser bolts in a burst: in the opening volley, and at a ship being damaged. */
 const BURST = { volley: 3, strike: 4 } as const;
 
@@ -250,6 +252,8 @@ export class BattleView3D {
     planet.orbits = [];
     planet.extras = [];
     planet.spin = ORBIT.spin;
+    // Seen close up: a large texture for its drawing.
+    bakePlanets(this.renderer, [planet], ORBIT_BAKE);
     // A little darker than on the map, so the ships and the fire stand out against it.
     if (planet.surface) planet.surface.uniforms.uDim.value = ORBIT.light;
     const globe = planet.body.children[0] as THREE.Mesh | undefined;

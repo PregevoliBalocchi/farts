@@ -247,6 +247,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     // Behind the stage, as large as the window: the interface is drawn in front of it.
     shell.classList.add('has-3d');
     shell.insertBefore(board3d.canvas, stage);
+    // ?debug=perf: the map on window.board3d, to time its parts from the console.
+    if (params.get('debug') === 'perf') Object.assign(window, { board3d });
     // No graphics card in use: the map draws lighter, and the player learns how to get it back.
     if (gpu.software) window.setTimeout(() => showToast(t('gpu.software')), 1500);
   }

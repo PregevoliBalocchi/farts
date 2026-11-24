@@ -30,7 +30,7 @@ import boardLinesData from './board.lines.json';
 import { drawInfoLayer, isBoardLines, resourceIconSpots, sectorTints, withLayerSpots } from './infolayer';
 import type { BoardLines, SectorMode } from './infolayer';
 import { SEAT_PAINT } from './pieces3d';
-import { buildPlanet, planetPalette, roomAround, turnPlanets } from './planets3d';
+import { bakePlanets, buildPlanet, planetPalette, roomAround, turnPlanets } from './planets3d';
 import type { Planet } from './planets3d';
 import { starfield } from './starfield';
 import { createRenderer, drawRatio, FrameWatch, gpu, LITE_FRAME_MS } from './gpu';
@@ -691,6 +691,8 @@ export class Board3D {
       this.planetGroup.add(p.holder);
       this.planets.push(p);
     }
+    // Their surface drawings once into textures: drawn live they cost most of each frame.
+    bakePlanets(this.renderer, this.planets);
   }
 
   /** Invisible discs over each in-play system (what a click hits), and a shade over those out of play. */
