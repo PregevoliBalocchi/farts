@@ -56,7 +56,8 @@ function portrait(id: number): string {
   return `<div class="portrait">${url ? `<img src="${esc(url)}" alt="">` : icon(seatIcon(id))}</div>`;
 }
 
-function resIcon(r: Resource, t: Translate, cls = ''): string {
+/** A resource's icon, labelled with its name (`cls`: extra classes). */
+export function resIcon(r: Resource, t: Translate, cls = ''): string {
   return `<span class="r-${r} ${cls}">${icon(r as IconName, '', t(`resource.${r}`))}</span>`;
 }
 
@@ -269,7 +270,7 @@ function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<numb
     <div class="pb-body${o.legend ? ' with-legend' : ''}">
       <div class="pb-face">${o.head}</div>
       ${slotsHtml(p, t, o.spendable, o.chosen)}
-      ${o.legend ? preludeLegend(p, t) : ''}
+      ${o.legend ? preludeLegend(p, t, spentTypes(p, o.spendable)) : ''}
       ${spoils(p, t)}
       ${o.maxCards > 0 ? `<div class="pb-guild">${miniCards([...p.court, ...p.lore], o.maxCards)}</div>` : ''}
       <div class="pb-low">${stats(p, t, false)}${o.legend ? '' : outrage(p, t)}</div>
@@ -277,17 +278,28 @@ function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<numb
     ${nameBar(p, t)}`;
 }
 
+/** The resource types of the slots that can be spent now. */
+function spentTypes(p: PlayerView, spendable: ReadonlySet<number>): Set<Resource> {
+  const out = new Set<Resource>();
+  for (const i of spendable) {
+    const r = p.slots[i]?.resource;
+    if (r) out.add(r);
+  }
+  return out;
+}
+
 /**
- * The five Prelude actions as printed on the board: each resource with what
- * spending it does; an Outraged one is covered by one of the seat's agents
- * and cannot be spent.
+ * The five Prelude actions as icons, one per resource, each with the number of
+ * its symbols the seat counts (tokens and Court cards); the hover card says
+ * what spending it does. Grey: no token to spend; gold: it can be spent now
+ * (`live`); red with one of the seat's agents on it: Outraged.
  */
-function preludeLegend(p: PlayerView, t: Translate): string {
+function preludeLegend(p: PlayerView, t: Translate, live: ReadonlySet<Resource>): string {
   const agent = pieceIcon('agent', p.id, t('stat.agents'));
-  const chips = RESOURCES.map((r) => {
+  const chips = p.symbols.map(({ resource: r, tokens, cards }) => {
     const out = p.outraged.includes(r);
-    const what = out ? t('prelude.outraged') : t(`prelude.act.${r}`);
-    return `<span class="pl-chip${out ? ' out' : ''}" title="${esc(`${t(`resource.${r}`)}: ${what}`)}">${resIcon(r, t)}${out ? `<span class="pl-agent">${agent}</span>` : ''}<span class="pl-txt">${esc(what)}</span></span>`;
+    const cls = out ? ' out' : tokens === 0 ? ' none' : live.has(r) ? ' live' : '';
+    return `<span class="pl-chip${cls}" data-tip="res:${p.id}-${r}" tabindex="0" aria-label="${esc(t(`resource.${r}`))}">${resIcon(r, t)}<b class="pl-n num">${tokens + cards}</b>${out ? `<span class="pl-agent">${agent}</span>` : ''}</span>`;
   }).join('');
   return `<div class="pl-legend" aria-label="${esc(t('prelude.row'))}">${chips}</div>`;
 }
@@ -382,11 +394,17 @@ export function sortCourt<T extends { kind?: string | null; resource?: string | 
  * inner width in stage pixels, to size the cards so that two rows hold them all;
  * `lit`: the cards whose power can be used now (they glow and use it on a click).
  */
-export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data: (id: string) => CourtFaceData, width: number, lit: ReadonlySet<string> = new Set()): string {
+export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data: (id: string) => CourtFaceData, width: number, lit: ReadonlySet<string> = new Set(), open = false): string {
   const cards = sortCourt([...p.court, ...p.lore].map(data), sort);
   // One row of whole cards, a small gap between them; when they do not fit they overlap just enough.
+  // Opened (leftwards over the bar), the cards sit side by side in rows.
   const w = OWN_CARD_W;
-  const gap = cards.length > 1 ? Math.min(8, Math.floor((width - cards.length * w) / (cards.length - 1))) : 0;
+  const fit = cards.length > 1 ? Math.min(8, Math.floor((width - cards.length * w) / (cards.length - 1))) : 0;
+  const gap = open ? 8 : fit;
+  // The arrow that opens the whole Court leftwards, shown when the cards overlap (or it is open).
+  const toggle = open || fit < 8
+    ? `<button type="button" class="mine-open" data-act="mine-open" aria-expanded="${open}" title="${esc(t(open ? 'mine.collapse' : 'mine.expand'))}">${open ? '&#x25B6;' : '&#x25C0;'}</button>`
+    : '';
   const sorts = COURT_SORTS.map((k) => `<button type="button" class="cs-btn${k === sort ? ' on' : ''}" data-act="court-sort" data-sort="${k}" aria-pressed="${k === sort}">${esc(t(`mine.sort.${k}`))}</button>`).join('');
   // A card whose power can be used now glows and uses it on a click.
   const faces = cards
@@ -396,7 +414,7 @@ export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data
         : `<div class="mine-card k-${esc(c.kind ?? 'none')}" data-zoom="${esc(c.card)}" tabindex="0">${cardFaceById(c.card)}</div>`,
     )
     .join('');
-  return `<div class="mine-head"><span class="mine-title">${esc(t('mine.title'))}</span><span class="mine-n num">${cards.length}</span>${sorts}</div>
+  return `<div class="mine-head">${toggle}<span class="mine-title">${esc(t('mine.title'))}</span><span class="mine-n num">${cards.length}</span>${sorts}</div>
     <div class="mine-cards" style="--w:${w}px;--gap:${gap}px">${faces || `<span class="mine-empty">${esc(t('mine.empty'))}</span>`}</div>`;
 }
 

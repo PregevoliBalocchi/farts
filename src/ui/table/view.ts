@@ -68,6 +68,8 @@ export interface PlayerView {
   cities: { built: boolean; slots: number[]; bonus: number }[];
   /** Resource tokens held, counted by type (every type listed, zero included). */
   held: { resource: Resource; count: number }[];
+  /** Per resource type: tokens on the board and Court cards showing that resource (every type listed). */
+  symbols: { resource: Resource; tokens: number; cards: number }[];
 }
 
 /** An action card, face up. */
@@ -274,6 +276,11 @@ function playerView(ix: ContentIndex, s: GameState, id: PlayerId): PlayerView {
       bonus: ix.content.playerBoard.cityBonusPower[i] ?? 0,
     })),
     held: RESOURCES.map((r) => ({ resource: r, count: p.resources.filter((x) => x === r).length })),
+    symbols: RESOURCES.map((r) => ({
+      resource: r,
+      tokens: p.resources.filter((x) => x === r).length,
+      cards: p.court.filter((c) => ix.courtCards.get(c)?.resource === r).length,
+    })),
   };
 }
 

@@ -77,6 +77,8 @@ export const REGIONS = {
   get confirm(): Rect { const b = REGIONS.bar; return { x: b.x + b.w - MINE_W - BTN_W, y: b.y, w: BTN_W, h: b.h }; },
   /** The local player's own Court: guild and lore cards, at the right end of the bar. */
   get mine(): Rect { const b = REGIONS.bar; return { x: b.x + b.w - MINE_W, y: b.y, w: MINE_W, h: b.h }; },
+  /** The own Court opened: from the hand's left end to the right edge, anchored at the bar's bottom, rising as rows need. */
+  get mineOpen(): Rect { const b = REGIONS.bar; const x = b.x + PLAY_W + G * 2; return { x, y: b.y + b.h - 700, w: b.x + b.w - x, h: 700 }; },
   /** The action box, centred over the hand: anchored at its bottom (clear of a hand card raised on hover), grows upwards up to h. */
   get actions(): Rect { const h = REGIONS.hand; return { x: Math.round(h.x + h.w / 2 - ACT_W / 2), y: h.y - ACT_GAP - 440, w: ACT_W, h: 440 }; },
 };
