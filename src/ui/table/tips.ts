@@ -3,15 +3,16 @@
 // show, drawn with the pieces' pictures. They replace the old detail windows
 // (no click, nothing to close). HTML strings from the TableView only.
 
-import type { ContentIndex } from '../../game/engine';
+import { RESOURCES } from '../../game/engine';
+import type { ContentIndex, Resource } from '../../game/engine';
 import type { Translate } from '../../i18n';
 import { icon, seatColor, seatIcon } from './assets';
 import { cardFaceById } from './cardface';
-import { esc, pieceIcon, playerName, systemTag, seatBoardCard } from './render';
+import { esc, pieceIcon, playerName, resIcon, systemTag, seatBoardCard } from './render';
 import type { AmbitionRowView, PlayerView, SystemView, TableView } from './view';
 
 /** What a hover card is about: a seat, a map system or an ambition. */
-export type TipTarget = { kind: 'seat'; player: number } | { kind: 'system'; id: string } | { kind: 'ambition'; id: string };
+export type TipTarget = { kind: 'seat'; player: number } | { kind: 'system'; id: string } | { kind: 'ambition'; id: string } | { kind: 'resource'; player: number; resource: Resource };
 
 /** Reads a `data-tip` value ("seat:1", "sys:c2-p1", "amb:tyrant"), or null when it is not one. */
 export function parseTip(raw: string | undefined): TipTarget | null {
@@ -20,6 +21,8 @@ export function parseTip(raw: string | undefined): TipTarget | null {
   if (k === 'seat' && /^\d+$/.test(id)) return { kind: 'seat', player: Number(id) };
   if (k === 'sys') return { kind: 'system', id };
   if (k === 'amb') return { kind: 'ambition', id };
+  const res = k === 'res' ? /^(\d+)-([a-z]+)$/.exec(id) : null;
+  if (res && (RESOURCES as readonly string[]).includes(res[2])) return { kind: 'resource', player: Number(res[1]), resource: res[2] as Resource };
   return null;
 }
 
@@ -90,6 +93,22 @@ function ambitionTip(ix: ContentIndex, a: AmbitionRowView, t: Translate): string
     <div class="tip-tallies">${tallies}</div>`;
 }
 
+/**
+ * A resource of a seat's Prelude row: what spending it does in the Prelude,
+ * its symbols (tokens and Court cards), and whether it can be spent now.
+ */
+function resourceTip(v: TableView, p: PlayerView, r: Resource, t: Translate): string {
+  const sym = p.symbols.find((x) => x.resource === r) ?? { tokens: 0, cards: 0 };
+  const out = p.outraged.includes(r);
+  const now = !out && sym.tokens > 0 && v.active === p.id && !!v.budget?.preludeOpen;
+  const state = out ? t('prelude.state.outraged') : sym.tokens === 0 ? t('prelude.state.none') : now ? t('prelude.state.now') : t('prelude.state.later');
+  return `<div class="tip-head"><span class="tip-title">${resIcon(r, t)} ${esc(t(`resource.${r}`))}</span></div>
+    <div class="tip-sub">${esc(t('prelude.row'))}: ${esc(t(`prelude.act.${r}`))}</div>
+    ${line(t('prelude.tokens'), `<b class="num">${sym.tokens}</b>`)}
+    ${line(t('prelude.cards'), `<b class="num">${sym.cards}</b>`)}
+    <div class="tip-state${out ? ' out' : now ? ' now' : ''}">${esc(state)}</div>`;
+}
+
 /** Inner HTML of the hover card for `d`, or null when it is not on the table. */
 export function tipHtml(ix: ContentIndex, v: TableView, d: TipTarget, t: Translate): string | null {
   switch (d.kind) {
@@ -104,6 +123,10 @@ export function tipHtml(ix: ContentIndex, v: TableView, d: TipTarget, t: Transla
     case 'ambition': {
       const a = v.ambitions.find((x) => x.id === d.id);
       return a ? ambitionTip(ix, a, t) : null;
+    }
+    case 'resource': {
+      const p = v.players[d.player];
+      return p ? resourceTip(v, p, d.resource, t) : null;
     }
   }
 }

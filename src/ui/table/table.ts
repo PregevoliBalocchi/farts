@@ -161,6 +161,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let flatPlanets = false;
   /** How the local player's own Court cards are ordered in the bar. */
   let courtSort: CourtSort = 'got';
+  /** The own Court opened leftwards over the bar, to see all of it. */
+  let mineOpen = false;
   try {
     controlLayer = localStorage.getItem('arcs.controlLayer') === '1';
     flatPlanets = localStorage.getItem('arcs.planets2d') === '1';
@@ -1226,7 +1228,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="region bar" aria-hidden="true" style="${place(REGIONS.bar)}"></div>
       <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, [], true)}</div>
       <div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>
-      <div class="region mine" data-region="mine" style="${place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 26, new Set(preludes.filter((c) => c.lit).map((c) => c.card)))}</div>
+      <div class="region mine${mineOpen ? ' open' : ''}" data-region="mine" style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 26, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen)}</div>
       <div class="region hand" data-region="hand" style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>
       <div class="region confirm" data-region="confirm" style="${place(REGIONS.confirm)}">${turnButtons}</div>
       ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div>${preludeTab(preludes, t, true)}</div>` : ''}
@@ -1515,6 +1517,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       }
       case 'court-sort':
         courtSort = COURT_SORTS.includes(el.dataset.sort as CourtSort) ? (el.dataset.sort as CourtSort) : 'got';
+        break;
+      case 'mine-open':
+        mineOpen = !mineOpen;
         break;
       case 'map-control':
         controlLayer = !controlLayer;

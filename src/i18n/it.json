@@ -342,5 +342,13 @@
   "mine.sort.kind": "Tipo",
   "mine.sort.resource": "Risorsa",
   "mine.empty": "Nessuna carta",
+  "mine.expand": "Mostra tutta la corte",
+  "mine.collapse": "Richiudi la corte",
+  "prelude.tokens": "Risorse sulla plancia",
+  "prelude.cards": "Carte della corte",
+  "prelude.state.now": "Spendibile ora nel Preludio",
+  "prelude.state.later": "Spendibile nel tuo Preludio",
+  "prelude.state.none": "Nessuna risorsa da spendere",
+  "prelude.state.outraged": "Oltraggio: non si può spendere",
   "prelude.row": "Preludio"
 }

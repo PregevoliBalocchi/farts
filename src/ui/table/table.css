@@ -1554,3 +1554,44 @@ button.supply:hover { border-color: var(--rule-hi); }
 
 /* The hand held free: no frame around the bottom bar */
 .tbl-stage .region.bar { border: 0; background: none; box-shadow: none; }
+
+/* ==== Prelude row as icons, gold for what can give a Prelude action now, the own Court opened (2026-11-24) ==== */
+.board .pl-legend { gap: calc(7 * var(--u)); align-items: center; }
+.board .pl-chip { padding: calc(3 * var(--u)); gap: calc(3 * var(--u)); border-width: 2px; border-radius: calc(8 * var(--u)); cursor: help; }
+.board .pl-chip .ic { width: calc(26 * var(--u)); height: calc(26 * var(--u)); }
+.board .pl-chip .pl-n { min-width: calc(14 * var(--u)); padding-right: calc(3 * var(--u)); font-size: calc(16 * var(--u)); color: #efe3c4; }
+.board .pl-chip.none { filter: grayscale(1); opacity: .5; }
+.board .pl-chip.out { border-color: #d0402f; background: #3a0d0acc; box-shadow: 0 0 8px #d0402f88; }
+.board .pl-chip.out > span:first-child .ic { filter: grayscale(1) brightness(.55); }
+.board .pl-chip.out .pl-n { color: #e78a7a; }
+.board .pl-agent { left: auto; right: calc(-8 * var(--u)); top: calc(-12 * var(--u)); }
+.board .pl-agent .pc { width: calc(20 * var(--u)); height: calc(25 * var(--u)); }
+
+/* Gold: every piece that can give a Prelude action right now */
+.board .pl-chip.live { border-color: var(--dg-gold); box-shadow: 0 0 0 1px #f3c46355, 0 0 10px #f3c463aa; }
+.board .slot.spend .well { border-color: var(--dg-gold); box-shadow: 0 0 0 1px #f3c46366, 0 0 12px #f3c463bb; }
+.tbl-stage .mine-card.lit { outline: 2px solid var(--dg-gold); outline-offset: 1px; box-shadow: 0 0 14px #f3c463aa; border-radius: 6px; }
+
+/* The resource hover card */
+.tbl-stage .hover-tip .tip-title .ic { width: 20px; height: 20px; vertical-align: -4px; }
+.tbl-stage .hover-tip .tip-state { margin-top: 6px; font-size: 12px; color: #b9ab8c; }
+.tbl-stage .hover-tip .tip-state.now { color: #f3c463; }
+.tbl-stage .hover-tip .tip-state.out { color: #e78a7a; }
+
+/* The own Court's arrow, and the Court opened leftwards over the bar */
+.tbl-stage .mine-open { width: 26px; height: 26px; margin-right: 6px; display: grid; place-items: center; padding: 0; border: 1px solid var(--dg-gold-dim); border-radius: 50%; background: #000a; color: var(--dg-gold); font-size: 12px; cursor: pointer; }
+.tbl-stage .mine-open:hover, .tbl-stage .mine-open:focus-visible { border-color: var(--dg-gold); color: #f3c463; }
+.tbl-stage .region.mine.open { z-index: 30; grid-template-rows: auto auto; align-content: start; padding-bottom: 12px; overflow: auto; }
+.tbl-stage .region.mine.open .mine-cards { flex-wrap: wrap; gap: 10px 8px; align-items: flex-start; }
+.tbl-stage .region.mine.open .mine-card { margin-left: 0; width: 150px; }
+.board .pl-chip { padding: calc(2 * var(--u)) calc(3 * var(--u)); }
+.board .pl-chip .ic { width: calc(22 * var(--u)); height: calc(22 * var(--u)); }
+.board .pl-chip .pl-n { font-size: calc(14 * var(--u)); }
+.board .pl-chip.live { box-shadow: 0 0 0 1px #f3c46388, 0 0 12px #f3c463cc; }
+/* A rival band's Outraged resources: the same red box, the seat's agent on it */
+.tbl-stage .board.rband .o-space { position: relative; display: inline-grid; place-items: center; width: 26px; height: 24px; margin-right: 4px; border: 2px solid #d0402f; border-radius: 6px; background: #3a0d0acc; }
+.tbl-stage .board.rband .o-space .o-res .ic { width: 16px; height: 16px; filter: grayscale(1) brightness(.6); }
+.tbl-stage .board.rband .o-space .o-agent { position: absolute; right: -6px; top: -9px; }
+.tbl-stage .board.rband .o-space .o-agent .pc { width: 12px; height: 15px; }
+/* The slim local board with its Prelude row: rows packed so the name bar stays on the board */
+.tbl-stage .board.slim .pb-body.with-legend { align-content: start; row-gap: calc(4 * var(--u)); padding-top: calc(4 * var(--u)); padding-bottom: calc(2 * var(--u)); }

@@ -342,5 +342,13 @@
   "mine.sort.kind": "Type",
   "mine.sort.resource": "Resource",
   "mine.empty": "No cards",
+  "mine.expand": "Show the whole court",
+  "mine.collapse": "Close the court",
+  "prelude.tokens": "Tokens on the board",
+  "prelude.cards": "Court cards",
+  "prelude.state.now": "Can be spent now, in the Prelude",
+  "prelude.state.later": "Can be spent in your Prelude",
+  "prelude.state.none": "No token to spend",
+  "prelude.state.outraged": "Outraged: cannot be spent",
   "prelude.row": "Prelude"
 }
