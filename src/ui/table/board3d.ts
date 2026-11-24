@@ -15,7 +15,7 @@ import type { ContentIndex } from '../../game/engine';
 import { layout } from '../map';
 import { assetUrl, seatColor } from './assets';
 import defaultCalibration from './board.default.json';
-import { BOARD_DEPTH, boardWidth, buildingSpots, headingJitter, isCalibration, MAX_SHOWN, pictureToWorld, shipGroups, shipPlace, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
+import { BOARD_DEPTH, boardWidth, buildingSpots, headingJitter, insidePolygon, isCalibration, MAX_SHOWN, ORBIT, pathPoints, pictureToWorld, shipGroups, shipPlace, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, tiltForZoom } from './board3d-layout';
 import type { BoardCalibration, Spot } from './board3d-layout';
 import { loadKitPieces, piece } from './kitpieces';
 import { faceEnemies, flightPhase, headingTowards, planMoves, routeSystems, turnBetween } from './model-fx';
@@ -27,7 +27,7 @@ import type { EngineTrail } from './models3d';
 import { boardImageSvg } from './mapview';
 import { loadCardFonts } from './cardfonts';
 import boardLinesData from './board.lines.json';
-import { drawInfoLayer, isBoardLines, resourceIconSpots, sectorTints, withLayerSpots } from './infolayer';
+import { drawInfoLayer, INK, isBoardLines, resourceIconSpots, sectorTints, withLayerSpots } from './infolayer';
 import type { BoardLines, SectorMode } from './infolayer';
 import { SEAT_PAINT } from './pieces3d';
 import { bakePlanets, buildPlanet, planetPalette, roomAround, turnPlanets } from './planets3d';
@@ -153,6 +153,8 @@ export class Board3D {
   private readonly pieces = new THREE.Group();
   private readonly rings = new THREE.Group();
   private readonly discs = new THREE.Group();
+  /** Each planet's orbit with ships on it and the halo under each ship group, in the planet's colour (see buildOrbits). */
+  private readonly orbits = new THREE.Group();
   private readonly shades = new THREE.Group();
   private spots: Record<string, Spot> = {};
   private readonly calib: BoardCalibration | null;
@@ -275,7 +277,7 @@ export class Board3D {
     this.board.position.y = -0.01;
     this.board.receiveShadow = !this.space;
     if (this.space) this.board.renderOrder = 2;
-    this.scene.add(this.board, this.shades, this.pieces, this.rings, this.discs, this.routeGroup, this.nextGroup, this.iconGroup);
+    this.scene.add(this.board, this.shades, this.orbits, this.pieces, this.rings, this.discs, this.routeGroup, this.nextGroup, this.iconGroup);
 
     this.controls = new OrbitControls(this.camera, this.canvas);
     this.controls.enableDamping = false;
@@ -535,7 +537,7 @@ export class Board3D {
       o.rotation.y = heading;
       if (!o.userData.model) o.scale.setScalar((o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE) * ZONE_SHIP_SCALE);
       this.routeGroup.add(o);
-      if (g.count > 1) this.routeGroup.add(countTag(g.count, at.x + g.dx, at.z + g.dz, 'small', o.userData.model ? 0.5 : 0.3));
+      if (g.count > 1) this.routeGroup.add(countTag(g.fresh, at.x + g.dx, at.z + g.dz, 'small', o.userData.model ? 0.5 : 0.3, undefined, g.damaged));
     }
   }
 
@@ -544,6 +546,7 @@ export class Board3D {
     if (id === this.hoverId) return;
     this.hoverId = id;
     this.dirty = true;
+    this.lightOrbit(id);
     const disc = id ? this.discs.children.find((d) => d.userData.sys === id) : undefined;
     if (!disc) {
       if (this.hoverRing) this.hoverRing.visible = false;
@@ -852,7 +855,7 @@ export class Board3D {
         const zone = shipPlace(this.calib, s.id, st.player, seats);
         const c = zone ? { x: zone.x - p.x, z: zone.z - p.z } : centres[i];
         const at = (dx: number, dz: number) => ({ x: p.x + c.x + dx, z: p.z + c.z + dz });
-        if (zone) {
+        {
           for (const g of shipGroups(st.fresh, st.damaged)) {
             const o = piece('ship', st.player, { lying: g.lying });
             const w = at(g.dx, g.dz);
@@ -867,26 +870,13 @@ export class Board3D {
             shipsAt.push({ player: st.player, damaged: g.lying, system: s.id, count: g.count, x: w.x, z: w.z });
             groupObjects.set(`${s.id}:${st.player}:${g.lying ? 1 : 0}`, o);
             if (g.count > 0) {
-              const tag = countTag(g.count, w.x, w.z, 'small', o.userData.model ? 0.5 : 0.3, SEAT_PAINT[seatColor(st.player)]);
+              const tag = countTag(g.fresh, w.x, w.z, 'small', o.userData.model ? 0.5 : 0.3, SEAT_PAINT[seatColor(st.player)], g.damaged);
               o.userData.tag = tag;
               this.pieces.add(tag);
             }
           }
           return;
         }
-        for (const sp of stackSpots(st.fresh, st.damaged, 0.36)) {
-          const o = piece('ship', st.player, { lying: sp.lying });
-          const w = at(sp.dx, sp.dz);
-          o.position.set(w.x, 0, w.z);
-          // Turned three-quarters to the viewer, so the profile of a standing ship shows.
-          o.rotation.y = SHIP_HEADING;
-          if (!o.userData.model) o.scale.setScalar(o.userData.kit ? KIT_SHIP_SCALE : OWN_SCALE);
-          o.userData.system = s.id;
-          o.userData.shipOf = st.player;
-          this.pieces.add(o);
-          keep(s.id, o, st.player);
-        }
-        if (st.fresh + st.damaged > MAX_SHOWN) this.pieces.add(countTag(st.fresh + st.damaged, p.x + c.x, p.z + c.z, 'large', 0.3, SEAT_PAINT[seatColor(st.player)]));
       });
       const arc = buildingSpots(s.buildings.length);
       s.buildings.forEach((bd, i) => {
@@ -910,7 +900,78 @@ export class Board3D {
       });
     }
     for (const g of shipsAt) g.heading = groupObjects.get(`${g.system}:${g.player}:${g.damaged ? 1 : 0}`)?.rotation.y;
+    this.buildOrbits(shipsAt);
     this.planFlights(shipsAt, groupObjects, fly);
+  }
+
+  /**
+   * Ties every ship to its system: round a planet with ships, the orbit they
+   * stand on (a dashed ellipse, wider along the view as the map is tilted),
+   * and under each ship group a soft halo, both in the planet's colour (pale
+   * ink at a gate). Pointing at a system or its ships lights them (showHover).
+   */
+  private buildOrbits(shipsAt: readonly ShipGroupAt[]): void {
+    this.orbits.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.geometry) m.geometry.dispose();
+      if (m.material) (m.material as THREE.Material).dispose();
+    });
+    this.orbits.clear();
+    const c = this.calib;
+    if (!c) return;
+    const unit = BOARD_DEPTH / c.height;
+    const colourOf = (id: string) => {
+      const s = this.ix.content.map.systems.find((x) => x.id === id);
+      return s?.kind === 'planet' ? planetPalette(s.resource).line : INK;
+    };
+    for (const id of new Set(shipsAt.map((g) => g.system))) {
+      const colour = colourOf(id);
+      const disc = c.systems[id]?.disc;
+      if (disc && this.space) {
+        const at = pictureToWorld(c, disc.x, disc.y);
+        const rx = disc.r + ORBIT.gap;
+        const ry = disc.r / ORBIT.squash + ORBIT.gap;
+        // Only the stretches of the orbit inside the system's own sector: it never runs into a neighbour's.
+        const sector = BOARD_LINES?.sectors[id] ? pathPoints(BOARD_LINES.sectors[id]) : null;
+        const runs: THREE.Vector3[][] = [[]];
+        for (let k = 0; k <= 120; k++) {
+          const a = (k / 120) * Math.PI * 2;
+          const p = { x: disc.x + rx * Math.cos(a), y: disc.y + ry * Math.sin(a) };
+          if (sector && !insidePolygon(p, sector)) {
+            if (runs[runs.length - 1].length) runs.push([]);
+            continue;
+          }
+          runs[runs.length - 1].push(new THREE.Vector3((p.x - disc.x) * unit, 0, (p.y - disc.y) * unit));
+        }
+        for (const run of runs) {
+          if (run.length < 2) continue;
+          const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(run), new THREE.LineDashedMaterial({ color: colour, dashSize: 0.09, gapSize: 0.07, transparent: true, opacity: ORBIT_DIM, depthWrite: false }));
+          line.computeLineDistances();
+          line.position.set(at.x, 0.009, at.z);
+          line.userData.orbitOf = id;
+          line.userData.orbit = true;
+          this.orbits.add(line);
+        }
+      }
+      for (const g of shipsAt) {
+        if (g.system !== id) continue;
+        const halo = new THREE.Mesh(new THREE.CircleGeometry(HALO_R, 32), new THREE.MeshBasicMaterial({ color: colour, map: haloTexture(), transparent: true, opacity: ORBIT_HALO, depthWrite: false }));
+        halo.rotation.x = -Math.PI / 2;
+        halo.position.set(g.x, 0.007, g.z);
+        halo.userData.orbitOf = id;
+        this.orbits.add(halo);
+      }
+    }
+    this.lightOrbit(this.hoverId);
+  }
+
+  /** Brightens the orbit and halos of system `id` (null: all dim). */
+  private lightOrbit(id: string | null): void {
+    for (const o of this.orbits.children) {
+      const m = (o as THREE.Mesh).material as THREE.MeshBasicMaterial;
+      const lit = o.userData.orbitOf === id;
+      m.opacity = o.userData.orbit ? (lit ? ORBIT_LIT : ORBIT_DIM) : lit ? ORBIT_HALO_LIT : ORBIT_HALO;
+    }
   }
 
   /** Sets the ship groups that arrived from another system flying in from there. */
@@ -1270,25 +1331,35 @@ export class Board3D {
  * `large`: over a stack with more pieces than drawn). Drawn after the glass
  * and over everything, so no line of the map covers it.
  */
-function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'large', height = 0.3, colour = '#1a2030'): THREE.Sprite {
+/**
+ * A fleet's count on a paint splat in the seat's colour: `n` fresh ships in
+ * white outlined in black, `damaged` ships in black outlined in white. One
+ * number sits in the middle of a round splat; with both, the splat is wider
+ * and the two numbers stand side by side in its middle, the fresh one larger.
+ */
+function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'large', height = 0.3, colour = '#1a2030', damaged = 0): THREE.Sprite {
   const small = size === 'small';
-  const S = 128;
+  const both = n > 0 && damaged > 0;
+  const H = 128;
+  const W = both ? 208 : 128;
   const cv = document.createElement('canvas');
-  cv.width = cv.height = S;
+  cv.width = W;
+  cv.height = H;
   const g = cv.getContext('2d')!;
   const c = new THREE.Color(colour);
   const hex = (k: THREE.Color) => '#' + k.getHexString();
-  // The splat: a disc with a rough, bitten rim and a few drops flung off it (the same for a given number).
-  let seed = 977 + n * 131;
+  const stretch = W / H;
+  // The splat: a disc (an oval with two numbers) with a rough, bitten rim and a few drops flung off it.
+  let seed = 977 + n * 131 + damaged * 17;
   const rand = () => ((seed = (seed * 16807) % 2147483647) & 0xffff) / 0xffff;
   const blob = (r0: number) => {
     g.beginPath();
-    const steps = 44;
+    const steps = 52;
     for (let i = 0; i <= steps; i++) {
       const a = (i / steps) * Math.PI * 2;
-      const r = r0 * (0.9 + 0.1 * Math.sin(a * 5 + n) + 0.07 * (rand() - 0.5) + (i % 9 === 0 ? 0.08 : 0));
-      const px = S / 2 + Math.cos(a) * r;
-      const py = S / 2 + Math.sin(a) * r;
+      const r = r0 * (0.9 + 0.1 * Math.sin(a * 5 + n + damaged) + 0.07 * (rand() - 0.5) + (i % 9 === 0 ? 0.08 : 0));
+      const px = W / 2 + Math.cos(a) * r * stretch * 0.94;
+      const py = H / 2 + Math.sin(a) * r;
       if (i) g.lineTo(px, py);
       else g.moveTo(px, py);
     }
@@ -1304,35 +1375,78 @@ function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'la
     const a = rand() * Math.PI * 2;
     const d = 52 + rand() * 7;
     g.beginPath();
-    g.arc(S / 2 + Math.cos(a) * d, S / 2 + Math.sin(a) * d, 2 + rand() * 3.5, 0, Math.PI * 2);
+    g.arc(W / 2 + Math.cos(a) * d * stretch * 0.94, H / 2 + Math.sin(a) * d, 2 + rand() * 3.5, 0, Math.PI * 2);
     g.fill();
   }
   // A lighter heart, like wet paint.
   g.fillStyle = hex(c.clone().lerp(new THREE.Color('#ffffff'), 0.16));
   blob(41);
   g.fill();
-  // The number: white, heavy, with a dark outline.
-  g.font = `900 ${n > 9 ? 62 : 76}px ${NUMBER_FONT}`;
+  // The numbers: heavy; fresh white outlined in black, damaged black outlined in white.
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.lineJoin = 'round';
-  g.lineWidth = 12;
-  g.strokeStyle = '#17130f';
-  g.strokeText(String(n), S / 2, S / 2 + 4);
-  g.fillStyle = '#ffffff';
-  g.fillText(String(n), S / 2, S / 2 + 4);
+  const font = (v: number, big: number) => `900 ${v > 9 ? Math.round(big * 0.82) : big}px ${NUMBER_FONT}`;
+  const write = (v: number, px: number, py: number, fill: string, outline: string, big: number) => {
+    g.font = font(v, big);
+    g.lineWidth = Math.max(8, big / 6.3);
+    g.strokeStyle = outline;
+    g.strokeText(String(v), px, py);
+    g.fillStyle = fill;
+    g.fillText(String(v), px, py);
+  };
+  const FRESH = ['#ffffff', '#17130f'] as const;
+  const HURT = [DAMAGED_INK, '#ffffff'] as const;
+  if (both) {
+    // Side by side, the pair centred in the splat; their feet on one line.
+    const bigF = 70;
+    const bigD = 52;
+    g.font = font(n, bigF);
+    const wF = g.measureText(String(n)).width;
+    g.font = font(damaged, bigD);
+    const wD = g.measureText(String(damaged)).width;
+    const gap = 20;
+    const left = W / 2 - (wF + gap + wD) / 2;
+    write(n, left + wF / 2, H / 2 + 4, FRESH[0], FRESH[1], bigF);
+    write(damaged, left + wF + gap + wD / 2, H / 2 + 4 + (bigF - bigD) * 0.32, HURT[0], HURT[1], bigD);
+  } else if (n > 0) write(n, W / 2, H / 2 + 4, FRESH[0], FRESH[1], 76);
+  else write(damaged, W / 2, H / 2 + 4, HURT[0], HURT[1], 76);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, toneMapped: false }));
   sprite.renderOrder = 10;
-  if (small) {
-    sprite.scale.set(0.27, 0.27, 1);
-    sprite.position.set(x + 0.12, height, z - 0.04);
-  } else {
-    sprite.scale.set(0.34, 0.34, 1);
-    sprite.position.set(x, 0.6, z);
-  }
+  const k = small ? 0.32 : 0.34;
+  sprite.scale.set(k * stretch, k, 1);
+  if (small) sprite.position.set(x + 0.12 + (k * (stretch - 1)) / 2, height, z - 0.04);
+  else sprite.position.set(x, 0.6, z);
   return sprite;
+}
+
+/** The ink of a fleet's damaged ships on its count tag (black, outlined in white). */
+const DAMAGED_INK = '#0d0b09';
+/** Orbit line opacity, normally and with its system under the pointer. */
+const ORBIT_DIM = 0.5;
+const ORBIT_LIT = 1;
+/** Halo under a ship group: radius (world units) and opacity, normally and lit. */
+const HALO_R = 0.38;
+const ORBIT_HALO = 0.75;
+const ORBIT_HALO_LIT = 1;
+let haloTex: THREE.Texture | null = null;
+/** A soft round glow (white, fading out), shared by every halo and tinted by its material. */
+function haloTexture(): THREE.Texture {
+  if (haloTex) return haloTex;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 64;
+  const g = cv.getContext('2d')!;
+  const grad = g.createRadialGradient(32, 32, 2, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+  grad.addColorStop(0.55, 'rgba(255,255,255,0.35)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  haloTex = new THREE.CanvasTexture(cv);
+  haloTex.colorSpace = THREE.SRGBColorSpace;
+  return haloTex;
 }
 
 /** How far (CSS px) the pointer may slip between press and release and still click (a trackpad tap, a shaky hand). */

@@ -136,26 +136,26 @@ export function stackSpots(fresh: number, damaged: number, gap = 0.22): ShipSpot
   return [...row(f, d ? -0.14 : 0, false), ...row(d, f ? 0.2 : 0, true)];
 }
 
-/** One group of a seat's ships in a ship zone: one model stands for `count` ships. */
+/** A seat's fleet in a system, drawn as one model that stands for `count` ships (`fresh` + `damaged`). */
 export interface ShipGroup {
   dx: number;
   dz: number;
+  /** The damaged model (lying): only when every ship of the fleet is damaged. */
   lying: boolean;
   count: number;
+  fresh: number;
+  damaged: number;
 }
 
 /**
- * Ships of one seat on its own spot of a system's ship zone, in two groups:
- * fresh ships (one standing model) and damaged ships (one lying model), side
- * by side; each group carries how many ships it stands for. A seat with only
- * one kind has its group on the spot itself.
+ * A seat's ships in one system: always one fleet, one model on the seat's
+ * spot (the owner's choice, to keep the map light): a fresh ship when at least
+ * one is fresh, the damaged one when all are damaged. Its tag tells the fresh
+ * ones (white) and the damaged ones (black). None when the seat has no ships.
  */
 export function shipGroups(fresh: number, damaged: number): ShipGroup[] {
-  const both = fresh > 0 && damaged > 0;
-  const out: ShipGroup[] = [];
-  if (fresh > 0) out.push({ dx: both ? -GROUP_GAP / 2 : 0, dz: 0, lying: false, count: fresh });
-  if (damaged > 0) out.push({ dx: both ? GROUP_GAP / 2 : 0, dz: both ? 0.03 : 0, lying: true, count: damaged });
-  return out;
+  if (fresh + damaged <= 0) return [];
+  return [{ dx: 0, dz: 0, lying: fresh <= 0, count: fresh + damaged, fresh, damaged }];
 }
 
 /** World distance between a seat's fresh and damaged groups. */
@@ -204,4 +204,148 @@ export function tiltForZoom(dist: number, near: number, far: number): number {
   const t = far > near ? Math.max(0, Math.min(1, (dist - near) / (far - near))) : 1;
   const ease = t * t * (3 - 2 * t);
   return TILT_NEAR + (TILT_FAR - TILT_NEAR) * ease;
+}
+
+/** A point of a board picture, in pixels. */
+export interface PicturePoint {
+  x: number;
+  y: number;
+}
+
+/** The corners of an SVG path made of M, L and Z commands (a sector's outline in board.lines.json). */
+export function pathPoints(d: string): PicturePoint[] {
+  const nums = d.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+  const out: PicturePoint[] = [];
+  for (let i = 0; i + 1 < nums.length; i += 2) out.push({ x: nums[i], y: nums[i + 1] });
+  return out;
+}
+
+/** True if `p` lies inside the polygon `poly` (even-odd rule). */
+export function insidePolygon(p: PicturePoint, poly: readonly PicturePoint[]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i];
+    const b = poly[j];
+    if (a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+
+/** Distance from `p` to the nearest edge of the polygon `poly`. */
+export function edgeDistance(p: PicturePoint, poly: readonly PicturePoint[]): number {
+  let best = Infinity;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[j];
+    const b = poly[i];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = dx * dx + dy * dy;
+    const k = len ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len)) : 0;
+    best = Math.min(best, Math.hypot(p.x - (a.x + k * dx), p.y - (a.y + k * dy)));
+  }
+  return best;
+}
+
+/** How ships orbit a planet (picture pixels): gap from the planet's rim, room kept from the sector's edge, room between two seats. */
+export const ORBIT = { gap: 34, clear: 30, apart: 80, step: 18, rings: 4, squash: 0.62 } as const;
+
+/**
+ * Where the ships of 1, 2, 3 and 4 seats stand in a planet system, so that
+ * they plainly belong to its planet: on an orbit just outside the planet's
+ * disc, on the side towards the player (below it) first and then round its
+ * sides, always inside the system's sector and clear of its edges and of
+ * other planets, the seats apart from each other and in order from left to
+ * right. A figure that does not fit is null (the caller keeps its old spots).
+ */
+export function orbitLayouts(
+  disc: { x: number; y: number; r: number },
+  sector: readonly PicturePoint[],
+  others: readonly { x: number; y: number; r: number }[] = [],
+  o: { gap: number; clear: number; apart: number; step: number; rings: number; squash: number } = ORBIT,
+): (PicturePoint[] | null)[] {
+  // Every free point round the planet, best first: nearest the rim, then nearest straight below it.
+  const free: { p: PicturePoint; cost: number }[] = [];
+  for (let ring = 0; ring < o.rings; ring++) {
+    // The map is seen tilted: across the view a planet (a sphere) looks as wide as its disc, but along it the board
+    // looks shorter by about `squash`, so the orbit reaches further above and below the planet than to its sides.
+    const rx = disc.r + o.gap + ring * o.step;
+    const ry = disc.r / o.squash + o.gap + ring * o.step;
+    for (let deg = 0; deg < 360; deg += 5) {
+      const a = (deg * Math.PI) / 180;
+      const p = { x: disc.x + rx * Math.cos(a), y: disc.y + ry * Math.sin(a) };
+      if (!insidePolygon(p, sector) || edgeDistance(p, sector) < o.clear) continue;
+      if (others.some((d) => Math.hypot(p.x - d.x, p.y - d.y) < d.r + o.clear)) continue;
+      const fromBelow = Math.abs(((deg - 90 + 540) % 360) - 180);
+      free.push({ p, cost: ring * 40 + fromBelow });
+    }
+  }
+  free.sort((a, b) => a.cost - b.cost);
+  return [1, 2, 3, 4].map((n) => {
+    const picked: PicturePoint[] = [];
+    for (const f of free) {
+      if (picked.length === n) break;
+      if (picked.every((q) => Math.hypot(q.x - f.p.x, q.y - f.p.y) >= o.apart)) picked.push(f.p);
+    }
+    return picked.length === n ? picked.sort((a, b) => a.x - b.x || a.y - b.y) : null;
+  });
+}
+
+/** How ships stand at a gate (picture pixels): room kept round the gate's number, from the segment's edges, and between two seats. */
+export const GATE = { number: 62, clear: 26, apart: 78, along: 88 } as const;
+
+/**
+ * Where the ships of 1, 2, 3 and 4 seats stand at a gate, a segment of the
+ * ring round the map's centre `centre`: in a row along the ring at the
+ * gate's number `at` (the number itself left clear, one seat each side of
+ * it first), a second row further in or out only when the first is full;
+ * always inside the segment `sector` and clear of its edges, in order along
+ * the ring. A figure that does not fit is null.
+ */
+export function gateLayouts(
+  centre: PicturePoint,
+  at: PicturePoint,
+  sector: readonly PicturePoint[],
+  o: { number: number; clear: number; apart: number; along: number } = GATE,
+): (PicturePoint[] | null)[] {
+  const d0 = Math.hypot(at.x - centre.x, at.y - centre.y);
+  const a0 = Math.atan2(at.y - centre.y, at.x - centre.x);
+  const free: { p: PicturePoint; cost: number; a: number }[] = [];
+  for (let dr = -70; dr <= 70; dr += 10) {
+    const d = d0 + dr;
+    for (let da = -40; da <= 40; da += 1.5) {
+      const a = a0 + (da * Math.PI) / 180;
+      const p = { x: centre.x + d * Math.cos(a), y: centre.y + d * Math.sin(a) };
+      if (!insidePolygon(p, sector) || edgeDistance(p, sector) < o.clear) continue;
+      if (Math.hypot(p.x - at.x, p.y - at.y) < o.number) continue;
+      // Best on the number's own circle, about `along` from it either side.
+      const arc = Math.abs((da * Math.PI) / 180) * d;
+      free.push({ p, a: da, cost: Math.abs(dr) * 1.2 + Math.abs(arc - o.along) * 0.6 });
+    }
+  }
+  free.sort((x, y) => x.cost - y.cost);
+  return [1, 2, 3, 4].map((n) => {
+    const picked: { p: PicturePoint; a: number }[] = [];
+    for (const f of free) {
+      if (picked.length === n) break;
+      // Two seats: one each side of the number, when both sides have room.
+      if (n === 2 && picked.length === 1 && Math.sign(f.a) === Math.sign(picked[0].a) && free.some((g) => Math.sign(g.a) !== Math.sign(picked[0].a))) continue;
+      if (picked.every((q) => Math.hypot(q.p.x - f.p.x, q.p.y - f.p.y) >= o.apart)) picked.push(f);
+    }
+    if (picked.length === n) return picked.sort((x, y) => x.a - y.a).map((x) => x.p);
+    // No room for one row: two rows, one seat each side of the number in each (a 2 by 2 square round it).
+    for (const g of [40, 46, 52]) {
+      for (const s of [60, 70, 80, 90]) {
+        const spots = [-g, g].flatMap((dr) =>
+          [-1, 1].map((side) => {
+            const d = d0 + dr;
+            const a = a0 + (side * s) / d;
+            return { p: { x: centre.x + d * Math.cos(a), y: centre.y + d * Math.sin(a) }, a: side * s };
+          }),
+        );
+        const ok = spots.filter((f) => insidePolygon(f.p, sector) && edgeDistance(f.p, sector) >= o.clear && Math.hypot(f.p.x - at.x, f.p.y - at.y) >= o.number);
+        if (ok.length >= n && 2 * g >= o.apart) return ok.slice(0, n).sort((x, y) => x.a - y.a).map((x) => x.p);
+      }
+    }
+    return null;
+  });
 }

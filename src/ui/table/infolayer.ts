@@ -5,7 +5,7 @@
 // hexagon, arrowhead) on the ring, and the building slots. Systems out of play
 // are shaded. Drawn on a canvas in the board picture's pixel frame.
 
-import { BOARD_DEPTH, type BoardCalibration } from './board3d-layout';
+import { BOARD_DEPTH, gateLayouts, orbitLayouts, pathPoints as sectorCorners, type BoardCalibration } from './board3d-layout';
 import { roundedTriangle } from './model-fx';
 import models from './models.json';
 
@@ -42,17 +42,28 @@ export interface BoardLines {
  * spots (when it has them), so the ships stand in the open beside their
  * planet instead of on it. Pure.
  */
-export function withLayerSpots(calib: BoardCalibration, lines: Pick<BoardLines, 'spots'>): BoardCalibration {
+export function withLayerSpots(calib: BoardCalibration, lines: Pick<BoardLines, 'spots'> & Partial<Pick<BoardLines, 'sectors' | 'ring' | 'gates'>>): BoardCalibration {
   if (!lines.spots) return calib;
+  const discs = Object.entries(calib.systems).flatMap(([id, s]) => (s.disc ? [{ id, ...s.disc }] : []));
   const systems: BoardCalibration['systems'] = {};
   for (const [id, sys] of Object.entries(calib.systems)) {
     const ships = lines.spots[id]?.ships;
     const layouts = lines.spots[id]?.layouts;
     const at = ([x, y]: number[]) => ({ x, y });
+    // A planet's ships orbit it, just outside its disc (orbitLayouts); a figure that does not fit keeps the traced spots.
+    const sector = lines.sectors?.[id];
+    // A gate's ships stand in a row along the ring at its number (gateLayouts).
+    const gate = lines.gates?.find((g) => g.system === id);
+    const orbit =
+      sys.disc && sector ? orbitLayouts(sys.disc, sectorCorners(sector), discs.filter((d) => d.id !== id))
+      : gate && sector && lines.ring ? gateLayouts({ x: lines.ring.cx, y: lines.ring.cy }, { x: gate.x, y: gate.y }, sectorCorners(sector))
+      : null;
+    const traced = layouts?.length ? layouts.map((fig) => fig.map(at)) : null;
+    const merged = orbit ? orbit.map((fig, i) => fig ?? traced?.[i] ?? null) : traced;
     systems[id] = {
       ...sys,
       ...(ships?.length ? { ships: ships.map(at) } : {}),
-      ...(layouts?.length ? { layouts: layouts.map((fig) => fig.map(at)) } : {}),
+      ...(merged && merged.every((f) => f) ? { layouts: merged as { x: number; y: number }[][] } : traced ? { layouts: traced } : {}),
     };
   }
   return { ...calib, systems };
