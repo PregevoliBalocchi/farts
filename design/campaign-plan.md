@@ -188,11 +188,29 @@ Every choice a player makes inside these steps goes through the existing
 
 ## 5. Milestones (one or more PRs each)
 
+> **Paused 2026-11-24 (owner's decision):** campaign work stops after M2's
+> event phase; the base game's open problems come first. Where M2 stands:
+> engine done for Act I setup, Event cards, the Empire / Free States / Blight
+> rules and the event phase (`campaign-setup.ts`, `campaign.ts`,
+> `events.ts`, tests `tests/unit/engine/campaign-*.test.ts`). Left in M2:
+> the CC Court cards' other effects (When Secured, Guild abilities) and the
+> whole campaign table UI (setup placement, Event button, Council and
+> attached cards in the Court, campaign defenders in battle, Imperial ships
+> and Blight on the map, the rules booklet, the event phase's decisions).
+> Nothing campaign-only is reachable from the base game's screens yet.
+> Interpretations to confirm with the owner when work resumes: Court Crises
+> resolve only the Vox cards present when they start (a refill does not
+> resolve); Song of Freedom ties go to the first tied player in turn order;
+> Requisition Ships with no Empire-controlled system may use any player's
+> starport; the Council is outside the Court row count (no refill when
+> secured, back leftmost); Ransack is a Secure (takes attached cards, never a
+> Decided Council).
+
 | # | Content | Playable result |
 |---|---|---|
 | M0 ✓ | Data: all 24 Fate sets in `content.json` (342 physical cards, 51 two-sided, counts checked against the set dividers; pieces with their sides); campaign tiles cut from the punchboard (Blight, First Regent, chapter track, Edenguard, Blightkin); Free buildings and Imperial ship from the kit; planet ID symbols already on the map | — |
-| M1 | The foundations in 2.1: owners, viewpoint control, play area, rules booklet, campaign state | Base game unchanged, tests green |
-| M2 | Act I without Fate cards: Empire, Free States, Blight, Event cards, Council, Crises, Edicts, Court CC effects | A playable Act I with generic objectives |
+| M1 ✓ | The foundations in 2.1 (`src/game/engine/campaign.ts`): owners other than players (Imperial ships, Free buildings, Blight; pieces back to the campaign supply), viewpoint control and Catapult stops, the Court's attached cards and the Imperial Council (secure, tuck, return Decided, Petition; never buried, scrapped or discarded; Ransack secures), protected Guild cards, the frozen Imperial Trust counted for ambitions, the rules booklet (two sides, stacked slots, Edicts by number, announcements), campaign state saved with the game. Moved on: the "can act with" rule (2.1 item 3) to M2, with the Empire's pieces on the map; the campaign document kept between Acts to M4, with the Intermission | Base game unchanged, tests green |
+| M2 (in progress) | Act I without Fate cards: Empire, Free States, Blight, Event cards, Council, Crises, Edicts, Court CC effects. Done: Act I setup (`campaign-setup.ts`: table steps A–Q, placements G–H, Free cities I, step K, 2-player mulligan keeping Events), Event cards (follow mode `event`, pending event at round end), Act length; the Empire, Free States and Blight in actions and battle (Presence, Movement and Truce Laws, defenders `empire`/`free`/`blight`, Tough Blight, Free States raid); the event phase (`events.ts`: the Council's steps, the event and number dice, Blight Crises, the CC Vox Crises cc-11 to cc-15 with attached cards first and Bury, the Edicts in order: Guild Envoys Depart, Govern the Imperial Reach enforce or change, Demand with Favor and Outlaw fallback, Celebrate Regency, Requisition Ships, Distribute Arms). Next: the CC Court cards' other effects (When Secured, Guild abilities), the table UI | A playable Act I with generic objectives |
 | M3 | Summits: engine and negotiation screen, online | Full event rounds |
 | M4 | A Fates (8 sets), objectives, Intermission, campaign save, Act II setup | Act I → Intermission → Act II |
 | M5 | Flagships, B Fates (8 sets) | Act II complete |

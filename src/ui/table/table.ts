@@ -706,9 +706,14 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     return preludeTab(preludeCards(v).filter((c) => c.lit), t, true);
   }
 
+  /** A battle's defender by name: a player, or (campaign) the Empire, the Free States or the Blight. */
+  function defenderName(d: BattleRef['target']): string {
+    return typeof d === 'number' ? playerName(t, d) : t(`battle.defender.${d}`);
+  }
+
   /** What the rolled keys can steal from the defender (resources and Guild cards), as toggles; '' without keys. */
   function raidChoices(b: BattleRef): string {
-    if (b.totals.key <= 0) return '';
+    if (b.totals.key <= 0 || typeof b.target !== 'number') return '';
     const def = state.players[b.target];
     const on = (x: RaidTake) => raid.some((r) => ('resource' in r && 'resource' in x && r.resource === x.resource) || ('card' in r && 'card' in x && r.card === x.card));
     const res = def.resources
@@ -739,7 +744,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const controls = mine
       ? `<div class="b-foot">${raidChoices(b)}<div class="btn-grid">${button('battle-auto', t('battle.auto'))}${button('battle-reset', t('battle.reset'))}${button('allocate', t('battle.confirm'), { cls: 'primary', disabled: !ok })}</div></div>`
       : `<div class="b-foot"><div class="hint">${esc(t('battle.watching', { who: playerName(t, b.attacker) }))}</div></div>`;
-    const title = t('battle.title', { system: systemName(ix.content.map.systems.find((s) => s.id === b.system), t, b.system), a: playerName(t, b.attacker), d: playerName(t, b.target) });
+    const title = t('battle.title', { system: systemName(ix.content.map.systems.find((s) => s.id === b.system), t, b.system), a: playerName(t, b.attacker), d: defenderName(b.target) });
     return `<div class="battle-win glass" role="dialog" aria-label="${esc(title)}">
       <div class="b-head"><span class="ctx-title">${esc(title)}</span><span class="b-counts">${counts || esc(t('battle.noHits'))}</span></div>
       ${diceStrip(b)}
@@ -931,7 +936,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     };
     battle3d.update({
       attackerSeat: pb.attacker,
-      defenderSeat: pb.target,
+      // Campaign defenders get their own pieces with the campaign battle screen; until then the scene shows a player's.
+      defenderSeat: typeof pb.target === 'number' ? pb.target : pb.attacker,
       after: battleAfter(forces, al),
       buildings: forces.buildings.map((x) => ({ owner: x.owner, type: x.type })),
       dice: (pb.faces ?? []).map((f) => ({ type: f.type, face: f.face })),
@@ -1112,7 +1118,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       const summary = t('battle.summary', { hit: b.totals.hit, buildingHit: b.totals.buildingHit, selfHit: b.totals.selfHit, intercept: b.interceptHits, key: b.totals.key });
       const al = allocation();
       const ok = al !== null && can({ type: 'allocate', player: me, allocation: al });
-      return `<div class="ctx-head"><span class="ctx-title">${esc(`${systemLabel(v, b.system)}: ${playerName(t, b.attacker)} → ${playerName(t, b.target)}`)}</span></div><div class="hint">${esc(summary)}</div>${raidChoices(b)}<div class="btn-grid">${button('allocate', t('battle.assign'), { cls: 'primary', disabled: !ok })}</div>${powersRow(v)}`;
+      return `<div class="ctx-head"><span class="ctx-title">${esc(`${systemLabel(v, b.system)}: ${playerName(t, b.attacker)} → ${defenderName(b.target)}`)}</span></div><div class="hint">${esc(summary)}</div>${raidChoices(b)}<div class="btn-grid">${button('allocate', t('battle.assign'), { cls: 'primary', disabled: !ok })}</div>${powersRow(v)}`;
     }
 
     if (v.phase === 'decide' && v.decision) {

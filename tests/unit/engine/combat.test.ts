@@ -56,7 +56,8 @@ describe('battle allocation', () => {
       { type: 'allocate', player: 0, allocation: { hits: [], selfHits: [], buildingHits: [0, 0] } },
     ]);
     expect(s.map['c1-p3'].buildings).toEqual([]);
-    expect(s.players[1].supply.cities).toBe(5 - 1 + 1);
+    // The destroyed city waits in the attacker's Trophies box (base rulebook p. 7, 15), not in its owner's supply.
+    expect(s.players[1].supply.cities).toBe(5 - 1);
     expect(s.players[0].trophies.map((t) => t.owner)).toEqual([1]);
   });
 

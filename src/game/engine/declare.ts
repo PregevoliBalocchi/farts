@@ -4,6 +4,7 @@
 
 import { RuleError } from './errors';
 import { effectOf, ownedEffects } from './effects';
+import { isProtected } from './ops';
 import type { ContentIndex } from './setup';
 import type { AmbitionId, GameState, PlayerId } from './types';
 
@@ -22,6 +23,7 @@ export function payDeclareCost(ix: ContentIndex, s: GameState, p: PlayerId, give
   const pl = s.players[p];
   if (!give) fail('To declare you must give 1 Guild card to the Rival with the least Power');
   if (!pl.court.includes(give.card) || ix.courtCards.get(give.card)?.kind !== 'faction') fail(`${give.card} is not one of your Guild cards`);
+  if (isProtected(ix, give.card)) fail(`${give.card} is protected: it cannot be given away`);
   const rivals = s.players.filter((x) => x.id !== p);
   const least = Math.min(...rivals.map((x) => x.power));
   const weakest = rivals.filter((x) => x.power === least).map((x) => x.id);

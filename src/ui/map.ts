@@ -73,7 +73,7 @@ export function drawMap(svg: SVGSVGElement, ix: ContentIndex, s: GameState, sele
     // Buildings
     st.buildings.forEach((b, i) => {
       const bx = p.x - (st.buildings.length - 1) * 9 + i * 18;
-      el('rect', { x: bx - 7, y: p.y - 6, width: 14, height: 12, rx: b.type === 'city' ? 0 : 7, class: `bld${b.damaged ? ' dmg' : ''}`, fill: playerColor(b.owner) }, g);
+      el('rect', { x: bx - 7, y: p.y - 6, width: 14, height: 12, rx: b.type === 'city' ? 0 : 7, class: `bld${b.damaged ? ' dmg' : ''}`, fill: typeof b.owner === 'number' ? playerColor(b.owner) : 'var(--free, #9a9a9a)' }, g);
       el('text', { x: bx, y: p.y + 4, class: 'bld-t' }, g, b.type === 'city' ? 'C' : 'S');
     });
     // Ships

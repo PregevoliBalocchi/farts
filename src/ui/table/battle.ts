@@ -3,13 +3,15 @@
 // Same order the debug page proposes: fresh ships take a hit before damaged
 // ones, buildings only once the defender has no ships left.
 
+import { ransackable } from '../../game/engine';
 import type { Allocation, BattleRef, DieFace, DieType, GameState, HitTarget, ShipHit } from '../../game/engine';
 
 /** Proposed allocation for battle `b` in state `s` (no raid; ransack the first eligible Court slots). */
 export function defaultAllocation(s: GameState, b: BattleRef): Allocation {
   const sys = s.map[b.system];
   const att = { ...(sys.ships[b.attacker] ?? { fresh: 0, damaged: 0 }) };
-  const def = { ...(sys.ships[b.target] ?? { fresh: 0, damaged: 0 }) };
+  // Campaign defenders (the Empire, the Free States, the Blight) are drawn from M2's battle screen; here only a player's ships.
+  const def = { ...((typeof b.target === 'number' ? sys.ships[b.target] : undefined) ?? { fresh: 0, damaged: 0 }) };
   const blds = sys.buildings.map((x, i) => ({ i, owner: x.owner, type: x.type, dmg: x.damaged, gone: false }));
   const shipHit = (st: { fresh: number; damaged: number }) => {
     if (st.fresh > 0) {
@@ -53,7 +55,7 @@ export function defaultAllocation(s: GameState, b: BattleRef): Allocation {
     const bi = bldHit();
     if (bi !== null) buildingHits.push(bi);
   }
-  const eligible = s.court.map((c, i) => ((c.agents[b.target] ?? 0) > 0 ? i : -1)).filter((i) => i >= 0);
+  const eligible = typeof b.target === 'number' ? ransackable(s, b.target) : [];
   const ransack = destroyedCities && eligible.length ? eligible.slice(0, Math.min(destroyedCities, eligible.length)) : [];
   return { selfHits, hits, buildingHits, raid: [], ...(ransack.length ? { ransack } : {}) };
 }
@@ -101,8 +103,8 @@ export function battleForces(s: GameState, b: BattleRef): BattleForces {
   const sys = s.map[b.system];
   return {
     attacker: { ...(sys.ships[b.attacker] ?? { fresh: 0, damaged: 0 }) },
-    defender: { ...(sys.ships[b.target] ?? { fresh: 0, damaged: 0 }) },
-    buildings: sys.buildings.map((x) => ({ owner: x.owner, type: x.type, damaged: x.damaged })),
+    defender: { ...((typeof b.target === 'number' ? sys.ships[b.target] : undefined) ?? { fresh: 0, damaged: 0 }) },
+    buildings: sys.buildings.flatMap((x) => (typeof x.owner === 'number' ? [{ owner: x.owner, type: x.type, damaged: x.damaged }] : [])),
   };
 }
 
@@ -139,10 +141,10 @@ export function battleAfter(f: BattleForces, al: Pick<Allocation, 'selfHits' | '
     if (buildings[i] === 'ok') buildings[i] = 'damaged';
     else if (buildings[i] === 'damaged') buildings[i] = 'destroyed';
   };
-  for (const h of al.selfHits) hitShips(attacker, h);
+  for (const h of al.selfHits) if (typeof h === 'string') hitShips(attacker, h);
   for (const h of al.hits) {
     if (typeof h === 'string') hitShips(defender, h);
-    else hitBuilding(h.building);
+    else if ('building' in h) hitBuilding(h.building);
   }
   for (const i of al.buildingHits) hitBuilding(i);
   return { attacker, defender, buildings };

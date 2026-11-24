@@ -57,8 +57,8 @@ describe('intercept', () => {
     let s = roll(ix, ready(ix, { fresh: 2, damaged: 0 }), 1);
     s = dispatch(ix, s, { type: 'allocate', player: 0, allocation: { selfHits: ['fresh', 'damaged'], hits: [], buildingHits: [] } });
     expect(s.map['c1-p3'].ships[0]).toEqual({ fresh: 3, damaged: 0 });
-    expect(s.players[0].supply.ships).toBe(15 - 6 + 1);
-    // Attacker ships destroyed by intercept or self-hits are the defender's trophies.
+    // Attacker ships destroyed by intercept or self-hits are the defender's trophies: not back in supply until trophies return.
+    expect(s.players[0].supply.ships).toBe(15 - 6);
     expect(s.players[1].trophies.map((t) => t.owner)).toEqual([0]);
   });
 });

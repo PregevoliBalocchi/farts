@@ -5,30 +5,34 @@ import { rollDice, totalFaces } from './dice';
 import { nextInt } from './rng';
 import { shuffle } from './rng';
 import { RuleError } from './errors';
+import { buildsDamaged, catapultStops, commandsImperial, controlsOnTurn, imperialCount, isCouncil, securable, secureCouncil, truceForbids } from './campaign';
 import { effectOf, isDeclared, ownedEffects } from './effects';
-import { cartelSupply, cityTypes, planetType, provokeOutrage, stealBlocked, weaponIcons } from './ops';
+import { cartelSupply, cityTypes, isPlayer, planetType, provokeOutrage, returnPiece, stealBlocked, weaponIcons } from './ops';
 import type { CardEffect, RerollAbility } from './effects';
 import { gainFromSupply, gainResource, onCityReturned, returnToSupply, slotKeys, takeResourceAt } from './board';
 import type { DicePool, DiceTotals, RollResult } from './dice';
 import type { ContentIndex } from './setup';
-import type { ActionKind, BattleRef, Building, GameState, PlayerId, Resource, ShipStack, SystemState, TurnBudget } from './types';
+import type { ActionKind, BattleRef, Building, Defender, GameState, Owner, PlayerId, Resource, ShipStack, SystemState, TurnBudget } from './types';
 
 /** Parameters of one action. */
 export type ActionPayload =
   /** `twice`: a second Court slot to influence (a leader's Copy/Pivot option). */
   | { kind: 'influence'; courtSlot: number; twice?: number }
   /** `influence`: also influence a Court slot before or after securing (a leader's Copy/Pivot option). */
-  | { kind: 'secure'; courtSlot: number; influence?: { courtSlot: number; when: 'before' | 'after' } }
+  /** `attachedFirst`: with an attached card, resolve it before the card under it (campaign p. 27: "in either order"). */
+  | { kind: 'secure'; courtSlot: number; influence?: { courtSlot: number; when: 'before' | 'after' }; attachedFirst?: boolean }
   /** `cityOwner` defaults to the acting player; a rival needs `content.rivalTax.allowed` and control. `city`: which of that owner's cities there (default: the first not taxed this turn). */
   /**
    * Card options: `emptySlot` taxes an empty building slot; `resource` picks the type of a gate city;
    * `shape` puts the resource on that own slot over the planet's type; `again` hits the city to tax again
    * (`ransack`: Court slot if that destroys a Rival city).
    */
-  | { kind: 'tax'; system: string; cityOwner?: PlayerId; city?: number; emptySlot?: boolean; resource?: Resource; shape?: number | { cartel: Resource }; again?: { ransack?: number } }
+  /** Campaign: `cityOwner` 'free' taxes a Free city in a system you control (p. 15), capturing no agent. */
+  | { kind: 'tax'; system: string; cityOwner?: Owner; city?: number; emptySlot?: boolean; resource?: Resource; shape?: number | { cartel: Resource }; again?: { ransack?: number } }
   /** Card options: `outside` builds a city outside the slots paying the resource on slot `pay`; `again` hits the starport to build another ship. */
   | { kind: 'build'; system: string; what: 'ship' | 'city' | 'starport'; outside?: boolean; pay?: number; again?: { ransack?: number } }
-  | { kind: 'repair'; system: string; target: 'ship' | 'building' }
+  /** Campaign: `whose` repairs an Imperial ship you Command (p. 10) or a Free building you control (p. 15). */
+  | { kind: 'repair'; system: string; target: 'ship' | 'building'; whose?: 'imperial' | 'free' }
   /**
    * `ships` fresh and `damaged` damaged ships move together to an adjacent system.
    * Catapult (from a system with a Loyal starport): `via` lists the systems passed
@@ -41,7 +45,13 @@ export type ActionPayload =
       ships: number;
       damaged?: number;
       via?: string[];
-      drop?: { at: string; ships: number; damaged?: number }[];
+      drop?: { at: string; ships: number; damaged?: number; imperial?: number; imperialDamaged?: number }[];
+      /**
+       * Campaign: Imperial ships moving with them (a Regent Commanding the Imperial Fleet, p. 10).
+       * Movement Law: at most 1 Imperial ship for each Loyal ship moving with it to the same system.
+       */
+      imperial?: number;
+      imperialDamaged?: number;
       /** Card option: fresh ships that just arrived move once more (`from` is the destination or a drop-off; `via` for a Catapult). */
       then?: { from: string; via?: string[]; to: string; ships: number }[];
     }
@@ -49,7 +59,8 @@ export type ActionPayload =
    * `preHit`: which own ship takes a hit the defender deals before dice are collected (default: a fresh one).
    * `tactical`: a move before or after the battle (a leader's Copy/Pivot option).
    */
-  | { kind: 'battle'; system: string; target: PlayerId; dice: DicePool; preHit?: ShipHit; tactical?: { when: 'before' | 'after'; move: MovePayload } }
+  /** Campaign: `target` may be the Empire, the Free States or the Blight; `withImperial` adds the Imperial ships there to a Regent's attack (p. 11). */
+  | { kind: 'battle'; system: string; target: Defender; dice: DicePool; preHit?: ShipHit; tactical?: { when: 'before' | 'after'; move: MovePayload }; withImperial?: boolean }
   /** A card's new action "Name (Kind)": `card` is the card's content id, `name` the action, `args` its choices. */
   | { kind: 'card'; card: string; name: string; args?: Record<string, unknown> };
 
@@ -100,6 +111,7 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
   influence(_ix, s, p, a) {
     const slot = s.court[a.courtSlot] ?? err('No such court slot');
     const pl = s.players[p];
+    if (!securable(s, slot)) err('The Imperial Council is Decided: it cannot be influenced');
     if (pl.supply.agents < 1) err('No agents in supply');
     pl.supply.agents -= 1;
     slot.agents[p] = (slot.agents[p] ?? 0) + 1;
@@ -108,11 +120,12 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
 
   secure(ix, s, p, a) {
     const slot = s.court[a.courtSlot] ?? err('No such court slot');
+    if (!securable(s, slot)) err('The Imperial Council is Decided: it cannot be secured');
     const mine = slot.agents[p] ?? 0;
     const rivalsMax = Math.max(0, ...Object.entries(slot.agents).filter(([k]) => Number(k) !== p).map(([, v]) => v));
     if (mine === 0 || mine <= rivalsMax) err('Need strictly more agents than every rival');
     if (mine === 1 && ix.courtCards.get(slot.card)?.kind === 'faction' && ownedEffects(ix, s, p).some((f) => f.effect.noSecureGuildWithOneAgent)) err('You cannot secure a Guild card with only 1 of your agents on it');
-    return { text: `P${p} secures ${takeCourtCard(ix, s, p, a.courtSlot, 'captives')}` };
+    return { text: `P${p} secures ${takeCourtCard(ix, s, p, a.courtSlot, 'captives', a.attachedFirst)}` };
   },
 
   tax(ix, s, p, a) {
@@ -139,7 +152,7 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
       owner = p;
     } else {
       const cities = sys.buildings.filter((b) => b.owner === owner && b.type === 'city');
-      if (!cities.length) err(`Need a city of P${owner} there`);
+      if (!cities.length) err(owner === 'free' ? 'Need a Free city there' : `Need a city of P${owner} there`);
       // Tax limit: each city at most once per turn (unless a card allows taxing again).
       const keyOf = (n: number) => `${a.system}:${owner}:${n}`;
       const n = a.city ?? (retax ? 0 : cities.findIndex((_, i) => !turn?.taxed?.includes(keyOf(i))));
@@ -149,11 +162,16 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
       city = cities[n];
       if (owner === p) {
         if (fx.some((e) => e.cannotTaxLoyal)) err('You cannot tax your own cities');
+      } else if (owner === 'free') {
+        // Campaign p. 15: "You may take actions with Free buildings that you control—tax Free cities".
+        if (!s.campaign) err('Free cities belong to the campaign');
+        if (!controlsOnTurn(s, sys, p)) err('You tax a Free city only in a system you control');
       } else {
         if (!ix.content.rivalTax.allowed) err('Taxing rival cities is not allowed');
-        if (!asLoyal && !withShips && !controls(sys, p)) err('Need to control the system to tax a rival city');
+        if (truceForbids(s, sys, p, owner)) err('Truce Law: Regents cannot tax Rival Regents in systems with Imperial ships');
+        if (!asLoyal && !withShips && !controlsOnTurn(s, sys, p)) err('Need to control the system to tax a rival city');
       }
-      if (fx.some((e) => e.taxNeedsControl) && !controls(sys, p)) err('You cannot tax cities you do not control');
+      if (fx.some((e) => e.taxNeedsControl) && !controlsOnTurn(s, sys, p)) err('You cannot tax cities you do not control');
     }
     if (turn) (turn.taxed ??= []).push(key);
     // A gate city in a cluster with no other city has no type: it can be taxed, for nothing.
@@ -163,8 +181,8 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
     if (r !== undefined && !types.includes(r)) err(`That city gives ${types.join(' or ')}`);
     const once = () => {
       let extra = '';
-      // Taxing a Rival city captures one of its owner's agents (not when taxing "as if Loyal").
-      if (owner !== p && !asLoyal && ix.content.rivalTax.effect === 'takeCaptive' && s.players[owner].supply.agents > 0) {
+      // Taxing a Rival city captures one of its owner's agents (not when taxing "as if Loyal"; never a Free city, p. 15).
+      if (owner !== p && isPlayer(owner) && !asLoyal && ix.content.rivalTax.effect === 'takeCaptive' && s.players[owner].supply.agents > 0) {
         s.players[owner].supply.agents -= 1;
         pl.captives.push(owner);
         extra = `, captures an agent of P${owner}`;
@@ -202,11 +220,14 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
     const def = ix.content.map.systems.find((x) => x.id === a.system)!;
     const fx = ownedEffects(ix, s, p).map((f) => f.effect);
     const asLoyal = fx.some((e) => e.actAsLoyalWhile && isDeclared(s, e.actAsLoyalWhile));
-    // Built in a system someone else controls: the piece arrives damaged.
-    const damaged = Object.keys(sys.ships).some((k) => Number(k) !== p && controls(sys, Number(k))) && !(a.what === 'ship' && fx.some((e) => e.buildShipsFresh));
+    // Built in a system someone else controls (campaign: on this player's turn, the Empire included): the piece arrives damaged.
+    const rivalControls = s.campaign ? buildsDamaged(s, sys, p) : Object.keys(sys.ships).some((k) => Number(k) !== p && controls(sys, Number(k)));
+    const damaged = rivalControls && !(a.what === 'ship' && fx.some((e) => e.buildShipsFresh));
     let text = '';
     if (a.what === 'ship') {
-      const ports = sys.buildings.filter((b) => b.type === 'starport' && (b.owner === p || asLoyal));
+      // Campaign p. 15: ships may also be built at Free starports in a system you control.
+      const freeOk = !!s.campaign && controlsOnTurn(s, sys, p);
+      const ports = sys.buildings.filter((b) => b.type === 'starport' && (b.owner === p || asLoyal || (b.owner === 'free' && freeOk)));
       if (!ports.length) err('Ships are built at a Loyal starport');
       const turn = currentBudget(s);
       const built = turn?.shipBuilds?.[a.system] ?? 0;
@@ -225,7 +246,8 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
         text += '; builds again';
       }
     } else {
-      if (shipCount(sys, p) < 1 && !sys.buildings.some((b) => b.owner === p)) err('Need a Loyal piece there to build');
+      // Campaign p. 10: a Regent Commanding the Imperial Fleet may also "build at them".
+      if (shipCount(sys, p) < 1 && !sys.buildings.some((b) => b.owner === p) && !commandsImperial(s, sys, p)) err('Need a Loyal piece there to build');
       let outside = false;
       if (def.kind === 'gate') {
         if (!fx.some((e) => (a.what === 'city' ? e.gateCities : e.gateStarports))) err('Buildings go on planets');
@@ -250,6 +272,22 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
 
   repair(_ix, s, p, a) {
     const sys = inPlay(s, a.system);
+    if (a.whose === 'imperial') {
+      if (a.target !== 'ship') err('Imperial pieces are ships');
+      if (!commandsImperial(s, sys, p)) err('You Command Imperial ships only in Empire-controlled systems with your Loyal pieces');
+      const st = sys.imperial ?? err('No Imperial ship there');
+      if (st.damaged < 1) err('No damaged Imperial ship there');
+      st.damaged -= 1;
+      st.fresh += 1;
+      return { text: `P${p} repairs an Imperial ship at ${a.system}` };
+    }
+    if (a.whose === 'free') {
+      if (a.target !== 'building') err('Free pieces are buildings');
+      if (!s.campaign || !controlsOnTurn(s, sys, p)) err('You repair Free buildings only in a system you control');
+      const b = sys.buildings.find((x) => x.owner === 'free' && x.damaged) ?? err('No damaged Free building there');
+      b.damaged = false;
+      return { text: `P${p} repairs a Free ${b.type} at ${a.system}` };
+    }
     if (a.target === 'ship') {
       const st = stack(sys, p);
       if (st.damaged < 1) err('No damaged ship there');
@@ -266,7 +304,8 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
     const from = inPlay(s, a.from);
     const via = a.via ?? [];
     const fx = ownedEffects(ix, s, p).map((f) => f.effect);
-    checkPath(ix, s, p, fx, a.from, via, a.to);
+    const imp = moveImperial(s, from, p, a);
+    checkPath(ix, s, p, fx, a.from, via, a.to, imp.alongTheWay);
     // Gates guarded against Rival entry, as they stand before the ships arrive.
     const guards = new Map<PlayerId, Set<string>>();
     const noteGuards = (ids: string[]) => {
@@ -295,7 +334,8 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
     const dest = stack(s.map[a.to], p);
     dest.fresh += fresh;
     dest.damaged += dmg;
-    let text = `P${p} moves ${a.ships}+${a.damaged ?? 0}d ${[a.from, ...via, a.to].join('→')}`;
+    imp.apply();
+    let text = `P${p} moves ${a.ships}+${a.damaged ?? 0}d ${[a.from, ...via, a.to].join('→')}${imp.text}`;
     if (a.then?.length) {
       // A card lets fresh ships that just moved take one more step, after any Catapult.
       if (!fx.some((e) => e.extraStep)) err('No card lets your ships move one more time');
@@ -326,22 +366,24 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
     const sys = inPlay(s, a.system);
     if (a.target === p) err('Cannot battle yourself');
     if (shipCount(sys, p) === 0) err('No ships of yours there');
-    if (shipCount(sys, a.target) === 0 && !sys.buildings.some((b) => b.owner === a.target)) err('Target has nothing there');
-    const allFresh = (sys.ships[p]?.damaged ?? 0) === 0;
-    const defFx = ownedEffects(ix, s, a.target);
-    let text = `P${p} battles P${a.target} at ${a.system}`;
+    checkDefender(s, sys, p, a.target, a.withImperial);
+    const allFresh = (sys.ships[p]?.damaged ?? 0) === 0 && (!a.withImperial || (sys.imperial?.damaged ?? 0) === 0);
+    const defFx = isPlayer(a.target) ? ownedEffects(ix, s, a.target) : [];
+    let text = `P${p} battles ${defenderName(a.target)} at ${a.system}${a.withImperial ? ' with the Imperial ships there' : ''}`;
     // Before the attacker collects dice: the defender's automatic effects, then optional reactions.
-    if (defFx.some((f) => f.effect.hitAttackerIfFresh) && (sys.ships[a.target]?.fresh ?? 0) > 0) {
+    const t0 = a.target;
+    if (isPlayer(t0) && defFx.some((f) => f.effect.hitAttackerIfFresh) && (sys.ships[t0]?.fresh ?? 0) > 0) {
       const st = stack(sys, p);
-      damageShipOnce(s, sys, p, a.target, a.preHit ?? (st.fresh > 0 ? 'fresh' : 'damaged'));
+      damageShipOnce(s, sys, p, t0, a.preHit ?? (st.fresh > 0 ? 'fresh' : 'damaged'));
       text += '; the attacker takes 1 hit before collecting dice';
       if (shipCount(sys, p) === 0) return { text: `${text}; no attacking ship is left` };
     }
-    const battle = { attacker: p, target: a.target, system: a.system };
-    const reactions = defFx.filter((f) => f.effect.triggers?.beforeDice && (f.effect.triggerWhen?.beforeDice?.({ ix, state: s, player: a.target, card: f.card, battle }) ?? true));
-    if (reactions.length) {
+    const battle = { attacker: p, target: a.target, system: a.system, ...(a.withImperial ? { withImperial: true } : {}) };
+    const target = a.target;
+    const reactions = isPlayer(target) ? defFx.filter((f) => f.effect.triggers?.beforeDice && (f.effect.triggerWhen?.beforeDice?.({ ix, state: s, player: target, card: f.card, battle: { ...battle, target } }) ?? true)) : [];
+    if (isPlayer(target) && reactions.length) {
       s.battleSetup = { ...battle, dice: a.dice, attackerAllFresh: allFresh };
-      for (const r of reactions) (s.pendingDecisions ??= []).push({ player: a.target, card: r.card, effect: 'beforeDice' });
+      for (const r of reactions) (s.pendingDecisions ??= []).push({ player: target, card: r.card, effect: 'beforeDice' });
       (s.pendingDecisions ??= []).push({ player: p, card: 'battle', effect: 'collectDice' });
       return { text: `${text}; the defender may react before dice are collected` };
     }
@@ -354,7 +396,7 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
  * Catapult — from a system with a Loyal starport (cards: any starport, or
  * gates only), stopping at any planet or a gate a Rival controls.
  */
-function checkPath(ix: ContentIndex, s: GameState, p: PlayerId, fx: CardEffect[], fromId: string, via: string[], to: string): void {
+function checkPath(ix: ContentIndex, s: GameState, p: PlayerId, fx: CardEffect[], fromId: string, via: string[], to: string, imperialAt: (id: string) => number = () => 0): void {
   const path = [fromId, ...via, to];
   for (const id of path) inPlay(s, id);
   for (let i = 0; i + 1 < path.length; i++) if (!adjacent(ix, s, path[i], path[i + 1])) err(`${path[i]} and ${path[i + 1]} are not connected`);
@@ -364,13 +406,16 @@ function checkPath(ix: ContentIndex, s: GameState, p: PlayerId, fx: CardEffect[]
   const fromGate = ix.content.map.systems.find((x) => x.id === fromId)!.kind === 'gate';
   if (fx.some((e) => e.catapultFromGatesOnly)) {
     if (!fromGate) err('You Catapult only from gates');
-  } else if (!from.buildings.some((b) => b.type === 'starport' && (b.owner === p || asLoyal))) err('Catapult moves start from a system with a Loyal starport');
+  } else if (!from.buildings.some((b) => b.type === 'starport' && (b.owner === p || asLoyal || (b.owner === 'free' && !!s.campaign && controlsOnTurn(s, from, p))))) err('Catapult moves start from a system with a Loyal starport');
   // Ships must stop on entering any planet or a gate someone else controls (checked before moving in).
   for (const id of via) {
     const def = ix.content.map.systems.find((x) => x.id === id)!;
     if (def.kind === 'planet') err(`Catapulting ships stop at planet ${id}`);
     const sys = s.map[id];
-    if (Object.keys(sys.ships).some((k) => Number(k) !== p && controls(sys, Number(k)))) err(`Catapulting ships stop at ${id}: a rival controls it`);
+    // Campaign p. 10 and 19: who controls the gate, Imperial ships moving along, and Blight decide.
+    if (s.campaign) {
+      if (catapultStops(s, sys, p, imperialAt(id) > 0)) err(`Catapulting ships stop at ${id}`);
+    } else if (Object.keys(sys.ships).some((k) => Number(k) !== p && controls(sys, Number(k)))) err(`Catapulting ships stop at ${id}: a rival controls it`);
   }
 }
 
@@ -404,8 +449,15 @@ function hitAndRepeat(ix: ContentIndex, s: GameState, p: PlayerId, sys: SystemSt
 /** Where one ship hit goes: damage a fresh ship, or destroy a damaged one. */
 export type ShipHit = 'fresh' | 'damaged';
 
-/** Where a normal hit goes: a defender ship, or (once no defender ships remain) a building by index. */
-export type HitTarget = ShipHit | { building: number };
+/**
+ * Where a normal hit goes: a defender ship, or (once no defender ships remain)
+ * a building by index. Campaign: `imperial`, an Imperial ship defending (p.
+ * 11); `blight`, a Blight token, which is Tough: that entry takes 2 hits (p. 19).
+ */
+export type HitTarget = ShipHit | { building: number } | { imperial: ShipHit } | { blight: ShipHit };
+
+/** Where a self-hit or intercept hit goes: an own ship, or (campaign) an Imperial ship attacking with you. */
+export type SelfHit = ShipHit | { imperial: ShipHit };
 
 /** A battle waiting for the attacker to allocate its hits (see BattleRef). */
 export type PendingBattle = BattleRef;
@@ -415,17 +467,19 @@ export type PendingBattle = BattleRef;
  * be collected (design/gdd/card-effects.md "Battle"), and returns the battle
  * waiting for allocation.
  */
-export function collectAndRoll(ix: ContentIndex, s: GameState, bt: { attacker: PlayerId; target: PlayerId; system: string }, pool: DicePool, allFresh: boolean, text: string): ActionResult {
+export function collectAndRoll(ix: ContentIndex, s: GameState, bt: { attacker: PlayerId; target: Defender; system: string; withImperial?: boolean }, pool: DicePool, allFresh: boolean, text: string): ActionResult {
   const { attacker: p, target, system } = bt;
   const sys = s.map[system];
   const counts = Object.values(pool).map((y) => y ?? 0);
   const dice = counts.reduce((x, y) => x + y, 0);
   if (dice < 1) err('Roll at least one die');
   const atk = ownedEffects(ix, s, p).map((f) => f.effect);
-  const def = ownedEffects(ix, s, target).map((f) => f.effect);
+  const def = isPlayer(target) ? ownedEffects(ix, s, target).map((f) => f.effect) : [];
   const isGate = ix.content.map.systems.find((x) => x.id === system)?.kind === 'gate';
   const extra = atk.reduce((n, e) => n + (e.extraDice && (!e.extraDice.inGate || isGate) ? e.extraDice.count : 0), 0);
-  if (dice > shipCount(sys, p) + extra) err(`At most one die per own ship there (fresh or damaged)${extra ? ` plus ${extra}` : ''}`);
+  // Campaign p. 11: Imperial ships added to a Regent's attack roll like attacking ships.
+  const ships = shipCount(sys, p) + (bt.withImperial ? imperialCount(sys) : 0);
+  if (dice > ships + extra) err(`At most one die per own ship there (fresh or damaged)${extra ? ` plus ${extra}` : ''}`);
   const mandatory = atk.reduce((n, e) => n + (e.extraDice?.mandatory ? e.extraDice.count : 0), 0);
   if (dice < mandatory) err(`Your ${mandatory} extra dice must be collected`);
   const cap = ix.content.maxDicePerType;
@@ -444,9 +498,10 @@ export function collectAndRoll(ix: ContentIndex, s: GameState, bt: { attacker: P
   const b: PendingBattle = {
     attacker: p,
     target,
+    ...(bt.withImperial ? { withImperial: true } : {}),
     system,
     faces: roll.faces,
-    defenderFresh: sys.ships[target]?.fresh ?? 0,
+    defenderFresh: defendingFresh(s, sys, target),
     attackerAllFresh: allFresh,
     rerolls: [],
     totals: roll.totals,
@@ -466,12 +521,13 @@ export function finalizeBattle(ix: ContentIndex, s: GameState, b: PendingBattle)
   if (b.faces) b.totals = totalFaces(b.faces.map((f) => f.face));
   const t = b.totals;
   const atk = b.like ? [] : ownedEffects(ix, s, b.attacker).map((f) => f.effect);
-  const def = b.like ? [] : ownedEffects(ix, s, b.target).map((f) => f.effect);
+  const target = b.target;
+  const def = b.like || !isPlayer(target) ? [] : ownedEffects(ix, s, target).map((f) => f.effect);
   // Ignoring applies to a rolled intercept only; one added by a defender's card stays.
   if (t.intercept > 0 && b.attackerAllFresh && atk.some((e) => e.ignoreInterceptIfAllFresh)) t.intercept -= 1;
   if (def.some((e) => e.interceptOnAssault) && b.faces?.some((f) => f.type === 'assault')) t.intercept += 1;
   if (t.intercept <= 0) b.interceptHits = 0;
-  else if (def.some((e) => e.interceptByWeapons)) b.interceptHits = weaponIcons(ix, s, b.target);
+  else if (isPlayer(target) && def.some((e) => e.interceptByWeapons)) b.interceptHits = weaponIcons(ix, s, target);
   else b.interceptHits = b.defenderFresh ?? 0;
 }
 
@@ -531,34 +587,36 @@ function afterBattle(ix: ContentIndex, s: GameState, b: PendingBattle, attackerT
     }
   };
   for (const f of ownedEffects(ix, s, b.attacker)) if (f.effect.repairAfterAttack) repair(b.attacker, f.effect.repairAfterAttack, f.card);
-  for (const p of [b.attacker, b.target]) {
+  const target = b.target;
+  for (const p of [b.attacker, target].filter(isPlayer)) {
     for (const f of ownedEffects(ix, s, p)) {
       if (!f.effect.repairPerStarport) continue;
       const ports = Object.values(s.map).filter((x) => x.inPlay && controls(x, p)).reduce((n, x) => n + x.buildings.filter((y) => y.type === 'starport').length, 0);
       repair(p, ports, f.card);
     }
   }
-  if (b.interceptHits > 0 && ownedEffects(ix, s, b.target).some((f) => f.effect.interceptByWeapons)) {
-    const d = s.players[b.target];
+  if (!isPlayer(target)) return out;
+  if (b.interceptHits > 0 && ownedEffects(ix, s, target).some((f) => f.effect.interceptByWeapons)) {
+    const d = s.players[target];
     const i = d.resources.indexOf('weapons');
     if (i >= 0) {
       returnToSupply(s, takeResourceAt(d, i));
       out.push(`P${b.target} discards 1 weapons`);
     }
   }
-  const battle = { attacker: b.attacker, target: b.target, system: b.system, attackerTookTrophies };
-  for (const f of ownedEffects(ix, s, b.target)) {
+  const battle = { attacker: b.attacker, target, system: b.system, attackerTookTrophies };
+  for (const f of ownedEffects(ix, s, target)) {
     if (!f.effect.triggers?.afterDefending) continue;
-    if (!(f.effect.triggerWhen?.afterDefending?.({ ix, state: s, player: b.target, card: f.card, battle }) ?? true)) continue;
-    (s.pendingDecisions ??= []).push({ player: b.target, card: f.card, effect: 'afterDefending' });
+    if (!(f.effect.triggerWhen?.afterDefending?.({ ix, state: s, player: target, card: f.card, battle }) ?? true)) continue;
+    (s.pendingDecisions ??= []).push({ player: target, card: f.card, effect: 'afterDefending' });
   }
   return out;
 }
 
 /** The attacker's choices for every rolled hit. Building indices refer to the system's buildings before allocation. */
 export interface Allocation {
-  /** Self-hits plus intercept hits, applied to the attacker's own ships in order. */
-  selfHits: ShipHit[];
+  /** Self-hits plus intercept hits, applied to the attacker's own ships in order (and the Imperial ships attacking with them). */
+  selfHits: SelfHit[];
   /** One entry per hit: defender ships first, buildings only once no defender ships remain. */
   hits: HitTarget[];
   /** One entry per building hit, on defender buildings (ships do not protect them). */
@@ -569,8 +627,8 @@ export interface Allocation {
   ransack?: number[];
 }
 
-/** One thing stolen with keys. */
-export type RaidTake = { resource: number } | { card: string };
+/** One thing stolen with keys; campaign: `free`, the one resource of the planet's type a raid on the Free States gains (p. 15). */
+export type RaidTake = { resource: number } | { card: string } | { free: true };
 
 /**
  * Applies the attacker's allocation in rule order (design/gdd/core-loop.md §3.5):
@@ -584,7 +642,8 @@ export function applyAllocation(ix: ContentIndex, s: GameState, b: PendingBattle
   const sys = s.map[b.system];
   const original = [...sys.buildings];
   const ransacks = [...(al.ransack ?? [])];
-  const noRansack = !b.like && ownedEffects(ix, s, b.target).some((f) => f.effect.noRansackWhenBattled);
+  const target = b.target;
+  const noRansack = !b.like && isPlayer(target) && ownedEffects(ix, s, target).some((f) => f.effect.noRansackWhenBattled);
   const onCity: CityDestroyed = (cityOwner, types) => destroyCityConsequences(ix, s, b.attacker, cityOwner, types, ransacks, !noRansack);
   const trophiesBefore = s.players[b.attacker].trophies.length;
   const bAt = (i: number) => {
@@ -592,20 +651,37 @@ export function applyAllocation(ix: ContentIndex, s: GameState, b: PendingBattle
     if (t.owner !== b.target) err('Building hits must target the defender');
     return t;
   };
-  const bldCap = () => sys.buildings.filter((x) => x.owner === b.target).reduce((n, x) => n + (x.damaged ? 1 : 2), 0);
+  const bldCap = () => sys.buildings.filter((x) => x.owner === target).reduce((n, x) => n + (x.damaged ? 1 : 2), 0);
+  // Campaign p. 11: the Imperial ships defending with a Regent, or as the Empire.
+  const impDefends = defendsWithImperial(s, target);
+  const imp = () => (impDefends ? (sys.imperial ??= { fresh: 0, damaged: 0 }) : { fresh: 0, damaged: 0 });
+  const blight = () => (target === 'blight' ? (sys.blight ??= { fresh: 0, damaged: 0 }) : { fresh: 0, damaged: 0 });
+  const st = isPlayer(target) ? stack(sys, target) : { fresh: 0, damaged: 0 };
+  const shipsLeft = () => st.fresh + st.damaged + imp().fresh + imp().damaged;
 
-  // 1. Attacker's own ships.
-  applyShipHits(s, sys, b.attacker, b.target, b.totals.selfHit + b.interceptHits, al.selfHits, 'self-hits and intercept hits');
+  // 1. Attacker's own ships (and the Imperial ships attacking with them); destroyed ones are the defender's trophies.
+  applyShipHits(s, sys, b.attacker, trophyTaker(s, target), b.totals.selfHit + b.interceptHits, al.selfHits, 'self-hits and intercept hits', !!b.withImperial);
 
-  // 2. Normal hits.
-  if (al.hits.length > b.totals.hit) err('More hit entries than hits rolled');
-  const st = stack(sys, b.target);
-  const hitCap = st.fresh * 2 + st.damaged + bldCap();
-  if (al.hits.length < Math.min(b.totals.hit, hitCap)) err('Allocate every hit');
+  // 2. Normal hits. A Blight entry takes 2 hits (Tough); a single hit left over does nothing (p. 19).
+  const weight = (h: HitTarget) => (typeof h === 'object' && 'blight' in h ? 2 : 1);
+  const used = al.hits.reduce((n, h) => n + weight(h), 0);
+  if (used > b.totals.hit) err('More hit entries than hits rolled');
+  const bl = blight();
+  const hitCap = st.fresh * 2 + st.damaged + imp().fresh * 2 + imp().damaged + bldCap() + (bl.fresh * 2 + bl.damaged) * 2;
+  if (Math.min(b.totals.hit, hitCap) - used > (target === 'blight' ? 1 : 0)) err('Allocate every hit');
   for (const h of al.hits) {
-    if (typeof h === 'string') damageShipOnce(s, sys, b.target, b.attacker, h);
-    else {
-      if (st.fresh + st.damaged > 0) err('Hits go to ships while the defender has ships there');
+    if (typeof h === 'string') {
+      if (!isPlayer(target)) err('Those defenders have no ships of a player');
+      damageShipOnce(s, sys, target, b.attacker, h);
+    } else if ('imperial' in h) {
+      if (!impDefends) err('No Imperial ship defends here');
+      damageImperialOnce(s, sys, b.attacker, h.imperial);
+    } else if ('blight' in h) {
+      if (target !== 'blight') err('The Blight is not the defender');
+      damageBlightOnce(s, sys, b.attacker, h.blight);
+    } else {
+      if (target === 'blight') err('The Blight is hit with hits only, and has no buildings');
+      if (shipsLeft() > 0) err('Hits go to ships while the defender has ships there');
       damageBuildingOnce(ix, s, sys, bAt(h.building), b.attacker, onCity);
     }
   }
@@ -617,7 +693,7 @@ export function applyAllocation(ix: ContentIndex, s: GameState, b: PendingBattle
   if (ransacks.length) err('More Ransack choices than destroyed cities');
 
   // 4. Keys: steal resources and Guild cards, only with a surviving attacker ship.
-  const stolen = raid(ix, s, sys, b, al.raid ?? []);
+  const stolen = target === 'free' ? raidFreeStates(ix, s, sys, b, al.raid ?? []) : !isPlayer(target) ? noRaid(al.raid ?? []) : raid(ix, s, sys, b, target, al.raid ?? []);
   const after = b.like ? [] : afterBattle(ix, s, b, s.players[b.attacker].trophies.length > trophiesBefore);
 
   return `P${b.attacker} allocates ${b.totals.hit} hits, ${b.totals.selfHit}+${b.interceptHits} self/intercept hits, ${b.totals.buildingHit} building hits${stolen}${after.map((x) => '; ' + x).join('')}`;
@@ -628,29 +704,30 @@ export function applyAllocation(ix: ContentIndex, s: GameState, b: PendingBattle
  * resource slot (`playerBoard.slotKeys`) or on the Guild card (`keys`). Unspent
  * keys are lost. Resource indices refer to the defender's resources before the raid.
  */
-function raid(ix: ContentIndex, s: GameState, sys: SystemState, b: PendingBattle, takes: RaidTake[]): string {
+function raid(ix: ContentIndex, s: GameState, sys: SystemState, b: PendingBattle, target: PlayerId, takes: RaidTake[]): string {
   if (!takes.length) return '';
   if (shipCount(sys, b.attacker) === 0) err('No attacker ship survived: the keys are lost');
   const att = s.players[b.attacker];
-  const def = s.players[b.target];
+  const def = s.players[target];
   let keysNeeded = 0;
   const resIdx: number[] = [];
   const cards: string[] = [];
   for (const t of takes) {
+    if ('free' in t) err('Only the Free States give a resource of the planet type');
     if ('resource' in t) {
       if (!def.resources[t.resource]) err(`Defender has no resource at slot ${t.resource}`);
-      const why = stealBlocked(ix, s, b.attacker, b.target, { resource: def.resources[t.resource]! });
+      const why = stealBlocked(ix, s, b.attacker, target, { resource: def.resources[t.resource]! });
       if (why) err(why);
       if (resIdx.includes(t.resource)) err(`Resource slot ${t.resource} taken twice`);
       resIdx.push(t.resource);
       keysNeeded += slotKeys(ix.content, t.resource);
     } else {
       if (!def.court.includes(t.card)) err(`Defender has no card ${t.card}`);
-      const why = stealBlocked(ix, s, b.attacker, b.target, { card: t.card });
+      const why = stealBlocked(ix, s, b.attacker, target, { card: t.card });
       if (why) err(why);
       if (cards.includes(t.card)) err(`Card ${t.card} taken twice`);
       cards.push(t.card);
-      keysNeeded += ix.courtCards.get(t.card)?.keys ?? 1;
+      keysNeeded += Number(ix.courtCards.get(t.card)?.keys ?? 1);
     }
   }
   if (keysNeeded > b.totals.key) err(`Raid costs ${keysNeeded} keys, only ${b.totals.key} rolled`);
@@ -666,16 +743,28 @@ function raid(ix: ContentIndex, s: GameState, sys: SystemState, b: PendingBattle
   return `; steals ${[...gained, ...cards].join(', ')} for ${keysNeeded} keys`;
 }
 
-function applyShipHits(s: GameState, sys: SystemState, owner: PlayerId, by: PlayerId, rolled: number, entries: ShipHit[], label: string): void {
+function applyShipHits(s: GameState, sys: SystemState, owner: PlayerId, by: PlayerId | null, rolled: number, entries: SelfHit[], label: string, withImperial = false): void {
   if (entries.length > rolled) err(`More ${label} entries than rolled`);
   const st = stack(sys, owner);
+  const imp = withImperial ? (sys.imperial ?? { fresh: 0, damaged: 0 }) : { fresh: 0, damaged: 0 };
   // A ship absorbs 2 hits (damage, then destroy): that bounds how many can land.
-  if (entries.length < Math.min(rolled, st.fresh * 2 + st.damaged)) err(`Allocate every one of the ${label}`);
-  for (const e of entries) damageShipOnce(s, sys, owner, by, e);
+  if (entries.length < Math.min(rolled, st.fresh * 2 + st.damaged + imp.fresh * 2 + imp.damaged)) err(`Allocate every one of the ${label}`);
+  for (const e of entries) {
+    if (typeof e === 'string') damageShipOnce(s, sys, owner, by, e);
+    else {
+      if (!withImperial) err('No Imperial ship attacks with you');
+      damageImperialOnce(s, sys, by, e.imperial);
+    }
+  }
 }
 
-/** One hit on a ship: fresh to damaged, or damaged to destroyed (trophy to `by` if a rival's). */
-function damageShipOnce(s: GameState, sys: SystemState, owner: PlayerId, by: PlayerId, e: ShipHit): void {
+/**
+ * One hit on a ship: fresh to damaged, or damaged to destroyed. A Rival's
+ * destroyed ship goes to `by`'s Trophies box (base rulebook: "put them in the
+ * Trophies box") and back to its owner only when trophies return; with no
+ * one to take it (`by` null, or the owner itself), it returns to the supply.
+ */
+function damageShipOnce(s: GameState, sys: SystemState, owner: PlayerId, by: PlayerId | null, e: ShipHit): void {
   const st = stack(sys, owner);
   if (e === 'fresh') {
     if (st.fresh < 1) err('No fresh ship left to hit');
@@ -684,9 +773,164 @@ function damageShipOnce(s: GameState, sys: SystemState, owner: PlayerId, by: Pla
   } else {
     if (st.damaged < 1) err('No damaged ship left to hit');
     st.damaged -= 1;
-    s.players[owner].supply.ships += 1;
-    if (owner !== by) s.players[by].trophies.push({ owner, piece: 'ship' });
+    if (by !== null && owner !== by) s.players[by].trophies.push({ owner, piece: 'ship' });
+    else s.players[owner].supply.ships += 1;
   }
+}
+
+/** One hit on an Imperial ship (campaign p. 11): destroyed, it is `by`'s trophy, or back in the campaign supply. */
+function damageImperialOnce(s: GameState, sys: SystemState, by: PlayerId | null, e: ShipHit): void {
+  const st = (sys.imperial ??= { fresh: 0, damaged: 0 });
+  if (e === 'fresh') {
+    if (st.fresh < 1) err('No fresh Imperial ship left to hit');
+    st.fresh -= 1;
+    st.damaged += 1;
+  } else {
+    if (st.damaged < 1) err('No damaged Imperial ship left to hit');
+    st.damaged -= 1;
+    if (by !== null) s.players[by].trophies.push({ owner: 'empire', piece: 'ship' });
+    else if (s.campaign) s.campaign.supply.imperialShips += 1;
+  }
+}
+
+/** Two hits on a Blight token (p. 19, Tough): fresh to damaged, or damaged to destroyed, `by`'s trophy. */
+function damageBlightOnce(s: GameState, sys: SystemState, by: PlayerId, e: ShipHit): void {
+  const st = (sys.blight ??= { fresh: 0, damaged: 0 });
+  if (e === 'fresh') {
+    if (st.fresh < 1) err('No fresh Blight left to hit');
+    st.fresh -= 1;
+    st.damaged += 1;
+  } else {
+    if (st.damaged < 1) err('No damaged Blight left to hit');
+    st.damaged -= 1;
+    s.players[by].trophies.push({ owner: 'blight', piece: 'blight' });
+  }
+}
+
+/**
+ * Raiding the Free States (campaign p. 15): "You may gain exactly 1 resource
+ * matching its planet type by spending [keys]. This counts as stealing. You
+ * cannot gain multiple resources from the Free States in the same battle."
+ * The key cost is campaign.freeStatesRaid.keys.
+ */
+function raidFreeStates(ix: ContentIndex, s: GameState, sys: SystemState, b: PendingBattle, takes: RaidTake[]): string {
+  if (!takes.length) return '';
+  if (takes.length > 1 || !('free' in takes[0])) err('A raid on the Free States gains exactly 1 resource of the planet type');
+  if (shipCount(sys, b.attacker) === 0) err('No attacker ship survived: the keys are lost');
+  const cost = ix.content.campaign?.freeStatesRaid.keys ?? 1;
+  if (cost > b.totals.key) err(`Raid costs ${cost} keys, only ${b.totals.key} rolled`);
+  const r = planetType(ix, s, sys.id) ?? err('That system has no planet type');
+  return gainFromSupply(ix.content, s, s.players[b.attacker], r) ? `; gains ${r} from the Free States for ${cost} keys` : '; gains nothing from the Free States (no room or supply empty)';
+}
+
+/** The Empire and the Blight hold nothing to raid. */
+function noRaid(takes: RaidTake[]): string {
+  if (takes.length) err('There is nothing to raid');
+  return '';
+}
+
+/** Who takes the attacker's destroyed pieces as trophies: the defending player; the First Regent for the Empire (none: back to the Outlaw, p. 11); nobody for the Free States or the Blight. */
+function trophyTaker(s: GameState, target: Defender): PlayerId | null {
+  if (isPlayer(target)) return target;
+  if (target === 'empire') return s.campaign?.firstRegent ?? null;
+  return null;
+}
+
+/** Imperial ships defend with a Regent ("must add", p. 11) and as the Empire. */
+function defendsWithImperial(s: GameState, target: Defender): boolean {
+  if (!s.campaign) return false;
+  return target === 'empire' || (isPlayer(target) && s.campaign.titles[target] === 'regent');
+}
+
+/** Fresh defending ships when the dice are rolled (intercept: one hit each). The Free States have none; the Blight "does not intercept" (p. 19). */
+function defendingFresh(s: GameState, sys: SystemState, target: Defender): number {
+  const imp = defendsWithImperial(s, target) ? (sys.imperial?.fresh ?? 0) : 0;
+  return (isPlayer(target) ? (sys.ships[target]?.fresh ?? 0) : 0) + imp;
+}
+
+/** A defender as the log names it. */
+function defenderName(t: Defender): string {
+  return isPlayer(t) ? `P${t}` : t === 'empire' ? 'the Empire' : t === 'free' ? 'the Free States' : 'the Blight';
+}
+
+/**
+ * Campaign battle rules on the defender (p. 11, 15, 19): only an Outlaw may
+ * choose the Empire, with Imperial ships there; the Free States need Free
+ * buildings there, the Blight some Blight; a Regent cannot battle a Rival
+ * Regent in a system with Imperial ships (Truce Law); only a Regent
+ * Commanding the Imperial Fleet there adds Imperial ships to the attack.
+ */
+function checkDefender(s: GameState, sys: SystemState, p: PlayerId, t: Defender, withImperial?: boolean): void {
+  const c = s.campaign;
+  if (withImperial && !commandsImperial(s, sys, p)) err('You Command Imperial ships only in Empire-controlled systems with your Loyal pieces');
+  if (isPlayer(t)) {
+    if (shipCount(sys, t) === 0 && !sys.buildings.some((b) => b.owner === t)) err('Target has nothing there');
+    if (truceForbids(s, sys, p, t)) err('Truce Law: Regents cannot harm Rival Regents in systems with Imperial ships');
+    return;
+  }
+  if (!c) err('The Empire, the Free States and the Blight are campaign defenders');
+  if (t === 'empire') {
+    if (c.titles[p] !== 'outlaw') err('Only Outlaws may choose the Empire as defender');
+    if (imperialCount(sys) < 1) err('No Imperial ship there');
+  } else if (t === 'free') {
+    if (!sys.buildings.some((b) => b.owner === 'free')) err('No Free building there');
+  } else if ((sys.blight?.fresh ?? 0) + (sys.blight?.damaged ?? 0) < 1) err('No Blight there');
+}
+
+/**
+ * The Imperial ships of a move (campaign p. 10): only a Regent Commanding the
+ * Imperial Fleet where they start, and Movement Law — "Regents can only move 1
+ * Imperial ship for each Loyal ship they are moving along with them at the
+ * same time to the same system" — checked on every leg of a Catapult move
+ * (drop-offs included, p. 11 example).
+ */
+function moveImperial(s: GameState, from: SystemState, p: PlayerId, a: MovePayload): { alongTheWay: (id: string) => number; apply: () => void; text: string } {
+  const fresh = a.imperial ?? 0;
+  const dmg = a.imperialDamaged ?? 0;
+  const drops = a.drop ?? [];
+  const dropped = drops.reduce((n, d) => n + (d.imperial ?? 0) + (d.imperialDamaged ?? 0), 0);
+  if (fresh + dmg === 0) {
+    if (dropped) err('No Imperial ship moves with you');
+    return { alongTheWay: () => 0, apply: () => {}, text: '' };
+  }
+  if (fresh < 0 || dmg < 0) err('Move a whole number of Imperial ships');
+  if (!commandsImperial(s, from, p)) err('You Command Imperial ships only in Empire-controlled systems with your Loyal pieces');
+  const st = from.imperial ?? err('No Imperial ship there');
+  if (st.fresh < fresh || st.damaged < dmg) err('Not enough Imperial ships there');
+  const via = a.via ?? [];
+  // Ships moving into each system of the path, Loyal and Imperial, after the drop-offs before it.
+  let loyal = a.ships + (a.damaged ?? 0);
+  let imperial = fresh + dmg;
+  const into: Record<string, number> = {};
+  for (const id of [...via, a.to]) {
+    if (imperial > loyal) err('Movement Law: at most 1 Imperial ship for each Loyal ship moving with it');
+    into[id] = imperial;
+    for (const d of drops.filter((x) => x.at === id)) {
+      loyal -= d.ships + (d.damaged ?? 0);
+      imperial -= (d.imperial ?? 0) + (d.imperialDamaged ?? 0);
+    }
+  }
+  return {
+    alongTheWay: (id) => into[id] ?? 0,
+    apply: () => {
+      st.fresh -= fresh;
+      st.damaged -= dmg;
+      let f = fresh;
+      let d = dmg;
+      for (const x of drops) {
+        if ((x.imperial ?? 0) > f || (x.imperialDamaged ?? 0) > d) err('Cannot drop more Imperial ships than are moving');
+        f -= x.imperial ?? 0;
+        d -= x.imperialDamaged ?? 0;
+        const at = (s.map[x.at].imperial ??= { fresh: 0, damaged: 0 });
+        at.fresh += x.imperial ?? 0;
+        at.damaged += x.imperialDamaged ?? 0;
+      }
+      const dest = (s.map[a.to].imperial ??= { fresh: 0, damaged: 0 });
+      dest.fresh += f;
+      dest.damaged += d;
+    },
+    text: ` with ${fresh}+${dmg}d Imperial ships`,
+  };
 }
 
 /** One hit on a building: damage it, or destroy it if already damaged (trophy to `by`). */
@@ -695,15 +939,16 @@ function damageBuildingOnce(ix: ContentIndex, s: GameState, sys: SystemState, t:
   if (!t.damaged) t.damaged = true;
   else {
     sys.buildings.splice(sys.buildings.indexOf(t), 1);
-    s.players[t.owner].supply[t.type === 'city' ? 'cities' : 'starports'] += 1;
-    if (t.type === 'city') returnToSupply(s, ...onCityReturned(ix.content, s.players[t.owner]));
+    // A Rival's (or a Free) destroyed building goes to the destroyer's Trophies box, back to its owner when trophies return.
     if (t.owner !== by) s.players[by].trophies.push({ owner: t.owner, piece: t.type });
+    else returnPiece(ix, s, t.owner, t.type);
+    // "Destroying a Free city still Provokes Outrage" (campaign p. 15).
     if (t.type === 'city') onCity?.(t.owner, cityTypes(ix, s, sys.id));
   }
 }
 
-/** Called when a city is destroyed: its owner and its planet type. */
-type CityDestroyed = (cityOwner: PlayerId, types: Resource[]) => void;
+/** Called when a city is destroyed: its owner (a player, or 'free') and its planet type. */
+type CityDestroyed = (cityOwner: Owner, types: Resource[]) => void;
 
 /**
  * Destroying a city (design/gdd/core-loop.md §3.10):
@@ -712,11 +957,12 @@ type CityDestroyed = (cityOwner: PlayerId, types: Resource[]) => void;
  * 2. Ransack the Court: take a card holding any of the city owner's agents;
  *    Rival agents on it become Trophies. `ransacks` supplies the chosen slots.
  */
-export function destroyCityConsequences(ix: ContentIndex, s: GameState, destroyer: PlayerId, cityOwner: PlayerId, types: Resource | Resource[] | undefined, ransacks: number[], allowRansack = true): void {
+export function destroyCityConsequences(ix: ContentIndex, s: GameState, destroyer: PlayerId, cityOwner: Owner, types: Resource | Resource[] | undefined, ransacks: number[], allowRansack = true): void {
   // A gate city (card effect) has several types: each one is Provoked.
   for (const t of types === undefined ? [] : Array.isArray(types) ? types : [types]) provokeOutrage(ix, s, destroyer, t);
-  if (!allowRansack) return;
-  const eligible = s.court.map((c, i) => ((c.agents[cityOwner] ?? 0) > 0 ? i : -1)).filter((i) => i >= 0);
+  // A Free city has no agents in the Court: nothing to Ransack.
+  if (!allowRansack || !isPlayer(cityOwner)) return;
+  const eligible = ransackable(s, cityOwner);
   if (!eligible.length) return;
   const slot = ransacks.shift();
   if (slot === undefined) err('Choose a Court card to Ransack');
@@ -725,15 +971,32 @@ export function destroyCityConsequences(ix: ContentIndex, s: GameState, destroye
 }
 
 /**
+ * Court slots a Ransack may take: cards holding any of the city owner's
+ * agents that can be secured (base rulebook p. 16: "Secure any card that has
+ * any number of the defender's agents"; a Decided Imperial Council cannot be
+ * secured, campaign p. 14).
+ */
+export function ransackable(s: GameState, cityOwner: PlayerId): number[] {
+  return s.court.map((c, i) => ((c.agents[cityOwner] ?? 0) > 0 && securable(s, c) ? i : -1)).filter((i) => i >= 0);
+}
+
+/**
  * Takes a Court card (Secure or Ransack): own agents return to supply, Rival
  * agents become captives (Secure) or trophies (Ransack). A faction card is
  * kept; a decree resolves and is discarded. The Court refills in the same spot.
+ *
+ * Campaign: a card attached above it is secured too (p. 27: "When you secure
+ * a card, also secure its attached card. If both have When Secured actions,
+ * resolve them in either order": `attachedFirst`). The Imperial Council is
+ * flipped and tucked instead, and the Court does not refill for it (p. 14).
  */
-export function takeCourtCard(ix: ContentIndex, s: GameState, p: PlayerId, slotIndex: number, rivalAgents: 'captives' | 'trophies'): string {
+export function takeCourtCard(ix: ContentIndex, s: GameState, p: PlayerId, slotIndex: number, rivalAgents: 'captives' | 'trophies', attachedFirst = false): string {
   const slot = s.court[slotIndex] ?? err('No such court slot');
+  if (!securable(s, slot)) err('The Imperial Council is Decided: it cannot be secured');
   const pl = s.players[p];
+  const cards = slot.attached ? (attachedFirst ? [slot.attached, slot.card] : [slot.card, slot.attached]) : [slot.card];
   const turn = currentBudget(s);
-  if (turn && !turn.preludeOver) (turn.securedInPrelude ??= []).push(slot.card);
+  if (turn && !turn.preludeOver) (turn.securedInPrelude ??= []).push(...cards);
   for (const [k, v] of Object.entries(slot.agents)) {
     const owner = Number(k);
     if (owner === p) pl.supply.agents += v;
@@ -744,10 +1007,13 @@ export function takeCourtCard(ix: ContentIndex, s: GameState, p: PlayerId, slotI
       }
   }
   s.court.splice(slotIndex, 1);
-  const effect = receiveCourtCard(ix, s, p, slot.card);
-  const refill = s.courtDeck.shift();
-  if (refill) s.court.splice(Math.min(slotIndex, s.court.length), 0, { card: refill, agents: {} });
-  return `${slot.card}${effect}`;
+  let effect = '';
+  for (const card of cards) effect += isCouncil(card) ? secureCouncil(s, p) : receiveCourtCard(ix, s, p, card);
+  if (!isCouncil(slot.card)) {
+    const refill = s.courtDeck.shift();
+    if (refill) s.court.splice(Math.min(slotIndex, s.court.length), 0, { card: refill, agents: {} });
+  }
+  return `${cards.join(' + ')}${effect}`;
 }
 
 /**
@@ -755,6 +1021,11 @@ export function takeCourtCard(ix: ContentIndex, s: GameState, p: PlayerId, slotI
  * is discarded and resolved (through a Decision when it needs a choice).
  */
 export function receiveCourtCard(ix: ContentIndex, s: GameState, p: PlayerId, card: string): string {
+  // Campaign: lore cards are shuffled into the Court deck (campaign rulebook p. 4-5 step J); secured, they join the player's lore.
+  if (ix.content.loreCards?.some((l) => l.id === card)) {
+    s.players[p].lore.push(card);
+    return '';
+  }
   const def = ix.courtCards.get(card) ?? err(`Unknown Court card ${card}`);
   if (def.kind === 'faction') {
     s.players[p].court.push(card);

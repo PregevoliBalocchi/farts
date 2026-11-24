@@ -274,7 +274,8 @@ function playerView(ix: ContentIndex, s: GameState, id: PlayerId): PlayerView {
     court: [...p.court],
     leader: p.leader ?? null,
     lore: [...(p.lore ?? [])],
-    trophies: p.trophies.map((x) => ({ owner: x.owner, piece: x.piece })),
+    // Campaign trophies of the Empire, Free States and Blight are drawn from M2 (design/campaign-plan.md).
+    trophies: p.trophies.flatMap((x) => (typeof x.owner === 'number' ? [{ owner: x.owner, piece: x.piece }] : [])),
     captives: [...p.captives],
     cities: Array.from({ length: ix.content.citiesPerPlayer }, (_, i) => ({
       built: i < citiesBuilt(ix.content, p),
@@ -427,7 +428,8 @@ export function tableView(ix: ContentIndex, s: GameState, local: PlayerId, lang 
         ships: Object.entries(st.ships)
           .filter(([, v]) => v.fresh + v.damaged > 0)
           .map(([p, v]) => ({ player: Number(p), fresh: v.fresh, damaged: v.damaged })),
-        buildings: st.buildings.map((b) => ({ owner: b.owner, type: b.type, damaged: b.damaged })),
+        // Free buildings (campaign) are drawn from M2 (design/campaign-plan.md).
+        buildings: st.buildings.flatMap((b) => (typeof b.owner === 'number' ? [{ owner: b.owner, type: b.type, damaged: b.damaged }] : [])),
       };
     }),
     links: openLinks(c.map.links, s),
