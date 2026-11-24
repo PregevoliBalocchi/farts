@@ -12,7 +12,7 @@
 //   any      --[card effect queues a Decision]--> decide --decide--> (the phase it interrupted)
 // Followers without cards are passed automatically.
 
-import { ambitionForNumber, declareAmbition, emptyAmbitionBoard, scoreAmbitions } from './ambitions';
+import { ambitionForNumber, declareAmbition, emptyAmbitionBoard, markerValues, scoreAmbitions } from './ambitions';
 import { actionKindOf, applyAllocation, collectAndRoll, performAction, rerollDice, resolveWhenSecured, RuleError } from './actions';
 import type { DicePool } from './dice';
 import { afterDeclare, payDeclareCost } from './declare';
@@ -617,11 +617,20 @@ function resetRound(s: GameState): void {
 /** Scores ambitions, checks game end, otherwise starts the next chapter. */
 export function endChapter(ix: ContentIndex, s: GameState): void {
   const c = ix.content;
+  // The markers' values as scored (before the board is cleared for the next chapter).
+  const declared: Partial<Record<AmbitionId, { first: number; second: number }[]>> = {};
+  for (const a of AMBITIONS) if (s.ambitions.declared[a].length) declared[a] = s.ambitions.declared[a].map((id) => markerValues(c, id, s.chapter));
   const { rankings, gains } = scoreAmbitions(c, s, (p, a) => {
     const fx = ownedEffects(ix, s, p).map((f) => f.effect);
     return { secondOnFirst: fx.some((e) => e.scoringSecondOnFirst?.includes(a)), firstOnly: fx.some((e) => e.scoringFirstOnly) };
   }, (p, a) => cartelMetric(ix, s, p, a));
   log(s, `Chapter ${s.chapter} ends; power gained ${gains.join('/')}`, rankings);
+  s.lastScoring = {
+    chapter: s.chapter,
+    ambitions: rankings.map((r) => ({ ambition: r.ambition, markers: declared[r.ambition] ?? [], first: r.first, second: r.second, counts: r.metrics })),
+    gains,
+    power: s.players.map((p) => p.power),
+  };
   afterScoring(ix, s);
   cleanUp(ix, s);
   for (const p of s.players) {

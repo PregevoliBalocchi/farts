@@ -15,14 +15,14 @@ import { loadContent } from '../content';
 import { assetUrl, cardArt, cardCut, icon, seatColor, seatIcon, setSeatColors } from './assets';
 import { cardFaceById, cardWords, courtCardFace, faceOf, fitCardText, hasKitFace, setFaceSource } from './cardface';
 import { loadCardFonts } from './cardfonts';
-import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceKey, facePicture, hitsLeft } from './battle';
+import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, faceKey, facePicture, hitsLeft } from './battle';
 import type { BattlePick } from './battle';
 import { BATTLE_VIEW, BattleView3D } from './battleview3d';
 import { battleScenario } from './scenario';
 import { createBoard3D } from './board3d';
 import { gpu } from './gpu';
-import type { RoutePreview, ShipGlow } from './board3d';
-import type { Allocation, BattleRef } from '../../game/engine';
+import type { Graphics, RoutePreview, ShipGlow } from './board3d';
+import type { Allocation, BattleRef, ChapterScoring } from '../../game/engine';
 import { AGENTS_VIEW, CourtAgents3D } from './courtagents3d';
 
 /** How far the agents' view rises over the bottom of the zoomed card, in pixels. */
@@ -33,7 +33,7 @@ import type { DecisionOption, DecisionPart } from './decide';
 import { parseTip, tipHtml } from './tips';
 import { actionCommand, battlePayload, battleProbe, clamp, cutRoute, extendRoute, fitDrops, IDLE, MAX_STEPPER_DICE, movePayload, routeOf, routeStops, setDrop, startAction } from './intent';
 import type { Intent, MoveIntent } from './intent';
-import { place, REGIONS, setStage, STAGE, placeUp } from './layout';
+import { place, placeDown, REGIONS, setStage, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
   actionCard, button, cardLabel, sizeAvatars, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, declareGlyphs, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, preludeTab, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon,
@@ -42,13 +42,20 @@ import { legal, othersTurn, tableView, whyNot } from './view';
 import type { TableView } from './view';
 
 /** The windows that still dim the table: the settings and a card's choice. */
-type Modal = { type: 'settings' } | { type: 'confirm-pass' } | { type: 'decide'; options: DecisionOption[]; chosen?: string[] };
+type Modal = { type: 'settings' } | { type: 'confirm-pass' } | { type: 'scoring' } | { type: 'decide'; options: DecisionOption[]; chosen?: string[] };
 
 /** A drop-down under its header button: the log or the map help. */
 type Drop = 'log' | 'help' | 'piles';
 
 /** Lines of the log the drop-down shows (the latest; it fits under the header with no scroll bar). */
 const LOG_LINES = 14;
+/** How long the "My pieces" button lights the own pieces, and its width. */
+const FIND_MINE_MS = 6000;
+const FIND_W = 150;
+/** The prompt line's height, under the hand (production/base-fixes.md #17). */
+const PROMPT_H = 34;
+/** How long a system's card, opened by a click, stays open. */
+const SYSTEM_TIP_MS = 4500;
 /** How long a hover card waits before closing once the mouse leaves what it is about (time to reach the card). */
 const TIP_LINGER_MS = 260;
 
@@ -82,6 +89,18 @@ export interface TableOnline {
   seats?: { names?: string[]; colors?: number[] };
   /** Where "Leave the game" in the settings window goes (the lobby), and the line about this game shown above it. */
   exit?: { href: string; about: () => string };
+}
+
+/** The system a card power's use targets (its `system` argument), or null when it targets none. */
+function targetSystem(o: PowerOption): string | null {
+  const c = o.cmd;
+  const args = c.type === 'action' && c.action.kind === 'card' ? c.action.args : c.type === 'ability' ? c.args : undefined;
+  return typeof args?.system === 'string' ? args.system : null;
+}
+
+/** True when going from `a` to `b` rolled dice, shuffled or drew from a deck: online it cannot be undone. */
+function revealsHidden(a: GameState, b: GameState): boolean {
+  return a.rngState !== b.rngState || a.deck.length !== b.deck.length || a.courtDeck.length !== b.courtDeck.length;
 }
 
 /** Mounts the table into `root`. */
@@ -159,10 +178,22 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** The drop-down open under the header (log or help), and the choices of a card power open over its card. */
   let drop: Drop | null = null;
   let powerMenu: { card: string; options: PowerOption[] } | null = null;
+  /**
+   * A card power whose uses each target a system (e.g. Living Structures' Prune):
+   * its systems light up on the map and a click there picks (production/base-fixes.md #4, #6).
+   */
+  let powerPick: { card: string; options: PowerOption[] } | null = null;
+  /** Until when the own pieces are lit on the map ("My pieces" button, production/base-fixes.md #7). */
+  let findMineUntil = 0;
+  /** The chapter whose scoring window was already shown here (a reload does not show it again). */
+  let scoringSeen = state.lastScoring?.chapter ?? 0;
+  let findMineTimer = 0;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
   let controlLayer = false;
   /** The planets drawn in 2D as on the board (remembered between games). */
   let flatPlanets = false;
+  /** How the 3D map draws, chosen in the settings (production/base-fixes.md #1). */
+  let graphics: Graphics = 'auto';
   /** How the local player's own Court cards are ordered in the bar. */
   let courtSort: CourtSort = 'got';
   /** The own Court opened leftwards over the bar, to see all of it. */
@@ -174,6 +205,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   try {
     controlLayer = localStorage.getItem('arcs.controlLayer') === '1';
     flatPlanets = localStorage.getItem('arcs.planets2d') === '1';
+    const g = localStorage.getItem('arcs.graphics');
+    if (g === 'lite' || g === 'still') graphics = g;
   } catch {
     /* no storage: off */
   }
@@ -239,9 +272,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         motion: params.get('motion') !== 'off',
         picture: params.get('map') === 'picture',
         showSpots: params.get('debug') === 'spots',
-        onPick: (id, shipOf) => pickSystem(id, shipOf),
-        // Leaving a system closes only a system's card (not one the mouse just opened elsewhere).
-        onHover: (id, x, y) => (id ? showTip(`sys:${id}`, { x, y }) : stage.querySelector<HTMLElement>('.hover-tip')?.dataset.key?.startsWith('sys:') && hideTipSoon()),
+        // A system's card opens on a click (production/base-fixes.md #8), not on hover.
+        onPick: (id, shipOf, x, y) => pickSystem(id, shipOf, { x, y }),
+        onStill: () => showToast(t('gpu.still')),
         onView: () => placeMenu(),
         ...(calibrating
           ? {
@@ -259,9 +292,21 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   if (board3d) {
     board3d.setSectorMode(controlLayer ? 'control' : 'resource');
     board3d.setPlanetMode(flatPlanets && board3d.hasFlatPlanets ? '2d' : '3d');
+    if (graphics !== 'auto') board3d.setGraphics(graphics);
     // Behind the stage, as large as the window: the interface is drawn in front of it.
     shell.classList.add('has-3d');
     shell.insertBefore(board3d.canvas, stage);
+    // The map is outside the stage, so the stage never hears the pointer reach it: a hover card (a rival's
+    // board, an ambition...) closes once the pointer is on the map; a system's card, opened by a click, stays.
+    board3d.canvas.addEventListener('pointerenter', (e) => {
+      const tip = stage.querySelector<HTMLElement>('.hover-tip:not(.hover-sub)');
+      if (!tip || tip.hidden) return;
+      if (!tip.dataset.key?.startsWith('sys:')) return hideTipSoon();
+      if ((e.relatedTarget as Element | null)?.closest?.('.hover-tip')) {
+        clearTimeout(tipTimer);
+        tipTimer = window.setTimeout(hideTip, SYSTEM_TIP_MS);
+      }
+    });
     // ?debug=perf: the map on window.board3d, to time its parts from the console.
     if (params.get('debug') === 'perf') Object.assign(window, { board3d });
     // No graphics card in use: the map draws lighter, and the player learns how to get it back.
@@ -285,12 +330,30 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }, 3500);
   }
 
+  /**
+   * Takes back the last command of this screen (button or Ctrl+Z); online it
+   * saves the earlier state as the shared one. False when there is nothing to undo.
+   */
+  function undo(): boolean {
+    const prev = history.pop();
+    if (!prev) return false;
+    state = prev;
+    if (online) online.commit(prev).catch((e: Error) => showToast(t('error', { msg: say(e.message) })));
+    resetChoices();
+    powerMenu = null;
+    modal = null;
+    return true;
+  }
+
   function send(cmd: Command): boolean {
     try {
       // Online, a screen only plays its own seat.
       if (online && online.seat !== null && cmd.player !== online.seat) throw new Error(t('online.notYours'));
       const next = dispatch(ix, state, cmd);
-      if (!online || hotseat) history.push(state);
+      // Online, a command that rolled dice, shuffled or drew a hidden card cannot be undone (it would show
+      // what was hidden, or let a roll be retried): the history before it is dropped.
+      if (online && !hotseat && revealsHidden(state, next)) history = [];
+      else history.push(state);
       state = next;
       resetChoices();
       render();
@@ -310,6 +373,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** Clears every half-made choice (after a command, an undo or a new game). */
   function resetChoices(): void {
     sysMenu = null;
+    powerPick = null;
     selected = null;
     seizeWith = null;
     seizePick = false;
@@ -351,7 +415,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const key = rollKeyOf(b);
     if (key !== battleKey || !placed) {
       battleKey = key;
-      placed = emptyAllocation(proposal);
+      // The hits start placed as the rules' usual order proposes (fresh ships first, buildings last): Confirm is
+      // often all it takes; clicking a piece, or Start again, changes it (production/base-fixes.md #20).
+      placed = { ...proposal, raid: [] };
     }
     return { ...placed, raid: [...raid] };
   }
@@ -404,6 +470,43 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     return value ? `${label}: ${value}` : label;
   }
 
+  /**
+   * An answer of a card power or a Decision drawn as what it touches
+   * (production/base-fixes.md #4): resource tokens, Court and Guild cards,
+   * the seat (a coloured badge on the pictures, or its chip alone); the parts
+   * with no picture (a system, a number) stay words beside them.
+   */
+  function optionHtml(parts: DecisionPart[]): string {
+    const who = parts.find((x) => x.kind === 'player' && (x.key === 'from' || x.key === 'rival'));
+    const seatOf = (n: number) => `<span class="pp-seat s-${seatColor(n)}"><i class="dot"></i>${esc(playerName(t, n))}</span>`;
+    const card = (id: string) => `<span class="pp-card" data-zoom="${esc(id)}">${cardFaceById(id)}</span>`;
+    const token = (r: string) => `<span class="pp-token">${resIcon(r as Resource, t, 'pp-res')}</span>`;
+    const pics: string[] = [];
+    const words: string[] = [];
+    for (const x of parts) {
+      const v = x.value;
+      if (x.kind === 'slot') {
+        const owner = (who?.value as number | undefined) ?? local();
+        const r = state.players[owner]?.resources[v as number];
+        if (r) pics.push(token(r));
+        else words.push(partText(x));
+      } else if (x.kind === 'resource') pics.push(token(v as string));
+      else if (x.kind === 'resources') pics.push(...(v as string[]).map(token));
+      else if (x.kind === 'card') pics.push(card(v as string));
+      else if (x.kind === 'cards') pics.push(...(v as string[]).map(card));
+      else if (x.kind === 'court') pics.push(...(Array.isArray(v) ? v : [v]).map((i) => state.court[i as number]?.card).filter((c): c is string => !!c).map(card));
+      else if (x.kind === 'player' && x !== who) pics.push(seatOf(v as number));
+      else if (x !== who && x.kind !== 'flag') words.push(partText(x));
+      else if (x.kind === 'flag') words.push(partText(x));
+    }
+    // The seat it is taken from: a badge on the pictures, or its chip when there is nothing else to show.
+    if (who) {
+      if (pics.length) pics.push(`<span class="pp-from s-${seatColor(who.value as number)}" title="${esc(playerName(t, who.value as number))}"><i class="dot"></i>${esc(playerName(t, who.value as number))}</span>`);
+      else pics.push(seatOf(who.value as number));
+    }
+    return `<span class="pp-pics">${pics.join('')}</span>${words.length ? `<span class="pp-words">${esc(words.join(' · '))}</span>` : ''}`;
+  }
+
   /** Systems the moving ships may enter next, Catapulting through `via`. */
   function moveTargets(v: TableView, from: string, via: string[], prelude?: Resource): Set<string> {
     const out = new Set<string>();
@@ -428,6 +531,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   function validSystems(v: TableView, i: Intent = intent): Set<string> {
     const out = new Set<string>();
     if (!myTurn()) return out;
+    if (powerPick) return new Set(powerPick.options.map((o) => targetSystem(o)!));
     const me = local();
     const live = v.systems.filter((s) => s.inPlay);
     if (i.step === 'system') {
@@ -471,6 +575,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (v.phase === 'gameOver') return t('prompt.gameOver', { list: v.winners.map((w) => playerName(t, w)).join(', ') });
     if (!myTurn() && v.active !== null) return t('prompt.waiting', { name: playerName(t, v.active) });
     if (sysMenu) return t('prompt.pick.menu', { system: systemLabel(v, sysMenu.system) });
+    if (powerPick) return t('prompt.pick.power', { card: cardName(powerPick.card) });
     switch (intent.step) {
       case 'system':
         return t('prompt.pick.system');
@@ -716,14 +821,22 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (b.totals.key <= 0 || typeof b.target !== 'number') return '';
     const def = state.players[b.target];
     const on = (x: RaidTake) => raid.some((r) => ('resource' in r && 'resource' in x && r.resource === x.resource) || ('card' in r && 'card' in x && r.card === x.card));
+    // Every thing to steal as its picture (the resource token, the Guild card), its key cost on it, and its place in
+    // the order chosen (production/base-fixes.md #21).
+    const order = (x: RaidTake) => raid.findIndex((r) => ('resource' in r && 'resource' in x && r.resource === x.resource) || ('card' in r && 'card' in x && r.card === x.card)) + 1;
+    const keys = (n: number | string) => `<span class="rd-keys">${icon('key')}<b class="num">${esc(String(n))}</b></span>`;
+    const pick = (take: RaidTake, args: Record<string, string | number>, label: string, pic: string, cost: number | string, cls: string) => {
+      const n = order(take);
+      return button('raid', label, { args, cls: `rd-pick ${cls}${on(take) ? ' on' : ''}`, title: label, html: `${pic}${keys(cost)}${n ? `<span class="rd-n num">${n}</span>` : ''}` });
+    };
     const res = def.resources
-      .map((r, i) => (r ? button('raid', `${t(`resource.${r}`)} · ${t('card.keys', { n: content.playerBoard.slotKeys[i] ?? 1 })}`, { args: { res: i }, cls: on({ resource: i }) ? 'on' : '' }) : ''))
+      .map((r, i) => (r ? pick({ resource: i }, { res: i }, `${t(`resource.${r}`)} · ${t('card.keys', { n: content.playerBoard.slotKeys[i] ?? 1 })}`, resIcon(r, t, 'rd-res'), content.playerBoard.slotKeys[i] ?? 1, 'rd-token') : ''))
       .join('');
     const cards = def.court
       .filter((c) => ix.courtCards.get(c)?.kind === 'faction')
-      .map((c) => button('raid', `${c} · ${t('card.keys', { n: ix.courtCards.get(c)?.keys ?? 1 })}`, { args: { card: c }, cls: on({ card: c }) ? 'on' : '' }))
+      .map((c) => pick({ card: c }, { card: c }, `${cardName(c)} · ${t('card.keys', { n: ix.courtCards.get(c)?.keys ?? 1 })}`, `<span class="rd-card" data-zoom="${esc(c)}">${cardFaceById(c)}</span>`, ix.courtCards.get(c)?.keys ?? 1, 'rd-guild'))
       .join('');
-    return `<div class="hint">${esc(t('battle.raid', { n: b.totals.key }))}</div><div class="opt-row wrap">${res}${cards}</div>`;
+    return `<div class="hint">${esc(t('battle.raid', { n: b.totals.key }))}</div><div class="rd-row">${res}${cards}</div>`;
   }
 
   /**
@@ -775,23 +888,25 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const here = v.systems.find((s) => s.id === i.system)?.ships.find((x) => x.player === me);
     const more = total < MAX_STEPPER_DICE && can(act({ kind: 'battle', system: i.system, target, dice: { ...i.dice, skirmish: i.dice.skirmish + 1 } }, i.prelude));
     const places = Math.min(MAX_STEPPER_DICE, Math.max(total + (more ? 1 : 0), (here?.fresh ?? 0) + (here?.damaged ?? 0)));
-    const types = (['skirmish', 'assault', 'raid'] as const).flatMap((d) => Array.from({ length: i.dice[d] }, () => d));
-    const dice = Array.from({ length: places }, (_, k) => {
-      const d = types[k];
-      if (!d) return `<button type="button" class="b-die pick off" data-act="die" data-type="" title="${esc(t('battle.addDie'))}" aria-label="${esc(t('battle.addDie'))}">+</button>`;
+    // One tile per die type (production/base-fixes.md #20): the die, what it does, how many, - and +.
+    const tiles = (['skirmish', 'assault', 'raid'] as const).map((d) => {
       const url = assetUrl(DIE_PICTURE[d]);
-      const label = t('battle.changeDie', { type: t(`battle.dice.${d}`) });
-      return `<button type="button" class="b-die pick d-${d}" data-act="die" data-type="${d}" title="${esc(label)}" aria-label="${esc(label)}">${url ? `<img src="${esc(url)}" alt="">` : esc(t(`battle.dice.${d}`))}</button>`;
+      const plus = total < MAX_STEPPER_DICE && can(act({ kind: 'battle', system: i.system, target, dice: { ...i.dice, [d]: i.dice[d] + 1 } }, i.prelude));
+      const name = t(`battle.dice.${d}`);
+      return `<div class="b-type d-${d}${i.dice[d] ? ' used' : ''}">
+        <span class="bt-die">${url ? `<img src="${esc(url)}" alt="">` : ''}</span>
+        <span class="bt-name">${esc(name)}</span><span class="bt-does">${esc(t(`battle.does.${d}`))}</span>
+        <span class="bt-count">${button('die-step', '−', { args: { type: d, d: -1 }, cls: 'bt-step', title: t('battle.lessDie', { type: name }), disabled: i.dice[d] < 1 })}<b class="num">${i.dice[d]}</b>${button('die-step', '+', { args: { type: d, d: 1 }, cls: 'bt-step', title: t('battle.moreDie', { type: name }), disabled: !plus })}</span>
+      </div>`;
     }).join('');
-    const mix = (['skirmish', 'assault', 'raid'] as const).map((d) => `<span class="b-mix d-${d}${i.dice[d] ? '' : ' zero'}"><i></i>${esc(t(`battle.dice.${d}`))} <b class="num">${i.dice[d]}</b></span>`).join('');
     const rivals = rivalsIn(v, i.system);
     const targets = rivals.length > 1 ? `<div class="opt-row b-targets"><span class="hint small">${esc(t('battle.target'))}</span>${rivals.map((r) => button('target', playerName(t, r), { args: { player: r }, cls: target === r ? 'on' : '' })).join('')}</div>` : '';
     const title = t('battle.title', { system: systemLabel(v, i.system), a: playerName(t, me), d: playerName(t, target) });
     return `<div class="battle-win glass setup" role="dialog" aria-label="${esc(title)}">
       <div class="b-head"><span class="ctx-title">${esc(title)}</span></div>
       ${targets}
-      <div class="b-pick"><div class="b-dice">${dice}</div><div class="b-mixes">${mix}</div></div>
-      <div class="hint small">${esc(t('battle.pickDice'))}</div>
+      <div class="b-types">${tiles}</div>
+      <div class="hint small">${esc(t('battle.pickDice', { n: total, max: places }))}</div>
       <div class="battle-slot" style="width:${BATTLE_VIEW.w}px;height:${BATTLE_VIEW.h}px"></div>
       ${why ? `<div class="hint b-why">${esc(say(why))}</div>` : ''}
       <div class="b-foot"><div class="btn-grid">${button('cancel', t('btn.cancel'))}${button('do-battle', t('battle.go'), { cls: 'primary', disabled: !ok })}</div></div>
@@ -810,12 +925,19 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const key = rollKeyOf(b);
     const roll = key !== diceShown && params.get('motion') !== 'off';
     diceShown = key;
+    // Each die a cube with its six printed faces (production/base-fixes.md #14): it tumbles in and lands with the
+    // rolled face towards the player.
     const dice = faces
       .map((f, i) => {
         const pic = facePicture(f.type, f.face);
         const label = `${t(`battle.dice.${f.type}`)}: ${faceKey(f.face) || '—'}`;
-        const inner = pic ? `<img src="${esc(assetUrl(pic))}" alt="">` : `<span>${esc(faceKey(f.face) || '·')}</span>`;
-        return `<span class="b-die d-${f.type}" style="--i:${i}" title="${esc(label)}">${inner}</span>`;
+        const flat = pic ? `<img src="${esc(assetUrl(pic))}" alt="">` : `<span>${esc(faceKey(f.face) || '·')}</span>`;
+        const all = ix.content.dice[f.type] ?? [];
+        const pics = all.map((x) => facePicture(f.type, x));
+        if (all.length !== 6 || pics.some((x) => !x)) return `<span class="b-die d-${f.type}" style="--i:${i}" title="${esc(label)}">${flat}</span>`;
+        const land = faceIndex(all, f.face);
+        const sides = pics.map((x, k) => `<span class="c-face c-${k}"><img src="${esc(assetUrl(x!))}" alt=""></span>`).join('');
+        return `<span class="b-die b-cube d-${f.type}" style="--i:${i}" data-land="${land}" title="${esc(label)}"><span class="cube">${sides}</span></span>`;
       })
       .join('');
     return `<div class="b-dice${roll ? ' rolling' : ''}" aria-label="${esc(t('battle.diceRolled'))}">${dice}</div>`;
@@ -1050,7 +1172,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     return `<span class="stepper"><span>${esc(label)}</span>${button('step', '−', { args: { name, d: -1 } })}<span class="num">${value}</span>${button('step', '+', { args: { name, d: 1 } })}</span>`;
   }
 
-  /** While another seat plays: who, what they are doing (live), who is next, what you can look at. */
+  /** While another seat plays: who, what they are doing (live), the actions they have left, and the log. */
   function othersPanel(v: TableView): string {
     const o = othersTurn(state, 3);
     if (!o) return `<div class="hint">${esc(prompt(v))}</div>`;
@@ -1061,17 +1183,14 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       : o.phase === 'allocate' ? t('others.allocating')
       : o.phase === 'lead' ? t('others.leading')
       : t('others.following');
-    const facts = [
-      o.remaining !== null ? t('others.remaining', { n: o.remaining }) : '',
-      o.next === null ? t('others.lastInRound') : o.next === local() ? t('others.nextYou') : t('others.next', { name: playerName(t, o.next) }),
-    ].filter(Boolean).join(' · ');
+    const facts = o.remaining !== null ? t('others.remaining', { n: o.remaining }) : '';
     // Engine log lines name seats P0, P1…; show them with the table's seat names.
     const live = o.live.map((l) => `<li>${esc(say(l))}</li>`).join('');
     return `<div class="live-head s-${seatColor(o.player)}"><span class="live-dot" aria-hidden="true"></span>${esc(t('others.title', { name: who }))}</div>
       <div class="hint">${esc(doing)}</div>
       ${live ? `<ol class="live-list" aria-live="polite">${live}</ol>` : ''}
-      <div class="hint">${esc(facts)}</div>
-      <div class="btn-grid wait"><span class="wait-label">${esc(t('others.whileWaiting'))}</span>${button('log', t('btn.log'))}</div>`;
+      ${facts ? `<div class="hint">${esc(facts)}</div>` : ''}
+      <div class="btn-grid wait">${button('log', t('btn.log'))}</div>`;
   }
 
   function actionsPanel(v: TableView): string {
@@ -1127,6 +1246,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
 
     if (v.phase !== 'actions' || !v.budget) return `<div class="hint">${esc(prompt(v))}</div>`;
+    // A card power picking its system on the map: what to do, and a way back.
+    if (powerPick) return `<div class="hint">${esc(prompt(v))}</div><div class="btn-grid one">${cancel}</div>`;
     const b = v.budget;
     const i = intent;
     switch (i.step) {
@@ -1205,7 +1326,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       .map((o, i) => {
         const ability = t(`power.${o.ability}`) === `power.${o.ability}` ? o.ability : t(`power.${o.ability}`);
         const what = o.parts.length ? o.parts.map(partText).join(' · ') : t('powers.use');
-        return button('power-pick', what, { args: { i }, cls: 'menu-line', html: `<span class="ml-k">${esc(ability)}</span><span>${esc(what)}</span>` });
+        if (!o.parts.length) return button('power-pick', what, { args: { i }, cls: 'menu-line', html: `<span class="ml-k">${esc(ability)}</span><span>${esc(what)}</span>` });
+        return button('power-pick', what, { args: { i }, cls: 'pp-opt', title: `${ability}: ${what}`, html: optionHtml(o.parts) });
       })
       .join('');
     const close = button('power-close', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
@@ -1233,6 +1355,38 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     return `<div class="set-exit"><span class="hint small">${esc(exit.about())}</span><a class="btn" href="${esc(exit.href)}">${esc(t('settings.leave'))}</a></div>`;
   }
 
+  /**
+   * The end of a chapter (production/base-fixes.md #15): every declared
+   * ambition with its markers, who came first and second and with how much
+   * (the 2-player ambition box among them, as the count to beat), then each
+   * seat's Power gained and its new total.
+   */
+  function scoringHtml(sc: ChapterScoring): string {
+    const n = state.playerCount;
+    const who = (p: number) => (p >= n ? `<span class="sc-who box">${esc(t('scoring.box'))}</span>` : `<span class="sc-who s-${seatColor(p)}"><i class="dot"></i>${esc(playerName(t, p))}</span>`);
+    const rows = sc.ambitions
+      .map((a) => {
+        const markers = a.markers.map((m) => `<span class="sc-mk"><b class="num">${m.first}</b>/<i class="num">${m.second}</i></span>`).join('');
+        const counts = a.counts
+          .map((c, p) => ({ c, p }))
+          .filter((x) => x.c > 0)
+          .sort((x, y) => y.c - x.c)
+          .map((x) => `<span class="sc-count${a.first.includes(x.p) ? ' first' : a.second.includes(x.p) ? ' second' : ''}">${who(x.p)}<b class="num">${x.c}</b>${a.first.includes(x.p) ? '<em>1°</em>' : a.second.includes(x.p) ? '<em>2°</em>' : ''}</span>`)
+          .join('');
+        return `<div class="sc-amb"><span class="sc-name">${esc(t(`ambition.${a.ambition}`))}</span><span class="sc-mks">${markers}</span><span class="sc-counts">${counts || esc(t('scoring.nobody'))}</span></div>`;
+      })
+      .join('');
+    const totals = sc.gains
+      .map((g, p) => `<div class="sc-total s-${seatColor(p)}">${who(p)}<span class="sc-gain num">+${g}</span><span class="sc-power num">${esc(t('scoring.power', { n: sc.power[p] }))}</span></div>`)
+      .join('');
+    const note = n === 2 ? `<p class="hint small">${esc(t('scoring.boxNote'))}</p>` : '';
+    return `<h2 id="modal-title">${esc(t('scoring.title', { n: sc.chapter }))}</h2>
+      <div class="sc-ambs">${rows || `<p class="hint">${esc(t('scoring.none'))}</p>`}</div>
+      ${note}
+      <div class="sc-totals">${totals}</div>
+      <div class="modal-foot">${button('close-modal', t('scoring.ok'), { cls: 'primary' })}</div>`;
+  }
+
   function modalHtml(v: TableView): string {
     if (!modal) return '';
     let inner = '';
@@ -1246,6 +1400,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         ? `<h2 id="modal-title">${esc(t('settings.title'))}</h2>
         <div class="settings-grid">
           <label for="set-lang">${esc(t('settings.lang'))}</label><select id="set-lang" data-set="lang">${langOpts}</select>
+          ${board3d ? `<label for="set-graphics">${esc(t('settings.graphics'))}</label><select id="set-graphics" data-set="graphics">${(['auto', 'lite', 'still'] as const).map((g) => `<option value="${g}"${graphics === g ? ' selected' : ''}>${esc(t(`settings.graphics.${g}`))}</option>`).join('')}</select>` : ''}
         </div>
         ${exitRow()}
         <div class="modal-foot">${button('close-modal', t('btn.back'))}</div>`
@@ -1256,9 +1411,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           <label for="set-lang">${esc(t('settings.lang'))}</label><select id="set-lang" data-set="lang">${langOpts}</select>
           <label for="set-players">${esc(t('settings.players'))}</label><select id="set-players" data-set="players">${countOpts}</select>
           <label for="set-seed">${esc(t('settings.seed'))}</label><input id="set-seed" type="number" min="1" value="${seed}" data-set="seed">
+          ${board3d ? `<label for="set-graphics">${esc(t('settings.graphics'))}</label><select id="set-graphics" data-set="graphics">${(['auto', 'lite', 'still'] as const).map((g) => `<option value="${g}"${graphics === g ? ' selected' : ''}>${esc(t(`settings.graphics.${g}`))}</option>`).join('')}</select>` : ''}
         </div>
         ${exitRow()}
         <div class="modal-foot">${button('close-modal', t('btn.back'))}${button('new-game', t('settings.newGame'), { cls: 'primary' })}</div>`;
+    } else if (modal.type === 'scoring' && state.lastScoring) {
+      inner = scoringHtml(state.lastScoring);
+      size = 'l';
     } else if (modal.type === 'confirm-pass') {
       inner = `<h2 id="modal-title">${esc(t('pass.title'))}</h2>
         <p class="hint">${esc(t('pass.sure'))}</p>
@@ -1284,7 +1443,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         <div class="modal-foot">${button('close-modal', t('btn.back'))}${chosen.length === keep ? button('keep-confirm', t('btn.confirm'), { cls: 'primary' }) : ''}</div>`;
     } else if (modal.type === 'decide' && v.decision) {
       const opts = modal.options
-        .map((o, i) => (o.parts.length ? button('decide-pick', o.parts.map(partText).join(' · '), { args: { i }, cls: 'decide-opt' }) : ''))
+        .map((o, i) => (o.parts.length ? button('decide-pick', o.parts.map(partText).join(' · '), { args: { i }, cls: 'pp-opt', title: o.parts.map(partText).join(' · '), html: optionHtml(o.parts) }) : ''))
         .join('');
       const declinable = modal.options.some((o) => !o.parts.length);
       size = 'm';
@@ -1375,6 +1534,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
     const key = focusKey();
     const me = local();
+    // A chapter just scored: its window opens once, for everyone at the table.
+    if (state.lastScoring && state.lastScoring.chapter !== scoringSeen) {
+      scoringSeen = state.lastScoring.chapter;
+      if (!modal) modal = { type: 'scoring' };
+    }
+    stage.classList.toggle('my-turn', myTurn());
     const v = withSay(tableView(ix, state, me, lang));
     const valid = validSystems(v);
     const chosen = new Set<string>();
@@ -1393,7 +1558,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const turnButtons = [
       myTurn() && v.phase === 'lead' && v.canMulligan ? button('mulligan', t('play.mulligan'), { cls: 'bar-btn' }) : '',
       myTurn() && v.phase === 'lead' ? button('pass', t('play.pass'), { cls: 'bar-btn', disabled: !can({ type: 'pass', player: me }) }) : '',
-      !online || hotseat ? button('undo', t('btn.undo'), { cls: 'bar-btn ghost', html: `${icon('undo')}<span>${esc(t('btn.undo'))}</span>`, disabled: history.length === 0 }) : '',
+      button('undo', t('btn.undo'), { cls: 'bar-btn ghost', title: t('btn.undoKey'), html: `${icon('undo')}<span>${esc(t('btn.undo'))}</span>`, disabled: history.length === 0 }),
       // With no actions left the box offers the end of the turn itself; before that, ending early is here.
       ending && (v.budget?.remaining ?? 0) > 0 ? button('end-turn', t('play.endTurn'), { cls: 'bar-btn primary end', disabled: !can({ type: 'endTurn', player: me }) }) : '',
     ].join('');
@@ -1415,19 +1580,22 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const ownPlay = v.plays.some((x) => x.player === me) || !(picked && ctx) ? playedCard(ix, v, t, me) : `<div class="play picking">${actionCard(ix, picked, t)}</div>`;
     const preludes = preludeCards(v);
 
+    // An open hover card outlives the redraw (a state echo or a timer redraws while the pointer rests on it).
+    const openTips = [...stage.querySelectorAll<HTMLElement>('.hover-tip')].filter((x) => !x.hidden);
     stage.innerHTML = `<div class="tbl-stars"></div>
-      <div class="region header" data-region="header" style="${place(REGIONS.header)}">${header(v, t, source === 'example', prompt(v), board3d?.hasInfoLayer ? controlLayer : null, drop, board3d?.hasFlatPlanets ? flatPlanets : null)}</div>
+      <div class="region header" data-region="header" style="${place(REGIONS.header)};--pr-x:${REGIONS.hand.x + REGIONS.hand.w / 2}px;--pr-y:${REGIONS.hand.y + REGIONS.hand.h - PROMPT_H}px">${header(v, t, source === 'example', prompt(v), board3d?.hasInfoLayer ? controlLayer : null, drop, board3d?.hasFlatPlanets ? flatPlanets : null)}</div>
       <div class="map-area${board3d ? '' : ' glass'}" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
       <div class="region court" data-region="court" style="${place(REGIONS.court)}">${courtPanel(v, t, courtPickable(intent))}</div>
       <div class="region side" data-region="side" style="${place(REGIONS.side)}">${sidePanel(ix, v, t)}</div>
       <div class="region bar" aria-hidden="true" style="${place(REGIONS.bar)}"></div>
       <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, [], true, v.phase !== 'gameOver')}</div>
+      ${button('find-mine', t('btn.findMine'), { cls: `find-mine${Date.now() < findMineUntil ? ' on' : ''}`, title: t('btn.findMineTip'), html: `${icon('ship')}<span>${esc(t('btn.findMine'))}</span>` }).replace('<button ', `<button style="left:${REGIONS.local.x + REGIONS.local.w - FIND_W}px;top:${REGIONS.local.y - 36}px;width:${FIND_W}px" `)}
       <div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>
       <div class="region mine${mineOpen ? ' open' : ''}" data-region="mine" style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 26, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen)}</div>
       <div class="region hand" data-region="hand" style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>
       <div class="region confirm" data-region="confirm" style="${place(REGIONS.confirm)}">${turnButtons}</div>
-      ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div>${v.phase === 'actions' ? '' : preludeTab(preludes, t, true)}</div>` : ''}
+      ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ' waiting'}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${myTurn() || !othersTurn(state, 3) ? placeUp(REGIONS.actions) : placeDown(REGIONS.waiting)}"><div class="actions-body">${ctx}</div>${v.phase === 'actions' ? '' : preludeTab(preludes, t, true)}</div>` : ''}
       <div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>
       ${modalHtml(v)}
       ${dropHtml()}
@@ -1436,7 +1604,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="card-zoom" aria-hidden="true" hidden></div>
       <div class="hover-tip" aria-hidden="true" hidden></div>
       <div class="hover-tip hover-sub" aria-hidden="true" hidden></div>`;
-    board3d?.update(v, valid, chosen, shipGlow(v, valid), routePreview(v), actionable(v));
+    if (Date.now() < findMineUntil) {
+      // "My pieces": every system with the local seat's ships or buildings lit, its ships glowing.
+      const mine = new Set(v.systems.filter((s) => s.ships.some((x) => x.player === me && x.fresh + x.damaged > 0) || s.buildings.some((b) => b.owner === me)).map((s) => s.id));
+      board3d?.update(v, mine, chosen, { player: me, systems: mine }, routePreview(v), new Set());
+    } else board3d?.update(v, valid, chosen, shipGlow(v, valid), routePreview(v), actionable(v));
     const menu = sysMenuHtml(v);
     if (menu) stage.insertAdjacentHTML('beforeend', menu);
     // The system being acted on stays in the free part of the screen (the map pans if a panel would hide it).
@@ -1454,6 +1626,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const pick = draftWindow();
     if (pick) stage.insertAdjacentHTML('beforeend', pick);
     mountBattle();
+    keepTips(openTips);
     sizeAvatars(stage);
     restoreFocus(key);
     const dialog = stage.querySelector('.modal');
@@ -1463,8 +1636,20 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   }
 
   // ---- input ----
-  function pickSystem(id: string, shipOf?: number): void {
+  /** A click on system `id` (`at`: where, on the 3D map): a choice for the current step, else its card. */
+  function pickSystem(id: string, shipOf?: number, at?: { x: number; y: number }): void {
     const v = withSay(tableView(ix, state, local(), lang));
+    if (powerPick) {
+      // A card power picking its system: its one use there at once, else its uses there beside the card.
+      const here = powerPick.options.filter((o) => targetSystem(o) === id);
+      if (!here.length) return;
+      const card = powerPick.card;
+      powerPick = null;
+      if (here.length === 1) return void send(here[0].cmd);
+      powerMenu = { card, options: here };
+      render();
+      return;
+    }
     // Clicking your own ships while you may move starts a move from there.
     if (intent.step === 'idle' && !modal && shipOf === local() && canStartMove(v) && movableFrom(v).has(id)) {
       sysMenu = null;
@@ -1495,8 +1680,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         return;
       }
     }
-    // Not a choice for the current step: nothing to do (hovering the system shows what is in it).
-    if (!validSystems(v).has(id)) return;
+    // Not a choice for the current step: the click opens (or closes) the system's card.
+    if (!validSystems(v).has(id)) {
+      if (at) toggleSystemTip(id, at);
+      return;
+    }
     const i = intent;
     if (i.step === 'system') {
       // The action was picked first: its choices in the menu beside the system.
@@ -1576,6 +1764,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'cancel':
         intent = IDLE;
         sysMenu = null;
+        powerPick = null;
         break;
       case 'to-actions':
         preludeLeft = turnKey(v);
@@ -1633,6 +1822,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'mv-drops':
         if (intent.step === 'move') dropsOpen = `${intent.from}>${intent.to}`;
         break;
+      case 'die-step': {
+        // - / + on a die type's tile of the battle window.
+        if (intent.step !== 'battle') break;
+        const type = d.type as 'skirmish' | 'assault' | 'raid';
+        intent = { ...intent, dice: { ...intent.dice, [type]: Math.max(0, intent.dice[type] + Number(d.d)) } };
+        break;
+      }
       case 'die': {
         // A die of the battle window: an empty place takes a skirmish die; a die turns into the next type, then leaves.
         if (intent.step !== 'battle') break;
@@ -1684,6 +1880,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'power-card': {
         // A lit card: its one use at once, or its choices beside it.
         const options = powersNow().filter((o) => o.card === d.card && (!d.ability || o.ability === d.ability));
+        // Uses that each target a system: picked on the map, even when there is only one.
+        if (options.length && options.every((o) => targetSystem(o) !== null)) {
+          powerPick = { card: d.card!, options };
+          powerMenu = null;
+          break;
+        }
         if (options.length === 1) return void send(options[0].cmd);
         powerMenu = options.length ? { card: d.card!, options } : null;
         break;
@@ -1731,15 +1933,15 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'hs-ready':
         curtainFor = null;
         break;
-      case 'undo': {
-        if (online && !hotseat) return;
-        const prev = history.pop();
-        if (prev) state = prev;
-        if (prev && online && hotseat) online.commit(prev).catch((e: Error) => showToast(t('error', { msg: say(e.message) })));
-        resetChoices();
-        modal = null;
+      case 'undo':
+        undo();
         break;
-      }
+      case 'find-mine':
+        // Lights the own pieces on the map for a few seconds (a second click turns it off).
+        findMineUntil = Date.now() < findMineUntil ? 0 : Date.now() + FIND_MINE_MS;
+        window.clearTimeout(findMineTimer);
+        if (findMineUntil) findMineTimer = window.setTimeout(render, FIND_MINE_MS + 50);
+        break;
       case 'court': {
         const slot = Number(d.slot);
         // A Court card acts only while Influence or Secure picks one; hovering shows it large.
@@ -1965,6 +2167,38 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     tip.style.left = `${Math.max(8, Math.min(STAGE.w - tw - 8, left))}px`;
     tip.style.top = `${Math.max(8, Math.min(STAGE.h - th - 8, y + (r.height / scale) / 2 - th / 2))}px`;
   }
+  /**
+   * A system's card, opened by a click on the system: a second click on it
+   * closes it, and it closes by itself after SYSTEM_TIP_MS.
+   */
+  function toggleSystemTip(id: string, at: { x: number; y: number }): void {
+    const tip = stage.querySelector<HTMLElement>('.hover-tip:not(.hover-sub)');
+    if (tip && !tip.hidden && tip.dataset.key?.startsWith(`sys:${id}|`)) return hideTip();
+    showTip(`sys:${id}`, at);
+    clearTimeout(tipTimer);
+    tipTimer = window.setTimeout(hideTip, SYSTEM_TIP_MS);
+  }
+  /** Puts the hover cards that were open before a redraw back in place, their contents brought up to date. */
+  function keepTips(open: HTMLElement[]): void {
+    if (!open.length) return;
+    if (sysMenu || modal || drop || powerMenu) return;
+    for (const old of open) {
+      const sub = old.classList.contains('hover-sub');
+      const fresh = stage.querySelector<HTMLElement>(sub ? '.hover-tip.hover-sub' : '.hover-tip:not(.hover-sub)');
+      if (!fresh) continue;
+      fresh.replaceWith(old);
+      const [raw, at] = (old.dataset.key ?? '').split('|');
+      const target = parseTip(raw);
+      if (!target || Number(at) === state.log.length) continue;
+      const html = tipHtml(ix, withSay(tableView(ix, state, local(), lang)), target, t);
+      if (!html) {
+        old.hidden = true;
+        continue;
+      }
+      old.innerHTML = html;
+      old.dataset.key = `${raw}|${state.log.length}`;
+    }
+  }
   function hideTip(): void {
     clearTimeout(tipTimer);
     for (const tip of stage.querySelectorAll<HTMLElement>('.hover-tip')) tip.hidden = true;
@@ -1998,8 +2232,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       return;
     }
     const el = tipTarget(e);
-    if (el) showTip(el.dataset.tip!, el);
-    else if (!(e.target as Element).closest('canvas')) hideTipSoon();
+    if (el) return showTip(el.dataset.tip!, el);
+    const tip = stage.querySelector<HTMLElement>('.hover-tip:not(.hover-sub)');
+    const systemCard = !!tip && !tip.hidden && !!tip.dataset.key?.startsWith('sys:');
+    if (!(e.target as Element).closest('canvas') || !systemCard) hideTipSoon();
+    // A system's card (opened by a click) stays while the pointer is on the map; coming off the card itself, it
+    // closes on its own again after a while.
+    else if ((e.relatedTarget as Element | null)?.closest?.('.hover-tip')) {
+      clearTimeout(tipTimer);
+      tipTimer = window.setTimeout(hideTip, SYSTEM_TIP_MS);
+    }
   });
   stage.addEventListener('focusin', (e) => {
     const el = tipTarget(e);
@@ -2035,6 +2277,15 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'seed':
         seed = Number(el.value) || 1;
         break;
+      case 'graphics':
+        graphics = el.value as Graphics;
+        board3d?.setGraphics(graphics);
+        try {
+          localStorage.setItem('arcs.graphics', graphics);
+        } catch {
+          /* no storage: this session only */
+        }
+        break;
       default:
         return;
     }
@@ -2042,8 +2293,15 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   });
 
   window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !(e.target as Element).closest('input, textarea, select')) {
+      // Ctrl+Z (Cmd+Z): undo, as the Undo button.
+      e.preventDefault();
+      if (undo()) render();
+      return;
+    }
     if (e.key === 'Escape') {
-      if (powerMenu) powerMenu = null;
+      if (powerPick) powerPick = null;
+      else if (powerMenu) powerMenu = null;
       else if (drop) drop = null;
       else if (sysMenu) {
         sysMenu = null;
@@ -2071,8 +2329,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       render();
     },
     load(next: GameState) {
+      // The echo of this screen's own move keeps the undo history; anything else (another seat's move) drops it.
+      const echo = JSON.stringify(next) === JSON.stringify(state);
       state = next;
-      history = [];
+      if (!echo) history = [];
       resetChoices();
       if (modal?.type !== 'settings') modal = null;
       powerMenu = null;

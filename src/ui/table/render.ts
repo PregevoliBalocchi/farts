@@ -156,13 +156,14 @@ function spoils(p: PlayerView, t: Translate): string {
 function nameBar(p: PlayerView, t: Translate): string {
   const token = assetUrl('token.initiative');
   const mark = token ? `<img class="ic init-img" src="${esc(token)}" alt="${esc(t('initiative'))}">` : icon('power', '', t('initiative'));
-  const init = p.hasInitiative ? `<span class="init-mark" title="${esc(t('initiative'))}">${mark}</span>` : '';
+  const title = p.initiativeSeized ? t('initiative.seized') : t('initiative');
+  const init = p.hasInitiative ? `<span class="init-mark${p.initiativeSeized ? ' seized' : ''}" title="${esc(title)}">${mark}</span>` : '';
   return `<div class="name-bar"><span class="seat-c">${icon(seatIcon(p.id))}</span><span class="nm">${esc(playerName(t, p.id))}</span>${init}<span class="pow num" title="${esc(t('stat.power'))}">${p.power}</span></div>`;
 }
 
 /** The city triangle printed on the board (rounded corners, like the map's), as an SVG outline. */
 const CITY_TRIANGLE = (() => {
-  const pts = roundedTriangle(100, 13, 5);
+  const pts = roundedTriangle(100, 9.6, 5);
   const xs = pts.map((p) => p.x);
   const zs = pts.map((p) => p.z);
   const w = Math.max(...xs) - Math.min(...xs) + 6;
@@ -517,9 +518,9 @@ function hexMarker(m: { id: string; first: number; second: number }, t: Translat
 /**
  * The ambitions as the digital table's right column: the markers still to
  * declare in hexagon slots on top, then one row per ambition in card-number
- * order (2 to 6): its number and glyphs, the markers declared on it, and every
- * seat's count as a coloured dot, highest first, the places it would score
- * now lit. Names are in the tooltips.
+ * order (2 to 6): its number and glyphs, the markers declared on it, and the
+ * count of every seat in the running (above 0) as a coloured dot, highest
+ * first, the places it would score now lit. Names are in the tooltips.
  */
 export function ambitionsStrip(ix: ContentIndex, v: TableView, t: Translate): string {
   const numberOf = (a: string) => Number(Object.entries(ix.content.declareByNumber).find(([, x]) => x === a)?.[0] ?? 0);
@@ -529,11 +530,18 @@ export function ambitionsStrip(ix: ContentIndex, v: TableView, t: Translate): st
       const n = numberOf(a.id);
       const glyphs = n ? declareGlyphs(ix, n).map((g) => icon(g)).join('') : '';
       const place = (p: number) => (a.first.includes(p) ? ' first' : a.second.includes(p) ? ' second' : '');
-      const tallies = [...a.tallies]
+      // Only the players in the running: a seat with nothing toward this ambition is not shown.
+      // 2 players: the ambition box stands among them as the count to beat (production/base-fixes.md #9).
+      const tallies = [
+        ...a.tallies
+          .filter((x) => x.value > 0)
+          .map((x) => ({ value: x.value, html: `<span class="tl s-${seatColor(x.player)}${place(x.player)}" title="${esc(`${playerName(t, x.player)}: ${x.value}`)}"><i class="dot"></i><b class="num">${x.value}</b></span>` })),
+        ...(a.box ? [{ value: a.box, html: `<span class="tl box-tl" title="${esc(t('amb.boxTip'))}"><span class="bx">${esc(t('scoring.box'))}</span><b class="num">${a.box}</b></span>` }] : []),
+      ]
         .sort((x, y) => y.value - x.value)
-        .map((x) => `<span class="tl s-${seatColor(x.player)}${x.value ? '' : ' zero'}${place(x.player)}" title="${esc(`${playerName(t, x.player)}: ${x.value}`)}"><i class="dot"></i><b class="num">${x.value}</b></span>`)
+        .map((x) => x.html)
         .join('');
-      const box = a.box ? `<span class="box num" title="${esc(t('amb.box'))}">▣${a.box}</span>` : '';
+      const box = '';
       const name = t(`ambition.${a.id}`);
       const rule = AMB_RULE[a.id] ? `<span class="ab-rule">${esc(t(AMB_RULE[a.id]))}</span>` : '';
       return `<div class="abox${a.markers.length ? ' declared' : ''}" data-tip="amb:${a.id}" tabindex="0" role="group" aria-label="${esc(name)}">
@@ -546,7 +554,7 @@ export function ambitionsStrip(ix: ContentIndex, v: TableView, t: Translate): st
     .join('');
   const left = v.markersLeft.map((m) => ambMarker(m, t)).join('');
   const empty = Array.from({ length: Math.max(0, 3 - v.markersLeft.length) }, () => '<span class="amk empty"></span>').join('');
-  return `<div class="amb-title">${esc(t('ambitions'))}</div><div class="amb-avail">${esc(t('ambitions.available'))}</div>
+  return `<div class="amb-title">${esc(t('ambitions'))}</div>
     <div class="amb-left" title="${esc(t('ambitions.available'))}">${left}${empty}</div><div class="amb-rows">${rows}</div>`;
 }
 

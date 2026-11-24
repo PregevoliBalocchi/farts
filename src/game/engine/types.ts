@@ -397,6 +397,18 @@ export type EventStep =
   | { kind: 'edicts' }
   | { kind: 'edict'; card: string };
 
+/**
+ * How a chapter was scored: every declared ambition with its markers' values,
+ * who placed first and second and every seat's count (`counts[playerCount]`
+ * is the 2-player ambition box), then each seat's Power gained and its total.
+ */
+export interface ChapterScoring {
+  chapter: number;
+  ambitions: { ambition: AmbitionId; markers: { first: number; second: number }[]; first: PlayerId[]; second: PlayerId[]; counts: number[] }[];
+  gains: number[];
+  power: number[];
+}
+
 export interface PlayerState {
   id: PlayerId;
   power: number;
@@ -620,6 +632,8 @@ export interface GameState {
   planetTypes?: Record<string, Resource>;
   /** Lore cards discarded by their own effects (out of the game). */
   loreDiscard?: string[];
+  /** The last chapter's scoring, for the table's end-of-chapter window (production/base-fixes.md #15). */
+  lastScoring?: ChapterScoring;
   /** Campaign games only (design/campaign-plan.md). */
   campaign?: CampaignState;
   log: LogEntry[];

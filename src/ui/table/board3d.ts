@@ -60,8 +60,10 @@ export interface Rect {
 export interface Board3DOptions {
   /** False with ?motion=off: no pulsing rings. */
   motion: boolean;
-  /** A system was clicked; `shipOf`: the seat whose ship model was clicked, if one was. */
-  onPick(id: string, shipOf?: number): void;
+  /** A system was clicked (anywhere in its area) at client point x, y; `shipOf`: the seat whose ship model was clicked, if one was. */
+  onPick(id: string, shipOf: number | undefined, x: number, y: number): void;
+  /** Automatic graphics found even the lighter drawing too slow and stopped the idle animations. */
+  onStill?(): void;
   /** The view moved (pan or zoom): things placed over the map follow it. */
   onView?(): void;
   /** The pointer is over system `id` (null: over none, or it left the map), at client point x, y. */
@@ -162,6 +164,12 @@ export class Board3D {
   private lamp!: THREE.DirectionalLight;
   /** Watches the animation's frame rate: too slow, and the map draws lighter. */
   private readonly watch = new FrameWatch();
+  /** Already drawing lighter: still too slow (under about 22 frames a second), and the idle animations stop. */
+  private readonly watchLite = new FrameWatch(45, 60);
+  /** How the map draws (production/base-fixes.md #1): 'auto' steps down by itself when frames are slow. */
+  private graphics: Graphics = 'auto';
+  /** No idle animation (planets turning, ships bobbing, rings pulsing): the map draws only when something changes. */
+  private still = false;
   /** When the last frame was drawn (milliseconds). */
   private lastDraw = 0;
   private pulsing = false;
@@ -177,6 +185,9 @@ export class Board3D {
   /** The faint next step towards the system under the pointer, while a route may go on. */
   private readonly nextGroup = new THREE.Group();
   private nextId: string | null = null;
+  /** The system under the pointer, outlined so a click's target is plain before clicking (production/base-fixes.md #5). */
+  private hoverRing: THREE.Mesh | null = null;
+  private hoverId: string | null = null;
   private holoMats = new Map<number, THREE.ShaderMaterial>();
   /** Glowing engine trails, kept after their ship lands until they fade out. */
   private trails: EngineTrail[] = [];
@@ -293,7 +304,10 @@ export class Board3D {
     this.canvas.addEventListener('pointerdown', (e) => (this.down = { x: e.clientX, y: e.clientY }));
     this.canvas.addEventListener('pointerup', (e) => this.click(e));
     this.canvas.addEventListener('pointermove', (e) => this.hover(e));
-    this.canvas.addEventListener('pointerleave', (e) => this.opts.onHover?.(null, e.clientX, e.clientY));
+    this.canvas.addEventListener('pointerleave', (e) => {
+      this.showHover(null);
+      this.opts.onHover?.(null, e.clientX, e.clientY);
+    });
     this.canvas.addEventListener('dblclick', () => this.resetView());
 
     renderer.setAnimationLoop((t) => this.frame(t));
@@ -523,6 +537,27 @@ export class Board3D {
       this.routeGroup.add(o);
       if (g.count > 1) this.routeGroup.add(countTag(g.count, at.x + g.dx, at.z + g.dz, 'small', o.userData.model ? 0.5 : 0.3));
     }
+  }
+
+  /** Outlines system `id` under the pointer (null: none). */
+  private showHover(id: string | null): void {
+    if (id === this.hoverId) return;
+    this.hoverId = id;
+    this.dirty = true;
+    const disc = id ? this.discs.children.find((d) => d.userData.sys === id) : undefined;
+    if (!disc) {
+      if (this.hoverRing) this.hoverRing.visible = false;
+      return;
+    }
+    if (!this.hoverRing) {
+      this.hoverRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.07, 72), new THREE.MeshBasicMaterial({ color: '#fff4d6', transparent: true, opacity: 0.55, depthWrite: false }));
+      this.hoverRing.rotation.x = -Math.PI / 2;
+      this.scene.add(this.hoverRing);
+    }
+    const r = (disc.userData.r as number) + 0.12;
+    this.hoverRing.scale.set(r, r, 1);
+    this.hoverRing.position.set(disc.position.x, 0.013, disc.position.z);
+    this.hoverRing.visible = true;
   }
 
   /** Shows the faint next step to system `id` (null: none). */
@@ -777,6 +812,7 @@ export class Board3D {
       disc.position.set(p.x, s.inPlay ? 0.02 : 0.004, p.z);
       if (s.inPlay) {
         disc.userData.sys = s.id;
+        disc.userData.r = r;
         this.discs.add(disc);
       } else if (this.calib && !this.space) this.shades.add(disc);
     }
@@ -1035,17 +1071,43 @@ export class Board3D {
     this.dirty = true;
   }
 
+  /**
+   * Sets how the map draws: 'auto' (full, lighter by itself on a slow card),
+   * 'lite' (one pixel per screen pixel, no shadows, about 30 frames a second)
+   * or 'still' (lite, and nothing moves unless something happens).
+   */
+  setGraphics(mode: Graphics): void {
+    this.graphics = mode;
+    this.still = mode === 'still';
+    if (mode === 'auto') this.goFull();
+    else this.goLite();
+    this.dirty = true;
+  }
+
+  /** Back to full drawing (unless the browser draws in software). */
+  private goFull(): void {
+    if (gpu.software) return;
+    gpu.lite = false;
+    this.lamp.castShadow = true;
+    this.renderer.setPixelRatio(drawRatio(window.devicePixelRatio));
+    this.renderer.setSize(this.size2.w, this.size2.h, false);
+    fxViewHeight.value = this.size2.h * this.renderer.getPixelRatio();
+  }
+
   private frame(t: number): void {
     this.stepPan(t);
+    const idle = !this.still;
+    // Ships flying to a new system and their fading trails move even when idle animations are off.
+    const moving = this.flights.length > 0 || this.trails.length > 0;
     // Something moves on its own every frame: the map is animating.
-    const animating = this.opts.motion && (!!this.planets.length || (hasModels() && !!this.pieces.children.length) || !!this.route || this.pulsing);
+    const animating = this.opts.motion && ((idle && (!!this.planets.length || (hasModels() && !!this.pieces.children.length) || this.pulsing)) || moving || !!this.route);
     // Drawing lighter, an animation is drawn about 30 times a second, not at the screen's rate.
     if (gpu.lite && animating && t - this.lastDraw < LITE_FRAME_MS) return;
-    if (this.planets.length && this.opts.motion) {
+    if (this.planets.length && this.opts.motion && idle) {
       turnPlanets(this.planets, t / 1000);
       this.dirty = true;
     }
-    if (hasModels() && this.opts.motion && this.pieces.children.length) {
+    if (hasModels() && this.opts.motion && this.pieces.children.length && (idle || moving)) {
       this.animatePieces(t / 1000);
       this.dirty = true;
     }
@@ -1054,7 +1116,7 @@ export class Board3D {
       fxTime.value = t / 1000;
       this.dirty = true;
     }
-    if (this.pulsing && this.opts.motion) {
+    if (this.pulsing && this.opts.motion && idle) {
       const a = 0.55 + 0.4 * Math.sin(t / 260);
       for (const r of this.rings.children) if (r.userData.pulse) ((r as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = a;
       this.dirty = true;
@@ -1063,7 +1125,13 @@ export class Board3D {
     this.dirty = false;
     this.renderer.render(this.scene, this.camera);
     this.lastDraw = t;
-    if (animating && this.watch.tick(t)) this.goLite();
+    if (!animating || this.graphics !== 'auto') return;
+    if (!gpu.lite) {
+      if (this.watch.tick(t)) this.goLite();
+    } else if (!this.still && this.watchLite.tick(t)) {
+      this.still = true;
+      this.opts.onStill?.();
+    }
   }
 
   /**
@@ -1146,13 +1214,28 @@ export class Board3D {
         }
       }
     }
-    return (this.ray.intersectObjects(this.discs.children, false)[0]?.object.userData.sys as string | undefined) ?? null;
+    // Else the system whose area holds the point: the nearest one, its distance scaled by its size (a gate is
+    // smaller than a planet), so a click anywhere in a system's part of the map picks it, not only on its disc.
+    const at = this.ray.ray.intersectPlane(GROUND, new THREE.Vector3());
+    if (!at) return null;
+    let best: string | null = null;
+    let bestD = AREA_REACH;
+    for (const d of this.discs.children) {
+      const id = d.userData.sys as string;
+      const r = d.userData.r as number;
+      const k = Math.hypot(at.x - d.position.x, at.z - d.position.z) / r;
+      if (k < bestD) {
+        bestD = k;
+        best = id;
+      }
+    }
+    return best;
   }
 
   private click(e: PointerEvent): void {
     const d = this.down;
     this.down = null;
-    if (!d || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6 || e.button !== 0) return;
+    if (!d || Math.hypot(e.clientX - d.x, e.clientY - d.y) > CLICK_SLOP || e.button !== 0) return;
     if (this.opts.onCalibrate) {
       this.ray.setFromCamera(this.pointer(e), this.camera);
       const at = this.ray.intersectObject(this.board, false)[0]?.point;
@@ -1162,16 +1245,18 @@ export class Board3D {
       return;
     }
     const id = this.hit(e);
-    if (id) this.opts.onPick(id, this.hitShipOf);
+    if (id) this.opts.onPick(id, this.hitShipOf, e.clientX, e.clientY);
   }
 
   private hover(e: PointerEvent): void {
     if (e.buttons) {
+      this.showHover(null);
       this.opts.onHover?.(null, e.clientX, e.clientY);
       return;
     }
     const id = this.hit(e);
     this.canvas.style.cursor = id ? 'pointer' : 'grab';
+    this.showHover(id);
     this.opts.onHover?.(id, e.clientX, e.clientY);
     // Planning a route: the system under the pointer, if the route may go on there, shows that step.
     this.showNext(id && this.route?.open && this.route.targets.has(id) ? id : null);
@@ -1249,6 +1334,16 @@ function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'la
   }
   return sprite;
 }
+
+/** How far (CSS px) the pointer may slip between press and release and still click (a trackpad tap, a shaky hand). */
+const CLICK_SLOP = 10;
+/** The map's plane, for finding which system's area a pointer is over. */
+const GROUND = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+/** How far from a system its area reaches, in its disc's radii (beyond: empty space, no system). */
+const AREA_REACH = 2.6;
+
+/** How the map draws: full (lighter by itself when slow), lighter, or lighter and still. */
+export type Graphics = 'auto' | 'lite' | 'still';
 
 /** The 3D map, or null when this browser cannot draw WebGL (the table then keeps the 2D map). */
 export function createBoard3D(ix: ContentIndex, opts: Board3DOptions): Board3D | null {

@@ -51,6 +51,7 @@ const PLAY_W = 96; // the card played this turn, at its left end
 const MINE_W = 480; // the local player's own Court cards, at its right end
 const BTN_W = 140; // the turn's buttons, left of those
 const ACT_W = 520; // the action box, over the hand (grows upwards when it needs more room)
+const WAIT_W = 380; // the box shown while another seat plays
 const ACT_GAP = 46; // between the action box and the bar: a hand card raised on hover stays under the box
 
 /** Region ids and rectangles, read from the current STAGE (left column on the left edge, right column on the right edge, bottom row on the bottom edge). */
@@ -81,6 +82,8 @@ export const REGIONS = {
   get mineOpen(): Rect { const b = REGIONS.bar; const x = b.x + PLAY_W + G * 2; return { x, y: b.y + b.h - 700, w: b.x + b.w - x, h: 700 }; },
   /** The action box, centred over the hand: anchored at its bottom (clear of a hand card raised on hover), grows upwards up to h. */
   get actions(): Rect { const h = REGIONS.hand; return { x: Math.round(h.x + h.w / 2 - ACT_W / 2), y: h.y - ACT_GAP - 440, w: ACT_W, h: 440 }; },
+  /** While another seat plays: the compact "live" box, top right of the map under the menu buttons, clear of the map's middle. */
+  get waiting(): Rect { const sd = REGIONS.side; return { x: sd.x - G * 2 - WAIT_W, y: COURT_H + 16, w: WAIT_W, h: 300 }; },
 };
 
 export type RegionId = keyof typeof REGIONS;
@@ -88,6 +91,11 @@ export type RegionId = keyof typeof REGIONS;
 /** Inline style placing an element on a region. */
 export function place(r: Rect): string {
   return `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
+}
+
+/** Inline style anchoring an element to a region's top-left corner, as wide as it and at most as tall (it shrinks to its content). */
+export function placeDown(r: Rect): string {
+  return `left:${r.x}px;top:${r.y}px;width:${r.w}px;max-height:${r.h}px`;
 }
 
 /** Inline style anchoring an element to a region's bottom-left corner, at most as wide and as tall as it (it shrinks to its content). */

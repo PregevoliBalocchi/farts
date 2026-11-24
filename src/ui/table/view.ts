@@ -46,7 +46,10 @@ export interface SlotView {
 export interface PlayerView {
   id: PlayerId;
   power: number;
+  /** Holds the initiative marker: the initiative holder, or as soon as someone seizes it, the seizer (base rulebook p. 10). */
   hasInitiative: boolean;
+  /** Seized the initiative this round: the marker lies on its side. */
+  initiativeSeized: boolean;
   isActive: boolean;
   handCount: number;
   slots: SlotView[];
@@ -251,7 +254,9 @@ function playerView(ix: ContentIndex, s: GameState, id: PlayerId): PlayerView {
   return {
     id,
     power: p.power,
-    hasInitiative: s.initiative === id,
+    // "Take the initiative marker and lay it down to show it is seized" (base rulebook p. 10): it moves at once.
+    hasInitiative: (s.round.seizedBy ?? s.initiative) === id,
+    initiativeSeized: s.round.seizedBy === id,
     isActive: activePlayer(s) === id,
     handCount: p.hand.length,
     slots: ix.content.playerBoard.slotKeys.map((keys, index) => ({
