@@ -2,7 +2,7 @@
 // mapping, schematic fallback, and how ship stacks are laid out.
 import { describe, expect, it } from 'vitest';
 import {
-  BOARD_DEPTH, boardWidth, buildingSpots, isCalibration, MAX_SHOWN, pictureToWorld, GROUP_GAP, headingJitter, HEADING_SPREAD, shipGroups, shipPlace, shipSpot, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
+  BOARD_DEPTH, boardWidth, buildingSpots, edgeDistance, GATE, gateLayouts, insidePolygon, isCalibration, ORBIT, orbitLayouts, pathPoints, MAX_SHOWN, pictureToWorld, GROUP_GAP, headingJitter, HEADING_SPREAD, shipGroups, shipPlace, shipSpot, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
 } from '../../../src/ui/table/board3d-layout';
 
 const PICTURE = { width: 4000, height: 2000 };
@@ -121,15 +121,13 @@ describe('ship zones', () => {
     expect(shipSpot(calib, 'missing', 0)).toBeNull();
   });
 
-  it('puts fresh and damaged ships in two groups side by side, each with its count', () => {
-    const groups = shipGroups(3, 2);
-    expect(groups.map((g) => [g.lying, g.count])).toEqual([[false, 3], [true, 2]]);
-    expect(groups[1].dx - groups[0].dx).toBeCloseTo(GROUP_GAP);
+  it('draws a fleet as one model: fresh when any ship is fresh, with both counts', () => {
+    expect(shipGroups(3, 2)).toEqual([{ dx: 0, dz: 0, lying: false, count: 5, fresh: 3, damaged: 2 }]);
+    expect(shipGroups(4, 0)).toEqual([{ dx: 0, dz: 0, lying: false, count: 4, fresh: 4, damaged: 0 }]);
   });
 
-  it('puts a single kind of ship on the spot itself and leaves out empty groups', () => {
-    expect(shipGroups(4, 0)).toEqual([{ dx: 0, dz: 0, lying: false, count: 4 }]);
-    expect(shipGroups(0, 1)).toEqual([{ dx: 0, dz: 0, lying: true, count: 1 }]);
+  it('draws the damaged model only when every ship is damaged, and nothing for no ships', () => {
+    expect(shipGroups(0, 1)).toEqual([{ dx: 0, dz: 0, lying: true, count: 1, fresh: 0, damaged: 1 }]);
     expect(shipGroups(0, 0)).toEqual([]);
   });
 
@@ -139,5 +137,74 @@ describe('ship zones', () => {
     for (const t of turns) expect(Math.abs(t)).toBeLessThanOrEqual(HEADING_SPREAD);
     expect(keys.map(headingJitter)).toEqual(turns);
     expect(new Set(turns).size).toBeGreaterThan(3);
+  });
+});
+
+// A square sector 600 px wide with a planet of radius 80 in its middle (picture pixels).
+const SQUARE = pathPoints('M0,0L600,0L600,600L0,600Z');
+const PLANET = { x: 300, y: 300, r: 80 };
+
+describe('ships orbiting a planet', () => {
+  it('reads a sector outline and tells inside from outside', () => {
+    expect(SQUARE).toHaveLength(4);
+    expect(insidePolygon({ x: 10, y: 10 }, SQUARE)).toBe(true);
+    expect(insidePolygon({ x: 610, y: 10 }, SQUARE)).toBe(false);
+    expect(edgeDistance({ x: 10, y: 300 }, SQUARE)).toBeCloseTo(10);
+  });
+
+  it('puts one seat straight below the planet, just past its rim on the tilted orbit', () => {
+    const [one] = orbitLayouts(PLANET, SQUARE);
+    expect(one).toHaveLength(1);
+    expect(one![0].x).toBeCloseTo(300);
+    expect(one![0].y).toBeCloseTo(300 + PLANET.r / ORBIT.squash + ORBIT.gap);
+  });
+
+  it('keeps every seat outside the planet, inside the sector and apart, in order left to right', () => {
+    const figs = orbitLayouts(PLANET, SQUARE);
+    figs.forEach((fig, i) => {
+      expect(fig).toHaveLength(i + 1);
+      for (const p of fig!) {
+        expect(Math.hypot(p.x - PLANET.x, p.y - PLANET.y)).toBeGreaterThan(PLANET.r + ORBIT.gap - 1);
+        expect(insidePolygon(p, SQUARE)).toBe(true);
+        expect(edgeDistance(p, SQUARE)).toBeGreaterThanOrEqual(ORBIT.clear);
+      }
+      for (let a = 0; a < fig!.length; a++) for (let b = a + 1; b < fig!.length; b++) expect(Math.hypot(fig![a].x - fig![b].x, fig![a].y - fig![b].y)).toBeGreaterThanOrEqual(ORBIT.apart);
+      expect(fig!.map((p) => p.x)).toEqual([...fig!.map((p) => p.x)].sort((x, y) => x - y));
+    });
+  });
+
+  it('stays off a neighbouring planet and gives up a figure with no room', () => {
+    const below = { x: 300, y: 520, r: 70 };
+    for (const p of orbitLayouts(PLANET, SQUARE, [below])[0]!) expect(Math.hypot(p.x - below.x, p.y - below.y)).toBeGreaterThan(below.r);
+    const tight = pathPoints('M180,180L420,180L420,420L180,420Z');
+    expect(orbitLayouts(PLANET, tight)).toEqual([null, null, null, null]);
+  });
+});
+
+describe('ships at a gate', () => {
+  // A ring segment above the centre (0, 0): between radius 150 and 290, from -120 to -60 degrees.
+  const arc = (r: number, from: number, to: number) => Array.from({ length: 13 }, (_, i) => {
+    const a = ((from + ((to - from) * i) / 12) * Math.PI) / 180;
+    return { x: r * Math.cos(a), y: r * Math.sin(a) };
+  });
+  const SEGMENT = [...arc(290, -120, -60), ...arc(150, -60, -120)];
+  const NUMBER = { x: 0, y: -220 };
+
+  it('keeps the number clear and puts two seats one each side of it', () => {
+    const [one, two] = gateLayouts({ x: 0, y: 0 }, NUMBER, SEGMENT);
+    expect(Math.hypot(one![0].x - NUMBER.x, one![0].y - NUMBER.y)).toBeGreaterThanOrEqual(GATE.number);
+    expect(two).toHaveLength(2);
+    expect(Math.sign(two![0].x)).not.toBe(Math.sign(two![1].x));
+  });
+
+  it('fits up to four seats inside the segment, apart from each other', () => {
+    for (const fig of gateLayouts({ x: 0, y: 0 }, NUMBER, SEGMENT)) {
+      expect(fig).not.toBeNull();
+      for (const p of fig!) {
+        expect(insidePolygon(p, SEGMENT)).toBe(true);
+        expect(Math.hypot(p.x - NUMBER.x, p.y - NUMBER.y)).toBeGreaterThanOrEqual(GATE.number);
+      }
+      for (let a = 0; a < fig!.length; a++) for (let b = a + 1; b < fig!.length; b++) expect(Math.hypot(fig![a].x - fig![b].x, fig![a].y - fig![b].y)).toBeGreaterThanOrEqual(GATE.apart);
+    }
   });
 });
