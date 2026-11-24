@@ -1,0 +1,321 @@
+ Empire Rules 
+
+Control & Command                                                                                       The Empire controls
+                                                                                                        with one fresh ship!
+The Empire controls systems with any number of
+fresh Imperial ships, ignoring players' Loyal ships.       First                                        The First Regent gains
+                                                         Regent                                         Empire control for
+The First Regent controls all Empire-controlled                                                         ambitions, objectives,
+systems for ambitions, objectives, and events.               These resources                            and events.
+                                                                are frozen.
+On a Regent's turn, they Command the Imperial
+Fleet following the Presence Law: In systems with          Imperial
+Loyal pieces, they control the system if it is Empire-        Trust
+controlled and can take actions with Imperial ships
+there--move and repair them, battle with them,                                                          You must have
+build at them, and tax cities they control.                                                             Loyal presence to
+                                                                                                        use Imperial ships.
+Movement
+                                                                                                        Moving Imperial
+Movement Law: Regents can only move 1 Imperial                                                          ships requires one
+ship per Loyal ship they move along with them at                                                        Loyal ship for each.
+the same time to the same system.
+                                                             Imperial ships protect
+Empire control ends Catapult moves of Outlaws.               Regents from each other!
+
+Regent control ends Catapult moves of Outlaw                     ?
+pieces and Rival Regent pieces alone.
+                                                          May add Imperials on attack.
+Outlaw control ends Catapult moves of Regent
+and Imperial pieces alike.                                                     !
+
+Battle, Harm, & Taxing                                   Must add Imperials on defense.
+
+Truce Law: Regents cannot harm Imperial ships              Imperial Council                             You can flip the Council
+except for hits they take as attacking ships in battle,             Decided                             back to In Session by
+and they cannot harm or tax Rival Regents in                                                            calling a Summit.
+systems with Imperial ships.                             When the round ends, return Imperial
+                                                         Council Decided to the Court, then:            Take the First Regent
+When a Regent attacks in battle, they may add             1. You may call a Summit.                     tile with its resources, or
+Imperial ships in the battle system as attacking ships.   2. If you're a Regent, become First Regent.   steal resources from it!
+                                                          3. If you're an Outlaw, steal from the First
+When a Regent defends in battle, they must add                                                          Resolve either
+Imperial ships there as defending ships.                     Regent tile. (See Empire Rules sheet.)     Crises or Edicts.
+                                                          4. You must resolve either Crises or Edicts.
+Outlaws may also choose the Empire as the lone
+defender. Its defending pieces are Imperial ships.       You cannot influence or secure this card.
+                                                         You may flip this card to In Session if you
+Imperial Council                                         call a Summit and Petition the Council.
+
+When you secure the Council, flip it over and tuck       IMPERIAL COUNCIL  01
+it under your played card. At the end of the round,
+return Imperial Council Decided to the Court, then:        First
+                                                         Regent
+   1. You may call the Summit.
+                                                             These resources
+   2. If you're a Regent, take the First Regent tile,           are frozen.
+      keeping all resources on the Imperial Trust.
+                                                           Imperial
+   3. If you're an Outlaw, steal from the Imperial           Trust
+      Trust up to your empty resource slots. The
+      First Regent loses 1 Power for each stolen.        /
+
+   4. You must resolve either Crises or Edicts.
+ Other Rules 
+
+The Summit                                              Flip your title card to Outlaw
+                                                        if you Leave the Empire.
+If you called the Summit, you may
+take any Call to Order actions.                                                                   Imperial
+                                                                                                   Regent
+ · Return Favors: Return a Rival's
+                                                                                                                       Tuck this partially under your Fate card.
+     Favors to force them to take the
+     Negotiation actions you choose.                                                1 You must follow the rules for Regents
+     By default, the cost is 1 Favor per action.
+                                                                                                                       listed on the Empire Rules aid sheet.
+ · Petition the Council: Flip the Imperial                                                                             You can become an Outlaw, flipping this
+                                                                                                                       title over, if you call a Summit.
+     Council card to its In Session side.
+                                                                         TITLE                       08
+ · Leave the Empire: Flip your Regent title card
+                                                                         Steward
+     to Outlaw. If you are First Regent, give its tile
+     to the Regent with the most Power. If there          Hold together a fragmenting empire
+     are none, refer to the rulebook (page 16).         while navigating fractious court politics.
+
+ · Revive Empire: If there are no Regents,                               YOUR PATH TO POWER
+
+     become a Regent and take First Regent.             I                Assert your authority by winning
+                                                                         ambitions as the First Regent.
+After this, all players may take Negotiation
+actions with the consent of the affected players.       II               Extend the Empire's control and
+                                                                         fill the Imperial Trust.
+ · Cede Control: Replace 1 Loyal piece on the
+                                                        III              Solidify the Empire's control over
+     map with 1 Rival piece of that type, with limits.                   Outlaw cities and fill the Imperial
+
+ · Delegate Authority: Replace 1 Loyal agent                             Trust as the First Regent.
+
+     on a card in the Court with a Rival's agent.                               Complexity:
+
+ · Promise Favor: Give 1 Loyal agent from your          Rival agents on your
+                                                        Fate card are Favors.
+     supply to a Rival, placing it on their Fate card.
+     Rival agents on a Fate card are called Favors.     Limits to Cede Control: You can
+                                                        only replace a Loyal building if
+ · Transfer Asset: Give 1 Captive, Trophy, Favor,       no Loyal ships are in its system.
+                                                        You cannot replace your last city,
+     or resource you have to a Rival, with limits.      starport, or ship on the map.
+
+ · Invite to Empire: If you're First Regent, flip an    Limits to Transfer Asset: Loyal
+                                                        pieces of the recipient return to
+     Outlaw's title card to Regent.                     their supply. Forcing a resource
+                                                        transfer with Return Favors costs
+Blight                                                  Favors equal to its raid cost.
+
+You may battle Blight and take them as Trophies.        Takes 2 hits to                              Deals 3 hits in
+It's Tough, taking 2 hits to damage or destroy.
+                                                        damage or destroy. Blight Crisis.
+In Crises, each fresh Blight deals 3 hits, and each
+damaged Blight deals 1 hit. Hit Imperial ships first.                             X
+If none remain, hit Loyal ships of every player in its
+system. In each case, hit fresh ships first.                                    Blight ends
+                                                                                Catapult moves.
+Blight in a gate ends Catapult moves.
+                                                        Taxing a Free city does not let you
+Free States                                             capture agents, but destroying
+                                                        one still Provokes Outrage.
+You may act with Free buildings that you
+control--you may tax Free cities, build ships at
+Free starports and Catapult move from them, and
+repair Free buildings.
+
+You may battle them, take them as Trophies, and
+raid them to gain exactly 1 resource matching their
+planet type by spending .
+A. Resolve Fate                                                booklet. ExWpalaitintoitretsoolevveetrhyisone.
+                                                            3. Scrap EmpunirteilFtahlelsIn(0t9e)rmanisdsi2onLesser
+
+                                                               Regents (10­11).
+
+                 Int ermission If you completed your objective:
+                                                      If you failed your objective: 1. Add Council Intrigue (05), Tax Collectors
+                                                                                                                          (06), and Hunter Squads (07) to the Court
+                                                            1. Scrap C2o. Aduedncdkc.ImipleIrinaltPrroitgecutoers , Tax ((008) 5to)the rules Collectors
+                                                               (06), HuntboeorkleSt.qExuplaainditsto(0ev7e)ry,oanen. d Imperial
+                                                               Protectors . 3. Scrap Empire Falls (09) and 2 Lesser
+                                                                                              Reg(e0nt8s )(10­11).
+
+Each player resolves their Resolution card.          2. Add EmIfpyoiurefailFedayllosur(o0b9je)cativned: 2 Lesser                                                                            ?
+                                                                            1. Scrap Council Intrigue (05), Tax Collectors
+Each player who failed their objective loses            Regents ((1006),­H1u1n)tetroSqtuahdes (0C7), aonduIrmtpedriael ck.
+Power equal to the space of their objective                                    Protectors (08).
+marker on the Power track.
+                                                     3. Add De2a. lAmddaEmkpeirresFa(ll0s (309)) atnod 2tLheseserCourt deck.
+                                                                               Regents (10­11) to the Court deck.
+
+                                                                            3. Add Dealmakers (03) to the Court deck.
+
+                                              F1      F1 RESREOSOLLUUTITONION 04                                                                                                        04
+
+B. Clear Court                                                                                                                             Song of Freedom                                         X
+
+   1. Return all cards from the Court except the                                                                                          Crisis: The player with the most Power
+      Imperial Council to the Court deck.                                                                                                 must replace a Loyal city with a Free city.
+
+   2. Clear all agents from the Court.                                                                                                    When Secured: You may replace any
+   3. Scrap the Court discard pile.                                                                                                       Loyal or Rival city you control with a
+                                                                                                                                          Free city. If you do, you may seize the
+C. Clear Pieces                                                                                                                           initiative. Shuffle this card into the Court
+                                                                                                                                          deck.
+   1. Clear all Trophies and Captives.
+   2. Clear all frozen resources, including from the        Lattice Spies                               Gatekeepers                                                                            Sworn Guardians
+
+      Imperial Trust on the First Regent tile.        Prelude: Before any other actions, you      When you battle in a gate, you may                                                           Rivals cannot steal your resources and
+   3. 2 Players Only: Clear all resources from        may discard this to seize the initiative.   collect 2 more dice.                                                                         other Guild cards. (In ba le they can
+                                                      You can't seize the initiative if you have  Prelude: You may discard this to place                                                       steal this first and then spend .)
+      ambition boxes.                                 it or if it's already seized this round!    1 ship in each gate.
+                                                                                                                                                                                               If this card is stolen, bury it. (Place it on
+D. Repair & Destroy Pieces                                                                                                                                                                     the bo om of the Court deck.)
+
+   1. Repair all damaged Blight.                      CC  GUILD  07                               CC  GUILD  03                           CC  VOX  14                                          CC  GUILD         09
+   2. Destroy all damaged ships, buildings, and
+                                                                                                                                                                                              First
+      Flagship Upgrades and Armor.                                                                                                                                                          Regent
+   3. Destroy all buildings in systems that have
+                                                                                                                                                                                                These resources
+      Blight and no ships.                                                                                                                                                                         are frozen.
+
+                                                                                                                                                                                               Imperial
+                                                                                                                                                                                                 Trust
+
+E. Shift Initiative & Power
+
+   1. Give the initiative marker to the player with
+      the most Power.
+
+   2. Each player with more than 1 Power loses
+      half their Power, rounding to lose less.
+
+F. Choose Fate                                                                                    + B                                                                                   B
+
+Each player who completed their objective draws                                                                                                    If You Failed
+1 Fate card. Each player who failed it returns their
+Fate card to the box and draws 2 Fate cards.
+
+ · In Act I, draw "B" Fates.
+ · In Act II, draw "C" Fates.
+
+Each player secretly chooses 1 Fate card from
+these 2 cards to play in the next Act, then
+everyone reveals them simultaneously.
+
+If you choose a new Fate card, return your Fate
+card to the box, scrap the rest of your Fate Set
+that is not in play, return all Favors you have to
+your Rivals, and take the new Fate Set for your
+chosen Fate.
+ Act II & III Setup 
+
+A. Flip Ambitions                                                                              2                                                                                                                               3
+                                                                                                04                                                                                                                             26
+In Act II, flip the lowest-Power ambition marker to
+its higher-Power side.                                                                                    2                                                                                                                            3
+In Act III, flip the two lowest-Power ambition
+markers to their higher-Power sides.                                                          Acts II & III                                                                                                                      Act III
+
+B. Set Up Court                                                                           Imperial Council                                                                                                                  Song of Freedom
+                                                                                                in Session
+Shuffle the Court deck and deal 3 cards                                                                                                                                                                                    Crisis: The player with the most Power
+(2 players) or 4 cards (3­4 players) from it face                                       When Secured: Flip this card over to                                                                                               must replace a Loyal city with a Free city.
+up into the Court.                                                                      its Imperial Council Decided side. As
+Flip the Imperial Council card to In Session.                                           a reminder, tuck it partially under your                                                                                           When Secured: You may replace any
+                                                                                        played card so its card title is showing.                                                                                          Loyal or Rival city you control with a
+                                                                                                                                                                                                                           Free city. If you do, you may seize the
+                                                                                                                                                                                                                           initiative. Shuffle this card into the Court
+                                                                                                                                                                                                                           deck.
+
+                                                                                                                                             Lattice Spies                               Gatekeepers
+
+                                                                                                                                       Prelude: Before any other actions, you      When you battle in a gate, you may
+                                                                                                                                       may discard this to seize the initiative.   collect 2 more dice.
+                                                                                                                                       You can't seize the initiative if you have  Prelude: You may discard this to place
+                                                                                                                                       it or if it's already seized this round!    1 ship in each gate.
+
+                                                                                        IMPERIAL COUNCIL                           01  CC  GUILD  07                               CC      GUILD      03                   CC  VOX          14
+
+C. Add Blight to Gates
+
+Place 1 damaged Blight on each gate that has no
+Blight and no ships.
+
+D. Add Blight to Planets                             Steward - Act I                    1. Gain Imperial Authority (02)                                                                                                                 22
+                                                                                           and Dealmakers (03).                                                                                                            Expand the Empire
+Roll the event die.                                                     Steward - Act II
+At each planet of the rolled symbol, place                                              2. Gain the First Regent tile.
+1 damaged Blight there if it has no Blight.                                Steward - Act II
+If it does have Blight, instead place 1 damaged                                                                                        Flip this card over.At the end of each chapter, if
+Blight at each planet in its cluster with no Blight.                                                                 Steward - Act II
+                                                                                                                                                                                           you're the First Regent, advance
+E. Add Resources to Ambitions
+                                                                                                                                                                                                  1 for each cluster where the
+2 Players Only: Roll the number die twice.
+Place the 6 resource tokens of the planets in the                                                                                                                                          Empire controls any systems.
+rolled clusters on ambition boxes as in Act I setup.
+                                                                                                                                                                                                  Ensure the Emperor's Tribute
+F. Set Up Fates & Resources
+                                                                                                                                                                                           At the end of each chapter,
+Each player sets up using the Setup side of their
+objective card, then flips it to its Objective side.                                                  1. Add Imperial Quorum (13) to                                                       advance 1 for each resource in
+Each player may rearrange their resource tokens. F1                                                      the Edicts.
+                                                                                                                                                                                           the First Regen2t's 2Imperial Trust.
+                                                                                                                Flip this card over.                                                              You advance this way Expand the Empire
+                                                                                                                                                                                           »               At the end of each chapter, if                                even  if
+                                                                                        2x
+                                                                                                                                                                                                  you're not First Regent. you're the First Regent, advance
+                                                                                                                                                                                                               1 for each cluster where the
+
+                                                                                                                                                                                                                           Empire controls any systems.
+
+                                                                                                                                                                                                                              Ensure the Emperor's Tribute
+
+                                                                                                                                                                                                                           At the end of each chapter,
+                                                                                                                                                                                                                           advance 1 for each resource in
+                                                                                                                                                                                                                           the First Regent's Imperial Trust.
+
+                                                                                                                                                                                                                            » You advance this way even if
+                                                                                                                                                                                                                               you're not First Regent.
+
+                                                                                          F1                                           SESETTUUP PF1                                   12         F1 O0B1OJBEJECCTTIVIEVE 12                                                       12
+
+G. Set Objectives
+
+Each player places their objective marker on         Steward - Act II                                                                      2222
+the Power track space shown at the top of their                         Steward - Act II      ExpaEnxpdantdhthee EEmmpirepire
+objective card.
+In Act III, only players with "C" Fates do this.                                              At the end of each chapter, if
+
+H. Set Chapter Track & Draw Cards                                                            end of each chapter, you're the First Regent, advance                                                if
+                                                                                                    1 for each cluster where the
+Place the Chapter track tile on its side listing this                                   theChapter At
+Act. Place the chapter marker on its "1" space.
+Each player draws 6 action cards, and undrawn                                           you're thEempFireircsonttrRolseagnyesynsttem, sa. dvance
+action cards are discarded, as in Act I setup.
+2 Players Only: The player without initiative may                                       1 for eaEcnhsurceltuhesEtmeprerwor'shTreibruete the
+redraw their hand except Events, as in Act I setup.
+                                                                                        1 2 3 Chapter Empire cAaodtvtnhanetcreeondlos1ffeaoarncehaycchhsarpyetsesoru,trecemin s.
+                                                                                                           the First Regent's Imperial Trust.
+                                                                                        Ensure» tyYhoouue'raedEnvaomntcFeiprtshteiRsew1rgoaeynret.'vse2nTifrib3ute                                                             Act
+                                                                                        the end of each chapter, I
+                                                       At                                                                                                                                                                      I & Act  II
+
+                                                                                                                                                                                                                               & II
+
+                                                                                        advance 1 for each resource in
+
+                                                       the First Regent's Imperial Trust.
+
+                                                                                        » You advance this way even if
+                                                                                           yF1ou're noOtBFJEirCsTtIVREegent. 12
+

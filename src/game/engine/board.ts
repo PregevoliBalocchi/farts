@@ -24,12 +24,55 @@ export function heldResources(p: PlayerState): Resource[] {
   return p.resources.filter((r): r is Resource => !!r);
 }
 
-/** Puts a token in the leftmost free open slot. Returns false when there is no room. */
+/**
+ * The player takes or is given a token: it goes on the leftmost free open
+ * slot, or aside (`overflow`) when none is free. Either way the player may
+ * then rearrange their tokens (`arrangeResources`) until their next other
+ * command, when what is still aside is discarded (`endArranging`). Always true:
+ * the token is the player's until then.
+ */
 export function gainResource(c: GameContent, p: PlayerState, r: Resource): boolean {
+  p.arranging = true;
   const free = openSlots(c, p).find((i) => !p.resources[i]);
-  if (free === undefined) return false;
-  p.resources[free] = r;
+  if (free === undefined) (p.overflow ??= []).push(r);
+  else p.resources[free] = r;
   return true;
+}
+
+/**
+ * Rearranges the player's tokens: `slots[i]` is the token to put on slot i
+ * (null: empty). Allowed only while `arranging`; tokens go on open slots only,
+ * they are the ones held (on slots or aside), and none stays aside while an
+ * open slot is free. What is not placed stays aside. Returns why it is refused,
+ * or null when done.
+ */
+export function arrangeResources(c: GameContent, p: PlayerState, slots: readonly (Resource | null | undefined)[]): string | null {
+  if (!p.arranging) return 'Resources can be rearranged only when you gain one or a returning city covers a slot';
+  const open = new Set(openSlots(c, p));
+  const pool = [...heldResources(p), ...(p.overflow ?? [])];
+  const left = [...pool];
+  let placed = 0;
+  for (let i = 0; i < slots.length; i++) {
+    const r = slots[i];
+    if (!r) continue;
+    if (!open.has(i)) return 'A resource can only go on an open slot';
+    const at = left.indexOf(r);
+    if (at < 0) return 'You can only rearrange the resources you hold';
+    left.splice(at, 1);
+    placed++;
+  }
+  if (placed < Math.min(pool.length, open.size)) return 'Every resource must be on a slot while one is free';
+  p.resources = c.playerBoard.slotKeys.map((_, i) => slots[i] ?? null);
+  if (left.length) p.overflow = left;
+  else delete p.overflow;
+  return null;
+}
+
+/** The player's chance to rearrange ends: tokens still aside go back to the supply. */
+export function endArranging(s: GameState, p: PlayerState): void {
+  if (p.overflow?.length) returnToSupply(s, ...p.overflow);
+  delete p.overflow;
+  delete p.arranging;
 }
 
 /** Takes a token from the general supply into the player's board. False if the supply is out or no slot is free. */
@@ -79,6 +122,8 @@ export function onCityReturned(c: GameContent, p: PlayerState): Resource[] {
       displaced.push(r);
     }
   });
+  // The covered slot (even an empty one) lets the player rearrange; displaced tokens that find no slot wait aside.
+  p.arranging = true;
   if (c.playerBoard.cityReturnResource === 'move') {
     return displaced.filter((r) => !gainResource(c, p, r));
   }

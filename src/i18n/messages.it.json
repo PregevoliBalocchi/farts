@@ -378,5 +378,10 @@
   "{0}: once per turn": "{0}: una volta per turno",
   "{0}: only before any other actions this turn": "{0}: solo prima di ogni altra azione del turno",
   "{0}: only while {1} is declared": "{0}: solo mentre {1} è dichiarata",
-  "{1} Guild cards shuffled back into the Court deck": "{1} carte Gilda rimescolate nel mazzo Corte"
+  "{1} Guild cards shuffled back into the Court deck": "{1} carte Gilda rimescolate nel mazzo Corte",
+  "Resources can be rearranged only when you gain one or a returning city covers a slot": "Puoi riordinare le risorse solo quando ne prendi una o quando una città che torna copre uno spazio",
+  "A resource can only go on an open slot": "Una risorsa può stare solo su uno spazio libero dalle città",
+  "You can only rearrange the resources you hold": "Puoi riordinare solo le risorse che hai",
+  "Every resource must be on a slot while one is free": "Finché c’è uno spazio libero, ogni risorsa deve stare su uno spazio",
+  "No player {0}": "Il giocatore {0} non esiste"
 }

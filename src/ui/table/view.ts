@@ -50,6 +50,10 @@ export interface PlayerView {
   isActive: boolean;
   handCount: number;
   slots: SlotView[];
+  /** The seat may rearrange its resources now (it gained one, or a returning city covered a slot). */
+  arranging: boolean;
+  /** Tokens gained with no slot free: discarded unless a rearrangement gives them one. */
+  overflow: Resource[];
   outraged: Resource[];
   stats: { trophies: number; captives: number; ships: number; cities: number; starports: number; agents: number };
   /** Court cards the player holds. */
@@ -256,6 +260,8 @@ function playerView(ix: ContentIndex, s: GameState, id: PlayerId): PlayerView {
       locked: !open.has(index),
       keys,
     })),
+    arranging: !!p.arranging,
+    overflow: [...(p.overflow ?? [])],
     outraged: [...p.outraged],
     stats: {
       trophies: p.trophies.length,

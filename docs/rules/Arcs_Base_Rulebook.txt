@@ -1,0 +1,1290 @@
+Contents
+
+Introduction .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 2             Ending a Chapter .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 18
+What's in the Box .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 2                    Other Actions .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 20
+Setup .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 4  Leaders & Lore .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 21
+Core Concepts .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 6                  Fine Print .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 22
+Playing a Chapter .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 8                    Glossary  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 23
+Standard Actions .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 12                       Credits . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+Resources .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 17            Index .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 24
+Guild Cards .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 17
+
+March 23, 2026
+                       Introduction
+
+Long ago, the Reach thrived. But our ancestors failed us, and I fear we're no better.
+As we wrestle over earth and void, can we break the cycle? Can we build something new?
+
+A game of Arcs lasts until someone has enough Power--essentially points. In games with 4 players,
+someone needs to have at least 27 Power. With 3 players, 30 Power. With 2 players, 33 Power.
+When the game ends, the player with the most Power wins.
+
+You gain Power by completing ambitions, which are objectives that you declare in play. These are
+scored at the end of the chapter, when everyone runs out of action cards. The game lasts a varying
+number of chapters, usually three to five.
+
+Your first game of Arcs will take about 45 minutes per player. After you play a few times, a game
+should take about 30 minutes per player.
+
+If you want to learn Arcs by watching a video, you'll find a link on the back cover of this rulebook!
+
+                   What's in the Box 
+
+             The map of the Reach is where the action happens. You can move your ships around it, battle
+               Rivals for control over its systems, and tax resources from the cities you build on its planets.
+
+Player Pieces
+
+Each player has the following pieces. The box contains pieces for 4 players.
+
+      PLAYER BOARD                         STARPORTS (5)                               CITIES (5)
+
+ This board holds resources, your      Starports are built on planets         Cities are built on planets and
+unbuilt cities, and Rival pieces you   and are used to build ships.            can be taxed to gain resource
+                                                                              tokens onto your player board.
+  take as Trophies and Captives.
+
+                SHIPS (15)                      AGENTS (10)                        POWER MARKER (2)
+
+           Ships can move around the   Agents are placed on cards in the      This marker tracks your current Power
+           map and engage in battles.  Court, a card row next to the map.     on the bottom map edge. The second
+                                       Once you have the most agents on        marker is used in expansions to track
+2·                                     a card in the Court, you can take it.  negative Power and very high Power.
+Cards
+
+                                                                                                                                                            01
+
+            1CONSTRUCTION                  2 Players - Frontiers
+    Build Repair                                        out of
+        ACTION (28)                                        play
+
+  These cards are played to take           1a  2c                                               Elder
+  actions and declare ambitions.
+With 2 or 3 players, you don't use                  1c            2a
+   the "1" and "7" action cards.
+                                           2b       2c 1c                                       Beloved. After defending in battle,
+                                                1b                                              you may influence if the attacker took
+                                                                                                any Trophies. Rivals cannot Ransack the
+                                                                                                Court when they battle you.
+
+                                                                                                Just. When you're scoring Tyrant, gain
+                                                                                                no Power for second place, and gain
+                                                                                                Power for second place if you get first
+                                                                                                place. (Don't get bonus city Power.)
+
+                                                                                                A                                  B                     C
+
+                                                     SETUP (12)                                        LEADER (8)
+                                               (4 each for 2­4 players)
+                                                                                              These cards give special powers
+                                           One of these cards is used in setup               and show a player's starting pieces
+                                             to place players' starting pieces
+                                               and cover parts of the map.                    and resources. They are used in
+                                                                                              Leaders & Lore mode (page 21).
+
+                                                         Mass Uprising
+
+                                                    When Secured: Choose a cluster on the
+                                                    map. You place 1 ship in each system of
+                                                    that cluster. Discard this card.
+
+   Loyal Engineers                                                                                 Tool-Priests
+
+If you Provoke Outrage, keep this card.                                                      Summon (Build): Once per turn, build
+You may spend any resources as                                                               1 ship at any city you control.
+Material. You ignore Outrage when                                                            Yes, even Rival cities you control!
+spending Material for its Prelude action.
+
+BC                GUILD  01                    BC   VOX               26                     L  LORE                                                        01
+
+                  GUILD (25)                            VOX (6)                                 LORE (14)
+
+ These cards represent the support These cards represent incidents in                         These cards represent long-lost
+of guildmasters and task forces. They the Reach that you can turn to your                     technologies and the intangible
+                                                                                             qualities of leadership, charm, and
+  are gained from the Court, often own ends. They are gained from the                          rank. They are used in Leaders
+give new actions, and can be stolen. Court and resolve immediately.
+                                                                                                   & Lore mode (page 21).
+
+Other Pieces
+
+RESOURCE TOKENS (25)                       BATTLE DICE (18)                                     CHAPTER MARKER
+   (5 each of Material, Fuel,               (6 each of Assault,
+  Weapons, Relics, Psionic)                                                                    This marker tracks the current
+                                              Skirmish, Raid)                                chapter of the game on the map.
+Resources represent both assets
+ and the people skilled in using           These dice are used to
+them. They add to ambitions and                 resolve battle.
+can be spent for special actions.
+
+AMBITION MARKERS (3)                           ZERO MARKER                                     INITIATIVE MARKER
+
+These markers show which ambitions This marker covers the card number                        This marker shows which player
+are currently declared. They start on of the lead card, making it 0,                         will take the first turn of a round.
+their blue side with lower numbers. when an ambition is declared.
+
+                                                                                                                  Playing a Chapter
+
+                                                                                                      In a chapter, players will play through many rounds until they run out of cards.
+                                                                                                      When a chapter ends, players gain Power from declared ambitions. (See the last page.)
+                                                                                                      In a round, each player takes one turn, starting with the player who has initiative.
+                                                                                                      When the round ends, discard all played cards and see whether initiative changes players.
+
+                                                                                                      First, the player with the initiative marker takes a turn.
+
+                                                                                                      If your hand is empty or you choose not to play a card, pass the initiative clockwise to the
+                                                                                                      next player with cards in their hand. They take the first turn of the round instead of you.
+
+                                                                                                      2                                                         Play Lead Card
+                                                                                                                                                                You must play an action card as the lead card. You may
+
+                                                                                                                                                                take one action per pip on the card in its top-left corner.
+
+                                                                                                                                                                (This card has 4 pips, letting you take 4 actions.)
+
+                                                                                                       If you have the initiative, you may declare the ambition shown in the bottom-leftCONSTRUCTION
+                                                                                                       corner of your card: Place the zero marker over your card's number but not its pips,Build Repair
+                                                                                                       and put the highest available ambition marker in the matching ambition box on the
+                                                                                                       map. (Ambitions are listed on the last page.)
+
+                                                                                                      Second, each other player in clockwise order takes a turn.
+
+                                                                                                      4ADMINISTRATIONCONSTRUCTION  Build Repair                 Surpass
+                                                                                                      7                                                         Play an action card matching the lead card's suit but
+                                                                                                                                                                with a higher number than it. (Not every played card!)
+                                                                                                                                   Tax Repair Influence         You may take one action per pip on your played card.
+
+                                                                                                                                                                Pivot
+                                                                                                                                                                Play any action card that does not match the lead suit.
+                                                                                                                                                                You may take one action on your played card.
+                                                                                                                                                                (Not on the lead card!)
+
+                                                                                                                                                                Copy
+                                                                                                                                                                Play any action card face down. You may take one
+                                                                                                                                                                action of the lead card.
+
+                                                                                                      ?You can seize the initiative marker if you don't have it and no one has seized it yet
+                                                                                                      this round: Play an extra action card face down along with your first and ignore its
+                                                                                                      actions, or Surpass with a "7" card (4 players only).
+
+                                                                                                      Third, see if initiative changes players, then discard all played cards.
+
+                                                                                                        initiative                                              If someone seized the initiative, they keep it.
+                                                                                                      24
+                                                                                                                                                                If nobody seized the initiative, give the initiative
+                                                                                                       CONSTRUCTION                                             marker to the player who played a card to Surpass with
+                                                                                                           Build Repair                                         the highest number. If no one Surpassed the lead card,
+                                                                                                                                                                the initiative marker does not change players.
+                                                                                                                        CONSTRUCTION
+                                                                                                                                Build Repair                    Finally, discard all played cards and start the next round.
+                                                                                                                                                                If no one has cards left in their hand, end the chapter.
+
+     PATH MARKERS (4)                              OUT-OF-PLAY                                      AID SHEETS (4)
+   (2 each of long and short)                       MARKERS (6)
+                                                                                               These sheets summarize how to
+These are added to the map during          These are added to the map during                 play and what actions you can take.
+ setup. They cover gates, making           setup. They cover planets, making
+ them out of play and connecting
+ the gates of neighboring clusters.           them out of play for the game.
+
+                                                                                                                                                                                                                             ·3
+Q
+
+                                                 J
+
+     G                                               4 Players - Mix Up 3
+M
+                                                 out     2a      3a
+                                                  of
+                                                 play        1c            4b
+
+                                                                 2c
+
+                                                 1b    N 4c      3c        2b
+
+                                                     3b         4a 1a
+
+                                                             I
+
+        Setup
+
+1. Set Up Table                                  H. Shuffle all 6 Vox and 25 Guild cards
+                                                     to make the Court deck. Draw 3 cards
+  A. Place the map and collect the 18 battle         (2 players) or 4 cards (3­4 players) from
+       dice and 25 resource tokens.                  this deck to make a face-up Court row.
+
+  B. Give the initiative marker                  I. Shuffle the setup cards that list your
+       to a random player.                           number of players. Draw 1 setup card.
+
+  C. Shuffle the 20 action cards marked "2"      J. In the 2 clusters (2­3 players) or 1 cluster
+       through "6" to start the action deck.         (4 players) on the map marked Out of Play
+                                                     on the setup card, place a path marker over
+  D. 4 Players Only: Shuffle the 8 action cards      its numbered gate and place 3 out-of-play
+       marked "1" and "7" into the action deck.      markers over the planets touching that gate.
+       (Otherwise, return them to the box.)
+                                                 K. 2 Players Only: Place the 6 resource tokens
+  E. Place the 3 ambition markers on their           matching the 6 planets covered by out-of-
+       blue, lower-numbered sides in the             play markers onto the ambition boxes:
+       Available Markers section of the map.
+                                                      · Material and Fuel go on Tycoon.
+  F. Place the chapter marker on the "1" space        · Weapons go on Warlord.
+       of the Chapter track on the map.               · Relics go on Keeper.
+                                                      · Psionics go on Empath.
+  G. Place the zero marker in the Ambition
+       Declared slot on the map.
+
+4·
+E                                                                    A                                                                                                                                             B
+
+                                                                                           ×6 each           ×5 each
+
+                                                                                                                         1 1 77
+
+                                                                                           C                          D  CONSTRUCTION                                       SSION       MOMoBvIeLIZInAflTuIenOceN
+                                                                                                                             Build Repair                                       Secure
+
+                                                                                                                                          TaAxDMIReNpIaiSrTRInAflTuIenOceN  AGGRE
+                                                                                                                                                                                Move
+
+                                                                                                                                                                            Battle
+
+                                                                                                                                                                            ??
+
+   BC            Secret Order
+
+   GUILD     When you declare Keeper or Empath,
+          do not place the zero marker.
+                                                     EACH PLAYER...
+                                          O18
+K
+   BC                       If you Provoke Outrage, keep this card.
+
+   GUILD                You may spend any resources as Weapons.      Loyal Marines
+                     You ignore Outrage when spending
+   15            Weapons for their Prelude action.
+
+             Prelude: You may discard this to place 3 ships
+          in a system you control.
+
+   BC                    Synthesize (Build): Gain 1 Fuel.            Shipping Interest
+
+   GUILD            Prelude: You may discard this to gain
+                 Fuel up to your number of empty
+             resource slots. If the Fuel supply
+          empties, steal the Fuel instead.
+
+   09
+
+   BC                     You keep the Material supply on here.
+                      (You add it to Tycoon but can't spend it.)
+   GUILD                                                             Material Cartel
+                  After scoring, Rivals discard all Material.
+F  03
+             Prelude: You may discard this to steal
+          1 Material.
+
+                                                                                                        L                                                                   P
+
+                                                                                        H           ×5  ×15  ×10
+
+                                                                                                    
+
+2. Set Up Players                                                                                           Going clockwise from the player with
+                                                                                                            initiative, the 2nd, 3rd, and 4th players
+  L. Each player chooses a color, collects                                                                  set up in the same way in the systems
+       the matching player board, 5 cities,                                                                 marked 2A­C, 3A­C, and 4A­C
+       5 starports, 15 ships, and 10 agents,                                                                on the setup card, respectively.
+       and places the cities in the triangle slots
+       along the top of their player board.                                                             O. Each player gains the 2 resource tokens
+                                                                                                            matching the planet icons in their
+  M. Each player puts their Power marker on                                                                 A and B systems, putting them in the
+       the "0" Power track space on the map.                                                                leftmost and next leftmost circle slots
+                                                                                                            on their player board, respectively.
+  N. Players simultaneously place their starting
+       pieces onto the map as follows. The player                                                       P. Each player draws 6 action cards into
+       with the initiative marker does this:                                                                their hand. 2 Players Only: The player
+                                                                                                            without initiative may discard all 6 action
+       · Place 3 ships and 1 city in the system                                                             cards in their hand and draw 6 new ones.
+
+             marked 1A on the setup card. Place the                                                     Q. Discard all action cards not in players'
+             leftmost city from your player board.                                                          hands into a facedown action discard
+                                                                                                            pile on the map, then shuffle it.
+       · Place 3 ships and 1 starport
+
+             in the system marked 1B.
+
+       · Place 2 ships in the system
+
+             (3­4 players) or 2 systems
+             (2 players) marked 1C.
+
+                                                                                                                                                                                                                      ·5
+       Core Concepts                                               3              CONSTRUCTION  Build Repair
+
+The Arc of Play                                                            3                    CONSTRUCTION
+                                                                                                    Build Repair
+In a game of Arcs, you play through a number of chapters,       Declaring Ambition
+usually three to five. Each chapter is made up of several                 Gate
+rounds.
+                                                                         Planet
+Broadly, in a round, each player will take one turn by playing         Cluster 4
+an action card to do various actions, starting with the player      Planet Types
+who has initiative. After everyone takes a turn, players check      Building Slot
+who gets initiative for the next round. You'll learn more in
+Playing a Chapter (page 8)!
+
+Keep playing rounds until everyone runs out of action cards
+in their hand. At this point, the chapter ends, players gain
+Power from ambitions they fulfilled, and everyone draws a
+new hand of cards. You'll learn more in Ending a Chapter
+(page 18)!
+
+Power & Ambitions
+
+Players gain Power by fulfilling ambitions. The player with
+the initiative marker may choose to declare the ambition
+shown on the action card they play on their turn, marking the
+matching ambition box on the right map edge.
+
+At the end of the chapter, players gain Power from declared
+ambitions that they fulfilled best. It doesn't matter whether
+another player declared an ambition--anyone can fulfill it.
+
+The Map
+
+The map is made of 6 clusters. Each cluster has 4 systems:
+3 planets and 1 gate, which lists the cluster number.
+
+A system is adjacent to other systems sharing a thin border.
+Adjacency is most important when moving (page 13).
+
+ · Each gate is adjacent to the 3 planets in its cluster
+
+      and to the gates of its 2 neighboring clusters.
+
+ · Each planet is adjacent to the gate in its cluster, and it
+
+      is adjacent to one or both neighboring planets. Planets
+      separated by a thick, irregular border are not adjacent.
+
+The center of the map with the Arcs logo is not in play.
+
+In setup, 1 or 2 clusters are covered with out-of-play
+markers on its planets and a path marker on its gate. These
+clusters are out of play in every way. The path marker joins
+together the gates of the two neighboring clusters, allowing
+for movement between them in a single move.
+
+Each planet has a planet type, along with 1 or 2 building
+slots where you can build cities and starports. (Each planet
+also has an ID symbol of , , or , used in expansions.)
+
+6·
+           Resources                                                                       Resources & Cities
+
+Opening Resource Slots                                                                     There are 5 types of resources matching the 5 planet types.
+                                                                                           Usually, you gain them by taxing cities (page 12) and raiding
+    Loyal Marines                               Shipping Interest                          Rivals in battle (page 16).
+
+If you Provoke Outrage, keep this card.         Synthesize (Build): Gain 1 Fuel.           Resources can be spent for various actions (page 17), and
+                                                                                           some of them add to the Tycoon, Keeper, and Empath
+You may spend any resources as Weapons.         Prelude: You may discard this to gain      ambitions (page 18).
+You ignore Outrage when spending                Fuel up to your number of empty
+Weapons for their Prelude action.               resource slots. If the Fuel supply         You hold resource tokens in the resource slots on your player
+                                                empties, steal the Fuel instead.           board. As you build cities, you open resource slots and
+Prelude: You may discard this to place 3 ships                                             uncover Power bonuses for winning ambitions.
+in a system you control.
+                                                                                           Agents & The Court
+BC  GUILD          15                           BC  GUILD                              09
+                                                                                           Your agents are the bureaucrats and diplomats that administer
+Influencing the Court                                                                      your cities and influence powerful interests in the Reach.
+
+       Tip Ship or Flip                                                                    Through play, you can place agents on cards in the Court, a
+    Building to Damage                                                                     row of cards along the edge of the map (Influence, page 13).
+                                                                                           If you have the most agents on a card in the Court, you can
+            VS                                                                             take it (Secure, page 13).
+
+      Red Has Control                                                                      Damage & Control
+
+    Taking a Trophy                                                                        Pieces start off fresh--ships are fresh when standing upright,
+                                                                                           and buildings are fresh on their fully colored side.
+
+                                                                                           By battling, fresh pieces can become damaged, shown by
+                                                                                           flipping or tipping it over. If a damaged piece is damaged
+                                                                                           again, it is destroyed, removing it from the map.
+
+                                                                                           You control a system and its contents if you have more fresh
+                                                                                           ships there than each Rival (other player). On a tie, no one
+                                                                                           controls the system.
+
+                                                                                           Controlling a system lets you tax Rival cities there and capture
+                                                                                           their agents, restricts how their ships move, and damages
+                                                                                           pieces they build (pages 12­13).
+
+                                                                                           Trophies & Captives
+
+                                                                                           If you destroy a Rival's pieces, put them in the Trophies box
+                                                                                           on your player board. Trophies add to the Warlord ambition.
+                                                                                           Actions such as Battle (page 14) let you destroy Rival pieces.
+
+                                                                                           If you capture a Rival's agents, put them in the Captives box
+                                                                                           on your player board. Captives add to the Tyrant ambition.
+                                                                                           Actions such as Tax (page 12) and Secure (page 13) let you
+                                                                                           capture Rival agents.
+
+                                                                                           ·7
+    Playing a Chapter 
+
+A game of Arcs lasts up to 5 chapters. In each chapter, you
+play some number of rounds. In a round, each player takes
+one turn, starting with the player with the initiative marker.
+
+Broadly, on your turn, you must play 1 action card, which lets
+you take one or more actions.
+
+At the end of the round, the initiative marker might go to a
+new player based on which cards were played.
+
+Keep playing rounds until everyone runs out of action cards.
+At this point, the chapter ends (page 18).
+
+Step 1: Player with Initiative
+Takes Turn
+
+As the player with initiative, you must play one action card
+face up as the lead card. You may take one action (pages
+12­16) for each action pip on the lead card based on its suit:
+
+ · Administration pips can tax, repair, or influence.
+ · Aggression pips can battle, move, or secure.
+ · Construction pips can build or repair.
+ · Mobilization pips can move or influence.
+
+Place the card in the "Lead" card slot on the left map edge, so
+players can reference it during the round.
+
+    Suit          4
+
+CONSTRUCTION      4                                                              Mikah has the initiative, so she
+                                                                                 plays the lead card. She plays
+    Build Repair                                                                 a Construction card, which
+                                                                                 lets her build or repair.
+                  CONSTRUCTION                                               34
+                      Build Repair                                               This card has 3 action pips.
+    Initiative       Action Pips                                                 She spends one to build,
+                                             C O N S TCROUN SCTTRIU COT INO N    one to repair, and chooses
+                                                                                 not to take a third action.
+                                                      Build BuilRdepaRierpair
+Passing Initiative
+
+If you have the initiative, but you have no cards in your hand
+or just choose to skip your turn, you must pass the initiative.
+
+When you pass the initiative, give the initiative marker to
+the next clockwise player who has any cards in their hand,
+then immediately end the round. The player who now has
+initiative will play the lead card of the new round.
+
+If everyone with cards in their hand passes consecutively,
+discard all action cards and end the chapter (page 18).
+
+8·
+You can even declare an ambition  Declaring an Ambition
+that was declared in an earlier
+round! Just place another         If you have the initiative, you may declare the ambition
+ambition marker in its box.       shown on your lead card before taking any actions:
+
+You cannot declare an              · The "1" cards have no ambition. (Four players only.)
+ambition multiple times            · The "2" through 6" cards let you declare the
+using the same card.
+                                        matching ambition. (They are listed on page 18.)
+Declaring does not change your
+card's number of action pips.      · The "7" cards let you declare any ambition.
+
+Before taking her actions,              (Four players only.)
+Mikah declares the Warlord
+ambition on her card.             4 Take the highest-number ambition marker from the Available
+She places the available
+ambition marker worth the         Markers section on the right map edge, and place it in the
+most Power into the Warlord       ambition box of the declared ambition.
+ambition box on the map.
+Then she covers the card          Place the zero marker onto the lead card to cover the card
+number on her card with the
+zero marker, setting it to 0.     4 number in its top-left corner--its card number is now 0.
+She still gets 3 action pips!
+                                  You cannot declare an ambition if all ambitions markers are
+                                  already placed.
+
+                                                                                            Zero Marker
+                                  CONSTRUCTION
+                                  Warlord Symbol                                                                                                Card Number
+                                      CONSTRUCTIOBNuild Repair
+                                                                                                                                              4
+                                            Build Repair
+                                                                                                               CONSTRUCTION
+
+                                                                                                                                  Build Repair
+
+                                  Ambition Marker
+
+                                                                                                                                                             »
+
+                                                                                                                                                             ·9
+Step 2: Other Players                                             Surpassing only needs a
+Take Turns                                                        card higher than the lead
+                                                                  card, not all played cards!
+After the player with initiative takes their turn, each other
+player in clockwise order takes a turn. Players with no cards in  Pivoting does not
+their hand skip their turn.                                       change the lead suit.
+
+On your turn, you must play an action card in one of three ways:  After Mikah played her
+                                                                  Construction card to lead the
+ · Surpass: Play an action card face up of the lead               round, Dane takes his turn. He
+                                                                  plays an Aggression card to
+      card's suit. Its card number must be higher                 Pivot and chooses to move.
+      than the lead card. You may take actions up to
+      the number of action pips on your card.                     Lotus takes the next turn by
+                                                                  playing a "5" Construction
+ · Copy: Play any action card face down. You                      card. It matches the lead suit
+                                                                  of Construction and its card
+      may take only one action of the lead card.                  number is higher than "0," so
+                                                                  they Surpass and build twice.
+ · Pivot: Play an action card face up that is not of
+
+      the lead card's suit. It can have any card number.
+      You may take only one action on your card.
+
+Place the card in the "Surpass, Copy, or Pivot" card slot on the
+left map edge, so players can reference it during the round.
+
+Pivot - 1 Action!       2
+
+      AGGRESSION        25  AGGRESSION
+                                Battle Move Secure
+Battle Move Secure
+
+Surpass - 2 Actions!        5
+
+CONSTRUCTION                CONSTRUCTION
+                                Build Repair
+          Build Repair
+
+Seizing the Initiative                                              2AGGRESSION
+                                                                      Battle Move Secure
+When you play a card, before taking any actions, you can              7  MOBILIZATION
+seize the initiative marker from the player who holds it.                      Move Influence
+There are two ways to do this:                                          To Surpass, you must
+                                                                         match the lead suit!
+  · You may choose to play an extra action card.                  If the initiative is seized, you can
+                                                                  still Surpass with a "7" card--you
+       Place it face down beside the card you played
+       as a reminder. You do not get actions for it.              ? just won't seize the initiative.
+
+  · You Surpass with a "7" action card. You still get to take
+
+       its actions. (Only four-player games have "7" cards.)
+
+Take the initiative marker and lay it down to show it is seized.
+For the rest of this round, players cannot seize the initiative.
+
+The player with initiative cannot seize the initiative.
+
+10 ·
+                            Step 3: Check Initiative
+
+                            After everyone has taken a turn, check whether the initiative
+                            marker goes to a new player.
+
+                            If no one seized the initiative this round, give the initiative to
+                            the player who Surpassed with the highest card number.
+                            If no one Surpassed, the initiative stays with its holder.
+
+                            If someone seized the initiative this round, that player keeps
+                            the initiative.
+
+Lotus played the highest         Card Number  >4
+Construction card to
+Surpass this round.         5
+
+Nobody seized the           CONSTRUCTION
+initiative, so Lotus takes
+the initiative marker.          Build Repair
+
+                                                                                          CONSTRUCTION
+
+                                                                                                          Build Repair
+                            Step 4: Discard Cards &
+                            Check for New Round
+
+                            Discard all played action cards, and any action card used to
+                            seize the initiative, into the action discard pile on the map
+                            face down.
+
+                            If any players have any action cards left in their hand, start the
+                            next round. Otherwise, end the chapter (page 18).
+
+                                                                                                                        · 11
+    Standard Actions                                             Loyal pieces are your color.
+
+Tax (administration)                                             Rival pieces are other
+                                                                 players' colors.
+Choose a Loyal city or choose a Rival city you control.
+Gain 1 resource of the city's planet type from the supply.       Control means you have the
+If you tax a Rival city, you also capture 1 agent of that Rival  most fresh ships in the system.
+from their supply, even if you didn't gain the resource.
+Tax Limit: You cannot tax a city more than once per turn.        Resources you gain go in empty
+Captives: Place captured agents in the Captives box on your      resource slots on your player
+player board. They add to your Tyrant ambition (page 18).        board--see Resources (page 17).
+
+Build (construction)                                             Mikah taxes twice--one Material
+                                                                 city of her own and one of Dane's
+You may build a building or a ship:                              Psionic cities, which she controls.
+
+ · Building: Place 1 starport or city in an empty building       She gains 1 Material and
+                                                                 1 Psionic. Because she taxed
+      slot in a system with a Loyal piece. When building         Dane's city, she places 1
+      a city, use the leftmost city on your player board.        agent from Dane's supply
+                                                                 into her Captives box.
+ · Ship: Place 1 ship at a Loyal starport.
+                                                                 Damaged ships are tipped over,
+      Each starport can only build one ship per turn.            and damaged buildings are
+                                                                 flipped to their darker side.
+When you build anything in a system that is controlled by
+anyone other than you, place the piece damaged.                  Dane builds twice. First, he
+                                                                 builds a starport at a planet
+                                                                 where he has a ship.
+                                                                 Then he builds a ship. He can
+                                                                 place the ship at any of his
+                                                                 starports, so he places it at
+                                                                 the starport he just built.
+
+12 ·
+A system can be a gate                         Move (Mobilization & Aggression)
+or a planet (page 6).
+                                               Move any number of Loyal ships from one system to an
+Systems sharing a single                       adjacent system.
+thin border are adjacent.                      If you move from a system with a Loyal starport, you may
+                                               take Catapult moves--keep moving the ships as much as you
+When you take a Catapult                       want, dropping them off as you want, until they move to a
+move, check for control                        gate controlled by anyone else or they move to any planet.
+before moving in, not after.                   Out-of-Play Clusters: You cannot move into any systems in
+                                               out-of-play clusters. The path marker placed on out-of-play
+You can't Catapult from Rival                  gates makes its two neighboring gates adjacent.
+starports you control.
+                                               Repair (Construction & Administration)
+Lotus moves 2 Loyal ships
+from a Loyal starport, so they                 Stand up 1 damaged Loyal ship, or flip over 1 damaged Loyal
+take Catapult moves.                           building. (This can be anywhere on the map!)
+
+They move from the planet                      Influence (Mobilization & Administration)
+into the "4" gate. Normally
+they would end the move                        Place 1 agent on any card in the Court. (The Court is the card
+here, but the Catapult                         row along the map edge.)
+lets them move more.
+                                               Secure (Aggression)
+They move through the path to
+the "5" gate, but it is controlled             Take 1 card from the Court if you have more Loyal agents on
+by Mikah, so they stop moving.                 it than each Rival. Return all Loyal agents on it to your supply,
+Lotus will have to take another                and capture all Rival agents from the secured card.
+Move action to keep moving.                    Resolve its When Secured action, if any. If it says to discard it,
+                                               place it in a face-up Court discard pile near the Court deck.
+          Admin Union                          Finally, draw a card from the Court deck and place it face up
+                                               in the Court in the same spot as the secured card.
+    Prelude: You may place this card next      Captives: Put agents you capture in the Captives box on your
+    to a face-up played Administration card.   player board. They add to your Tyrant ambition (page 18).
+    When the round ends, draw that card
+    into your hand and discard this card.                                     »
+
+    BC     GUILD                           04                                                                                · 13
+
+Shipping Interest
+
+Synthesize (Build): Gain 1 Fuel.
+
+Prelude: You may discard this to gain
+Fuel up to your number of empty
+resource slots. If the Fuel supply
+empties, steal the Fuel instead.
+
+BC  GUILD                              09
+
+You can't immediately use
+Prelude actions on the
+secured card (page 20).
+Battle (Aggression)                                              A system can be a gate
+                                                                 or a planet (page 6).
+  1. Choose Battle System: Choose 1 system that has any
+       Loyal ships. This is the battle system. These are your                         Assault
+       attacking ships.
+                                                                                     Skirmish
+  2. Choose Defender: Choose 1 Rival whose pieces are in
+       the battle system. These are their defending pieces.                             Raid
+
+  3. Collect Dice: For each attacking ship, you may collect      You may collect fewer dice than
+       1 assault, skirmish, or raid die.                         the maximum, and you may mix
+                                                                 types, but you cannot collect
+       · Assault dice damage the defender                        more than 6dice of a type.
+
+             quickly at some cost to you.                                        Hit Your Ships
+
+       · Skirmish dice damage the defender                                           Intercept
+                                                                                    Your Ships
+             slowly but keep you safe.                                           Then...
+                                                                                 Hit Ships First
+       · Raid dice steal stuff from the defender                                    then buildings if
+                                                                                    no ships remain
+             and might damage them but are risky.                                 Hit Buildings
+                                                                                 Then...
+       Raid Dice Limit: You can only collect raid dice if there                     Raid Cards
+       are defending buildings or if the defender has no Loyal                     & Resources
+       buildings in any systems on the map.
+                                                                 To be clear, the attacker
+  4. Roll and Resolve Dice: Roll the collected dice.             rolls and resolves all the
+       You must resolve all rolled faces in this order:          dice. The defender doesn't
+                                                                 usually make choices.
+        1. Hit any of your attacking ships once per .
+
+        2. If you rolled any number of , the defender
+             intercepts you--hit any of your attacking ships
+             once per fresh defending ship. (This can only
+             happen once per battle!)
+
+        3. Hit any of their defending ships once per .
+             Once no defending ships remain, hit any of their
+             defending buildings instead.
+
+        4. Hit any of their defending buildings once per .
+
+        5. Raid their resources and cards by spending ,
+             if you have any attacking ships left (Raiding,
+             page 16).
+
+If you hit a fresh piece, it becomes damaged--tip it over if
+it's a ship or flip it over if it's a building.
+
+If you hit a damaged piece, it is destroyed--remove it.
+The attacker takes destroyed defending pieces as Trophies.
+The defender takes destroyed attacking pieces as Trophies.
+
+Trophies: Place pieces taken as Trophies in the Trophies
+box on the respective player board. These add to the Warlord
+ambition (page 18).
+
+                                »
+
+14 ·
+Mikah is battling Lotus at a Relic
+
+planet. Mikah has 4 fresh ships.      VS
+Lotus has 1 fresh ship, 2 damaged
+
+ships, and 1 damaged city.
+
+Mikah can collect up to
+4 dice. She collects 2 assault
+dice and 2 raid dice.
+She rolls the dice and gets
+
+                              .
+
+First, Mikah must take hits. She
+takes 2 hits--1 from the ,
+and 1 from the because
+Lotus has 1 fresh ship. Mikah
+chooses to damage two of her
+ships instead of destroying one.
+
+Next, Mikah deals hits.
+
+With the , Mikah chooses to
+damage Lotus's last fresh ship.
+
+With the , Mikah must
+damage Lotus's city, destroying
+it. It goes in Mikah's Trophies box.
+Destroying Cities                                                                                                                     If you have no Loyal agents,
+                                                                                                                                      use a placeholder piece until
+If you destroy a city--even outside battle!--do the following:                                                                        an agent becomes available.
+
+  1. Provoke Outrage. Discard all resources and Guild                                                                                 If you already have Outrage of
+       cards you have of that city's planet type, placing the                                                                         the city's type, perform both
+       discarded cards in a face-up Court discard pile near the                                                                       steps except placing the agent.
+       Court deck. Place an agent to cover the Outrage icon
+       of that city's planet type on your player board--that                                                                          You can still tax Outraged
+       resource is now Outraged(see below).                                                                                           resources and add them
+                                                                                                                                      to your ambitions.
+  2. Ransack the Court. Secure any card that has any
+       number of the defender's agents. Take all Rival agents
+       on the card as Trophies, not Captives.
+
+Outrage: You cannot spend Outraged resources for their
+normal Prelude action (page 17).
+
+      +          Arms Union                                                                                                           Because she destroyed a Relic
+                                                                                                                                      city, Mikah discards all her Relics
+         htaPhafrenaedcrloueaud-nunedpd: dYpeiolsnaucdyaemsr,ddadyAtrhapgiwsglarccteahesradsttih.ocinsarccdaarridndt.noWeyxhoteutnor  and Relic Guild cards, then covers
+                                                                                                                                      her Relic icon with an agent.
+         BC  GUILD                                                                                                                    Then, Mikah takes a card from the
+                                                                                                                                      Court where Lotus has 1 agent.
+                    11                                                                                                                She takes all 3 Rival agents there
+                                                                                                                                      into her Trophies box. Finally,
+Raiding                                                                                                                               she draws a card from the Court
+If any attacking ships remain after taking hits, you may spend                                                                        deck to refill the Court row.
+
+     you rolled to steal resources and Guild cards from the                                                                           Mikah spends her
+defender, one at a time, by spending the number of in                                                                                             to steal 1 Material
+its raid cost, shown above the resource slot on the player
+board or in the top-left corner of the Guild card (page 17).                                                                          and 1 Weapon from
+                                                                                                                                      Lotus's player board.
+                                                   Raid Cost                                                                          If she had rolled one more
+
+                                                                                                                                          she could have stolen
+                                                                                                                                      the Relic instead.
+
+16 ·
+Your Prelude begins when                                                                      Resources
+you play an action card and
+ends when you spend any                                                             In your turn's Prelude (page 20), you may spend any number
+action pips from the card.                                                          and mix of your resource tokens to optionally use their actions:
+You can't spend resources
+if you pass the initiative                                                                     Material: Take a Build or Repair action.
+or have no cards.
+                                                                                               Fuel: Take a Move action.
+For Weapons, act like
+you add "or Battle" to the                                                                     Weapon: This turn, you may spend any action
+relevant played card.                                                                          pips from your card play to take Battle actions.
+Weapons cannot turn
+actions from other resources                                                                   Relic: Take a Secure action.
+into Battle actions.
+                                                                                               Psionic: Take an action listed on the lead card.
+             Raid Cost
+                                                                                    Resources are held in resource slots. When you take a
+           Fuel in a Slot                                                           resource, place it in an empty resource slot of yours. At this
+            Empty Slot                                                              time, you may rearrange any resources in your resource slots,
+You can open resource                                                               but you must discard resources you cannot hold.
+slots by building cities!                                                           If a city returns to your player board and covers a resource
+                                                                                    slot, rearrange and discard resources as described above.
+                                                                                    Each resource slot has a raid cost: the number of that the
+                                                                                    attacker in battle must spend to steal the resource.
+                                                                                    Some cards say they hold resources. These resources can be
+                                                                                    spent and add to ambitions, but they cannot be stolen in battle
+                                                                                    unless explicitly allowed. If a card holding resources is stolen,
+                                                                                    the resources on the card stay on it. If it is buried, discarded or
+                                                                                    scrapped, the resources on it return to the supply.
+
+                                                                                     Guild Cards 
+
+Raid Cost  Suit                                                                     You can gain Guild cards by influencing them in the Court and
+
+                                                                                    then securing them (page 13).
+
+                                                                                    Guild cards have 3 parts: their suit, rules, and raid cost.
+
+        Loyal Engineers                                                             Suit: This suit icon matches 1 of the 5 resources. It adds to
+                                                                                    ambitions just like resources--Material and Fuel cards add to
+   LIf yoouyPraovolkeEOuntragge,ikneepetheisrcarsd.                                 the Tycoon ambition, Relic cards add to the Keeper ambition,
+                                                                                    and Psionic cards add to the Empath ambition. Weapon cards
+      You may spend any resources as                                                do not add to any ambitions.
+                                                                                    Rules: Guild cards give new actions and modifiers (page 20).
+ If yoMuaPterroiavl.oYkoeu OignuotrreaOgeu,trkaegeepwhthenis card.                  Raid Cost: This shows how many an attacker must spend
+                                                                                    in battle in order to steal the card.
+Loyal Engineers YousmpeanydisnpgeMnadtearniayl froersitosuPrrceelusdaesaction.
+                                                                                                                                                                   · 17
+ Material. You ignore Outrage when
+
+spIefBnyCdoinugPMraotevroiakGl efUoIrOLiDtus Ptrrealgudee, akcet0ieo1pn.this card.
+
+  You may spend any resources as
+BCMaterial. YoGuUigILnDore Outrage0w1 hen
+
+  spending Material for its Prelude action.
+         Ending a Chapter                                                      Tycoon Ambition Box
+
+        The chapter ends when everyone runs out of action cards or        Trophies and Captives Boxes
+        when everyone with cards passes the initiative.                                First Place
+        When the chapter ends, resolve the following steps.
+                                                                                     Second Place
+      Step 1: Score Ambitions                                                      or Tied for First
+
+        Score each ambition that has any number of ambition markers               Bonus City Power
+        in its ambition box on the map:
+                                                                         You can only gain bonus
+        · Tycoon. Have the most total Fuel and Material                  Power once per ambition,
+                                                                         regardless of how many
+              icons from resources and Guild cards.                      ambition markers it has.
+                                                                         Tycoon is worth 7 Power. Mikah
+        · Tyrant. Have the most Captives on your player                  has 1 Fuel and 1 Material Guild
+                                                                         card, and Dane has 2 Material.
+              board (gained from taxing and securing).                   They tie and each gain 3 Power.
+                                                                         Mikah could have gained
+        · Warlord. Have the most Trophies on your                        2 more Power from her +2 to
+                                                                         Won Ambitions slot, but does
+              player board (gained in battle).                           not because she tied for first.
+
+        · Keeper. Have the most Relic icons
+
+              from resources and Guild cards.
+
+        · Empath. Have the most Psionic icons
+
+              from resources and Guild cards.
+        The player who gets first place for the ambition gains the
+        higher Power shown on all its ambition markers.
+        The player who gets second place for it gains the lower
+        Power shown on all its ambition markers.
+        Show the Power you gained by advancing your Power marker
+        on the Power track on the bottom edge of the map.
+        Ties: On a tie for first place, tied players get second place.
+        (Other players do not place and gain no Power.) On a tie for
+        second place, tied players do not place and gain no Power.
+        Qualifying: You cannot gain Power from an ambition if you
+        have none of the thing it is counting. (For example, if Warlord
+        is declared and nobody has Trophies, nobody gains Power.)
+        Bonus City Power: Each time you get first place in an
+        ambition (not tied), gain 2 extra Power if the "+2 to won
+        ambitions" city slot on your player board is uncovered, or gain
+        5 extra if both the "+2 to won ambitions" and "+3 to won
+        ambitions" city slots on your player board are uncovered.
+
+                                      X
+
+                         VS
+
+        18 ·
+
+Loyal Engineers
+Starports and ships return      Two-Player Scoring
+to their players' supplies.
+Cities return to the rightmost  During setup with 2 players, 6 resources matching the planets
+empty city slot on their        with out-of-play markers are placed on the ambition boxes.
+original player boards.
+                                For scoring, count these resources as if a third player had
+              Six Cards!        them. Weapons on the Warlord box count as Trophies.
+                                Otherwise, these resources are out of play.
+
+                                Step 2: Clean Up
+                                & Flip Ambition
+
+                                If Warlord was scored, return all Trophies. If Tyrant was
+                                scored, return all Captives.
+
+                                Return all ambition markers to the Available Markers spaces
+                                on the map.
+
+                                Flip over the ambition marker with the lowest Power that
+                                hasn't been flipped yet to its side with more Power.
+
+                                Step 3: End Game or
+                                Advance Chapter
+
+                                The game ends if any player has at least 27 Power
+                                (4 players), 30 Power (3 players), or 33 Power (2 players),
+                                or if the chapter marker is currently on Chapter 5.
+
+                                If the game ends, the player with the most Power is the
+                                winner. On a tie, the tied player earliest in turn order
+                                is the winner.
+
+                                If the game does not end, advance the chapter marker
+                                to the next space.
+
+                                Step 4: Draw Cards
+
+                                Shuffle all of the action cards. Each player draws a hand of
+                                6 action cards.
+
+                                Discard all action cards not in players' hands into the action
+                                discard pile on the map face down, then shuffle it.
+
+                                The player with initiative starts the next chapter!
+
+                                Two-Player Mulligans
+
+                                In games with 2 players, after drawing, the player without
+                                initiative may discard their hand of 6 action cards to draw a
+                                new hand of 6 action cards. They must accept this new hand.
+
+                                · 19
+       Other Actions                                                  Admin Union
+
+Prelude Actions                                                             Admin Union
+                                                                Prelude: You may place this card next
+Many cards and all resources (page 17) give Prelude actions.    to a fParceelu-duep: YpoluamyeaydpAlacdemthiins cisatrdranteioxtn card.
+On cards, these actions begin with "Prelude:"                   WheWtno hatehfnaectehr-oeuupronpuldnadyeeednndAdsds,,mddrinarwiastwtrhatatitohcnaacrtdacrda.rd
+                                                                into yinotouyrohuar nhadndananddddiissccaardrdthtishciasrdc.ard.
+Your Prelude begins once you play an action card and ends
+once you spend an action pip from your played card. You can               BC   GUILD  04
+take any number of Prelude actions, with two limits:
+                                                                BC            GUILD         04
+ · Resources spent in Prelude return to the
+                                                                Before Prelude actions, you must
+      supply at the end of your Prelude, so                     choose whether or not to declare
+      you cannot regain them until then.                        an ambition or seize the initiative.
+
+ · You cannot use Prelude actions on cards that you             For example, if you spend an
+                                                                action pip to take the Battle
+      secured from the Court in the same Prelude.               action, you can Assassinate
+                                                                instead. You can even do
+Some Prelude actions on cards make you discard the card.        this if you spent a Weapon in
+Place it in a face-up Court discard pile near the Court deck.   your Prelude to allow this.
+
+New Actions                                                     For example, the Living
+                                                                Structures lore card says
+Cards can give you a new action followed by the name of a       "Nurture (Build): Tax a Loyal
+standard action in parentheses, such as Assassinate (Battle).   city." In this case, build modifiers
+                                                                do not modify Nurture, but
+When you would take the standard action by spending an          tax modifiers do modify the
+action pip or a resource, you may instead take the new action.  Tax action it contains.
+
+Modifiers
+
+Cards can give you modifiers to standard actions, which
+are shown in bold, such as "In battle, collect 1 extra die."
+Modifiers do not modify new actions, but they do modify
+standard actions that are within new actions.
+
+Modifiers can also affect critical play steps, such as setup
+(pages 4­5), scoring (Step 1, page 18), declare an ambition
+(page 9), and seize the initiative (page 10).
+
+20 ·
+      Tool-Priests                                 Leaders & Lore 
+
+Summon (Build): Once per turn, build         After playing a game or two, you're ready to play with
+1 ship at any city you control.              Leaders and Lore! This mode gives players wild, unique
+Yes, even Rival cities you control!          abilities, but they can be hard to handle if you're starting out.
+                                             Really, don't play your first game with Leaders and Lore.
+L  LORE       01
+                                              · Your leader card gives you unique powers,
+   Lore Card
+                                                   starting pieces, and starting resources.
+                                         02
+                                              · Lore cards give persistent powers. They don't
+         Mystic
+                                                   have a guild icon or raid cost, so they do not
+A uned. When you Copy or Pivot in                  add to ambitions and cannot be stolen.
+order to tax, you gain 1 Psionic along
+with the taxed resource.                     Setup
+
+Cryptic. In setup, place agents on your      Replace Steps N­O of setup (page 5) with0t2he following:
+Material and Fuel Outrage slots on your
+player board.                                Lay out lore cards and leader cards in face-up rows, each
+                                             with cards equal to the players plus one.
+   A     B                            C
+                                             In reverse turn order--start with the player to the right of the
+  Leader's Starting                          player with initiative, and go counterclockwise--each player
+Resources and Pieces                         may take 1 leader or lore card.
+
+The Mystic starts with a                     Continue this until each player has 1 leader card and 1 lore
+Psionic and a Relic.                         card. You cannot take a leader card if you already have one,
+                                             and you cannot take a lore card if you already have one.
+They have initiative, so they
+place 3 ships and a city in                  Each player places their starting pieces onto the map in the
+1A, 3 ships and a starport                   systems marked on the setup card as shown in the A, B, and
+in 1B, and 2 ships in 1C.
+                                             C boxes shown on thMeirylesadteirccard. Pips under a ship icon
+
+                                             show how many ships to place.
+
+                                                             A uned. When you Copy or Pivot in
+
+                                             Each playerorgdaeirntsotthaxe, 2yoruegsaoinu1rcPesiotnoickealnonsgshown on their
+                                             leader cardw,itphlathceintagxethderemsoiunrcteh.eir 2 leftmost resource slots in
+                                             the order sChorywptnic.. In setup, place agents on your
+
+                                                             Material and Fuel Outrage slots on your
+                                                             player board.
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  02
+
+                                             A  B  C
+
+                                                      Mystic pMCwloaArayriyttdeepheurrttrinibahcteol.eodaaIntntr.aaddWsxx.eeF,htduyueoeprneul,OsypgoolauuauitcrnrCceae1oga.PpegsyesiolnoontrtsiscPooiavnnlooyytnooignuurr
+
+                                                      A  B
+
+                                                            C
+
+You can set up with as many                  Finally, if any leaders have extra setup steps, players perform
+lore cards as you want, but you              them in turn order.
+run the risk of overwhelming
+everyone. Be careful!                        If you want to increase chaos and uniqueness even more, you
+                                             can let players choose a second lore card. Just add 1 extra
+                                             lore card per player to the starting row, and keep choosing
+                                             cards until each player has 1 leader card and 2 lore cards.
+
+                                                                                                                                                                                                                           · 21
+       Fine Print 
+
+This section covers some technical parts of play.    Rules Hierarchy
+
+Tiebreakers &                                        This rulebook supersedes the aid sheets and
+Choice Order                                         player boards.
+
+If you have a tie and its tiebreaker is not          Cards supersede this rulebook, but any rule that
+specified, break the tie in turn order. Likewise,    uses the term cannot is absolute--it cannot be
+if players must make a decision in an unclear        superseded unless explicitly named using the
+order, resolve it in turn order. (Start with the     term ignore. (For example, "You ignore Outrage
+player with initiative and go clockwise.)            when spending Material for its Prelude action.")
+
+If multiple things happen at the same time but       Sidebars as well as text written in italics and
+must be resolved in order, the player taking         parentheses (like this) are clarifications and
+their turn chooses their order. If no one is taking  reminders, which are superseded by the core
+a turn, the player with initiative chooses.          rules they reference.
+
+Elimination &                                        Negotiations
+Concession
+                                                     Players may make deals and promises, but they
+Rarely, a player will have no starports or ships     are not binding. Players cannot give each other
+on the map. If this happens, they place 3 fresh      pieces unless a rule allows it.
+ships in any gate at the end of their turn.
+                                                     Private Information
+Sometimes, usually in games with 2 players, it
+may become clear that a player has won. Feel         Players cannot show the action cards in their
+free to concede!                                     hand to anyone else.
+
+Pieces & Piece Limits                                Turn Etiquette
+
+Pieces are limited by the contents of the box        Though declaring an ambition and seizing the
+with one exception: if you need an agent to          initiative happen before any other actions, we
+place on an Outrage slot but none are in your        usually let people do them during their turn as
+supply, use a placeholder piece until an agent       long as new info hasn't been revealed--such as
+enters your supply, then place the agent.            rolling dice or drawing a card--and any relevant
+                                                     modifiers are followed. Don't get bogged down
+If a rule makes you place pieces, this refers to     in technicalities unless it changes the game.
+fresh Loyal pieces by default.                       Arcs thrives when the game flows!
+
+Pieces that you place and return come from and       Split Discard Piles
+go to their original supply by default except for
+cities: cities come from the leftmost filled city    Normally, all action cards are discarded face
+slot on their original player board, and go to the   down, even ones played face up. This speeds
+rightmost empty city slot. (Remember, pieces         up play but it favors players with good memory.
+often go to Trophies and Captives instead of
+back to supplies.)                                   If you're running a tournament or want a more
+                                                     strategic but slower game, you can split the action
+If you must place or return more pieces than         discard into two piles--one for cards played face
+possible, do the maximum possible.                   down, and one for cards played face up.
+
+If you replace a piece, return it and place          If you're prompted to draw from the action
+another piece in its place. If the old piece was     discard pile, draw from the facedown pile.
+damaged, the new piece is placed damaged.            In the rare circumstance that it doesn't have
+(Replacing a piece does not destroy it.)             enough cards, shuffle the piles together first.
+
+22 ·
+Glossary
+
+Adjacent: Shares a thin border (The Map, page 6).                    Play Area: On and around your player board.
+                                                                     (Most pieces go in specific parts of your play area.)
+Building: Cities and starports.
+                                                                     Prelude: See Prelude Actions (page 20).
+Bury: Place on the bottom of the Court deck.
+                                                                     Replace, Return: See Pieces & Piece Limits
+Capture: Place the prompted piece in the Captives                    (page 22).
+box on your player board.
+                                                                     Rival: Of another player's color. When used alone,
+Chapter: The time in which players play rounds until                 refers to another player.
+they all run out of action cards.
+                                                                     Round: The time in which each player takes a turn.
+Clear: Return all pieces from the prompted area.
+                                                                     Scrap: Make out of play permanently.
+Control: You control a system and its contents if you
+have more fresh ships there than each Rival. On a tie,               Seize the Initiative: Take the initiative marker. You
+no one controls the system.                                          cannot do this if you have the initiative marker or if
+                                                                     someone has already seized the initiative this round.
+Damaged: Not fresh--a tipped ship or a building on
+its darker side.                                                     Spend: When referring to a resource, return the
+                                                                     spent resource to its supply.
+Destroy: Return a fresh or damaged piece from
+the map. (It often goes to a Trophies box.)                          Steal: Add the specified piece to your play area
+                                                                     from a Rival's play area. (This is distinct from take
+Empty: Has no pieces in or on it.                                    because some rules prevent stealing.)
+
+Fresh: Not damaged--an upright ship or a building                    Supply: The general supply holds resources and
+on its lighter side.                                                 other shared pieces, and players' supplies hold their
+                                                                     Loyal ships and agents.
+Gain: Add the specified piece to your play area from
+its supply. (You can't gain it if its supply is empty.)              Swap: Give the prompted piece and take the
+                                                                     prompted piece at the same time.
+Give: Add the specified piece to a Rival play area.
+                                                                     Take: Add the specified piece to your play area.
+Hit: Tip over a fresh piece on the map, or remove a
+damaged piece from the map.                                          Turn: The time in which a player plays an action card
+                                                                     and may take actions.
+Loyal: Of your player color.
+                                                                     Turn Order: Starting with the player with initiative
+Out of Play: Cannot be interacted with.                              and going clockwise.
+
+Piece: Any component in the game.
+
+Place: See Pieces & Piece Limits (page 22).
+
+Credits
+
+Cole and Kyle dedicate this game to the thousands of                 Playtesting & Usability Reading: Nathan Adams, Jo Attwood,
+players who continue to make our work possible.                      Celena Baker, Dominik Batók, Todd Berman, Q. Bryant, Sam Buan,
+                                                                     Cat Bult, Christina Berkley, Luke Bridwell, Ran C, Brenda Carrasco,
+Game Design: Cole Wehrle                                             Michael Cauthorn, Lili Chin, Jacob Church, Joshua Clark Orkin,
+Illustration: Kyle Ferrin                                            Benjamin Cochrane, Justin Dowd and the Brass Cat crew, Erin,
+Editing: Joshua Yearsley                                             Zane Fisher, Andrew Grimes, Tonke Groot, Lily Gould, Daniel
+Graphic Design: Pati Hyun (lead) with Kyle Ferrin,                   Hallinan, Haze, Sophia Hercher, April Higgins, Kevin Hulse, John
+Cole Wehrle, and Joshua Yearsley                                     Keller, Dylan Kistler, Ben Lang, Patrick Lefebvre, JC Lumsargis,
+Development: Cole Wehrle and Joshua Yearsley                         Jai Manacsa, jermcurry, Jules Marciano, Vixen Martin, Arthur
+(co-leads) with Nick Brachmann                                       McCool, Kirby Morris, Caitlin Moran, Joe Moran, Paul Mussoni,
+                                                                     Elias Nichols, Hung Nguyen, Nathaniel Olin, Mark Overstreet,
+Contractors & Summer Interns: Cory DeVore (3d modeler), Jeff         Finn Powers-Tiffin, Daniel Preston, Kristopher Reynolds, Alita
+Fraser (usability read moderator), George Georgeadis (Kickstarter    Robertson, Arden Rogow-Bales, Malachi Ray Rempen, Evan
+video producer), Emily Mattingley (graphic design assistant), Alita  Rowland, Guerric Samples, Marius Schneider, Jaden Servant, S.P.
+Robertson (production assistant), Amanda Valentine (copy-editor);    Shaman, Sarah Shirley (Sarai), Mar Hepto, Matilda Simonsson,
+Q. Bryant and Dylan Kistler (production interns); Sam Buan,          Charles Simon, Nicole Smith, Matt Snow, Kiaran Smalldon, Frack
+Michael Cauthorn, and Finn Powers-Tiffin (playtesting interns)       the Snail, Francis Snyder, Rho Sternjäger, turmoilbyrd, uropb,
+                                                                     Samuel Vriezen, Steve Owen, Jackson Wray, Drew Wehrle, Chris
+Arcs was originally developed by Leder Games.                        Weidner, and many more!
+
+                                                                                                                                 · 23
+      Index                                                Learn Fast,
+                                                           Play Fast!
+Actions, 8, 10, 20            Gates, 6 (The Map)
+  Battle, 14                  Guild cards, 17              If you'd like to learn Arcs
+  Build, 12                   Hits, 14                     by watching a how-to-play
+  Influence, 13               Initiative                   video, use the QR code
+  Move, 13                                                 below. You can also find
+  Repair, 13                    Changing at round end, 11  it in the Resources section
+  Secure, 13                    Passing, 8                 for Arcs on our site:
+  Tax, 12                       Seizing, 10                buriedgiant.com/arcs
+                              Intercept, 14 (Step 4.2)
+Action cards, 8­11            Leader and lore cards, 21    Need a replacement part?
+Adjacency, 6 (The Map)        Map, 6                       buriedgiant.com/support
+Ambitions, 18                 Negotiations, 22             Learn more about Arcs!
+                              Outrage, 16                  buriedgiant.com/arcs
+  Declaring, 9                Passing initiative, 8
+  Scoring, 18                 Pieces
+Cannot, 22 (Rules Hierarchy)    Building, 12
+Captives, 7                     Damaging and destroying,
+  And Tyrant scoring, 18        7, 14
+  Taking, 12 (Tax),             Limits of, 22
+  13 (Secure)                 Planets, 6 (The Map)
+  Returning, 19 (Step 2)      Power, 18­19
+Cities                        Prelude actions, 20
+  Power bonuses from, 18      Provoking Outrage, 16
+  Resource slots from, 7      Raid cost, 16, 17
+  Taxing resources from, 12   Raiding, 16
+  (Tax)                         Dice limits of, 14
+Clusters, 6 (The Map)         Resources, 17
+Control, 7                    Seizing the initiative, 10
+  And building damaged, 12    Starports
+  And Catapult moves, 13        Building ships with, 12
+  And taxing Rivals, 12         Catapult moves from, 13
+Court, 7                      Systems, 6 (The Map)
+  Placing agents on, 13         Adjacency of, 6
+  (Influence)                   Moving among, 13 (Move)
+  Ransacking, 16              Tiebreakers, 22
+  Securing cards from, 13     Trophies, 7
+  (Secure)                      And Warlord scoring, 18
+Damage                          Taking, 7, 14
+  And control, 7                Returning, 19 (Step 2)
+  Dealing and taking, 14      Two-player games, 4, 19
+  Repairing, 13 (Repair)
+Dice symbols, 14
+
+24 ·
+

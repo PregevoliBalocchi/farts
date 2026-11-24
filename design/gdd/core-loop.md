@@ -178,16 +178,22 @@ go back to the supply; stolen ones move between players.
 - Unbuilt cities sit on the board and cover slots. Cities are built from the
   left: 1st frees slot 3, 2nd slot 4, 3rd slots 5 and 6, 4th uncovers a +2
   bonus, 5th a +3 bonus. At the start only slots 1 and 2 are open.
-- A gained token goes on the leftmost free open slot; no free slot = not gained.
+- Taking or being given a resource (rulebook, "Resources"): it goes on an empty
+  slot, and at that time the player may rearrange all their tokens among the
+  open slots, discarding what they cannot hold. The engine puts it on the
+  leftmost free open slot, or aside when none is free; the player may then
+  rearrange (the `arrange` command, drag and drop on the table) until their
+  next other command, when tokens still aside go back to the supply.
 - Bonus power: only for an untied first place, once per ambition however many
   markers it holds; +2 and +3 add up to +5 when both are uncovered (confirmed).
   A tie for first gets second-place value and no city bonus.
 - A city returning to the board covers its slot(s) again: the player
   rearranges tokens into the still-open slots and discards what no longer fits
-  (`cityReturnResource: move`). Cities that cover no resource slot (the +2/+3
-  spaces) cause no rearrangement. Simplification: the engine keeps the tokens
-  already on open slots and moves the displaced ones leftmost; the player
-  cannot yet choose a different token to discard.
+  (`cityReturnResource: move`), as for a gained token: displaced tokens go to
+  free open slots or aside, and the player may rearrange and choose what to
+  keep. Cities that cover no resource slot (the +2/+3 spaces) cause no
+  rearrangement. Spending, discarding or losing a token to a raid never allows
+  rearranging.
 - Prelude: from playing the card until the first card pip is spent, spend any
   number and mix of resources (not Outraged ones): Material = build or repair;
   Fuel = move; Weapons = this turn the card's pips may also battle (resources
@@ -202,9 +208,9 @@ go back to the supply; stolen ones move between players.
   **modifiers** (change standard actions, including those inside new actions,
   and steps like setup, scoring, declaring, seizing) — to design with the
   card-effect system.
-- Gaining a token with no free slot: the player keeps what they hold and the
-  new token is discarded to the supply (simplification: the rulebook lets
-  them rearrange and discard any token; needs a choice in the UI).
+- Gaining a token with no free slot: the player chooses which tokens to keep
+  (rearranging), and the rest are discarded to the supply (rulebook,
+  "Resources"; see `docs/rules/`).
 - Guild cards add to ambitions like a resource of their suit (Material and
   Fuel → Tycoon, Relics → Keeper, Psionics → Empath; Weapons → none).
 

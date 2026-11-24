@@ -55,6 +55,13 @@ for rulings: https://cards.buriedgiant.com/search?q=game:arcs — its card
 texts may go into `data/content.json`, nowhere else. Site numbering matches our ids
 (`BCnn` = `court-nn`, `Lnn` = `lore-nn`, `LEADnn` = `leader-nn`).
 
+**The rulebooks are in the repo** (owner's decision, 2026-11-24): the
+publisher's PDFs of the base game and the campaign expansion (rulebooks, aid
+booklet, aid sheets, punchboard) are committed in `docs/rules/`, each with a
+plain-text copy (`pdftotext -layout`) to search. **Read the rule there before
+writing or changing any game rule**; do not work from memory or from other
+sites. Code, tests and other docs still summarise rules in our own words.
+
 ## 3. Project decisions to keep
 
 - **Play mode:** multiplayer, each player on their own computer, remote.

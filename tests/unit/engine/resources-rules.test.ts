@@ -40,7 +40,7 @@ describe('Guild cards add to ambitions', () => {
 });
 
 describe('holding limits', () => {
-  it('a stolen token the attacker cannot hold goes back to the supply', () => {
+  it('a stolen token the attacker cannot hold waits aside, then goes back to the supply at their next move unless they make room', () => {
     const cc = content();
     cc.dice.raid = [{ key: 1 }];
     cc.playerBoard.slotKeys = [1, 1, 1, 1, 1, 1];
@@ -56,7 +56,17 @@ describe('holding limits', () => {
     s = dispatch(ix2, s, { type: 'allocate', player: 0, allocation: { selfHits: [], hits: [], buildingHits: [], raid: [{ resource: 0 }] } });
     expect(heldResources(s.players[1])).toEqual([]);
     expect(heldResources(s.players[0])).toEqual(['fuel', 'fuel', 'fuel']);
-    expect(s.resourceSupply.relic).toBe(before + 1);
+    expect(s.players[0].overflow).toEqual(['relic']);
+    expect(s.resourceSupply.relic).toBe(before);
+    // Keeping it: the relic takes a fuel's slot, and the fuel is what the next move discards.
+    const fuelBefore = s.resourceSupply.fuel;
+    const kept = dispatch(ix2, s, { type: 'arrange', player: 0, slots: ['relic', 'fuel', 'fuel'] });
+    expect(heldResources(kept.players[0])).toEqual(['relic', 'fuel', 'fuel']);
+    expect(dispatch(ix2, kept, { type: 'endTurn', player: 0 }).resourceSupply.fuel).toBe(fuelBefore + 1);
+    // Not rearranging: the next move discards the relic.
+    const left = dispatch(ix2, s, { type: 'endTurn', player: 0 });
+    expect(left.resourceSupply.relic).toBe(before + 1);
+    expect(left.players[0].overflow).toBeUndefined();
   });
 });
 
