@@ -17,6 +17,6 @@ export { RuleError, adjacent, applyAllocation, controls, destroyCityConsequences
 export type { ActionPayload, ActionResult, Allocation, HitTarget, PendingBattle, RaidTake, ShipHit } from './actions';
 export { rankAmbition, ambitionMetric, boxMetric, scoreAmbitions, markerValues, emptyAmbitionBoard } from './ambitions';
 export { rollDice, totalFaces } from './dice';
-export { citiesBuilt, cityBonusPower, gainFromSupply, gainResource, heldResources, onCityReturned, openSlots, returnToSupply, slotKeys } from './board';
+export { arrangeResources, citiesBuilt, cityBonusPower, endArranging, gainFromSupply, gainResource, heldResources, onCityReturned, openSlots, returnToSupply, slotKeys } from './board';
 export type { DicePool, DiceTotals, RollResult } from './dice';
 export { shuffle } from './rng';

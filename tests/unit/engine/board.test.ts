@@ -1,6 +1,6 @@
 // Player board: slots freed by cities, keys, city bonus, prelude rules (design/gdd/core-loop.md §3.7).
 import { describe, expect, it } from 'vitest';
-import { cityBonusPower, dispatch, gainResource, heldResources, onCityReturned, openSlots, scoreAmbitions } from '../../../src/game/engine';
+import { arrangeResources, cityBonusPower, dispatch, endArranging, gainResource, heldResources, onCityReturned, openSlots, scoreAmbitions } from '../../../src/game/engine';
 import type { GameState } from '../../../src/game/engine';
 import { content, game, index, setHands } from './fixture';
 
@@ -23,14 +23,49 @@ describe('resource slots', () => {
     expect(openSlots(c, p)).toEqual([0, 1]);
   });
 
-  it('fills the leftmost free open slot and refuses when full', () => {
+  it('fills the leftmost free open slot and sets aside what finds none', () => {
     const p = fresh().players[1];
     p.resources = [];
-    expect(gainResource(c, p, 'fuel')).toBe(true);
-    expect(gainResource(c, p, 'relic')).toBe(true);
-    expect(gainResource(c, p, 'weapons')).toBe(true);
-    expect(gainResource(c, p, 'material')).toBe(false);
+    gainResource(c, p, 'fuel');
+    gainResource(c, p, 'relic');
+    gainResource(c, p, 'weapons');
+    gainResource(c, p, 'material');
     expect(p.resources).toEqual(['fuel', 'relic', 'weapons']);
+    expect(p.overflow).toEqual(['material']);
+    expect(p.arranging).toBe(true);
+  });
+
+  it('lets a player who gained a token move tokens between open slots, gaps allowed', () => {
+    const p = fresh().players[1];
+    p.resources = ['fuel'];
+    gainResource(c, p, 'relic');
+    expect(arrangeResources(c, p, [null, 'fuel', 'relic'])).toBeNull();
+    expect(p.resources.slice(0, 3)).toEqual([null, 'fuel', 'relic']);
+  });
+
+  it('keeps the new token in place of an old one when the slots are full', () => {
+    const s = fresh();
+    const p = s.players[1];
+    p.resources = ['fuel', 'fuel', 'fuel'];
+    gainResource(c, p, 'relic');
+    expect(arrangeResources(c, p, ['relic', 'fuel', 'fuel'])).toBeNull();
+    expect(p.overflow).toEqual(['fuel']);
+    const before = s.resourceSupply.fuel;
+    endArranging(s, p);
+    expect(s.resourceSupply.fuel).toBe(before + 1);
+    expect(p.overflow).toBeUndefined();
+    expect(p.arranging).toBeUndefined();
+  });
+
+  it('refuses to rearrange without a gain, onto a covered slot, with a token not held, or leaving one aside with room', () => {
+    const p = fresh().players[1];
+    p.resources = ['fuel'];
+    expect(arrangeResources(c, p, [null, 'fuel'])).toMatch(/only when you gain/);
+    gainResource(c, p, 'relic');
+    expect(arrangeResources(c, p, ['fuel', null, null, 'relic'])).toMatch(/open slot/);
+    expect(arrangeResources(c, p, ['fuel', 'weapons'])).toMatch(/resources you hold/);
+    expect(arrangeResources(c, p, ['fuel'])).toMatch(/while one is free/);
+    expect(p.resources.slice(0, 2)).toEqual(['fuel', 'relic']);
   });
 
   it('a returning city moves the covered token to a free open slot', () => {
@@ -44,14 +79,17 @@ describe('resource slots', () => {
     expect(heldResources(p)).toEqual(['fuel', 'weapons', 'relic']);
   });
 
-  it('a returning city discards covered tokens when no open slot is free', () => {
+  it('a returning city sets aside the covered token when no open slot is free', () => {
     const cc = content();
     cc.playerBoard.cityReturnResource = 'move';
     const p = fresh().players[1];
     p.resources = ['fuel', 'material', 'relic', 'weapons'];
     p.supply.cities = 4; // 1 built: slots 0-2 open
-    expect(onCityReturned(cc, p)).toEqual(['weapons']);
+    expect(onCityReturned(cc, p)).toEqual([]);
     expect(heldResources(p)).toEqual(['fuel', 'material', 'relic']);
+    // The displaced token waits aside: the player may keep it in place of another.
+    expect(p.overflow).toEqual(['weapons']);
+    expect(p.arranging).toBe(true);
   });
 
   it('a tie for first gets second-place power but no city bonus', () => {

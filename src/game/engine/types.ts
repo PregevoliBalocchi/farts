@@ -287,6 +287,18 @@ export interface PlayerState {
   lore: string[];
   /** Outraged resource types: they cannot be spent for their prelude action. */
   outraged: Resource[];
+  /**
+   * Set when the player took or was given a resource, or a returning city
+   * covered a slot: until their next other command they may rearrange their
+   * tokens among the open slots (the `arrange` command).
+   */
+  arranging?: boolean;
+  /**
+   * Tokens gained with no open slot free: held aside while `arranging`, and
+   * discarded to the supply at the player's next other command unless a
+   * rearrangement gave them a slot (another token is then set aside instead).
+   */
+  overflow?: Resource[];
 }
 
 export interface CourtSlot {

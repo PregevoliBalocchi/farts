@@ -176,7 +176,10 @@ const CITY_TRIANGLE = (() => {
  * add. An unbuilt city stands on its triangle; built, the printed outline
  * shows and its slots take resources.
  */
-function slotsHtml(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null): string {
+function slotsHtml(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, arrange = false): string {
+  // Rearranging: every open slot takes a dragged token, every token can be dragged.
+  const drop = (i: number) => (arrange ? ` data-drop="${i}"` : '');
+  const drag = (i: number) => (arrange ? ` draggable="true" data-drag="${i}"` : '');
   const slot = (i: number, covered: boolean) => {
     const s = p.slots[i];
     // The keys as the Court cards print them: the kit's 1, 2 or 3 key tab.
@@ -185,14 +188,14 @@ function slotsHtml(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, 
       ? `<span class="keys kit" style="background-image:url('${esc(tab)}')" aria-label="${s.keys}"></span>`
       : `<span class="keys">${Array.from({ length: s.keys }, () => icon('key')).join('')}</span>`;
     if (s.locked) return `<div class="slot locked${covered ? ' covered' : ''}" title="${esc(t('slot.locked'))}">${keys}<span class="well">${covered ? '' : icon('lock')}</span></div>`;
-    if (!s.resource) return `<div class="slot${covered ? ' covered' : ''}" title="${esc(t('slot.empty'))}">${keys}<span class="well"></span></div>`;
+    if (!s.resource) return `<div class="slot${covered ? ' covered' : ''}${arrange ? ' drop' : ''}"${drop(s.index)} title="${esc(t('slot.empty'))}">${keys}<span class="well"></span></div>`;
     const out = p.outraged.includes(s.resource) ? ' outraged' : '';
-    const cls = `slot${covered ? ' covered' : ''}${out}`;
+    const cls = `slot${covered ? ' covered' : ''}${out}${arrange ? ' drop' : ''}`;
     const label = t(`resource.${s.resource}`);
     if (spendable.has(s.index)) {
-      return `<button type="button" class="${cls} spend${chosen === s.index ? ' chosen' : ''}" data-act="spend" data-slot="${s.index}" title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></button>`;
+      return `<button type="button" class="${cls} spend${chosen === s.index ? ' chosen' : ''}" data-act="spend" data-slot="${s.index}"${drop(s.index)}${drag(s.index)} title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></button>`;
     }
-    return `<div class="${cls}" title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></div>`;
+    return `<div class="${cls}"${drop(s.index)}${drag(s.index)} title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></div>`;
   };
   const onCity = (built: boolean) => (built ? '' : `<span class="on-city">${pieceIcon('city', p.id)}</span>`);
   const covered = new Set(p.cities.flatMap((c) => c.slots));
@@ -265,11 +268,11 @@ export function preludeTab(cards: readonly PreludeCard[], t: Translate, row = fa
  * the name bar with the power in a ring. `maxCards` 0: no guild cards (the
  * local player's are in their own panel of the bar).
  */
-function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<number>; chosen: number | null; preludes: readonly PreludeCard[]; maxCards: number; head: string; legend?: boolean }): string {
+function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<number>; chosen: number | null; preludes: readonly PreludeCard[]; maxCards: number; head: string; legend?: boolean; arrange?: boolean }): string {
   return `${preludeTab(o.preludes, t)}
     <div class="pb-body${o.legend ? ' with-legend' : ''}">
       <div class="pb-face">${o.head}</div>
-      ${slotsHtml(p, t, o.spendable, o.chosen)}
+      ${slotsHtml(p, t, o.spendable, o.chosen, o.arrange)}
       ${o.legend ? preludeLegend(p, t, spentTypes(p, o.spendable)) : ''}
       ${spoils(p, t)}
       ${o.maxCards > 0 ? `<div class="pb-guild">${miniCards([...p.court, ...p.lore], o.maxCards)}</div>` : ''}
@@ -326,8 +329,8 @@ export function playedText(v: TableView, t: Translate, player: number): string |
 }
 
 /**
- * The card a seat played this round, drawn small with how it was played
- * (lead, follow, copy, pivot) under it; an empty slot before the seat plays.
+ * The card a seat played this round, with how it was played (lead, surpass,
+ * copy, pivot, and "takes the initiative") over it; an empty slot before the seat plays.
  */
 export function playedCard(ix: ContentIndex, v: TableView, t: Translate, player: number): string {
   const pl = v.plays.find((x) => x.player === player);
@@ -335,7 +338,9 @@ export function playedCard(ix: ContentIndex, v: TableView, t: Translate, player:
   const face = pl.card ? actionCard(ix, pl.card, t, pl.zeroed ? 'zeroed' : '') : '<div class="facedown"></div>';
   // The card's actions as gold tags beside it, as on the digital table.
   const tags = pl.card?.kinds.length ? `<span class="tags">${pl.card.kinds.map((k) => `<span class="tag">${esc(t(`action.${k}`))}</span>`).join('')}</span>` : '';
-  return `<div class="play${pl.mode === 'lead' ? ' lead' : ''}">${face}${tags}<span class="how">${esc(t(`played.${pl.mode}`))}${pl.seized ? ' ↺' : ''}</span></div>`;
+  // How it was played, over the card; a seat that seized the initiative says so in words.
+  const how = `<span class="how">${esc(t(`played.${pl.mode}`))}</span>${pl.seized ? `<span class="how seized">${esc(t('played.seized'))}</span>` : ''}`;
+  return `<div class="play${pl.mode === 'lead' ? ' lead' : ''}"><span class="hows">${how}</span>${face}${tags}</div>`;
 }
 
 /**
@@ -361,10 +366,25 @@ export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Tra
  * now. `slim`: without the guild cards and with the leader rising out of the
  * frame (the table's bottom bar, which shows those cards in their own panel).
  */
-export function localPanel(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, preludes: readonly PreludeCard[] = [], slim = false): string {
+export function localPanel(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, preludes: readonly PreludeCard[] = [], slim = false, arrange = false): string {
   const head = leaderPortrait(p);
-  return `<div class="board pb local${slim ? ' slim' : ''} s-${seatColor(p.id)}${p.isActive ? ' active' : ''}">
-    ${seatBoard(p, t, { spendable, chosen, preludes, maxCards: slim ? 0 : 9, head, legend: true })}
+  const can = arrange && p.arranging;
+  return `<div class="board pb local${slim ? ' slim' : ''}${can ? ' arranging' : ''} s-${seatColor(p.id)}${p.isActive ? ' active' : ''}">
+    ${seatBoard(p, t, { spendable, chosen, preludes, maxCards: slim ? 0 : 9, head, legend: true, arrange: can })}
+    ${can ? arrangeStrip(p, t) : ''}
+  </div>`;
+}
+
+/**
+ * Over the local board while its resources can be rearranged: what to do,
+ * and the tokens that found no slot (dragged onto a slot they take its place;
+ * what is still here at the next move is discarded).
+ */
+function arrangeStrip(p: PlayerView, t: Translate): string {
+  const aside = p.overflow.map((r, i) => `<span class="ov-token" draggable="true" data-drag="o${i}" title="${esc(t(`resource.${r}`))}">${resIcon(r, t)}</span>`).join('');
+  return `<div class="pb-arrange" data-drop="o">
+    <span class="ar-hint">${esc(t(p.overflow.length ? 'arrange.over' : 'arrange.hint'))}</span>
+    ${aside ? `<span class="ar-aside">${aside}</span>` : ''}
   </div>`;
 }
 

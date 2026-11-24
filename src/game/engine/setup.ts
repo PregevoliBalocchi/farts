@@ -291,9 +291,12 @@ export function finishSetup(ix: ContentIndex, s: GameState): void {
           });
     for (const r of wanted) {
       if ((s.resourceSupply[r] ?? 0) < 1) throw new Error(`Resource supply has no ${r} for player ${p.id}`);
-      if (!gainResource(c, p, r)) throw new Error(`Player ${p.id}: no free slot for starting ${r}`);
+      gainResource(c, p, r);
+      if (p.overflow?.length) throw new Error(`Player ${p.id}: no free slot for starting ${r}`);
       s.resourceSupply[r] -= 1;
     }
+    // Starting resources sit on the leftmost slots: no rearranging at setup.
+    delete p.arranging;
   });
   leaderSetup(ix, s);
   s.draft = null;

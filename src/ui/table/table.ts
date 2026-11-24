@@ -167,6 +167,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let mineOpen = false;
   /** The turn (see turnKey) whose Prelude the local player closed to take the card's actions. */
   let preludeLeft = '';
+  /** The move ("from>to") whose ships-left-on-the-way counters the player asked to see. */
+  let dropsOpen = '';
   try {
     controlLayer = localStorage.getItem('arcs.controlLayer') === '1';
     flatPlanets = localStorage.getItem('arcs.planets2d') === '1';
@@ -744,6 +746,50 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     </div>`;
   }
 
+  /** The picture that stands for each die type while the dice are being chosen (one of its faces). */
+  const DIE_PICTURE = { skirmish: 'dice.skirmish-1-3', assault: 'dice.assault-4', raid: 'dice.raid-5' } as const;
+
+  /**
+   * The battle window before the roll (3D map only): the two fleets, and the
+   * dice to roll as the real dice. A click on a die turns it into the next
+   * type (skirmish, assault, raid, none); a free place adds one. Then Roll,
+   * and the same window shows the roll and takes the hits.
+   */
+  function battleSetup(v: TableView): string {
+    const i = intent;
+    if (!board3d || i.step !== 'battle' || i.target === null || !myTurn()) return '';
+    const me = local();
+    const target = i.target;
+    const total = i.dice.skirmish + i.dice.assault + i.dice.raid;
+    const payload = battlePayload(i);
+    const why = payload && total > 0 ? whyNot(ix, state, act(payload, i.prelude)) : null;
+    const ok = payload !== null && total > 0 && why === null;
+    const here = v.systems.find((s) => s.id === i.system)?.ships.find((x) => x.player === me);
+    const more = total < MAX_STEPPER_DICE && can(act({ kind: 'battle', system: i.system, target, dice: { ...i.dice, skirmish: i.dice.skirmish + 1 } }, i.prelude));
+    const places = Math.min(MAX_STEPPER_DICE, Math.max(total + (more ? 1 : 0), (here?.fresh ?? 0) + (here?.damaged ?? 0)));
+    const types = (['skirmish', 'assault', 'raid'] as const).flatMap((d) => Array.from({ length: i.dice[d] }, () => d));
+    const dice = Array.from({ length: places }, (_, k) => {
+      const d = types[k];
+      if (!d) return `<button type="button" class="b-die pick off" data-act="die" data-type="" title="${esc(t('battle.addDie'))}" aria-label="${esc(t('battle.addDie'))}">+</button>`;
+      const url = assetUrl(DIE_PICTURE[d]);
+      const label = t('battle.changeDie', { type: t(`battle.dice.${d}`) });
+      return `<button type="button" class="b-die pick d-${d}" data-act="die" data-type="${d}" title="${esc(label)}" aria-label="${esc(label)}">${url ? `<img src="${esc(url)}" alt="">` : esc(t(`battle.dice.${d}`))}</button>`;
+    }).join('');
+    const mix = (['skirmish', 'assault', 'raid'] as const).map((d) => `<span class="b-mix d-${d}${i.dice[d] ? '' : ' zero'}"><i></i>${esc(t(`battle.dice.${d}`))} <b class="num">${i.dice[d]}</b></span>`).join('');
+    const rivals = rivalsIn(v, i.system);
+    const targets = rivals.length > 1 ? `<div class="opt-row b-targets"><span class="hint small">${esc(t('battle.target'))}</span>${rivals.map((r) => button('target', playerName(t, r), { args: { player: r }, cls: target === r ? 'on' : '' })).join('')}</div>` : '';
+    const title = t('battle.title', { system: systemLabel(v, i.system), a: playerName(t, me), d: playerName(t, target) });
+    return `<div class="battle-win glass setup" role="dialog" aria-label="${esc(title)}">
+      <div class="b-head"><span class="ctx-title">${esc(title)}</span></div>
+      ${targets}
+      <div class="b-pick"><div class="b-dice">${dice}</div><div class="b-mixes">${mix}</div></div>
+      <div class="hint small">${esc(t('battle.pickDice'))}</div>
+      <div class="battle-slot" style="width:${BATTLE_VIEW.w}px;height:${BATTLE_VIEW.h}px"></div>
+      ${why ? `<div class="hint b-why">${esc(say(why))}</div>` : ''}
+      <div class="b-foot"><div class="btn-grid">${button('cancel', t('btn.cancel'))}${button('do-battle', t('battle.go'), { cls: 'primary', disabled: !ok })}</div></div>
+    </div>`;
+  }
+
   /** The roll the dice strip last showed: a new roll (or reroll) tumbles the dice in again, other renders keep them still. */
   let diceShown = '';
   /**
@@ -838,7 +884,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let battle3d: BattleView3D | null | undefined;
   function mountBattle(): void {
     const slot = stage.querySelector<HTMLElement>('.battle-slot');
-    if (!slot || state.phase.type !== 'allocate') {
+    const setup = intent.step === 'battle' && intent.target !== null ? { system: intent.system, target: intent.target } : null;
+    if (!slot || (state.phase.type !== 'allocate' && !setup)) {
       battle3d?.hide();
       return;
     }
@@ -850,6 +897,24 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       }
     }
     if (!battle3d) return;
+    if (state.phase.type !== 'allocate') {
+      // Before the roll: the two fleets as they stand, nothing to pick.
+      if (!setup) return;
+      const forces = battleForces(state, { system: setup.system, attacker: local(), target: setup.target } as BattleRef);
+      slot.appendChild(battle3d.canvas);
+      battle3d.onPick = () => undefined;
+      battle3d.update({
+        attackerSeat: local(),
+        defenderSeat: setup.target,
+        after: battleAfter(forces, { selfHits: [], hits: [], buildingHits: [] }),
+        buildings: forces.buildings.map((x) => ({ owner: x.owner, type: x.type })),
+        dice: [],
+        rollKey: `setup:${setup.system}:${setup.target}`,
+        canPick: null,
+        planet: battlePlanet(setup.system),
+      });
+      return;
+    }
     const pb = state.phase.battle;
     const forces = battleForces(state, pb);
     const al = allocation()!;
@@ -898,41 +963,50 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     ).join('');
   }
 
+  /** A count with − and + (a `pip` click sets the new value). */
+  function counter(name: string, label: string, value: number, max: number): string {
+    return `<span class="stepper mv-n"><span>${esc(label)}</span>${button('pip', '−', { args: { name, n: Math.max(0, value - 1) }, disabled: value <= 0 })}<span class="num">${value}</span>${button('pip', '+', { args: { name, n: value + 1 }, disabled: value >= max })}</span>`;
+  }
+
   /**
-   * The planned move: the route (each system as a step), the ships leaving and
-   * where each is left on the way, where the rest arrive; then confirm, back or cancel.
-   * The route itself is drawn on the map (arrow and holograms) and extended there.
+   * The planned move, in a few lines: from where to where, how many ships go
+   * (all the fresh ones to begin with), then confirm. Leaving ships at a
+   * system on the way is asked for with its own button. The route itself is
+   * drawn on the map (arrow and holograms) and extended there.
    */
   function movePanel(v: TableView, i: MoveIntent): string {
     const me = local();
     const ok = can(act(movePayload(i), i.prelude));
     const src = v.systems.find((s) => s.id === i.from)?.ships.find((x) => x.player === me);
     const open = moveTargets(v, i.from, [...i.via, i.to], i.prelude).size > 0;
-    const stops = routeStops(i);
     const close = button('cancel', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
-    const head = `<div class="ctx-head mv-head"><span class="ctx-title">${esc(t('action.move'))}</span><span class="mv-count">${i.ships + i.damaged}</span>${close}</div>`;
-    const step = (cls: string, id: string, label: string, body: string) =>
-      `<li class="mv-step ${cls}"><span class="mv-dot" aria-hidden="true"></span><div class="mv-body"><div class="mv-line"><span class="mv-sys">${esc(systemLabel(v, id))}</span><span class="mv-lbl">${esc(label)}</span></div>${body ? `<div class="mv-pips">${body}</div>` : ''}</div></li>`;
-    // Ships still moving when the route reaches each system passed through.
-    let fresh = i.ships;
-    let damaged = i.damaged;
-    const passes = i.via.map((at) => {
-      const row = pips(`drop:${at}`, i.drop[at] ?? 0, fresh) + (damaged ? pips(`dropd:${at}`, i.dropDamaged?.[at] ?? 0, damaged, true) : '');
-      fresh -= Math.min(fresh, i.drop[at] ?? 0);
-      damaged -= Math.min(damaged, i.dropDamaged?.[at] ?? 0);
-      return step('pass', at, t('move.dropHere'), row);
-    });
-    const end = stops[stops.length - 1];
-    const arrive = t('move.arrive', { n: end.fresh }) + (end.damaged ? ` · ${t('move.arriveDamaged', { n: end.damaged })}` : '');
-    const leave = pips('ships', i.ships, src?.fresh ?? 0) + pips('damaged', i.damaged, src?.damaged ?? 0, true);
-    const note = open ? t('move.goOn') : stopReason(v, i);
+    const url = assetUrl(`piece.ship-${seatColor(me)}`);
+    const pic = url ? `<img class="mv-ship" src="${esc(url)}" alt="">` : icon('ship');
+    const head = `<div class="ctx-head mv-head">${pic}<span class="ctx-title">${esc(systemLabel(v, i.from))} → ${esc(systemLabel(v, i.to))}</span>${close}</div>`;
+    const hasDamaged = (src?.damaged ?? 0) > 0;
+    const counts = counter('ships', t(hasDamaged ? 'move.ships' : 'move.count'), i.ships, src?.fresh ?? 0) + (hasDamaged ? counter('damaged', t('move.damaged'), i.damaged, src?.damaged ?? 0) : '');
+    // Ships left on the way: only when the route passes through a system, and only once asked for.
+    let drops = '';
+    if (i.via.length) {
+      const shown = dropsOpen === `${i.from}>${i.to}` || i.via.some((at) => (i.drop[at] ?? 0) + (i.dropDamaged?.[at] ?? 0) > 0);
+      if (!shown) drops = `<div class="mv-drops">${button('mv-drops', t('move.dropAsk'), { cls: 'link' })}</div>`;
+      else {
+        let fresh = i.ships;
+        let damaged = i.damaged;
+        const rows = i.via.map((at) => {
+          const row = counter(`drop:${at}`, t('move.dropAt', { system: systemLabel(v, at) }), i.drop[at] ?? 0, fresh) + (damaged ? counter(`dropd:${at}`, t('move.damaged'), i.dropDamaged?.[at] ?? 0, damaged) : '');
+          fresh -= Math.min(fresh, i.drop[at] ?? 0);
+          damaged -= Math.min(damaged, i.dropDamaged?.[at] ?? 0);
+          return `<div class="mv-counts">${row}</div>`;
+        });
+        drops = `<div class="mv-drops">${rows.join('')}</div>`;
+      }
+    }
+    const note = open ? '' : stopReason(v, i);
     const back = i.via.length ? button('route-back', t('move.back')) : '';
-    return `<div class="mv-plan s-${seatColor(me)}">${head}<ol class="mv-route">
-        ${step('from', i.from, t('move.leave'), leave)}
-        ${passes.join('')}
-        ${step(`end${open ? '' : ' stop'}`, i.to, arrive, '')}
-      </ol>
-      <div class="mv-note${open ? ' open' : ''}">${esc(note)}</div>
+    return `<div class="mv-plan s-${seatColor(me)}">${head}
+      <div class="mv-counts">${counts}</div>${drops}
+      ${note ? `<div class="mv-note">${esc(note)}</div>` : ''}
       <div class="btn-grid mv-btns">${button('do-move', t('btn.confirm'), { cls: 'primary', disabled: !ok })}${back}</div></div>`;
   }
 
@@ -1073,6 +1147,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'move':
         return movePanel(v, i);
       case 'battle': {
+        if (board3d) return '';
         const targets = rivalsIn(v, i.system)
           .map((r) => button('target', playerName(t, r), { args: { player: r }, cls: i.target === r ? 'on' : '' }))
           .join('');
@@ -1325,7 +1400,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="region court" data-region="court" style="${place(REGIONS.court)}">${courtPanel(v, t, courtPickable(intent))}</div>
       <div class="region side" data-region="side" style="${place(REGIONS.side)}">${sidePanel(ix, v, t)}</div>
       <div class="region bar" aria-hidden="true" style="${place(REGIONS.bar)}"></div>
-      <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, [], true)}</div>
+      <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, [], true, v.phase !== 'gameOver')}</div>
       <div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>
       <div class="region mine${mineOpen ? ' open' : ''}" data-region="mine" style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 26, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen)}</div>
       <div class="region hand" data-region="hand" style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>
@@ -1351,7 +1426,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const powers = powerMenuHtml();
     if (powers) stage.insertAdjacentHTML('beforeend', powers);
     placePowerMenu();
-    const war = battleWindow(v);
+    const war = battleWindow(v) || battleSetup(v);
     if (war) stage.insertAdjacentHTML('beforeend', war);
     const pick = draftWindow();
     if (pick) stage.insertAdjacentHTML('beforeend', pick);
@@ -1494,7 +1569,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         if (d.kind === 'build') return void send(act({ kind: 'build', system, what: d.what as 'ship' | 'city' | 'starport' }, pre));
         if (d.kind === 'repair') return void send(act({ kind: 'repair', system, target: d.target as 'ship' | 'building' }, pre));
         if (d.kind === 'tax') return void send(act({ kind: 'tax', system, cityOwner: Number(d.owner) }, pre));
-        if (d.kind === 'battle') intent = { step: 'battle', system, target: Number(d.target), dice: { skirmish: 0, assault: 0, raid: 0 }, prelude: pre };
+        if (d.kind === 'battle') {
+          const target = Number(d.target);
+          const here = v.systems.find((s) => s.id === system)?.ships.find((x) => x.player === me);
+          let n = Math.min(MAX_STEPPER_DICE, (here?.fresh ?? 0) + (here?.damaged ?? 0));
+          while (n > 1 && !can(act({ kind: 'battle', system, target, dice: { skirmish: n } }, pre))) n--;
+          intent = { step: 'battle', system, target, dice: { skirmish: n, assault: 0, raid: 0 }, prelude: pre };
+        }
         else if (d.kind === 'move') intent = { step: 'to', from: system, via: [], prelude: pre };
         break;
       }
@@ -1521,6 +1602,23 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           else if (d.name.startsWith('dropd:')) intent = setDrop(intent, d.name.slice(6), n, true);
         }
         break;
+      case 'mv-drops':
+        if (intent.step === 'move') dropsOpen = `${intent.from}>${intent.to}`;
+        break;
+      case 'die': {
+        // A die of the battle window: an empty place takes a skirmish die; a die turns into the next type, then leaves.
+        if (intent.step !== 'battle') break;
+        const dice = { ...intent.dice };
+        const type = d.type as 'skirmish' | 'assault' | 'raid' | '';
+        if (type === '') dice.skirmish++;
+        else {
+          dice[type]--;
+          if (type === 'skirmish') dice.assault++;
+          else if (type === 'assault') dice.raid++;
+        }
+        intent = { ...intent, dice };
+        break;
+      }
       case 'route-back':
         // One step back: the route ends at the last system it passed through.
         if (intent.step === 'move' && intent.via.length) intent = cutRoute(intent, intent.via[intent.via.length - 1]) ?? intent;
@@ -1747,6 +1845,62 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   });
   stage.addEventListener('focusout', (e) => {
     if (zoomTarget(e)) hideZoom();
+  });
+
+  // ---- rearranging resources: drag a token onto another slot of the local board ----
+  /** The place a drag started from ("2": slot 2; "o0": the first token set aside). */
+  let dragFrom: string | null = null;
+  stage.addEventListener('dragstart', (e) => {
+    const el = (e.target as Element).closest<HTMLElement>('[data-drag]');
+    if (!el) return;
+    dragFrom = el.dataset.drag ?? null;
+    e.dataTransfer?.setData('text/plain', dragFrom ?? '');
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    hideTip();
+    hideZoom();
+  });
+  stage.addEventListener('dragover', (e) => {
+    const el = dragFrom !== null ? (e.target as Element).closest<HTMLElement>('[data-drop]') : null;
+    if (!el) return;
+    e.preventDefault();
+    for (const x of stage.querySelectorAll('.drag-over')) if (x !== el) x.classList.remove('drag-over');
+    el.classList.add('drag-over');
+  });
+  stage.addEventListener('dragend', () => {
+    dragFrom = null;
+    for (const x of stage.querySelectorAll('.drag-over')) x.classList.remove('drag-over');
+  });
+  stage.addEventListener('drop', (e) => {
+    const el = (e.target as Element).closest<HTMLElement>('[data-drop]');
+    const from = dragFrom;
+    dragFrom = null;
+    if (!el || from === null) return;
+    e.preventDefault();
+    const to = el.dataset.drop ?? '';
+    if (to === from) return;
+    const me = local();
+    const pl = state.players[me];
+    const slots: (Resource | null)[] = content.playerBoard.slotKeys.map((_, i) => pl.resources[i] ?? null);
+    const aside = [...(pl.overflow ?? [])];
+    const fromAside = from.startsWith('o');
+    const token = fromAside ? aside[Number(from.slice(1))] : slots[Number(from)];
+    if (!token) return;
+    if (to === 'o') {
+      // Onto the strip: the token is set aside (the engine refuses it while a slot is free).
+      if (fromAside) return;
+      slots[Number(from)] = null;
+    } else {
+      // Onto a slot: the two places swap what they hold.
+      const other = slots[Number(to)];
+      slots[Number(to)] = token;
+      if (!fromAside) slots[Number(from)] = other;
+      else if (other) {
+        // A token from aside takes the slot: the one it replaces moves to a free open slot when there is one.
+        const free = tableView(ix, state, me, lang).players[me].slots.find((x) => !x.locked && !slots[x.index]);
+        if (free) slots[free.index] = other;
+      }
+    }
+    send({ type: 'arrange', player: me, slots });
   });
 
   // ---- hover cards: a rival's board, an ambition row, a map system ----

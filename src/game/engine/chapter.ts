@@ -23,7 +23,7 @@ import { effectOf, hasPassive, isDeclared, ownedEffects } from './effects';
 import { cartelSupply, toDiscard } from './ops';
 import type { ActionPayload, ActionResult, Allocation } from './actions';
 import { shuffle } from './rng';
-import { gainFromSupply, onCityReturned, returnToSupply, takeResourceAt } from './board';
+import { arrangeResources, endArranging, gainFromSupply, onCityReturned, returnToSupply, takeResourceAt } from './board';
 import { finishSetup } from './setup';
 import type { ContentIndex } from './setup';
 import { AMBITIONS } from './types';
@@ -56,6 +56,12 @@ export type Command =
   | { type: 'endTurn'; player: PlayerId; rescueGate?: string }
   /** The initiative holder skips the turn: initiative goes to the next clockwise player with cards and the round ends. */
   | { type: 'pass'; player: PlayerId }
+  /**
+   * Rearrange the player's resource tokens (`slots[i]`: the token for slot i, or null), in any phase and on
+   * anyone's turn, but only after taking or being given a resource or after a returning city covered a slot,
+   * and before the player's next other command.
+   */
+  | { type: 'arrange'; player: PlayerId; slots: (Resource | null)[] }
   /** Leaders & Lore draft: take one face-up leader or lore card. */
   | { type: 'draft'; player: PlayerId; card: string }
   /** 2 players, before the first lead: the player without initiative redraws the first hand once. */
@@ -100,6 +106,15 @@ function promoteDecision(s: GameState): void {
 
 function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
   if (s.phase.type === 'gameOver') err('Game is over');
+  if (cmd.type === 'arrange') {
+    const p = s.players[cmd.player];
+    if (!p) err(`No player ${cmd.player}`);
+    const why = arrangeResources(ix.content, p, cmd.slots);
+    if (why) err(why);
+    return;
+  }
+  // Any other command ends the player's chance to rearrange what they gained before it.
+  if (s.players[cmd.player]) endArranging(s, s.players[cmd.player]);
   if (cmd.type === 'mulligan') {
     if (s.mulligan !== cmd.player) err(`P${cmd.player} cannot redraw`);
     const p = s.players[cmd.player];
