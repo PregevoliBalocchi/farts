@@ -632,7 +632,7 @@ export function courtPanel(v: TableView, t: Translate, pickable: ReadonlySet<num
 export function sidePanel(ix: ContentIndex, v: TableView, t: Translate, shut = false): string {
   // The tab on its left edge folds the column away or opens it again (production/base-fixes.md #36).
   const tip = esc(t(shut ? 'amb.open' : 'amb.shut'));
-  const tab = `<button type="button" class="amb-tab" data-act="amb-toggle" aria-expanded="${!shut}" title="${tip}" aria-label="${tip}"><span aria-hidden="true">${shut ? '&#x25C0;' : '&#x25B6;'}</span>${shut ? `<span class="amb-tab-name">${esc(t('ambitions'))}</span>` : ''}</button>`;
+  const tab = `<button type="button" class="amb-tab" data-act="amb-toggle" aria-expanded="${!shut}" title="${tip}" aria-label="${tip}">${icon(shut ? 'prev' : 'next')}${shut ? `<span class="amb-tab-name">${esc(t('ambitions'))}</span>` : ''}</button>`;
   return `<div class="side-amb${shut ? ' shut' : ''}" data-region="ambitions">${tab}${shut ? '' : ambitionsStrip(ix, v, t)}</div>`;
 }
 
