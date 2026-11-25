@@ -1776,7 +1776,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .sc-amb { display: grid; grid-template-columns: 130px auto 1fr; gap: 12px; align-items: center; padding: 8px 12px; border: 1px solid var(--bronze-rule); border-radius: 6px; background: #0d0906cc; }
 .tbl-stage .sc-name { font: 700 var(--fs-headline) Georgia, "Times New Roman", serif; text-transform: uppercase; letter-spacing: .05em; color: var(--vellum-title); }
 .tbl-stage .sc-mks { display: flex; gap: 6px; }
-.tbl-stage .sc-mk { padding: 2px 8px; border-radius: 4px; background: #5a4218; color: #fbecc8; font-size: 14px; }
+.tbl-stage .sc-mk { padding: 3px 10px; border-radius: 4px; background: #5a4218; color: #fbecc8; font-size: var(--fs-label); white-space: nowrap; }
 .tbl-stage .sc-mk i { font-style: normal; opacity: .75; }
 .tbl-stage .sc-counts { display: flex; flex-wrap: wrap; gap: 8px; }
 .tbl-stage .sc-count { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #0008; border: 1px solid var(--bronze-rule); font-size: 14px; }
@@ -1789,7 +1789,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .sc-totals { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 8px 0 4px; }
 .tbl-stage .sc-total { display: grid; justify-items: center; gap: 2px; min-width: 140px; padding: 8px 12px; border-radius: 8px; border: 2px solid var(--seat, #6b5a40); background: var(--dg-bg); }
 .tbl-stage .sc-gain { font-size: 30px; font-weight: 800; color: #ffe3a3; text-shadow: 0 0 10px #f3c46388; }
-.tbl-stage .sc-power { font-size: 13px; color: var(--vellum-muted); }
+.tbl-stage .sc-power { font-size: var(--fs-label); color: var(--vellum-muted); }
 /* #9: the 2-player ambition box as a clear count among the players' ones. */
 .tbl-stage .abox .tl.box-tl { background: var(--frame-raise); border: 1px dashed var(--vellum-muted); color: var(--vellum-title); }
 .tbl-stage .abox .tl.box-tl .bx { font-size: var(--fs-caption); font-style: italic; color: var(--vellum-muted); }
@@ -2146,3 +2146,6 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .region.actions.cmd-bar .btn.cmd-btn.two-line .cmd-sub { font: 500 var(--fs-caption) var(--font-ui, inherit); opacity: .85; white-space: nowrap; }
 .tbl-stage .region.actions.cmd-bar .btn.cmd-btn.two-line:disabled .cmd-sub { opacity: 1; color: var(--vellum-muted); }
 .tbl-stage .region.actions.cmd-bar .btn.cmd-btn.two-line.primary:disabled .cmd-sub { color: var(--dg-ink); }
+/* Why a seat gained no Power, and the 2-player note at reading size (piano PR 6, chapter scoring). */
+.tbl-stage .sc-why { max-width: 220px; text-align: center; font-size: var(--fs-caption); line-height: 1.3; color: var(--vellum-muted); }
+.tbl-stage .sc-note { margin: 6px 0; font-size: var(--fs-body); line-height: 1.4; color: var(--dg-text); }

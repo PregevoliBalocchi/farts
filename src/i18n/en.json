@@ -535,5 +535,11 @@
   "seize.why.noCard": "needs a second card",
   "declare.stake": "1st {first} · 2nd {second}",
   "declare.now": "If it ended now: 1st {first}, 2nd {second}",
-  "declare.nobody": "nobody"
+  "declare.nobody": "nobody",
+  "scoring.worth": "1st: {first} Power · 2nd: {second}",
+  "scoring.why.none": "no ambition declared",
+  "scoring.why.zero": "none of it",
+  "scoring.why.tieSecond": "tied for 2nd, nobody takes it",
+  "scoring.why.behind": "behind 2nd place",
+  "scoring.why.worthZero": "placed, worth 0"
 }

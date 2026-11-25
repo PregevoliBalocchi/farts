@@ -535,5 +535,11 @@
   "seize.why.noCard": "serve una seconda carta",
   "declare.stake": "1° {first} · 2° {second}",
   "declare.now": "Se finisse ora: 1° {first}, 2° {second}",
-  "declare.nobody": "nessuno"
+  "declare.nobody": "nessuno",
+  "scoring.worth": "1°: {first} Potere · 2°: {second}",
+  "scoring.why.none": "nessuna ambizione dichiarata",
+  "scoring.why.zero": "non ne hai",
+  "scoring.why.tieSecond": "pari per il 2°, nessuno lo prende",
+  "scoring.why.behind": "dopo il 2° posto",
+  "scoring.why.worthZero": "piazzato, vale 0"
 }

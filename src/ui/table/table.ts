@@ -2035,12 +2035,31 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
    * (the 2-player ambition box among them, as the count to beat), then each
    * seat's Power gained and its new total.
    */
+  /**
+   * Why seat `p` gained no Power this chapter, in words, per declared ambition (rulebook 6.2.1): none of what it
+   * counts (Qualifying), tied for second (Ties), or behind the second place.
+   */
+  function zeroWhy(sc: ChapterScoring, p: number): string[] {
+    if (!sc.ambitions.length) return [t('scoring.why.none')];
+    return sc.ambitions
+      .map((a) => {
+        const c = a.counts[p] ?? 0;
+        // Placed but worth nothing (a second place on a 2/0 marker); else none of it; else a tie for second
+        // (nobody took it while someone was first); else behind the second place.
+        const reason = a.first.includes(p) || a.second.includes(p) ? 'worthZero' : c === 0 ? 'zero' : !a.second.length && a.first.length > 0 ? 'tieSecond' : 'behind';
+        return `${t(`ambition.${a.ambition}`)}: ${t(`scoring.why.${reason}`)}`;
+      });
+  }
+
   function scoringHtml(sc: ChapterScoring): string {
     const n = state.playerCount;
     const who = (p: number) => (p >= n ? `<span class="sc-who box">${esc(t('scoring.box'))}</span>` : `<span class="sc-who s-${seatColor(p)}"><i class="dot"></i>${esc(playerName(t, p))}</span>`);
     const rows = sc.ambitions
       .map((a) => {
-        const markers = a.markers.map((m) => `<span class="sc-mk"><b class="num">${m.first}</b>/<i class="num">${m.second}</i></span>`).join('');
+        // What the ambition was worth, in words: the sum of its markers (rulebook 6.2.1), not the marker chips.
+        const first = a.markers.reduce((s, m) => s + m.first, 0);
+        const second = a.markers.reduce((s, m) => s + m.second, 0);
+        const markers = `<span class="sc-mk">${esc(t('scoring.worth', { first, second }))}</span>`;
         const counts = a.counts
           .map((c, p) => ({ c, p }))
           .filter((x) => x.c > 0)
@@ -2051,9 +2070,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       })
       .join('');
     const totals = sc.gains
-      .map((g, p) => `<div class="sc-total s-${seatColor(p)}">${who(p)}<span class="sc-gain num">+${g}</span><span class="sc-power num">${esc(t('scoring.power', { n: sc.power[p] }))}</span></div>`)
+      .map((g, p) => {
+        const why = g === 0 ? `<span class="sc-why">${zeroWhy(sc, p).map(esc).join('<br>')}</span>` : '';
+        return `<div class="sc-total s-${seatColor(p)}">${who(p)}<span class="sc-gain num">+${g}</span><span class="sc-power num">${esc(t('scoring.power', { n: sc.power[p] }))}</span>${why}</div>`;
+      })
       .join('');
-    const note = n === 2 ? `<p class="hint small">${esc(t('scoring.boxNote'))}</p>` : '';
+    const note = n === 2 ? `<p class="sc-note">${esc(t('scoring.boxNote'))}</p>` : '';
     return `<h2 id="modal-title">${esc(t('scoring.title', { n: sc.chapter }))}</h2>
       <div class="sc-ambs">${rows || `<p class="hint">${esc(t('scoring.none'))}</p>`}</div>
       ${note}
