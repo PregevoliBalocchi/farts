@@ -22,12 +22,21 @@ async function open(page: Page, query: string, state?: unknown): Promise<void> {
 
 test.describe('known problems (playtest 2026-11-25)', () => {
   test('after the defender reacts, the attacker gets the dice, not a card choice (piano D1)', async ({ page }) => {
-    test.fail();
     await page.setViewportSize({ width: 1920, height: 1080 });
     await open(page, 'players=2&variant=leaders&seat=1', fixture('collect-dice.json'));
-    await expect(page.locator('.cmd-bar')).not.toContainText(/\bbattle\b/);
+    // The battle window asks (no command bar over it), never a raw "battle" card or a Decline.
+    await expect(page.locator('.cmd-bar', { hasText: /\bbattle\b/ })).toHaveCount(0);
     await expect(page.locator('[data-act="decline"]')).toHaveCount(0);
-    await expect(page.locator('[data-act="do-battle"]')).toBeVisible();
+    // The dice first asked for, changeable, and Roll sends them as the answer (after the saved game's
+    // end-of-chapter summary is closed).
+    const summary = page.locator('.modal button.primary');
+    if (await summary.count()) await summary.first().click();
+    await expect(page.locator('.battle-win.setup .b-type.d-skirmish .num')).toHaveText('3');
+    await page.locator('.battle-win.setup [data-act="die-step"][data-type="skirmish"][data-d="-1"]').click();
+    await page.locator('[data-act="do-battle"]').click();
+    await expect.poll(() => page.evaluate(() => window.game!.state.phase.type)).toBe('allocate');
+    // Rolled with the dice chosen now, one fewer than first asked.
+    expect(await page.evaluate(() => (window.game!.state as unknown as { phase: { battle: { faces?: unknown[] } } }).phase.battle.faces?.length)).toBe(2);
   });
 
   test('a card choice with no possible answer offers no "Scegli" (piano D2)', async ({ page }) => {

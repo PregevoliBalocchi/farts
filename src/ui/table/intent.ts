@@ -27,7 +27,8 @@ export type Intent =
   | { step: 'move'; from: string; via: string[]; to: string; ships: number; damaged: number; drop: Record<string, number>; dropDamaged?: Record<string, number>; then?: { to: string; ships: number }; thenPick?: boolean; prelude?: Resource }
   /** `tactical`: a move made before or after the battle (the Warrior, leader-06, on a Copy or Pivot; base-fixes #51). */
   /** `preHit`: the own ship that takes the hit the defender deals before the dice (Railgun Arrays, lore-12). */
-  | { step: 'battle'; system: string; target: PlayerId | null; dice: Dice; tactical?: { when: 'before' | 'after'; move: MovePayload }; preHit?: 'fresh' | 'damaged'; prelude?: Resource };
+  /** `collect`: the attacker collecting dice after the defender reacted (a Decision, not a new battle action; piano D1). */
+  | { step: 'battle'; system: string; target: PlayerId | null; dice: Dice; tactical?: { when: 'before' | 'after'; move: MovePayload }; preHit?: 'fresh' | 'damaged'; prelude?: Resource; collect?: boolean };
 
 export const IDLE: Intent = { step: 'idle' };
 
