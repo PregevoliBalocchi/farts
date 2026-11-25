@@ -1909,3 +1909,91 @@ button.supply:hover { border-color: var(--rule-hi); }
 /* The hand's band (base-fixes #33): the map under it does not take clicks; a veil and a gold rule say so. */
 .tbl-stage .hand-zone { position: absolute; z-index: 10; pointer-events: auto; background: linear-gradient(180deg, #0a0705b8 0, #0a0705e0 40px, #060403f2); border-top: 1px solid #c9a25a55; box-shadow: 0 -10px 24px -8px #000c; }
 .tbl-stage .btn.find-mine { z-index: 21; } /* over the hand veil */
+
+/* Prelude on the table (base-fixes #34): the tokens that can be spent glow on the board. */
+.tbl-stage .board .slot.spend { cursor: pointer; animation: tpick-glow 1.4s ease-in-out infinite alternate; }
+.tbl-stage .board .slot.spend .well { box-shadow: 0 0 0 2px #f3c463, 0 0 14px #f3c463aa; border-radius: 50%; }
+.no-motion .tbl-stage .board .slot.spend { animation: none; }
+
+/* ---- The command bar (base-fixes #35): one bar over the hand, from the local board to the ambitions. A head line,
+   an optional body, then one row of three groups always in the same places: actions | card powers | turn.
+   Every button 48 px high; widths equal inside each group; nothing leaves the bar. ---- */
+.tbl-stage.tbl-stage .region.actions.cmd-bar { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-flow: row; gap: 8px; align-content: end; min-height: 0; padding: 10px 14px; box-sizing: border-box; z-index: 22; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-head { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 26px; font-size: 16px; line-height: 1.25; color: #cdbb98; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-title { flex: none; font-weight: 700; font-size: 18px; color: #f3c463; white-space: nowrap; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-pips { flex: none; display: flex; gap: 2px; color: #f3c463; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-pips .ic { width: 16px; height: 16px; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-text { min-width: 0; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-note { flex: none; margin-left: auto; font-size: 14px; color: #a8977a; white-space: nowrap; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-x { flex: none; width: 30px; height: 30px; margin-left: auto; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-note + .cmd-x { margin-left: 0; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-body { display: grid; gap: 6px; min-width: 0; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-main { display: grid; grid-template-columns: repeat(var(--n, 3), 132px); gap: 8px; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-pow { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; min-width: 0; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-turn { display: grid; grid-template-columns: repeat(2, 124px); gap: 8px; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-btn, .tbl-stage.tbl-stage .region.actions.cmd-bar .btn.kind-btn, .tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-power {
+  box-sizing: border-box; height: 48px; min-height: 0; min-width: 0; margin: 0; padding: 0 10px; overflow: hidden; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center; white-space: normal; line-height: 1.05;
+  font: 600 16px var(--font-ui, inherit); color: var(--dg-text); background: linear-gradient(180deg, #2a2016, #120d08); border: 2px solid var(--dg-gold-dim); box-shadow: none; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-btn:hover:not(:disabled), .tbl-stage.tbl-stage .region.actions.cmd-bar .btn.kind-btn:hover:not(:disabled), .tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-power:hover:not(:disabled) {
+  background: linear-gradient(180deg, #3a2c1c, #1a130b); border-color: var(--dg-gold); box-shadow: 0 0 12px rgba(255, 196, 100, .45); }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.primary { background: linear-gradient(180deg, #f3c463, #c58a2a); color: var(--dg-ink); border-color: #f7d58a; font-weight: 700; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.primary:hover:not(:disabled) { background: linear-gradient(180deg, #f8d27c, #d39a36); }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.primary.ready { animation: bar-ready 1.6s ease-in-out infinite; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.on { border-color: #ffd27a; box-shadow: 0 0 0 1px #ffd27a, 0 0 12px rgba(255, 196, 100, .5); }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn:disabled { opacity: .45; cursor: default; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn .ic, .tbl-stage.tbl-stage .region.actions.cmd-bar .btn .act-ic { flex: none; width: 20px; height: 20px; color: var(--dg-gold); fill: currentColor; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.primary .ic { color: var(--dg-ink); }
+/* An action: its glyph, its name, and under the name why it cannot be done now. */
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.kind-btn { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 6px; row-gap: 0; align-content: center; justify-items: start; text-align: left; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.kind-btn .act-ic { grid-row: 1 / span 2; align-self: center; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.kind-btn .kb-name { font-weight: 700; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.kind-btn .kb-why { font-size: 11px; font-weight: 500; line-height: 1.05; color: #e7b48a; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.kind-btn:not(:has(.kb-why)) { grid-template-rows: auto; }
+/* A card power: the card, its name, what the power does. */
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-power { justify-content: flex-start; padding: 0 8px 0 4px; gap: 8px; text-align: left; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-power img { flex: none; height: 38px; width: auto; border-radius: 3px; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-power .cp-txt { display: grid; min-width: 0; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-power .cp-name { font-size: 15px; line-height: 1.15; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-power small { font-size: 11px; font-weight: 500; line-height: 1.05; color: #cdbb98; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-power.lit { border-color: #b8862a; box-shadow: 0 0 10px #f3c46355; }
+/* The move's counters, in the bar's body. */
+.tbl-stage.tbl-stage .region.actions.cmd-bar .mv-plan { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+/* The prompt line under the hand says the same as the bar's head: off while the bar is shown. */
+.tbl-stage.bar-on .hd.prompt { display: none; }
+/* Ambitions the picked card may declare: lit, with the word on them. */
+.tbl-stage .abox .ab-declare { position: absolute; right: 8px; bottom: 6px; z-index: 1; padding: 2px 7px; border-radius: 4px; background: #f3c463; color: #1d150d; font: 800 11px var(--font-ui, inherit); letter-spacing: .06em; text-transform: uppercase; pointer-events: none; }
+
+/* ---- The battle window (base-fixes #35): its steps, the extra dice, the reroll asked by the card, uniform buttons. ---- */
+.tbl-stage .battle-win { top: 96px; }
+.battle-win .b-steps { display: flex; margin: 0; padding: 0; list-style: none; }
+.battle-win .b-steps li { flex: 1; display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-weight: 600; font-size: 15px; color: #9a8c70; border-bottom: 3px solid #3d2f1a; }
+.battle-win .b-steps li i { font-style: normal; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 2px solid currentColor; font-size: 12px; }
+.battle-win .b-steps li.done { color: #cdbb98; border-color: #7d5d27; }
+.battle-win .b-steps li.now { color: #f3c463; border-color: #f3c463; }
+.battle-win .b-steps li.off { opacity: .4; }
+.battle-win .b-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.battle-win .b-extra { padding: 3px 10px; border-radius: 12px; border: 1px solid #b8862a; background: #2a2016; color: #f3c463; font-size: 13px; font-weight: 600; }
+/* The scene: a fixed-size render, cropped to the slot's height (clicks still land where they are seen). */
+.battle-win .battle-slot { position: relative; height: 420px; }
+.battle-win .battle-slot.short { height: 300px; }
+.battle-win .battle-slot > .battle-3d { position: absolute; left: 0; top: 50%; width: 1180px; height: 520px; transform: translateY(-50%); }
+/* Every button of the window the same size, right-aligned in one row. */
+.battle-win .b-btns { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+.battle-win .b-btns .hint { margin-right: auto; }
+.tbl-stage .battle-win .btn.b-btn { box-sizing: border-box; width: 200px; height: 48px; min-height: 0; padding: 0 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; white-space: nowrap; overflow: hidden; }
+/* Bigger dice; while a reroll is asked, the ones it may take are dashed and the picked ones raised with a mark. */
+.battle-win .b-dice { min-height: 64px; gap: 12px; padding-top: 10px; }
+.battle-win .b-die { width: 52px; height: 52px; position: relative; overflow: visible; }
+.battle-win .b-die.rr-can { cursor: pointer; outline: 2px dashed #f3c46399; outline-offset: 3px; }
+.battle-win .b-die.rr-pick { cursor: pointer; transform: translateY(-8px); outline: 3px solid #f3c463; outline-offset: 3px; }
+.battle-win .b-die.rr-pick::after { content: "↻"; position: absolute; right: 2px; top: 2px; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: #f3c463; color: #1d150d; font: 800 14px var(--font-ui, sans-serif); z-index: 2; }
+.battle-win .b-die.rr-no { opacity: .5; }
+.battle-win .rr-ask { display: grid; grid-template-columns: 86px minmax(0, 1fr) 200px; gap: 14px; align-items: center; padding: 10px 12px; border: 2px solid #f3c463; border-radius: 8px; background: linear-gradient(90deg, #3a2a12, #1d160e); box-shadow: 0 0 18px #f3c46344; }
+.battle-win .rr-card { display: block; width: 86px; height: 120px; overflow: hidden; border-radius: 5px; box-shadow: 0 3px 10px #000c; }
+.battle-win .rr-card > * { width: 100%; height: 100%; }
+.battle-win .rr-title { font-size: 19px; font-weight: 700; color: #f3c463; }
+.battle-win .rr-how { font-size: 15px; line-height: 1.3; color: var(--dg-text); }
+.battle-win .rr-next { margin-top: 4px; font-size: 13px; color: #cdbb98; }
+.battle-win .rr-btns { display: grid; gap: 8px; }

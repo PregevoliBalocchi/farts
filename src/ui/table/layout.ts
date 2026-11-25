@@ -8,8 +8,10 @@
 // beside it (the whole board opens on hover); the ambitions down the right as
 // the printed column; along the bottom, the local board with the Prelude
 // actions, then one bar to the right edge: the card played this turn, the hand
-// held free in a fan (the action box rises over it), the turn's buttons, and
-// the local player's own Court cards in one row (layout E, 2026-11-24).
+// held free in a fan, and the local player's own Court cards in one row
+// (layout E, 2026-11-24). Over the hand, from the local board to the
+// ambitions, the command bar: every choice of the local turn and its buttons
+// (production/base-fixes.md #35).
 // `?debug=layout` outlines these rectangles.
 
 /** Smallest stage, in stage pixels: the layout was drawn for it. */
@@ -49,10 +51,8 @@ const bot = () => STAGE.h - G; // bottom edge of the bottom row
 const BAR_H = 236; // the bottom bar beside the local board
 const PLAY_W = 96; // the card played this turn, at its left end
 const MINE_W = 480; // the local player's own Court cards, at its right end
-const BTN_W = 140; // the turn's buttons, left of those
-const ACT_W = 520; // the action box, over the hand (grows upwards when it needs more room)
 const WAIT_W = 380; // the box shown while another seat plays
-const ACT_GAP = 46; // between the action box and the bar: a hand card raised on hover stays under the box
+const ACT_GAP = 44; // between the command bar and the bottom bar: a hand card raised on hover stays under it
 
 /** Region ids and rectangles, read from the current STAGE (left column on the left edge, right column on the right edge, bottom row on the bottom edge). */
 export const REGIONS = {
@@ -73,15 +73,16 @@ export const REGIONS = {
   /** The card the local player played this turn, at the left end of the bar. */
   get played(): Rect { const b = REGIONS.bar; return { x: b.x + G, y: b.y, w: PLAY_W, h: b.h }; },
   /** The local hand, held in a fan in the middle of the bar. */
-  get hand(): Rect { const b = REGIONS.bar; const x = b.x + PLAY_W + G * 2; return { x, y: b.y, w: b.x + b.w - MINE_W - BTN_W - G - x, h: b.h }; },
-  /** The turn's buttons (undo, end turn, pass), right of the hand. */
-  get confirm(): Rect { const b = REGIONS.bar; return { x: b.x + b.w - MINE_W - BTN_W, y: b.y, w: BTN_W, h: b.h }; },
+  get hand(): Rect { const b = REGIONS.bar; const x = b.x + PLAY_W + G * 2; return { x, y: b.y, w: b.x + b.w - MINE_W - G - x, h: b.h }; },
   /** The local player's own Court: guild and lore cards, at the right end of the bar. */
   get mine(): Rect { const b = REGIONS.bar; return { x: b.x + b.w - MINE_W, y: b.y, w: MINE_W, h: b.h }; },
   /** The own Court opened: from the hand's left end to the right edge, anchored at the bar's bottom, rising as rows need. */
   get mineOpen(): Rect { const b = REGIONS.bar; const x = b.x + PLAY_W + G * 2; return { x, y: b.y + b.h - 700, w: b.x + b.w - x, h: 700 }; },
-  /** The action box, centred over the hand: anchored at its bottom (clear of a hand card raised on hover), grows upwards up to h. */
-  get actions(): Rect { const h = REGIONS.hand; return { x: Math.round(h.x + h.w / 2 - ACT_W / 2), y: h.y - ACT_GAP - 440, w: ACT_W, h: 440 }; },
+  /**
+   * The command bar, over the hand from the local board to the ambitions column: anchored at its bottom (clear of
+   * a hand card raised on hover), it grows upwards up to h when a plan needs a body (a move's ships).
+   */
+  get actions(): Rect { const x = LOCAL_W + G * 2; const r = REGIONS.side; return { x, y: REGIONS.bar.y - ACT_GAP - 440, w: r.x - G - x, h: 440 }; },
   /** While another seat plays: the compact "live" box, top right of the map under the menu buttons, clear of the map's middle. */
   get waiting(): Rect { const sd = REGIONS.side; return { x: sd.x - G * 2 - WAIT_W, y: COURT_H + 16, w: WAIT_W, h: 300 }; },
 };

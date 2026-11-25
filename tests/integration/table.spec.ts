@@ -22,11 +22,12 @@ const phase = (page: Page) => page.evaluate(() => (window.game!.state as { phase
 test('boots the table with every region and no errors', async ({ page }) => {
   const errors = await open(page);
   expect(await page.evaluate(() => window.game!.scene)).toBe('table');
-  for (const r of ['header', 'rivals', 'map', 'side', 'ambitions', 'court', 'recent', 'local', 'hand', 'confirm']) {
+  for (const r of ['header', 'rivals', 'map', 'side', 'ambitions', 'court', 'recent', 'local', 'hand']) {
     await expect(page.locator(`[data-region="${r}"]`)).toBeVisible();
   }
-  // The context box shows only when there is something to choose: not before a card is picked.
-  await expect(page.locator('[data-region="actions"]')).toHaveCount(0);
+  // On the local turn the command bar is there from the start (base-fixes #35): what to do, Undo and Pass.
+  await expect(page.locator('[data-region="actions"].cmd-bar')).toBeVisible();
+  await expect(page.locator('.cmd-bar [data-act="pass"]')).toBeVisible();
   // The 3D map (a canvas plus keyboard stand-ins for its systems), or the 2D map without WebGL.
   await expect(page.locator('[data-region="map"] [data-sys]').first()).toBeAttached();
   expect(errors).toEqual([]);
@@ -42,15 +43,14 @@ test('the 2D map stays available with ?map=2d', async ({ page }) => {
 test('leading a card and ending the turn passes play to the next seat', async ({ page }) => {
   const errors = await open(page);
   await page.locator('.hand-card:not(.unplayable)').first().click();
-  // Picking a card opens the box with the ways to play it.
-  await expect(page.locator('[data-region="actions"]')).toBeVisible();
+  // Picking a card puts its ways to play in the command bar.
+  await expect(page.locator('.cmd-bar [data-act="lead"]')).toBeVisible();
   await page.getByRole('button', { name: 'Lead', exact: true }).click();
   expect(await phase(page)).toBe('actions');
-  // First the Prelude: the resources held, to spend before the card; then on to the card's actions.
-  await expect(page.locator('[data-region="actions"] [data-act="spend"]').first()).toBeVisible();
-  await page.getByRole('button', { name: "On to the card's actions" }).click();
-  // Then the actions of the led card, as one row of buttons with their icons.
-  await expect(page.locator('[data-region="actions"] .act-row [data-act="kind"]').first()).toBeVisible();
+  // The Prelude and the card's actions together (base-fixes #34, #35): the resources held glow on the own board,
+  // the led card's actions are buttons of the bar.
+  await expect(page.locator('.board .slot.spend[data-act="spend"]').first()).toBeVisible();
+  await expect(page.locator('.cmd-bar .cmd-main [data-act="kind"]').first()).toBeVisible();
   await page.getByRole('button', { name: 'End turn' }).click();
   expect(await phase(page)).toBe('follow');
   expect(errors).toEqual([]);
