@@ -582,5 +582,21 @@
   "away.buildings": "Edifici distrutti: {n}",
   "away.resource": "Ti hanno preso {n} {res}",
   "away.card": "Ti hanno preso {card}",
-  "away.captured": "Agenti catturati: {n}"
+  "away.captured": "Agenti catturati: {n}",
+  "rule.help": "Ricorda la regola",
+  "rule.declare": "Dichiarare: quando guidi con una carta da 2 a 6 puoi mettere il segnalino ambizione libero più alto sull'ambizione che mostra (un 7, a 4 giocatori: un'ambizione qualsiasi). Le ambizioni si contano a fine capitolo.",
+  "rule.pass": "Passare: se hai l'iniziativa e non vuoi guidare, la passi al giocatore successivo che ha carte, e il round finisce subito.",
+  "rule.twoPlayer": "2 giocatori: il riquadro ambizione conta come un terzo giocatore con le sue risorse. Per arrivare primo o secondo devi superarlo; non prende mai Potere.",
+  "rule.follow": "Seguire: Supera con il seme della guida e un numero più alto per fare tante azioni quanti i punti della tua carta. Copia con una carta qualsiasi coperta per 1 azione della carta guida. Cambia con un altro seme per 1 azione della tua carta.",
+  "rule.seize": "Sottrarre l'iniziativa: scarti una seconda carta senza azioni (o Superi con un 7, a 4 giocatori). Una volta per round, e non se ce l'hai già.",
+  "rule.initiative": "Fine del round: se nessuno l'ha sottratta, l'iniziativa va a chi ha Superato con il numero più alto; altrimenti resta dov'è.",
+  "rule.actions": "Azioni: le fai una alla volta, nell'ordine che vuoi, fino ai punti della tua carta. Spendere una risorsa (preludio) dà un'azione in più del suo tipo.",
+  "rule.secure": "Acquisire: prendi una carta della Corte se ci hai più agenti di ogni rivale. I tuoi agenti tornano nella riserva; quelli dei rivali diventano tuoi prigionieri.",
+  "rule.dice": "Dadi: uno per ogni nave che attacca. I dadi Incursione colpiscono piano e senza rischi; gli Assalto colpiscono forte ma costano; i Razzia rubano.",
+  "rule.raidLimit": "Dadi Razzia: solo se chi difende ha edifici nel sistema, o nessun edificio Leale sulla mappa.",
+  "rule.battle": "Ordine dei dadi: prima i colpi alle tue navi, poi l'intercettazione, poi i colpi alle sue navi (agli edifici quando non ha più navi), poi i colpi ai suoi edifici, poi la razzia.",
+  "rule.intercept": "Intercettazione: se hai tirato almeno un simbolo di intercettazione, ogni nave integra di chi difende colpisce una tua nave. Una sola volta per combattimento.",
+  "rule.raid": "Razziare: se ti restano navi dopo i colpi, spendi le chiavi tirate per rubare risorse e carte Gilda, ognuna per le chiavi stampate sopra.",
+  "rule.chapterEnd": "Un capitolo finisce quando tutti hanno giocato tutte le carte, o quando tutti quelli con carte hanno passato di fila.",
+  "rule.scoring": "Punteggio: per ogni ambizione dichiarata chi ne ha di più prende il Potere più alto di tutti i suoi segnalini, il secondo quello più basso. Pari per il primo: tutti i pari sono secondi. Pari per il secondo: nessuno. Chi non ne ha non prende nulla."
 }

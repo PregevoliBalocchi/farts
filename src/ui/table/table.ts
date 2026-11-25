@@ -225,6 +225,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** "While you were waiting" (piano PR 6): each seat's pieces when its turn ended, and what changed since. */
   const awaySnaps = new Map<PlayerId, AwaySnap>();
   let awayNote: string[] = [];
+  /** The rule reminder open now (its keys joined), or null. */
+  let ruleOpen: string | null = null;
   let wasMine: PlayerId | null = null;
   let findMineTimer = 0;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
@@ -1216,7 +1218,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       : `<div class="b-foot">${defenderNote(v, b)}<div class="hint">${esc(t('battle.watching', { who: playerName(t, b.attacker) }))}</div></div>`;
     const title = t('battle.title', { system: systemName(ix.content.map.systems.find((s) => s.id === b.system), t, b.system), a: playerName(t, b.attacker), d: defenderName(b.target) });
     return `<div class="battle-win glass" role="dialog" aria-label="${esc(title)}">
-      <div class="b-head"><span class="ctx-title">${esc(title)}</span><span class="b-counts">${counts || esc(t('battle.noHits'))}</span></div>
+      <div class="b-head"><span class="ctx-title">${esc(title)}</span>${ruleHelp(['battle', 'intercept', 'raid'])}<span class="b-counts">${counts || esc(t('battle.noHits'))}</span></div>
       ${steps}
       ${diceStrip(b, ask)}
       ${ask ? '' : battleOrder(b)}
@@ -1470,7 +1472,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       preHit = `<div class="opt-row b-prehit"><span class="hint small">${esc(t('battle.preHitAsk'))}</span>${(['fresh', 'damaged'] as const).map((h) => button('pre-hit', t(`battle.preHit.${h}`), { args: { hit: h }, cls: on === h ? 'on' : '' })).join('')}</div>`;
     }
     return `<div class="battle-win glass setup" role="dialog" aria-label="${esc(title)}">
-      <div class="b-head"><span class="ctx-title">${esc(title)}</span></div>
+      <div class="b-head"><span class="ctx-title">${esc(title)}</span>${ruleHelp(['dice', 'raidLimit'])}</div>
       ${battleSteps(0, { powers: !holdsReroll(), raid: false })}
       ${targets}
       <div class="b-types">${tiles}</div>
@@ -1824,6 +1826,51 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     turn: [string, string];
     /** No card picked yet: no bar, only the turn's buttons in their places (base-fixes #37). */
     bare?: boolean;
+    /** The rule reminders of this moment (keys under `rule.`), behind a "?" in the head (piano PR 6). */
+    rules?: string[];
+  }
+
+  /**
+   * A "?" that opens the reminders of the rules that apply now (piano PR 6, Fase 4.10), written for a new
+   * player; `keys` are under `rule.`. Open, the reminder shows as a box next to the button.
+   */
+  function ruleHelp(keys: string[]): string {
+    const id = keys.join(',');
+    const open = ruleOpen === id;
+    return `<span class="rule-help">${button('rule-help', '?', { args: { keys: id }, cls: `icon rule-q${open ? ' on' : ''}`, title: t('rule.help') })}</span>`;
+  }
+
+  /**
+   * The open reminder, drawn over the stage (the bar and the windows clip what leaves them); placed next to its
+   * "?" by placeRuleBox() once laid out.
+   */
+  function ruleBoxHtml(): string {
+    if (!ruleOpen) return '';
+    return `<div class="rule-pop" role="note" id="rule-pop">${ruleOpen
+      .split(',')
+      .map((k) => `<p>${esc(t(`rule.${k}`))}</p>`)
+      .join('')}</div>`;
+  }
+
+  /** Puts the open reminder above its "?" (below when there is no room); closes it when its "?" is gone. */
+  function placeRuleBox(): void {
+    const box = stage.querySelector<HTMLElement>('#rule-pop');
+    if (!box) return;
+    const q = stage.querySelector<HTMLElement>('.rule-q.on');
+    if (!q) {
+      ruleOpen = null;
+      box.remove();
+      return;
+    }
+    const s = stage.getBoundingClientRect();
+    const r = q.getBoundingClientRect();
+    const x = (r.left - s.left + r.width / 2) / scale;
+    const top = (r.top - s.top) / scale;
+    const bottom = (r.bottom - s.top) / scale;
+    const w = box.offsetWidth;
+    const h = box.offsetHeight;
+    box.style.left = `${Math.max(8, Math.min(STAGE.w - w - 8, x - w / 2))}px`;
+    box.style.top = `${top - h - 10 >= 8 ? top - h - 10 : Math.min(STAGE.h - h - 8, bottom + 10)}px`;
   }
 
   /**
@@ -1835,7 +1882,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (!b) return '';
     const stars = b.pips ? `<span class="cmd-pips" aria-hidden="true">${Array.from({ length: b.pips }, () => icon('pip')).join('')}</span>` : '';
     const close = b.close ? button('deselect', '', { cls: 'icon x cmd-x', title: t('btn.cancel'), html: icon('close') }) : '';
-    const head = b.title || close ? `<div class="cmd-head">${b.title ? `<span class="cmd-title">${esc(b.title)}</span>` : ''}${stars}${close}</div>` : '';
+    const help = b.rules?.length ? ruleHelp(b.rules) : '';
+    const head = b.title || close || help ? `<div class="cmd-head">${b.title ? `<span class="cmd-title">${esc(b.title)}</span>` : ''}${stars}${help}${close}</div>` : '';
     const main = `<div class="cmd-main" style="--n:${Math.max(3, b.main.length)}">${b.main.join('')}</div>`;
     const powers = `<div class="cmd-pow">${b.powers.join('')}</div>`;
     const turn = `<div class="cmd-turn">${b.turn[0] || '<span></span>'}${b.turn[1] || '<span></span>'}</div>`;
@@ -1908,6 +1956,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           main: [button('lead', t('play.lead'), { cls: 'cmd-btn primary', disabled: !can({ type: 'lead', player: me, card: card.card }) }), ...mull],
           powers: [],
           turn: [undoOrCancel(false), pass],
+          rules: state.playerCount === 2 ? ['declare', 'pass', 'twoPlayer'] : ['declare', 'pass'],
         };
       }
       // Each way to follow says what it gives, or why it is not possible (piano PR 6, previews).
@@ -1926,7 +1975,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       } else {
         main.push(button('seize', t('play.seize'), { cls: 'cmd-btn two-line', disabled: true, title: `${t('play.seize')}: ${noSeize}`, html: `<span>${esc(t('play.seize'))}</span><small class="cmd-sub">${esc(noSeize)}</small>` }));
       }
-      return { title: cardLabel(t, card), pips: card.pips, text: declareTargets(v).length ? `${kinds} · ${t('bar.declareHint')}` : kinds, close: true, main, powers: [], turn: [undoOrCancel(false), ''] };
+      return { title: cardLabel(t, card), pips: card.pips, text: declareTargets(v).length ? `${kinds} · ${t('bar.declareHint')}` : kinds, close: true, main, powers: [], turn: [undoOrCancel(false), ''], rules: ['follow', 'seize', 'initiative'] };
     }
 
     if (v.phase === 'allocate' && v.battle && board3d) return null;
@@ -1968,7 +2017,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         const spend = spendableSlots(v).size > 0;
         const text = b.remaining === 0 ? t('play.actionsDone') : [t(b.remaining === 1 ? 'bar.actionsOne' : 'bar.actions', { n: b.remaining }), spend ? t('bar.spend') : ''].filter(Boolean).join(' · ');
         const main = b.remaining > 0 ? b.kinds.map((k) => kindButtons(v, [k], undefined, true)) : [];
-        return { title, pips: b.remaining, text, main, powers: powerButtons(), turn: [undoOrCancel(false), endTurnButton(v, false)] };
+        return { title, pips: b.remaining, text, main, powers: powerButtons(), turn: [undoOrCancel(false), endTurnButton(v, false)], rules: b.kinds.includes('secure') ? ['actions', 'secure'] : ['actions'] };
       }
       case 'choose': {
         // With a Loyal Guild card: spend it as its own type or as another (base-fixes #49).
@@ -2217,7 +2266,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       })
       .join('');
     const note = n === 2 ? `<p class="sc-note">${esc(t('scoring.boxNote'))}</p>` : '';
-    return `<h2 id="modal-title">${esc(t('scoring.title', { n: sc.chapter }))}</h2>
+    return `<h2 id="modal-title">${esc(t('scoring.title', { n: sc.chapter }))}${ruleHelp(n === 2 ? ['chapterEnd', 'scoring', 'twoPlayer'] : ['chapterEnd', 'scoring'])}</h2>
       <div class="sc-ambs">${rows || `<p class="hint">${esc(t('scoring.none'))}</p>`}</div>
       ${note}
       <div class="sc-totals">${totals}</div>
@@ -2482,7 +2531,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       `<div class="region mine${mineOpen ? ' open' : ''}" data-region="mine"${zone('mine')} style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 50, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen, (card) => heldSlots(v, card))}</div>`,
       `<div class="region hand" data-region="hand"${zone('hand')} style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>`,
       awayHtml(),
-      bar ? `<div class="region actions cmd-bar${barNow?.bare ? ' bare' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)};width:${REGIONS.actions.w}px">${bar}</div>` : ctx ? `<div class="region actions waiting" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${othersTurn(state, 3) ? placeDown(REGIONS.waiting) : placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : '',
+      ruleBoxHtml(),
+      bar ?`<div class="region actions cmd-bar${barNow?.bare ? ' bare' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)};width:${REGIONS.actions.w}px">${bar}</div>` : ctx ? `<div class="region actions waiting" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${othersTurn(state, 3) ? placeDown(REGIONS.waiting) : placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : '',
       `<div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>`,
       modalHtml(v),
       dropHtml(),
@@ -2531,6 +2581,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     keepTips(openTips);
     fitPrompt();
     fitSide();
+    placeRuleBox();
     sizeAvatars(stage);
     restoreFocus(key);
     const dialog = stage.querySelector('.modal');
@@ -3134,6 +3185,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'away-close':
         awayNote = [];
         break;
+      case 'rule-help': {
+        const keys = el.dataset.keys ?? '';
+        ruleOpen = ruleOpen === keys ? null : keys;
+        break;
+      }
       default:
         return;
     }

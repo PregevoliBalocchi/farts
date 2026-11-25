@@ -2180,3 +2180,11 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .away-note { width: 340px; padding: 10px 14px 12px; border-radius: 8px; border: 1px solid var(--gilt-highlight); font-size: var(--fs-label); color: var(--dg-text); pointer-events: auto; }
 .tbl-stage .away-note .away-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 700 var(--fs-body) var(--font-ui, inherit); color: var(--vellum-title); }
 .tbl-stage .away-note ul { margin: 6px 0 0; padding-left: 18px; line-height: 1.45; }
+/* "?" rule reminders (piano PR 6, Fase 4.10): a round button; open, the reminder as a box above it. */
+.tbl-stage .rule-help { position: relative; display: inline-flex; margin-left: 8px; }
+.tbl-stage.tbl-stage.tbl-stage .btn.rule-q { width: 26px; height: 26px; min-width: 0; min-height: 0; padding: 0; border-radius: 50%; display: inline-grid; place-items: center; font: 800 15px/1 var(--font-ui, inherit); color: var(--dg-ink); background: var(--gilt-highlight); border: 1px solid var(--gilt-pale); position: relative; }
+.tbl-stage .btn.rule-q::after { content: ""; position: absolute; inset: -6px; }
+.tbl-stage.tbl-stage.tbl-stage .btn.rule-q.on { background: var(--gilt-pale); box-shadow: 0 0 0 2px #000, 0 0 0 3px var(--gilt-pale); }
+.tbl-stage .rule-pop { position: absolute; z-index: 120; width: 420px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--gilt-highlight); background: rgba(16, 12, 8, .97); box-shadow: 0 8px 24px #000c; font: 400 var(--fs-label)/1.45 var(--font-ui, inherit); color: var(--dg-text); text-align: left; white-space: normal; text-transform: none; letter-spacing: 0; }
+.tbl-stage .rule-pop p { margin: 0; }
+.tbl-stage .rule-pop p + p { margin-top: 8px; }

@@ -582,5 +582,21 @@
   "away.buildings": "Buildings destroyed: {n}",
   "away.resource": "Taken from you: {n} {res}",
   "away.card": "Taken from you: {card}",
-  "away.captured": "Agents captured: {n}"
+  "away.captured": "Agents captured: {n}",
+  "rule.help": "Rule reminder",
+  "rule.declare": "Declaring: when you lead a card numbered 2 to 6, you may put the highest free ambition marker on the ambition it shows (a 7, in 4 players: any ambition). Ambitions are scored when the chapter ends.",
+  "rule.pass": "Passing: if you hold the initiative and do not want to lead, you pass it to the next player with cards, and the round ends at once.",
+  "rule.twoPlayer": "2 players: the ambition box counts as a third player with its resources. To place first or second you must beat it; it never gains Power.",
+  "rule.follow": "Following: Surpass with the lead's suit and a higher number to take as many actions as your card's pips. Copy with any card face down for 1 action of the lead card. Pivot with another suit for 1 action of your card.",
+  "rule.seize": "Seizing the initiative: discard a second card with no actions (or Surpass with a 7, in 4 players). Once per round, and not if you already hold it.",
+  "rule.initiative": "End of the round: if nobody seized it, the initiative goes to whoever Surpassed with the highest number; otherwise it stays.",
+  "rule.actions": "Actions: you take them one at a time, in any order, up to the pips of your card. Spending a resource (a prelude) gives one more action of its type.",
+  "rule.secure": "Securing: take a Court card if you have more agents on it than each Rival. Your agents there go back to your supply; Rival agents on it become your captives.",
+  "rule.dice": "Dice: one per attacking ship. Skirmish dice hurt slowly and safely; assault dice hit hard and cost you; raid dice steal.",
+  "rule.raidLimit": "Raid dice: only if the defender has buildings in the system, or no Loyal buildings anywhere on the map.",
+  "rule.battle": "Order of the dice: first the hits on your own ships, then the interception, then the hits on their ships (buildings once no ship is left), then the hits on their buildings, then the raid.",
+  "rule.intercept": "Interception: if you rolled any intercept symbol, each fresh defending ship hits one of your ships. Only once per battle.",
+  "rule.raid": "Raiding: with ships left after the hits, spend the keys you rolled to steal resources and Guild cards, each for the keys printed above it.",
+  "rule.chapterEnd": "A chapter ends when everyone has played all their cards, or when everyone with cards has passed in a row.",
+  "rule.scoring": "Scoring: for each declared ambition, the most gets the higher Power of all its markers, the second the lower. A tie for first: those tied are all second. A tie for second: nobody. Having none of it gives nothing."
 }

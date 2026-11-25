@@ -101,3 +101,29 @@ test.describe('while you were waiting', () => {
     await expect(note).toHaveCount(0);
   });
 });
+
+test.describe('rule reminders', () => {
+  test('the "?" of a moment opens its rules in view, and closes on a second press', async ({ page }) => {
+    await open(page, 2);
+    await page.evaluate(() => {
+      const s = window.game!.state as unknown as { players: { hand: string[] }[] };
+      window.game!.send({ type: 'lead', player: 1, card: s.players[1].hand[0] } as never);
+      window.game!.send({ type: 'endTurn', player: 1 } as never);
+    });
+    await page.locator('.hand-card').first().click();
+    const q = page.locator('.cmd-bar [data-act="rule-help"]');
+    await q.click();
+    const box = page.locator('#rule-pop');
+    await expect(box.locator('p')).toHaveCount(3);
+    await expect(box.locator('p').first()).toContainText('Seguire: Supera con il seme della guida');
+    // Whole on screen and on top: the bar does not clip it.
+    const seen = await box.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return r.top >= 0 && r.bottom <= innerHeight && !!top && el.contains(top);
+    });
+    expect(seen).toBe(true);
+    await q.click();
+    await expect(box).toHaveCount(0);
+  });
+});
