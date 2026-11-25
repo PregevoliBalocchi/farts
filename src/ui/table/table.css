@@ -2131,3 +2131,9 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .side-amb.tight .abox .ab-g .ic { width: 24px; height: 24px; }
 .tbl-stage .side-amb.tight .abox .ab-m .amk { height: 28px; }
 .tbl-stage .side-amb.tighter .abox .ab-rule { display: none; }
+
+/* Ancient Holdings (lore-13): its resource slot drawn on the card in the own Court, as at the table (decision D of
+   production/piano-blindatura-tavolo-2026-11-25.md); tokens are spent and rearranged there like the board's. */
+.tbl-stage .mine-item { position: relative; }
+.tbl-stage .mine-item .card-held { position: absolute; left: 50%; bottom: 12%; transform: translateX(-50%); z-index: 2; display: flex; gap: 4px; padding: 3px; border-radius: 8px; background: #000a; box-shadow: 0 0 0 1px var(--bronze-rule); }
+.tbl-stage .mine-item .card-held .slot { width: 40px; height: 40px; font-size: 26px; }

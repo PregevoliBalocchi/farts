@@ -43,6 +43,8 @@ export interface SlotView {
   keys: number;
   /** The slot is on a held lore card (Ancient Holdings, lore-13), not on the board. */
   onCard?: boolean;
+  /** The held card the slot is printed on (with `onCard`). */
+  card?: string;
 }
 
 /** One seat as everyone at the table sees it (the hand only as a count). */
@@ -256,6 +258,8 @@ export function pilesView(ix: ContentIndex, s: GameState, local: PlayerId, lang 
 function playerView(ix: ContentIndex, s: GameState, id: PlayerId): PlayerView {
   const p = s.players[id];
   const open = new Set(openSlots(ix.content, p));
+  // The held cards the slots after the board's are printed on, in the order allSlotKeys lists them.
+  const slotCards = (p.lore ?? []).flatMap((id) => Array.from({ length: ix.content.loreCards?.find((l) => l.id === id)?.holds?.resourceSlots ?? 0 }, () => id));
   return {
     id,
     power: p.power,
@@ -270,7 +274,7 @@ function playerView(ix: ContentIndex, s: GameState, id: PlayerId): PlayerView {
       resource: p.resources[index] ?? null,
       locked: !open.has(index),
       keys,
-      ...(index >= ix.content.playerBoard.slotKeys.length ? { onCard: true } : {}),
+      ...(index >= ix.content.playerBoard.slotKeys.length ? { onCard: true, card: slotCards[index - ix.content.playerBoard.slotKeys.length] } : {}),
     })),
     arranging: !!p.arranging,
     overflow: [...(p.overflow ?? [])],

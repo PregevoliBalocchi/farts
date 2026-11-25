@@ -174,6 +174,32 @@ const CITY_TRIANGLE = (() => {
 })();
 
 /**
+ * One resource slot of a seat: its keys, its token (a button when it can be spent now), and, while
+ * resources are rearranged, a drop target and a draggable token. Also drawn on a held card (Ancient
+ * Holdings, lore-13: decision D of production/piano-blindatura-tavolo-2026-11-25.md).
+ */
+export function slotHtml(p: PlayerView, i: number, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, arrange = false, covered = false): string {
+  // Rearranging: every open slot takes a dragged token, every token can be dragged.
+  const drop = (i: number) => (arrange ? ` data-drop="${i}"` : '');
+  const drag = (i: number) => (arrange ? ` draggable="true" data-drag="${i}"` : '');
+  const s = p.slots[i];
+  // The keys as the Court cards print them: the kit's 1, 2 or 3 key tab.
+  const tab = s.keys > 0 ? assetUrl(`cardkit.cost-${Math.min(3, s.keys)}`) : null;
+  const keys = tab
+    ? `<span class="keys kit" style="background-image:url('${esc(tab)}')" aria-label="${s.keys}"></span>`
+    : `<span class="keys">${Array.from({ length: s.keys }, () => icon('key')).join('')}</span>`;
+  if (s.locked) return `<div class="slot locked${covered ? ' covered' : ''}" title="${esc(t('slot.locked'))}">${keys}<span class="well">${covered ? '' : icon('lock')}</span></div>`;
+  if (!s.resource) return `<div class="slot${covered ? ' covered' : ''}${arrange ? ' drop' : ''}"${drop(s.index)} title="${esc(t('slot.empty'))}">${keys}<span class="well"></span></div>`;
+  const out = p.outraged.includes(s.resource) ? ' outraged' : '';
+  const cls = `slot${covered ? ' covered' : ''}${out}${arrange ? ' drop' : ''}`;
+  const label = t(`resource.${s.resource}`);
+  if (spendable.has(s.index)) {
+    return `<button type="button" class="${cls} spend${chosen === s.index ? ' chosen' : ''}" data-act="spend" data-slot="${s.index}"${drop(s.index)}${drag(s.index)} title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></button>`;
+  }
+  return `<div class="${cls}"${drop(s.index)}${drag(s.index)} title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></div>`;
+}
+
+/**
  * The resource slots of a board laid out like the physical one: from the
  * left, the open slots, then each city's printed triangle over the slot(s) it
  * covers (one triangle over two overlapping circles for a city covering two),
@@ -181,32 +207,14 @@ const CITY_TRIANGLE = (() => {
  * add. An unbuilt city stands on its triangle; built, the printed outline
  * shows and its slots take resources.
  */
-function slotsHtml(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, arrange = false): string {
-  // Rearranging: every open slot takes a dragged token, every token can be dragged.
-  const drop = (i: number) => (arrange ? ` data-drop="${i}"` : '');
-  const drag = (i: number) => (arrange ? ` draggable="true" data-drag="${i}"` : '');
-  const slot = (i: number, covered: boolean) => {
-    const s = p.slots[i];
-    // The keys as the Court cards print them: the kit's 1, 2 or 3 key tab.
-    const tab = s.keys > 0 ? assetUrl(`cardkit.cost-${Math.min(3, s.keys)}`) : null;
-    const keys = tab
-      ? `<span class="keys kit" style="background-image:url('${esc(tab)}')" aria-label="${s.keys}"></span>`
-      : `<span class="keys">${Array.from({ length: s.keys }, () => icon('key')).join('')}</span>`;
-    if (s.locked) return `<div class="slot locked${covered ? ' covered' : ''}" title="${esc(t('slot.locked'))}">${keys}<span class="well">${covered ? '' : icon('lock')}</span></div>`;
-    if (!s.resource) return `<div class="slot${covered ? ' covered' : ''}${arrange ? ' drop' : ''}"${drop(s.index)} title="${esc(t('slot.empty'))}">${keys}<span class="well"></span></div>`;
-    const out = p.outraged.includes(s.resource) ? ' outraged' : '';
-    const cls = `slot${covered ? ' covered' : ''}${out}${arrange ? ' drop' : ''}`;
-    const label = t(`resource.${s.resource}`);
-    if (spendable.has(s.index)) {
-      return `<button type="button" class="${cls} spend${chosen === s.index ? ' chosen' : ''}" data-act="spend" data-slot="${s.index}"${drop(s.index)}${drag(s.index)} title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></button>`;
-    }
-    return `<div class="${cls}"${drop(s.index)}${drag(s.index)} title="${esc(label)}">${keys}<span class="well">${resIcon(s.resource, t)}</span></div>`;
-  };
+function slotsHtml(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, chosen: number | null, arrange = false, cardsApart = false): string {
+  const slot = (i: number, covered: boolean) => slotHtml(p, i, t, spendable, chosen, arrange, covered);
   const onCity = (built: boolean) => (built ? '' : `<span class="on-city">${pieceIcon('city', p.id)}</span>`);
   const covered = new Set(p.cities.flatMap((c) => c.slots));
   const free = p.slots.filter((s) => !covered.has(s.index) && !s.onCard).map((s) => slot(s.index, false));
   // A slot on a held lore card (Ancient Holdings, lore-13): after the board's, marked as the card's.
-  const onCards = p.slots.filter((s) => s.onCard).map((s) => `<div class="card-slot" title="${esc(t('slot.onCard'))}">${slot(s.index, false)}</div>`);
+  // Drawn on the card itself when the card is in view (the local player's own Court: decision D).
+  const onCards = (cardsApart ? [] : p.slots.filter((s) => s.onCard)).map((s) => `<div class="card-slot" title="${esc(t('slot.onCard'))}">${slot(s.index, false)}</div>`);
   const cities = p.cities.map((c) => {
     if (c.slots.length) {
       const pair = c.slots.length > 1 ? ' pair' : '';
@@ -290,11 +298,11 @@ export function preludeTab(cards: readonly PreludeCard[], t: Translate, row = fa
  * the name bar with the power in a ring. `maxCards` 0: no guild cards (the
  * local player's are in their own panel of the bar).
  */
-function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<number>; chosen: number | null; preludes: readonly PreludeCard[]; maxCards: number; head: string; legend?: boolean; arrange?: boolean }): string {
+function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<number>; chosen: number | null; preludes: readonly PreludeCard[]; maxCards: number; head: string; legend?: boolean; arrange?: boolean; cardsApart?: boolean }): string {
   return `${preludeTab(o.preludes, t)}
     <div class="pb-body${o.legend ? ' with-legend' : ''}">
       <div class="pb-face">${o.head}</div>
-      ${slotsHtml(p, t, o.spendable, o.chosen, o.arrange)}
+      ${slotsHtml(p, t, o.spendable, o.chosen, o.arrange, o.cardsApart)}
       <div class="pb-rule" aria-hidden="true"></div>
       ${o.legend ? preludeLegend(p, t, spentTypes(p, o.spendable)) : ''}
       ${spoils(p, t)}
@@ -404,7 +412,7 @@ export function localPanel(p: PlayerView, t: Translate, spendable: ReadonlySet<n
   const head = leaderPortrait(p);
   const can = arrange && p.arranging;
   return `<div class="board pb local${slim ? ' slim' : ''}${can ? ' arranging' : ''} s-${seatColor(p.id)}${p.isActive ? ' active' : ''}">
-    ${seatBoard(p, t, { spendable, chosen, preludes, maxCards: slim ? 0 : 9, head, legend: true, arrange: can })}
+    ${seatBoard(p, t, { spendable, chosen, preludes, maxCards: slim ? 0 : 9, head, legend: true, arrange: can, cardsApart: slim })}
     ${can ? arrangeStrip(p, t) : ''}
   </div>`;
 }
@@ -451,7 +459,7 @@ export function sortCourt<T extends { kind?: string | null; resource?: string | 
  * inner width in stage pixels, to size the cards so that two rows hold them all;
  * `lit`: the cards whose power can be used now (they glow and use it on a click).
  */
-export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data: (id: string) => CourtFaceData, width: number, lit: ReadonlySet<string> = new Set(), open = false): string {
+export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data: (id: string) => CourtFaceData, width: number, lit: ReadonlySet<string> = new Set(), open = false, cardSlot: (card: string) => string = () => ''): string {
   // Guild cards and lore cards in two groups, apart (production/base-fixes.md #29).
   const guild = sortCourt(p.court.map(data), sort);
   const lore = sortCourt(p.lore.map(data), sort);
@@ -480,7 +488,9 @@ export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data
     const face = lit.has(c.card)
       ? `<button type="button" class="mine-card lit k-${esc(c.kind ?? 'none')}" data-act="power-card" data-card="${esc(c.card)}" data-zoom="${esc(c.card)}" title="${esc(t('powers.title'))}">${cardFaceById(c.card)}</button>`
       : `<div class="mine-card k-${esc(c.kind ?? 'none')}" data-zoom="${esc(c.card)}" tabindex="0">${cardFaceById(c.card)}</div>`;
-    return `<div class="mine-item" style="z-index:${z--}">${res}${face}</div>`;
+    // A resource slot printed on the card (Ancient Holdings): on the card, as at the table.
+    const held = cardSlot(c.card);
+    return `<div class="mine-item" style="z-index:${z--}">${res}${face}${held ? `<div class="card-held" title="${esc(t('slot.onCard'))}">${held}</div>` : ''}</div>`;
   };
   const groups = [guild, lore].filter((g) => g.length).map((g, i) => `<div class="mine-group${i ? ' lore' : ''}">${g.map(item).join('')}</div>`).join('');
   return `${toggle}<div class="mine-head" aria-label="${esc(t('mine.title'))}">${sorts}</div>
