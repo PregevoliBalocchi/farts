@@ -54,3 +54,34 @@ test.describe('accessibility', () => {
     await expect(page.locator('.tbl.no-motion')).toHaveCount(1);
   });
 });
+
+test.describe('accessibility: zoom, Escape and focus', () => {
+  test('focus never pops the card zoom; Z shows it and Esc closes it first (A2, A5)', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto(build('view=table&lang=it&motion=off&players=3&seed=3&seat=0'));
+    await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
+    const zoom = page.locator('.card-zoom');
+    const card = page.locator('[data-region="court"] [data-act="court"]').first();
+    await card.focus();
+    await expect(zoom).toBeHidden();
+    await expect(card).toHaveAttribute('aria-keyshortcuts', 'Z');
+    await page.keyboard.press('z');
+    await expect(zoom).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(zoom).toBeHidden();
+    await expect(card).toBeFocused();
+  });
+
+  test('a window closed with Esc gives the focus back to the button that opened it (A5)', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto(build('view=table&lang=it&motion=off&players=3&seed=3&seat=0'));
+    await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
+    const opener = page.locator('[data-act="settings"]');
+    await opener.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.modal')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.modal')).toHaveCount(0);
+    await expect(opener).toBeFocused();
+  });
+});

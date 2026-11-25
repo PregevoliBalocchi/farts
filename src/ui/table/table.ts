@@ -229,6 +229,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let awayNote: string[] = [];
   /** The rule reminder open now (its keys joined), or null. */
   let ruleOpen: string | null = null;
+  /** The focus key of the control that opened the open menu or window, and whether one was open (A5). */
+  let opener: string | null = null;
+  let overlayWas = false;
   let wasMine: PlayerId | null = null;
   let findMineTimer = 0;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
@@ -2471,6 +2474,15 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       scenarioDone = true;
     }
     const key = focusKey();
+    // A5: the control that opened a menu, a drop-down or a window gets the focus back when it closes.
+    const overlay = !!(modal || sysMenu || courtMenu || powerMenu || drop);
+    let back: string | null = null;
+    if (overlay && !overlayWas) opener = key;
+    if (!overlay && overlayWas) {
+      back = opener;
+      opener = null;
+    }
+    overlayWas = overlay;
     const me = local();
     if (state.phase.type !== 'allocate') {
       rerollSkip = new Set();
@@ -2594,7 +2606,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     fitSide();
     placeRuleBox();
     sizeAvatars(stage);
-    restoreFocus(key);
+    // A2: the key that shows a focused card large.
+    for (const z of stage.querySelectorAll('[data-zoom]')) z.setAttribute('aria-keyshortcuts', 'Z');
+    restoreFocus(back ?? key);
     const dialog = stage.querySelector('.modal');
     if (dialog && !dialog.contains(document.activeElement)) {
       dialog.querySelector<HTMLElement>('button:not(:disabled), select, input, textarea')?.focus();
@@ -3318,11 +3332,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   stage.addEventListener('mouseout', (e) => {
     if (zoomTarget(e)) hideZoom();
   });
-  // From the keyboard only: the focus a window gives its first card when it opens after a click, or the
-  // focus the table gives back after a redraw, is not the player asking to see the card.
-  stage.addEventListener('focusin', (e) => {
-    const el = zoomTarget(e);
-    if (el && el.matches(':focus-visible')) showZoom(el);
+  // From the keyboard, with a key (A2): Z (or +) on a focused card shows it large, again to close it. Focus alone
+  // never opens it: the focus a window gives its first card, or a redraw gives back, is not a request to see it.
+  stage.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || !(e.key === 'z' || e.key === 'Z' || e.key === '+')) return;
+    const el = (e.target as Element).closest<HTMLElement>('[data-zoom]');
+    if (!el) return;
+    e.preventDefault();
+    const zoom = stage.querySelector<HTMLElement>('.card-zoom');
+    if (zoom && !zoom.hidden) hideZoom();
+    else showZoom(el);
   });
   stage.addEventListener('focusout', (e) => {
     if (zoomTarget(e)) hideZoom();
@@ -3617,7 +3636,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       return;
     }
     if (e.key === 'Escape') {
-      if (powerPick) powerPick = null;
+      // A5: first what only shows (the card zoom, a hover card or a rival's board, a rule reminder), with no
+      // redraw, then the menus and windows, one per press.
+      const zoom = stage.querySelector<HTMLElement>('.card-zoom');
+      if (zoom && !zoom.hidden) return hideZoom();
+      if ([...stage.querySelectorAll<HTMLElement>('.hover-tip')].some((x) => !x.hidden)) return hideTip();
+      if (ruleOpen) ruleOpen = null;
+      else if (powerPick) powerPick = null;
       else if (courtMenu) courtMenu = null;
       else if (powerMenu) powerMenu = null;
       else if (drop) drop = null;
