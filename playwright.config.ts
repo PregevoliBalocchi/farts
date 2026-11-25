@@ -28,16 +28,26 @@ function bash(): string {
   return found ?? 'bash';
 }
 
+// On CI's machines (no GPU, two slow cores) the table takes over 30 s to load: the 45 MB single-file
+// build is parsed and the 3D map's shaders compile in software. Slower limits there, the usual ones here.
+const CI = !!process.env.CI;
+
 export default defineConfig({
   testDir: 'tests/integration',
-  forbidOnly: !!process.env.CI,
+  forbidOnly: CI,
+  timeout: CI ? 180_000 : 30_000,
+  expect: { timeout: CI ? 30_000 : 5_000 },
   use: {
     viewport: { width: 1280, height: 720 },
+    navigationTimeout: CI ? 150_000 : 30_000,
+    actionTimeout: CI ? 30_000 : 0,
     launchOptions: {
       executablePath: checkBrowser(),
       // WebGL in software (SwiftShader), the same flags page-shot.sh --software
       // passes, so a check draws the same with a GPU or none. For checks only.
-      args: ['--use-gl=angle', '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader'],
+      // PW_GPU=1 (a local run on a machine with a GPU) draws with the GPU instead: 3-5 times faster, for
+      // the checks that read the page rather than compare pictures. CI never sets it.
+      args: process.env.PW_GPU === '1' ? [] : ['--use-gl=angle', '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader'],
     },
   },
 });
