@@ -31,6 +31,8 @@ describe('declaring', () => {
   it('the declaring cost also applies to declarations made by card effects', () => {
     let s = start(ix, [['suitB-2'], ['suitB-4']]);
     s.players[0].leader = 'leader-07';
+    // A Guild card to give, so the declaration can be made and the choice is asked.
+    s.players[0].court = [guild('fuel')];
     s.court[0] = { card: 'v:court-27', agents: { 0: 1 } };
     s = runAll(ix, s, [
       { type: 'lead', player: 0, card: 'suitB-2' },

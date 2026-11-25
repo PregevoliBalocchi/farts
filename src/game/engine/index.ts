@@ -27,3 +27,5 @@ export type { NewCampaignOptions } from './campaign-setup';
 export { blightCrises, decideEvent, inEvent, isEventDecision, runEvent, startEvent } from './events';
 export { pieceLedger } from './ledger';
 export type { Ledger, PieceCount } from './ledger';
+export { argsOf, choose, decisionAsk, decisionCandidates, subMultisets, subsets } from './decisions';
+export type { AskContext, DecisionAnswer, DecisionAsk, DecisionPart, DecisionPartKind, EmptyAnswer } from './decisions';

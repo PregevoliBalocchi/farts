@@ -361,7 +361,7 @@ export async function runGame({ browser, players, variant = 'base', seed = 7, st
           break;
         }
         const now = await live(page);
-        if (opened && !now.some((x) => x.act === 'decide-pick')) await note(page, 'empty', `${s.phase.decision?.card}:${s.phase.decision?.effect}`, 'Scegli apre una scelta senza opzioni');
+        if (opened && !now.some((x) => x.act === 'decide-pick' || x.act === 'keep-toggle')) await note(page, 'empty', `${s.phase.decision?.card}:${s.phase.decision?.effect}`, 'Scegli apre una scelta senza opzioni');
         c = choose(now, s, rand);
       }
       if (moved) break;

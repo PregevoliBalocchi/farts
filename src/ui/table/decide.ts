@@ -1,25 +1,15 @@
-// Answers to a pending card-effect Decision, as buttons instead of typed JSON.
-// The UI does not know what each card asks: it proposes candidate answers built
-// from the choice names effects read (a rival, a card, a system, a resource...),
-// trial-dispatches each one, and keeps the legal ones that lead to different
-// outcomes. Declining (empty answer) is always offered first when legal.
+// Answers to a pending card-effect Decision and uses of card powers, as buttons instead of typed JSON.
+// A Decision's answers come from the engine (decisions.ts: each card declares what it asks); the table
+// trial-dispatches them and keeps the legal ones that lead to different outcomes. Card powers (Prelude
+// abilities, card actions, rerolls) still build their candidates here from the choice names they read.
 
-import { adjacent, AMBITIONS, dispatch, RESOURCES } from '../../game/engine';
+import { adjacent, AMBITIONS, argsOf, decisionAsk, decisionCandidates, dispatch, RESOURCES } from '../../game/engine';
 import { effectOf } from '../../game/engine';
-import type { Command, ContentIndex, GameState, PlayerId } from '../../game/engine';
+import type { Command, ContentIndex, DecisionPart, DecisionPartKind, GameState, PlayerId } from '../../game/engine';
 
-/** How a part of an answer is shown. */
-/** `fleet`: ships of several players moved together, as { [player]: { fresh, damaged } }; `slots`: own resource slots. */
-export type DecisionPartKind = 'player' | 'card' | 'system' | 'cluster' | 'resource' | 'ambition' | 'court' | 'index' | 'flag' | 'ships' | 'cards' | 'slot' | 'slots' | 'number' | 'resources' | 'dice' | 'fleet';
+export type { DecisionPart, DecisionPartKind } from '../../game/engine';
 
-/** One named choice inside an answer, e.g. { key: 'rival', kind: 'player', value: 2 }. */
-export interface DecisionPart {
-  key: string;
-  kind: DecisionPartKind;
-  value: unknown;
-}
-
-/** A legal answer: the `decide` args and how to describe them. `parts` is empty for "decline". */
+/** A legal answer: the `decide` args and how to describe them. `parts` is empty for the empty answer. */
 export interface DecisionOption {
   args: Record<string, unknown>;
   parts: DecisionPart[];
@@ -52,8 +42,8 @@ const MAX_RANSOM = 4;
 /** Most resources exchanged at once among the Tycoon's Charm candidates (lore-28). */
 const MAX_EXCHANGE = 3;
 
-/** Candidate answers for the Decision `s` is waiting on (or, with `powers`, for a card ability), simplest first. */
-function candidates(ix: ContentIndex, s: GameState, me: PlayerId, powers = false): Candidate[] {
+/** Candidate choices for a card ability (a Decision's answers come from the engine), simplest first. */
+function candidates(ix: ContentIndex, s: GameState, me: PlayerId, powers = true): Candidate[] {
   if (s.phase.type !== 'decide' && !powers) return [];
   const d = s.phase.type === 'decide' ? s.phase.decision : null;
   const rivals = s.players.map((p) => p.id).filter((p) => p !== me);
@@ -171,34 +161,39 @@ function candidates(ix: ContentIndex, s: GameState, me: PlayerId, powers = false
   return [...out, ...late];
 }
 
-function argsOf(c: Candidate): Record<string, unknown> {
-  return Object.fromEntries(c.map((p) => [p.key, p.value]));
-}
-
 /**
- * The legal, distinct answers to the Decision `s` waits on for player `me`.
- * Two answers that leave the game in the same state are one option (the
- * simpler is kept). Empty when no Decision is pending for `me`.
+ * The legal, distinct answers to the Decision `s` waits on for player `me`, from the answers the
+ * engine declares for it (decisions.ts). Two answers that leave the game in the same state are one
+ * option (the simpler is kept). The empty answer (no parts) comes first when it declines; when it takes
+ * the rules' default it is offered only if no answer is legal (the default is among the answers).
+ * Empty when no Decision is pending for `me`.
  */
 export function decisionOptions(ix: ContentIndex, s: GameState, me: PlayerId): DecisionOption[] {
   if (s.phase.type !== 'decide' || s.phase.decision.player !== me) return [];
+  const d = s.phase.decision;
+  const empty = decisionAsk(ix, d)?.empty ?? 'decline';
   const seen = new Set<string>();
   const out: DecisionOption[] = [];
-  let trials = 0;
-  for (const c of candidates(ix, s, me)) {
-    if (trials++ >= MAX_TRIALS) break;
-    const args = argsOf(c);
+  const offer = (parts: DecisionPart[]) => {
+    const args = argsOf(parts);
     let next: GameState;
     try {
       next = dispatch(ix, s, { type: 'decide', player: me, args });
     } catch {
-      continue;
+      return;
     }
     const key = JSON.stringify(next);
-    if (seen.has(key)) continue;
+    if (seen.has(key)) return;
     seen.add(key);
-    out.push({ args, parts: c });
+    out.push({ args, parts });
+  };
+  if (empty === 'decline') offer([]);
+  let trials = 0;
+  for (const parts of decisionCandidates(ix, s, d)) {
+    if (trials++ >= MAX_TRIALS) break;
+    offer(parts);
   }
+  if (empty === 'default' && !out.length) offer([]);
   return out;
 }
 
@@ -220,9 +215,9 @@ function legalUses(ix: ContentIndex, s: GameState, me: PlayerId, make: (args: Re
   const seen = new Set<string>();
   const out: { args: Record<string, unknown>; parts: DecisionPart[]; cmd: Command }[] = [];
   let trials = 0;
-  for (const c of candidates(ix, s, me, true)) {
+  for (const c of candidates(ix, s, me)) {
+    const args = Object.fromEntries(c.map((p) => [p.key, p.value]));
     if (trials++ >= MAX_POWER_TRIALS) break;
-    const args = argsOf(c);
     const cmd = make(args);
     let next: GameState;
     try {

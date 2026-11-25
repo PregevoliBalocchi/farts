@@ -31,10 +31,11 @@ test.describe('known problems (playtest 2026-11-25)', () => {
   });
 
   test('a card choice with no possible answer offers no "Scegli" (piano D2)', async ({ page }) => {
-    test.fail();
     await page.setViewportSize({ width: 1366, height: 768 });
     await open(page, 'players=4&variant=leaders&seat=3', fixture('empty-choice.json'));
     await expect(page.locator('[data-act="decide-open"]')).toHaveCount(0);
+    // One Continue instead (the engine resolves such a choice by itself in a game; a saved one still shows it).
+    await expect(page.locator('.cmd-bar [data-act="decline"]')).toBeVisible();
   });
 
   test('in a 2-player game the empty part of the rivals region lets clicks reach the map (piano 2.1)', async ({ page }) => {

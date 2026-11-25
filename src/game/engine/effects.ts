@@ -18,6 +18,7 @@
 
 import type { ContentIndex } from './setup';
 import type { ActionResult } from './actions';
+import type { DecisionAsk } from './decisions';
 import type { ActionKind, AmbitionId, DieType, GameState, PlayerId, Resource } from './types';
 
 /** What an effect handler receives. `args` comes from the player's command. */
@@ -166,6 +167,11 @@ export interface CardEffect {
   triggers?: Record<string, EffectHandler>;
   /** Whether a trigger applies now (defaults to always); used before queuing its Decision. */
   triggerWhen?: Record<string, (ctx: Omit<EffectContext, 'args'> & TriggerEvent) => boolean>;
+  /**
+   * How each Decision of this card is answered, by its name ('whenSecured' or a trigger name): what the
+   * empty answer does and the answers to try (decisions.ts). Every Decision a card can ask declares one.
+   */
+  asks?: Record<string, DecisionAsk>;
   /** Mandatory effects resolved at once on a trigger ('onDeclare': args = { ambition, wasUndeclared }). */
   autoTriggers?: Record<string, EffectHandler>;
 
