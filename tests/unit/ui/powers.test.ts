@@ -59,6 +59,52 @@ describe('cardPowers', () => {
     expect(powers.some((o) => o.ability === 'execute')).toBe(false);
   });
 
+  it('offers Ransom with any mix of resources, one per Captive', () => {
+    const s = holding(['g:court-12'], (x) => {
+      x.players[0].captives = [1, 1];
+    });
+    const sets = cardPowers(ix, s, 0)
+      .filter((o) => o.ability === 'ransom')
+      .map((o) => [...(o.parts.find((p) => p.key === 'resources')?.value as string[])].sort().join('+'));
+    expect(sets).toContain('fuel+material');
+  });
+
+  /** P0 holds `lore` and leads an Aggression card (Move, Battle); P0 ships at `a`, P1 ships at `b` (adjacent). */
+  function aggression(lore: string, place: (s: GameState, a: string, b: string) => void): { s: GameState; a: string; b: string } {
+    let s = start(ix, [['suitB-2'], ['suitB-4']]);
+    const [a, b] = ix.content.map.links.find(([x, y]) => s.map[x]?.inPlay && s.map[y]?.inPlay)!;
+    s.players[0].lore = [lore];
+    place(s, a, b);
+    s = dispatch(ix, s, { type: 'lead', player: 0, card: 'suitB-2' });
+    return { s, a, b };
+  }
+
+  it('offers Galactic Rifles at a Rival in an adjacent system', () => {
+    const { s, a, b } = aggression('l:lore-02', (x, a, b) => {
+      x.map[a].ships = { 0: { fresh: 2, damaged: 0 } };
+      x.map[b].ships = { 1: { fresh: 1, damaged: 0 } };
+    });
+    const opts = cardPowers(ix, s, 0).filter((o) => o.ability === 'rifles');
+    expect(opts.map((o) => Object.fromEntries(o.parts.map((p) => [p.key, p.value])))).toContainEqual({ system: a, at: b, target: 1 });
+  });
+
+  it('offers Survival Overrides against a Rival ship, not only on your own', () => {
+    const { s, a } = aggression('l:lore-18', (x, a) => {
+      x.map[a].ships = { 0: { fresh: 1, damaged: 0 }, 1: { fresh: 0, damaged: 1 } };
+    });
+    const opts = cardPowers(ix, s, 0).filter((o) => o.ability === 'martyr');
+    expect(opts.some((o) => o.parts.some((p) => p.key === 'target' && p.value === 1) && o.parts.some((p) => p.key === 'damaged'))).toBe(true);
+  });
+
+  it('offers Force Beams moving ships to an adjacent system from your fresh starport', () => {
+    const { s, a, b } = aggression('l:lore-16', (x, a) => {
+      x.map[a].buildings = [{ owner: 0, type: 'starport', damaged: false }];
+      x.map[a].ships = { 1: { fresh: 2, damaged: 0 } };
+    });
+    const opts = cardPowers(ix, s, 0).filter((o) => o.ability === 'guide');
+    expect(opts.some((o) => o.parts.some((p) => p.key === 'from' && p.value === a) && o.parts.some((p) => p.key === 'to' && p.value === b))).toBe(true);
+  });
+
   it('offers nothing outside the holder turn', () => {
     const s = holding(['g:court-23']);
     expect(cardPowers(ix, s, 1)).toEqual([]);

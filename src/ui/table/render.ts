@@ -204,7 +204,9 @@ function slotsHtml(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, 
   };
   const onCity = (built: boolean) => (built ? '' : `<span class="on-city">${pieceIcon('city', p.id)}</span>`);
   const covered = new Set(p.cities.flatMap((c) => c.slots));
-  const free = p.slots.filter((s) => !covered.has(s.index)).map((s) => slot(s.index, false));
+  const free = p.slots.filter((s) => !covered.has(s.index) && !s.onCard).map((s) => slot(s.index, false));
+  // A slot on a held lore card (Ancient Holdings, lore-13): after the board's, marked as the card's.
+  const onCards = p.slots.filter((s) => s.onCard).map((s) => `<div class="card-slot" title="${esc(t('slot.onCard'))}">${slot(s.index, false)}</div>`);
   const cities = p.cities.map((c) => {
     if (c.slots.length) {
       const pair = c.slots.length > 1 ? ' pair' : '';
@@ -212,7 +214,7 @@ function slotsHtml(p: PlayerView, t: Translate, spendable: ReadonlySet<number>, 
     }
     return `<div class="cover bonus${c.built ? ' built' : ''}" title="${esc(t('slot.bonus', { n: c.bonus }))}"><span class="keys"></span><span class="tri-cell">${CITY_TRIANGLE}<b class="plus num">+${c.bonus}</b></span>${onCity(c.built)}</div>`;
   });
-  return `<div class="slots">${free.join('')}${cities.join('')}</div>`;
+  return `<div class="slots">${free.join('')}${cities.join('')}${onCards.join('')}</div>`;
 }
 
 /**

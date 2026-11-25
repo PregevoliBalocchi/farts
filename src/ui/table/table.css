@@ -203,6 +203,8 @@
 .slot.chosen { box-shadow: var(--select); }
 .slot.outraged::after { content: ""; position: absolute; inset: 3px; border: 2px solid var(--danger); border-radius: 6px; }
 .local .slot { width: 46px; height: 46px; font-size: 30px; }
+/* A slot on a held lore card (Ancient Holdings, lore-13): set apart from the board's, framed like a card edge. */
+.slots .card-slot { display: flex; margin-left: 6px; padding: 2px; border: 1px solid var(--bronze-rule); border-radius: 6px; }
 .stats { display: flex; gap: 12px; font-size: .95em; padding: 4px 8px; background: #0006; border-radius: 6px; flex-wrap: wrap; }
 .stats span { display: inline-flex; align-items: center; gap: 4px; }
 .mini-cards { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -1143,6 +1145,9 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .keep-cards .dr-card .dr-ph { padding: 8px; font: 700 13px var(--font-num); color: var(--dg-text); }
 .tbl-stage .keep-cards .dr-card:hover, .tbl-stage .keep-cards .dr-card:focus-visible { transform: translateY(-4px); filter: none; }
 .tbl-stage .keep-cards .dr-card.chosen { transform: translateY(-8px) scale(1.04); filter: none; box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--gilt-pale), 0 0 26px rgba(255, 170, 60, .9), 0 12px 22px #000c; }
+/* The Feastbringer's gift (base-fixes #48): each Guild card with the Rival it goes to written under it. */
+.tbl-stage .keep-cards .gift-pick { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.tbl-stage .keep-cards .gift-to { font: 700 var(--fs-label) var(--font-ui); color: var(--gilt-pale); }
 .tbl-stage .keep-cards .keep-count { text-align: center; font: 600 var(--fs-body) var(--font-ui, inherit); color: var(--dg-text, var(--vellum-title)); }
 @media (prefers-reduced-motion: reduce) { .tbl-stage .keep-cards .dr-card { transition: none; } }
 

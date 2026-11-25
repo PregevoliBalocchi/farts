@@ -352,13 +352,7 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
         text += `; ${t.ships} move on ${t.from}→${t.to}`;
       }
     }
-    // Entering a guarded gate: each guard captures 1 agent of the mover, once per move.
-    for (const q of guards.keys()) {
-      if (s.players[p].supply.agents < 1) break;
-      s.players[p].supply.agents -= 1;
-      s.players[q].captives.push(p);
-      text += `; P${q} captures an agent of P${p} at the gate`;
-    }
+    text += captureAtGates(s, p, [...guards.keys()]);
     return { text };
   },
 
@@ -417,6 +411,26 @@ function checkPath(ix: ContentIndex, s: GameState, p: PlayerId, fx: CardEffect[]
       if (catapultStops(s, sys, p, imperialAt(id) > 0)) err(`Catapulting ships stop at ${id}`);
     } else if (Object.keys(sys.ships).some((k) => Number(k) !== p && controls(sys, Number(k)))) err(`Catapulting ships stop at ${id}: a rival controls it`);
   }
+}
+
+/**
+ * Rivals of `mover` guarding any of the gates `ids` (Gate Ports, lore-08), worked out before the ships
+ * move in: card owners who control the gate with a fresh starport of theirs there.
+ */
+export function gateGuardsAt(ix: ContentIndex, s: GameState, ids: readonly string[], mover: PlayerId): PlayerId[] {
+  return [...new Set(ids.flatMap((id) => gateGuards(ix, s, id, mover)))];
+}
+
+/** Ships of `mover` entered gates guarded by `guards`: each captures 1 agent of the mover, once per move. Log text. */
+export function captureAtGates(s: GameState, mover: PlayerId, guards: readonly PlayerId[]): string {
+  let text = '';
+  for (const q of guards) {
+    if (s.players[mover].supply.agents < 1) break;
+    s.players[mover].supply.agents -= 1;
+    s.players[q].captives.push(mover);
+    text += `; P${q} captures an agent of P${mover} at the gate`;
+  }
+  return text;
 }
 
 /** Rivals of `mover` guarding this gate: card owners who control it with a fresh starport of theirs there. */
@@ -701,7 +715,7 @@ export function applyAllocation(ix: ContentIndex, s: GameState, b: PendingBattle
 
 /**
  * Spends rolled keys. Each take costs the keys printed on the defender's
- * resource slot (`playerBoard.slotKeys`) or on the Guild card (`keys`). Unspent
+ * resource slot (`playerBoard.slotKeys`, or a lore card's `holds`) or on the Guild card (`keys`). Unspent
  * keys are lost. Resource indices refer to the defender's resources before the raid.
  */
 function raid(ix: ContentIndex, s: GameState, sys: SystemState, b: PendingBattle, target: PlayerId, takes: RaidTake[]): string {
@@ -720,7 +734,7 @@ function raid(ix: ContentIndex, s: GameState, sys: SystemState, b: PendingBattle
       if (why) err(why);
       if (resIdx.includes(t.resource)) err(`Resource slot ${t.resource} taken twice`);
       resIdx.push(t.resource);
-      keysNeeded += slotKeys(ix.content, t.resource);
+      keysNeeded += slotKeys(ix.content, t.resource, def);
     } else {
       if (!def.court.includes(t.card)) err(`Defender has no card ${t.card}`);
       const why = stealBlocked(ix, s, b.attacker, target, { card: t.card });

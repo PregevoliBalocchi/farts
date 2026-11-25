@@ -6,7 +6,7 @@ export { dispatch, activePlayer, roundWinner, gameWinners } from './chapter';
 export { effectOf, hasPassive, isDeclared, ownedEffects } from './effects';
 export type { CardAction, CardEffect, EffectContext, EffectHandler, EffectRegistry, PreludeAbility, RerollAbility } from './effects';
 export * from './ops';
-export { HANDLERS, actionKindOf, currentBudget, takeCourtCard, collectAndRoll, finalizeBattle, rerollDice } from './actions';
+export { HANDLERS, actionKindOf, captureAtGates, currentBudget, gateGuardsAt, takeCourtCard, collectAndRoll, finalizeBattle, rerollDice } from './actions';
 export { discardOwnCard, cartelMetric, endChapter } from './chapter';
 export { afterDeclare, payDeclareCost } from './declare';
 export type { DeclareGift } from './declare';
@@ -17,7 +17,7 @@ export { RuleError, adjacent, applyAllocation, controls, destroyCityConsequences
 export type { ActionPayload, ActionResult, Allocation, HitTarget, PendingBattle, RaidTake, ShipHit } from './actions';
 export { rankAmbition, ambitionMetric, boxMetric, scoreAmbitions, markerValues, emptyAmbitionBoard } from './ambitions';
 export { rollDice, totalFaces } from './dice';
-export { arrangeResources, citiesBuilt, cityBonusPower, endArranging, gainFromSupply, gainResource, heldResources, onCityReturned, openSlots, returnToSupply, slotKeys } from './board';
+export { allSlotKeys, arrangeResources, citiesBuilt, cityBonusPower, endArranging, gainFromSupply, gainResource, heldResources, onCityReturned, openSlots, returnToSupply, slotKeys } from './board';
 export type { DicePool, DiceTotals, RollResult } from './dice';
 export { shuffle } from './rng';
 export { CAMPAIGN_SUPPLY, IMPERIAL_COUNCIL, attachToCourt, catapultStops, controllerOf, controlsFor, detachFromCourt, empireControls, addToBooklet, edictsInOrder, hasLoyalPresence, isCouncil, newCampaign, removeFromBooklet, petitionCouncil, removeFromCourt, returnCouncil, securable } from './campaign';
