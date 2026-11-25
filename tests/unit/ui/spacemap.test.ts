@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import lines from '../../../src/ui/table/board.lines.json';
 import calibration from '../../../src/ui/table/board.default.json';
-import { bridgeArc, CONTROL_TINT, isBoardLines, RESOURCE_TINT, resourceIconSpots, sectorTints, tokenSpot, withLayerSpots } from '../../../src/ui/table/infolayer';
+import { bridgeArc, CONTROL_TINT, ICON_SLOT_CLEAR, isBoardLines, RESOURCE_TINT, resourceIconSpots, sectorTints, tokenSpot, withLayerSpots } from '../../../src/ui/table/infolayer';
 import { planetPalette, planetRecipe, STYLES } from '../../../src/ui/table/planets3d';
 
 describe('board.lines.json (traced information layer)', () => {
@@ -65,7 +65,7 @@ describe('sector colours', () => {
 });
 
 describe('resource icons', () => {
-  it('puts one icon per planet on its rim, on the side away from the ring', () => {
+  it('puts one icon per planet on its rim', () => {
     const planets = Object.entries(calibration.systems).filter(([id]) => !id.endsWith('gate'));
     const spots = resourceIconSpots(calibration, lines.ring, planets.map(([id]) => ({ id, resource: 'fuel' })));
     expect(spots).toHaveLength(planets.length);
@@ -73,8 +73,15 @@ describe('resource icons', () => {
       const d = calibration.systems[s.system as keyof typeof calibration.systems] as { disc: { x: number; y: number; r: number } };
       const fromDisc = Math.hypot(s.x - d.disc.x, s.y - d.disc.y);
       expect(fromDisc).toBeCloseTo(d.disc.r * 0.9, 1);
-      const nearer = Math.hypot(s.x - lines.ring.cx, s.y - lines.ring.cy) > Math.hypot(d.disc.x - lines.ring.cx, d.disc.y - lines.ring.cy);
-      expect(nearer).toBe(true);
+    }
+  });
+
+  it('keeps every resource icon clear of its planet\'s building slots, so no building covers it', () => {
+    const planets = Object.entries(calibration.systems).filter(([id]) => !id.endsWith('gate'));
+    const spots = resourceIconSpots(calibration, lines.ring, planets.map(([id]) => ({ id, resource: 'fuel' })));
+    for (const s of spots) {
+      const slots = (calibration.systems[s.system as keyof typeof calibration.systems] as { slots?: { x: number; y: number }[] }).slots ?? [];
+      for (const q of slots) expect(Math.hypot(s.x - q.x, s.y - q.y), s.system).toBeGreaterThanOrEqual(ICON_SLOT_CLEAR);
     }
   });
 

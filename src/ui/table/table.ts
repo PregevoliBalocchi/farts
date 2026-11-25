@@ -21,7 +21,7 @@ import { BATTLE_VIEW, BattleView3D } from './battleview3d';
 import { battleScenario } from './scenario';
 import { createBoard3D } from './board3d';
 import { gpu } from './gpu';
-import type { Graphics, RoutePreview, ShipGlow } from './board3d';
+import type { Graphics, PickWhat, RoutePreview, ShipGlow } from './board3d';
 import type { Allocation, BattleRef, ChapterScoring } from '../../game/engine';
 import { AGENTS_VIEW, CourtAgents3D } from './courtagents3d';
 
@@ -171,7 +171,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
    * The menu beside a system on the map: what the local player can do there,
    * limited to `kinds` (the card's, a prelude's, or the one action picked first).
    */
-  let sysMenu: { system: string; kinds: ActionKind[]; prelude?: Resource } | null = null;
+  let sysMenu: { system: string; kinds: ActionKind[]; prelude?: Resource; only?: string[] } | null = null;
+  /** A Court card where both Influence and Secure can be done: its two choices, over the card. */
+  let courtMenu: { slot: number } | null = null;
   /** The system the map was last panned to show, so it is not pulled back while the player looks elsewhere. */
   let shownSystem: string | null = null;
   let modal: Modal | null = null;
@@ -273,7 +275,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         picture: params.get('map') === 'picture',
         showSpots: params.get('debug') === 'spots',
         // A system's card opens on a click (production/base-fixes.md #8), not on hover.
-        onPick: (id, shipOf, x, y) => pickSystem(id, shipOf, { x, y }),
+        onPick: (id, shipOf, x, y, what) => pickSystem(id, shipOf, { x, y }, what),
         onStill: () => showToast(t('gpu.still')),
         onView: () => placeMenu(),
         ...(calibrating
@@ -404,7 +406,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   /**
    * The allocation for the pending battle: with the 3D battle view, the hits
-   * placed one click at a time (none to start with); else the proposal. The
+   * placed one click at a time (none to start with, or all at once with
+   * Assign automatically); else the proposal. The
    * chosen raid either way.
    */
   function allocation(): Allocation | null {
@@ -415,9 +418,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const key = rollKeyOf(b);
     if (key !== battleKey || !placed) {
       battleKey = key;
-      // The hits start placed as the rules' usual order proposes (fresh ships first, buildings last): Confirm is
-      // often all it takes; clicking a piece, or Start again, changes it (production/base-fixes.md #20).
-      placed = { ...proposal, raid: [] };
+      // No hit placed after the roll (production/base-fixes.md #31): the attacker places them one click at a
+      // time, or Assign automatically places them in the rules' usual order (fresh ships first, buildings last).
+      placed = emptyAllocation({ ...proposal, raid: [] });
     }
     return { ...placed, raid: [...raid] };
   }
@@ -532,6 +535,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const out = new Set<string>();
     if (!myTurn()) return out;
     if (powerPick) return new Set(powerPick.options.map((o) => targetSystem(o)!));
+    const tp = tablePick(v);
+    if (tp?.kind === 'system') return new Set(tp.by.keys());
     const me = local();
     const live = v.systems.filter((s) => s.inPlay);
     if (i.step === 'system') {
@@ -556,11 +561,85 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   function courtPickable(i: Intent): Set<number> {
     const out = new Set<number>();
+    const tp = tablePick(withSay(tableView(ix, state, local(), lang)));
+    if (tp?.kind === 'court') return new Set([...tp.by.keys()].map(Number));
+    // Outside a step with actions left, every card Influence or Secure can take is lit: a click acts.
+    if (i.step === 'idle' && myTurn() && !modal && state.phase.type === 'actions') {
+      state.court.forEach((_, slot) => {
+        if (courtKinds(slot).length) out.add(slot);
+      });
+      return out;
+    }
     if (i.step !== 'court' || !myTurn()) return out;
     state.court.forEach((_, slot) => {
       if (can(act({ kind: i.kind, courtSlot: slot }, i.prelude))) out.add(slot);
     });
     return out;
+  }
+
+  /** Influence and Secure, whichever can be done now on the Court card in `slot` (outside a step). */
+  function courtKinds(slot: number): ('influence' | 'secure')[] {
+    return (['influence', 'secure'] as const).filter((kind) => can(act({ kind, courtSlot: slot })));
+  }
+
+  /** Influence or Secure over a Court card, when both can be done there ('' when none). */
+  function courtMenuHtml(): string {
+    if (!courtMenu) return '';
+    const slot = courtMenu.slot;
+    const opts = courtKinds(slot)
+      .map((kind) => button('court-do', t(`action.${kind}`), { args: { kind, slot }, cls: 'menu-opt', html: `<span class="mo-pic">${actionIcon(kind)}</span><span class="mo-name">${esc(t(`action.${kind}`))}</span>` }))
+      .join('');
+    const close = button('court-close', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
+    return `<div class="sys-menu court-menu s-${seatColor(local())}" role="dialog" aria-label="${esc(cardName(state.court[slot]?.card ?? ''))}"><div class="menu-head"><span>${esc(cardName(state.court[slot]?.card ?? ''))}</span>${close}</div><div class="menu-opts">${opts}</div></div>`;
+  }
+
+  /** Puts the Court menu under its card. */
+  function placeCourtMenu(): void {
+    const el = stage.querySelector<HTMLElement>('.court-menu');
+    if (!el || !courtMenu) return;
+    const card = stage.querySelector<HTMLElement>(`[data-act="court"][data-slot="${courtMenu.slot}"]`);
+    const r = stage.getBoundingClientRect();
+    const c = card?.getBoundingClientRect();
+    const x = c ? (c.left + c.width / 2 - r.left) / scale : STAGE.w / 2;
+    const y = c ? (c.bottom - r.top) / scale : 120;
+    el.style.left = `${Math.max(8, Math.min(STAGE.w - el.offsetWidth - 8, x - el.offsetWidth / 2))}px`;
+    el.style.top = `${y + 8}px`;
+  }
+
+  /**
+   * A card's choice made on the table instead of in a window (production/base-fixes.md #28): when every answer
+   * is one ambition, one Court card, one system or one player, those light up where they are and a click picks.
+   * Null when the answers are of another sort (the list window stays).
+   */
+  let decideCache: { key: string; options: DecisionOption[] } | null = null;
+  function tablePick(v: TableView): { kind: 'ambition' | 'court' | 'system' | 'player'; by: Map<string, number>; options: DecisionOption[] } | null {
+    if (v.phase !== 'decide' || !v.decision || state.phase.type !== 'decide' || state.phase.decision.player !== local()) return null;
+    if (keepChoice(state.phase.decision)) return null;
+    const key = `${state.log.length}|${v.decision.card}|${v.decision.effect}`;
+    if (decideCache?.key !== key) decideCache = { key, options: decisionOptions(ix, state, local()) };
+    const options = decideCache.options;
+    const answers = options.map((o, i) => ({ o, i })).filter((x) => x.o.parts.length);
+    if (!answers.length || answers.some((x) => x.o.parts.length !== 1)) return null;
+    const kind = answers[0].o.parts[0].kind;
+    if (kind !== 'ambition' && kind !== 'court' && kind !== 'system' && kind !== 'player') return null;
+    if (answers.some((x) => x.o.parts[0].kind !== kind || typeof x.o.parts[0].value === 'object')) return null;
+    return { kind, by: new Map(answers.map((x) => [String(x.o.parts[0].value), x.i])), options };
+  }
+
+  /** Lights the table's answers of a card's choice (tablePick) where they are drawn. */
+  function markTablePicks(v: TableView): void {
+    const tp = tablePick(v);
+    if (!tp || tp.kind === 'system') return;
+    stage.classList.add('table-pick');
+    for (const [value, i] of tp.by) {
+      const el =
+        tp.kind === 'ambition' ? stage.querySelector<HTMLElement>(`.abox[data-tip="amb:${CSS.escape(value)}"]`)
+        : tp.kind === 'court' ? stage.querySelector<HTMLElement>(`.court-tile[data-slot="${CSS.escape(value)}"]`)
+        : stage.querySelector<HTMLElement>(`.board[data-tip="seat:${CSS.escape(value)}"]`);
+      if (!el) continue;
+      el.classList.add('tpick');
+      el.dataset.pick = String(i);
+    }
   }
 
   function spendableSlots(v: TableView): Set<number> {
@@ -597,8 +676,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       }
       case 'allocate':
         return t('prompt.allocate');
-      case 'decide':
-        return t('prompt.decide');
+      case 'decide': {
+        const tp = tablePick(v);
+        return tp && v.decision ? t(`decide.onTable.${tp.kind}`, { card: cardName(v.decision.card) }) : t('prompt.decide');
+      }
       default:
         return myTurn() ? t('draft.yoursShort') : t('prompt.draft');
     }
@@ -726,7 +807,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   }
 
   /** What the local player can do in system `id`, by action kind (only kinds with something possible there). */
-  function menuOptions(v: TableView, id: string, kinds: readonly ActionKind[], prelude?: Resource): MenuOption[][] {
+  function menuOptions(v: TableView, id: string, kinds: readonly ActionKind[], prelude?: Resource, only?: readonly string[]): MenuOption[][] {
     const s = v.systems.find((x) => x.id === id);
     if (!s || !s.inPlay || !myTurn()) return [];
     const me = local();
@@ -742,7 +823,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     for (const kind of kinds) {
       let opts: MenuOption[] = [];
       if (kind === 'build') {
-        opts = (['ship', 'city', 'starport'] as const).map((what) => ({ kind, label: t(`build.${what}`), pic: pic(what, me), why: why({ kind: 'build', system: id, what }), args: { what } }));
+        opts = (['ship', 'city', 'starport'] as const).filter((what) => !only || only.includes(what)).map((what) => ({ kind, label: t(`build.${what}`), pic: pic(what, me), why: why({ kind: 'build', system: id, what }), args: { what } }));
       } else if (kind === 'repair') {
         const dmgBuilding = s.buildings.find((b) => b.owner === me && b.damaged);
         opts = (['ship', 'building'] as const).map((target) => ({ kind, label: t(`repair.${target}`), pic: pic(target === 'ship' ? 'ship' : (dmgBuilding?.type ?? 'city'), me), why: why({ kind: 'repair', system: id, target }), args: { target } }));
@@ -772,7 +853,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   function sysMenuHtml(v: TableView): string {
     const m = sysMenu;
     if (!m) return '';
-    const sections = menuOptions(v, m.system, m.kinds, m.prelude);
+    const sections = menuOptions(v, m.system, m.kinds, m.prelude, m.only);
     if (!sections.length) return '';
     const s = v.systems.find((x) => x.id === m.system);
     const body = sections
@@ -886,12 +967,20 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const why = payload && total > 0 ? whyNot(ix, state, act(payload, i.prelude)) : null;
     const ok = payload !== null && total > 0 && why === null;
     const here = v.systems.find((s) => s.id === i.system)?.ships.find((x) => x.player === me);
-    const more = total < MAX_STEPPER_DICE && can(act({ kind: 'battle', system: i.system, target, dice: { ...i.dice, skirmish: i.dice.skirmish + 1 } }, i.prelude));
+    // A die can be added when the pool it makes is legal, or becomes legal with more skirmish dice (a card's
+    // mandatory extra dice make the small pools on the way illegal): from none, a die can always be added again.
+    const grows = (dice: { skirmish: number; assault: number; raid: number }) => {
+      for (let k = 0; dice.skirmish + dice.assault + dice.raid + k <= MAX_STEPPER_DICE; k++) {
+        if (can(act({ kind: 'battle', system: i.system, target, dice: { ...dice, skirmish: dice.skirmish + k } }, i.prelude))) return true;
+      }
+      return false;
+    };
+    const more = total < MAX_STEPPER_DICE && grows({ ...i.dice, skirmish: i.dice.skirmish + 1 });
     const places = Math.min(MAX_STEPPER_DICE, Math.max(total + (more ? 1 : 0), (here?.fresh ?? 0) + (here?.damaged ?? 0)));
     // One tile per die type (production/base-fixes.md #20): the die, what it does, how many, - and +.
     const tiles = (['skirmish', 'assault', 'raid'] as const).map((d) => {
       const url = assetUrl(DIE_PICTURE[d]);
-      const plus = total < MAX_STEPPER_DICE && can(act({ kind: 'battle', system: i.system, target, dice: { ...i.dice, [d]: i.dice[d] + 1 } }, i.prelude));
+      const plus = total < MAX_STEPPER_DICE && grows({ ...i.dice, [d]: i.dice[d] + 1 });
       const name = t(`battle.dice.${d}`);
       return `<div class="b-type d-${d}${i.dice[d] ? ' used' : ''}">
         <span class="bt-die">${url ? `<img src="${esc(url)}" alt="">` : ''}</span>
@@ -1242,6 +1331,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
     if (v.phase === 'decide' && v.decision) {
       const declinable = can({ type: 'decide', player: me, args: {} });
+      const tp = tablePick(v);
+      if (tp) {
+        return `<div class="hint">${esc(t(`decide.onTable.${tp.kind}`, { card: cardName(v.decision.card) }))}</div><div class="btn-grid two">${button('decide-open', t('decide.list'))}${declinable ? button('decline', t('decide.decline')) : ''}</div>`;
+      }
       return `<div class="hint">${esc(t('decide.what', { card: cardName(v.decision.card), effect: t(`decide.effect.${v.decision.effect}`) }))}</div><div class="btn-grid two">${button('decide-open', t('decide.choose'), { cls: 'primary' })}${declinable ? button('decline', t('decide.decline')) : ''}</div>`;
     }
 
@@ -1592,7 +1685,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, [], true, v.phase !== 'gameOver')}</div>
       ${button('find-mine', t('btn.findMine'), { cls: `find-mine${Date.now() < findMineUntil ? ' on' : ''}`, title: t('btn.findMineTip'), html: `${icon('ship')}<span>${esc(t('btn.findMine'))}</span>` }).replace('<button ', `<button style="left:${REGIONS.local.x + REGIONS.local.w - FIND_W}px;top:${REGIONS.local.y - 36}px;width:${FIND_W}px" `)}
       <div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>
-      <div class="region mine${mineOpen ? ' open' : ''}" data-region="mine" style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 26, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen)}</div>
+      <div class="region mine${mineOpen ? ' open' : ''}" data-region="mine" style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 50, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen)}</div>
       <div class="region hand" data-region="hand" style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>
       <div class="region confirm" data-region="confirm" style="${place(REGIONS.confirm)}">${turnButtons}</div>
       ${ctx ? `<div class="region actions${myTurn() ? ' mine' : ' waiting'}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${myTurn() || !othersTurn(state, 3) ? placeUp(REGIONS.actions) : placeDown(REGIONS.waiting)}"><div class="actions-body">${ctx}</div>${v.phase === 'actions' ? '' : preludeTab(preludes, t, true)}</div>` : ''}
@@ -1621,6 +1714,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const powers = powerMenuHtml();
     if (powers) stage.insertAdjacentHTML('beforeend', powers);
     placePowerMenu();
+    if (courtMenu && (intent.step !== 'idle' || !courtKinds(courtMenu.slot).length)) courtMenu = null;
+    const cm = courtMenuHtml();
+    if (cm) stage.insertAdjacentHTML('beforeend', cm);
+    placeCourtMenu();
+    stage.classList.remove('table-pick');
+    markTablePicks(v);
     const war = battleWindow(v) || battleSetup(v);
     if (war) stage.insertAdjacentHTML('beforeend', war);
     const pick = draftWindow();
@@ -1637,8 +1736,63 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   // ---- input ----
   /** A click on system `id` (`at`: where, on the 3D map): a choice for the current step, else its card. */
-  function pickSystem(id: string, shipOf?: number, at?: { x: number; y: number }): void {
+  /**
+   * A click straight on what to act on (production/base-fixes.md #28), outside a step with actions left: your
+   * starport builds a ship, an empty building slot builds there (a city or a starport: both possible, the menu
+   * offers just those two), a city is taxed, your damaged building repaired, a rival fleet fought. True when the
+   * click was used.
+   */
+  function directPick(v: TableView, id: string, shipOf: number | undefined, what: PickWhat | undefined): boolean {
+    if (intent.step !== 'idle' || modal || v.phase !== 'actions' || !v.budget || v.budget.remaining < 1 || !myTurn()) return false;
+    const me = local();
+    const kinds = v.budget.kinds;
+    const s = v.systems.find((x) => x.id === id);
+    if (!s) return false;
+    const go = (p: ActionPayload) => {
+      if (!can(act(p))) return false;
+      sysMenu = null;
+      send(act(p));
+      return true;
+    };
+    const bd = what?.building ?? (what?.slot !== undefined && what.slot < s.buildings.length ? { ...s.buildings[what.slot], index: what.slot } : undefined);
+    if (bd) {
+      if (bd.owner === me && s.buildings[bd.index]?.damaged && kinds.includes('repair') && go({ kind: 'repair', system: id, target: 'building' })) return true;
+      if (bd.type === 'starport' && bd.owner === me && kinds.includes('build') && go({ kind: 'build', system: id, what: 'ship' })) return true;
+      if (bd.type === 'city' && kinds.includes('tax') && go({ kind: 'tax', system: id, cityOwner: bd.owner })) return true;
+      return false;
+    }
+    if (what?.slot !== undefined && kinds.includes('build')) {
+      const legal = (['city', 'starport'] as const).filter((w) => can(act({ kind: 'build', system: id, what: w })));
+      if (legal.length === 1) return go({ kind: 'build', system: id, what: legal[0] });
+      if (legal.length === 2) {
+        sysMenu = { system: id, kinds: ['build'], only: ['city', 'starport'] };
+        render();
+        return true;
+      }
+      return false;
+    }
+    if (shipOf !== undefined && shipOf !== me && kinds.includes('battle') && rivalsIn(v, id).includes(shipOf)) {
+      const here = s.ships.find((x) => x.player === me);
+      let n = Math.min(MAX_STEPPER_DICE, (here?.fresh ?? 0) + (here?.damaged ?? 0));
+      while (n > 1 && !can(act({ kind: 'battle', system: id, target: shipOf, dice: { skirmish: n } }))) n--;
+      if (n < 1 || !can(act({ kind: 'battle', system: id, target: shipOf, dice: { skirmish: n } }))) return false;
+      sysMenu = null;
+      intent = { step: 'battle', system: id, target: shipOf, dice: { skirmish: n, assault: 0, raid: 0 } };
+      render();
+      return true;
+    }
+    return false;
+  }
+
+  function pickSystem(id: string, shipOf?: number, at?: { x: number; y: number }, what?: PickWhat): void {
     const v = withSay(tableView(ix, state, local(), lang));
+    // A card's choice made on the map (production/base-fixes.md #28).
+    const tp = tablePick(v);
+    if (tp?.kind === 'system') {
+      const i = tp.by.get(id);
+      if (i !== undefined) send({ type: 'decide', player: local(), args: tp.options[i].args });
+      return;
+    }
     if (powerPick) {
       // A card power picking its system: its one use there at once, else its uses there beside the card.
       const here = powerPick.options.filter((o) => targetSystem(o) === id);
@@ -1657,6 +1811,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       render();
       return;
     }
+    if (directPick(v, id, shipOf, what)) return;
     // Outside a step, with actions left: the menu of what can be done in that system.
     if (intent.step === 'idle' && !modal && v.phase === 'actions' && v.budget && v.budget.remaining > 0 && myTurn()) {
       const kinds = v.budget.kinds.filter((k) => k !== 'influence' && k !== 'secure');
@@ -1944,10 +2099,25 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         break;
       case 'court': {
         const slot = Number(d.slot);
-        // A Court card acts only while Influence or Secure picks one; hovering shows it large.
+        // Influence or Secure picked first: that one. Outside a step: the only one possible there at once, or a
+        // small menu over the card when both are (production/base-fixes.md #28). Hovering shows it large.
         if (courtPickable(intent).has(slot) && intent.step === 'court') return void send(act({ kind: intent.kind, courtSlot: slot }, intent.prelude));
+        if (intent.step === 'idle' && courtPickable(intent).has(slot)) {
+          const kinds = courtKinds(slot);
+          if (kinds.length === 1) return void send(act({ kind: kinds[0], courtSlot: slot }));
+          if (kinds.length === 2) {
+            courtMenu = { slot };
+            break;
+          }
+        }
         return;
       }
+      case 'court-do':
+        courtMenu = null;
+        return void send(act({ kind: d.kind as 'influence' | 'secure', courtSlot: Number(d.slot) }));
+      case 'court-close':
+        courtMenu = null;
+        break;
       case 'court-sort':
         courtSort = COURT_SORTS.includes(el.dataset.sort as CourtSort) ? (el.dataset.sort as CourtSort) : 'got';
         break;
@@ -2006,6 +2176,20 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     render();
   }
 
+  stage.addEventListener(
+    'click',
+    (e) => {
+      const el = (e.target as Element).closest<HTMLElement>('.tpick');
+      if (!el || el.dataset.pick === undefined) return;
+      const tp = tablePick(withSay(tableView(ix, state, local(), lang)));
+      const o = tp?.options[Number(el.dataset.pick)];
+      if (!o) return;
+      e.stopPropagation();
+      e.preventDefault();
+      send({ type: 'decide', player: local(), args: o.args });
+    },
+    true,
+  );
   stage.addEventListener('click', (e) => {
     const target = e.target as Element;
     const sys = target.closest('[data-sys]') as HTMLElement | null;
@@ -2301,6 +2485,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
     if (e.key === 'Escape') {
       if (powerPick) powerPick = null;
+      else if (courtMenu) courtMenu = null;
       else if (powerMenu) powerMenu = null;
       else if (drop) drop = null;
       else if (sysMenu) {

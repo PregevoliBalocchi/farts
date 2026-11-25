@@ -151,7 +151,7 @@
   "battle.left.hits": "Hits {n}/{total}",
   "battle.left.building": "Building hits {n}/{total}",
   "battle.left.self": "Hits on you {n}/{total}",
-  "battle.auto": "Suggest",
+  "battle.auto": "Assign automatically",
   "battle.reset": "Start over",
   "battle.confirm": "Confirm hits",
   "battle.watching": "{who} is assigning the hits",
@@ -159,7 +159,7 @@
   "battle.defender.free": "the Free States",
   "battle.defender.blight": "the Blight",
   "battle.noHits": "No hits",
-  "battle.howTo": "The hits are already placed as the rules usually go: confirm, or click a circled ship or building to change them (Start again clears them).",
+  "battle.howTo": "Place the hits: click a circled ship or building for each, or Assign automatically to place them in the usual order (Start again removes them).",
   "decide.title": "Card choice",
   "decide.decline": "Decline",
   "decide.send": "Send",
@@ -399,5 +399,11 @@
   "settings.graphics.auto": "Automatic (lighter by itself if slow)",
   "settings.graphics.lite": "Light (for slow computers)",
   "settings.graphics.still": "Minimal (no idle animation)",
-  "gpu.still": "The map is still slow: its idle animations stopped. Settings › Graphics changes it."
+  "gpu.still": "The map is still slow: its idle animations stopped. Settings › Graphics changes it.",
+  "decide.onTable.ambition": "{card}: click the ambition you choose",
+  "decide.onTable.court": "{card}: click the Court card you choose",
+  "decide.onTable.system": "{card}: click the system you choose on the map",
+  "decide.onTable.player": "{card}: click the player you choose",
+  "decide.list": "List",
+  "header.kept": "its number stays {n} (Secret Order)"
 }
