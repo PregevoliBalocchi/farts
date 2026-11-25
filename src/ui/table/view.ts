@@ -173,7 +173,8 @@ export interface TableView {
   rivals: PlayerId[];
   supply: { resource: Resource; count: number }[];
   players: PlayerView[];
-  lead: (ActionCardView & { zeroed: boolean }) | null;
+  /** `kept`: an ambition was declared on it this round but a card (Secret Order) kept its number. */
+  lead: (ActionCardView & { zeroed: boolean; kept: boolean }) | null;
   plays: PlayView[];
   /** Who seized the initiative this round, if anyone. */
   seizedBy: PlayerId | null;
@@ -377,7 +378,7 @@ export function tableView(ix: ContentIndex, s: GameState, local: PlayerId, lang 
     rivals: rivalsOf(s.playerCount, local),
     supply: RESOURCES.map((r) => ({ resource: r, count: s.resourceSupply[r] ?? 0 })),
     players: s.players.map((p) => playerView(ix, s, p.id)),
-    lead: leadCard ? { ...leadCard, zeroed: !!leadPlay?.zeroed } : null,
+    lead: leadCard ? { ...leadCard, zeroed: !!leadPlay?.zeroed, kept: leadPlay?.zeroed === false } : null,
     plays: s.round.plays.map((p) => ({
       player: p.player,
       mode: p.mode,

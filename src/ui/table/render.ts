@@ -104,6 +104,7 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, prom
   const lead = v.lead ? t('header.lead', { card: cardLabel(t, v.lead) }) : '';
   const notes = [
     lead && declared.length ? `${lead} · ${t('header.declared', { amb: declared.join(', ') })}` : lead,
+    v.lead?.kept ? t('header.kept', { n: v.lead.number }) : '',
     v.seizedBy !== null ? t('header.seize', { name: playerName(t, v.seizedBy) }) : '',
   ].filter(Boolean);
   const last = v.recent[0] ?? t('empty');
@@ -408,7 +409,9 @@ function arrangeStrip(p: PlayerView, t: Translate): string {
 }
 
 /** Width of one of the local player's own Court cards (stage pixels). */
-export const OWN_CARD_W = 118;
+export const OWN_CARD_W = 106;
+/** Room (stage pixels) between the guild cards and the lore cards in the own Court. */
+const LORE_GAP = 18;
 
 /** How the local player's own Court cards are ordered: as acquired, by type, or by resource. */
 export type CourtSort = 'got' | 'kind' | 'resource';
@@ -434,27 +437,36 @@ export function sortCourt<T extends { kind?: string | null; resource?: string | 
  * `lit`: the cards whose power can be used now (they glow and use it on a click).
  */
 export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data: (id: string) => CourtFaceData, width: number, lit: ReadonlySet<string> = new Set(), open = false): string {
-  const cards = sortCourt([...p.court, ...p.lore].map(data), sort);
+  // Guild cards and lore cards in two groups, apart (production/base-fixes.md #29).
+  const guild = sortCourt(p.court.map(data), sort);
+  const lore = sortCourt(p.lore.map(data), sort);
+  const n = guild.length + lore.length;
   // One row of whole cards, a small gap between them; when they do not fit they overlap just enough.
   // Opened (leftwards over the bar), the cards sit side by side in rows.
   const w = OWN_CARD_W;
-  const fit = cards.length > 1 ? Math.min(8, Math.floor((width - cards.length * w) / (cards.length - 1))) : 0;
+  // Two groups: the gap and the lore group's rule (9px) between them, and one card fewer overlapping.
+  const both = guild.length > 0 && lore.length > 0;
+  const room = width - (both ? LORE_GAP + 9 : 0);
+  const steps = n - (both ? 2 : 1);
+  const fit = steps > 0 ? Math.min(8, Math.floor((room - n * w) / steps)) : 0;
   const gap = open ? 8 : fit;
   // The long bar on the left edge that opens the whole Court leftwards (or closes it), when there are cards.
-  const toggle = cards.length
+  const toggle = n
     ? `<button type="button" class="mine-open" data-act="mine-open" aria-expanded="${open}" title="${esc(t(open ? 'mine.collapse' : 'mine.expand'))}" aria-label="${esc(t(open ? 'mine.collapse' : 'mine.expand'))}">${open ? '&#x25B6;' : '&#x25C0;'}</button>`
     : '';
   const sorts = COURT_SORTS.map((k) => `<button type="button" class="cs-btn${k === sort ? ' on' : ''}" data-act="court-sort" data-sort="${k}" aria-pressed="${k === sort}">${esc(t(`mine.sort.${k}`))}</button>`).join('');
+  // Each card with its resource above it, always in sight even where the next card covers its corner.
   // A card whose power can be used now glows and uses it on a click.
-  const faces = cards
-    .map((c) =>
-      lit.has(c.card)
-        ? `<button type="button" class="mine-card lit k-${esc(c.kind ?? 'none')}" data-act="power-card" data-card="${esc(c.card)}" data-zoom="${esc(c.card)}" title="${esc(t('powers.title'))}">${cardFaceById(c.card)}</button>`
-        : `<div class="mine-card k-${esc(c.kind ?? 'none')}" data-zoom="${esc(c.card)}" tabindex="0">${cardFaceById(c.card)}</div>`,
-    )
-    .join('');
+  const item = (c: CourtFaceData) => {
+    const res = c.resource ? `<span class="mine-res">${resIcon(c.resource as Resource, t)}</span>` : '<span class="mine-res"></span>';
+    const face = lit.has(c.card)
+      ? `<button type="button" class="mine-card lit k-${esc(c.kind ?? 'none')}" data-act="power-card" data-card="${esc(c.card)}" data-zoom="${esc(c.card)}" title="${esc(t('powers.title'))}">${cardFaceById(c.card)}</button>`
+      : `<div class="mine-card k-${esc(c.kind ?? 'none')}" data-zoom="${esc(c.card)}" tabindex="0">${cardFaceById(c.card)}</div>`;
+    return `<div class="mine-item">${res}${face}</div>`;
+  };
+  const groups = [guild, lore].filter((g) => g.length).map((g, i) => `<div class="mine-group${i ? ' lore' : ''}">${g.map(item).join('')}</div>`).join('');
   return `${toggle}<div class="mine-head" aria-label="${esc(t('mine.title'))}">${sorts}</div>
-    <div class="mine-cards" style="--w:${w}px;--gap:${gap}px">${faces || `<span class="mine-empty">${esc(t('mine.empty'))}</span>`}</div>`;
+    <div class="mine-cards${gap < 0 ? ' stacked' : ''}" style="--w:${w}px;--gap:${gap}px;--lore-gap:${LORE_GAP}px">${groups || `<span class="mine-empty">${esc(t('mine.empty'))}</span>`}</div>`;
 }
 
 /** Glyphs of the ambition a card of this number can declare ('any': a free choice), or [] when it declares none. */

@@ -1856,3 +1856,31 @@ button.supply:hover { border-color: var(--rule-hi); }
   100% { transform: var(--show); }
 }
 .no-motion .battle-win .b-dice.rolling .b-die.b-cube, .no-motion .battle-win .b-dice.rolling .b-cube .cube { animation: none; }
+
+/* Choices made on the table (production/base-fixes.md #28): the answers glow where they are, the rest dims. */
+.tbl-stage .tpick { cursor: pointer; position: relative; z-index: 2; animation: tpick-glow 1.4s ease-in-out infinite alternate; }
+.tbl-stage .abox.tpick { box-shadow: 0 0 0 2px #f3c463, 0 0 18px #f3c463aa; }
+.tbl-stage .court-tile.tpick .court-face, .tbl-stage .court-tile.tpick { box-shadow: 0 0 0 3px #f3c463, 0 0 20px #f3c463aa; }
+.tbl-stage .board.tpick { box-shadow: 0 0 0 3px #f3c463, 0 0 22px #f3c463aa; }
+.tbl-stage.table-pick .abox:not(.tpick), .tbl-stage.table-pick .court-tile:not(.tpick) { opacity: .45; filter: grayscale(.5); }
+@keyframes tpick-glow { from { filter: brightness(1); } to { filter: brightness(1.25); } }
+.no-motion .tbl-stage .tpick { animation: none; }
+.tbl-stage .court-menu { z-index: 70; min-width: 0; }
+.tbl-stage .court-menu .menu-opts { display: flex; gap: 8px; }
+
+/* Own Court (production/base-fixes.md #29): cards inside the box, each with its resource above it; overlapping
+   cards are parted by a shadow; guild cards and lore cards in two groups. */
+.tbl-stage .mine-cards { align-items: flex-end; }
+.tbl-stage .mine-group { display: flex; align-items: flex-end; flex: none; }
+.tbl-stage .mine-group.lore { margin-left: var(--lore-gap, 18px); padding-left: 8px; border-left: 1px dashed #c9a25a66; }
+.tbl-stage .mine-item { position: relative; flex: none; display: flex; flex-direction: column; align-items: flex-start; margin-left: var(--gap, 8px); }
+.tbl-stage .mine-group .mine-item:first-child { margin-left: 0; }
+.tbl-stage .mine-item .mine-card { margin-left: 0; }
+.tbl-stage .mine-res { height: 22px; display: flex; align-items: center; padding-left: 2px; }
+.tbl-stage .mine-res > span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #000c; box-shadow: 0 0 0 1px #c9a25a88; }
+.tbl-stage .mine-res svg { width: 16px; height: 16px; }
+.tbl-stage .mine-cards.stacked .mine-item + .mine-item .mine-card { box-shadow: -7px 0 9px -2px #000, 0 2px 6px #000c; }
+.tbl-stage .mine-item:hover { z-index: 3; }
+.tbl-stage .region.mine.open .mine-cards { flex-wrap: wrap; }
+.tbl-stage .region.mine.open .mine-group { flex-wrap: wrap; gap: 10px 8px; }
+.tbl-stage .region.mine.open .mine-item { margin-left: 0; }

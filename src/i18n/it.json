@@ -151,7 +151,7 @@
   "battle.left.hits": "Colpi {n}/{total}",
   "battle.left.building": "Colpi edifici {n}/{total}",
   "battle.left.self": "Colpi a te {n}/{total}",
-  "battle.auto": "Proposta automatica",
+  "battle.auto": "Assegna in automatico",
   "battle.reset": "Ricomincia",
   "battle.confirm": "Conferma i colpi",
   "battle.watching": "{who} sta assegnando i colpi",
@@ -159,7 +159,7 @@
   "battle.defender.free": "gli Stati Liberi",
   "battle.defender.blight": "il Blight",
   "battle.noHits": "Nessun colpo",
-  "battle.howTo": "I colpi sono già assegnati nell'ordine abituale: conferma, oppure clicca una nave o un edificio cerchiato per cambiarli (Ricomincia li toglie).",
+  "battle.howTo": "Assegna i colpi: clicca una nave o un edificio cerchiato per ciascuno, oppure Assegna in automatico per metterli nell’ordine abituale (Ricomincia li toglie).",
   "decide.title": "Scelta di una carta",
   "decide.decline": "Rinuncia",
   "decide.send": "Invia",
@@ -399,5 +399,11 @@
   "settings.graphics.auto": "Automatica (si alleggerisce da sola se lenta)",
   "settings.graphics.lite": "Leggera (per computer lenti)",
   "settings.graphics.still": "Minima (niente animazioni continue)",
-  "gpu.still": "La mappa è ancora lenta: ho fermato le animazioni continue. Si cambia in Impostazioni › Grafica."
+  "gpu.still": "La mappa è ancora lenta: ho fermato le animazioni continue. Si cambia in Impostazioni › Grafica.",
+  "decide.onTable.ambition": "{card}: clicca l'ambizione che scegli",
+  "decide.onTable.court": "{card}: clicca la carta Corte che scegli",
+  "decide.onTable.system": "{card}: clicca sulla mappa il sistema che scegli",
+  "decide.onTable.player": "{card}: clicca il giocatore che scegli",
+  "decide.list": "Elenco",
+  "header.kept": "il numero resta {n} (Ordine Segreto)"
 }

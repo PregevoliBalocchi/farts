@@ -317,15 +317,27 @@ export interface IconSpot {
  * Each planet's resource icon, on its disc's rim on the side away from the
  * ring (as the board prints it), in picture pixels.
  */
+/** Room (picture pixels) a resource icon keeps from a building slot's centre: half a base and the icon. */
+export const ICON_SLOT_CLEAR = 60;
+
 export function resourceIconSpots(calib: BoardCalibration, ring: BoardLines['ring'], systems: readonly { id: string; resource: string | null }[]): IconSpot[] {
   const out: IconSpot[] = [];
   for (const s of systems) {
     const d = calib.systems[s.id]?.disc;
     if (!d || !s.resource) continue;
-    const dx = d.x - ring.cx;
-    const dy = d.y - ring.cy;
-    const len = Math.hypot(dx, dy) || 1;
-    out.push({ system: s.id, resource: s.resource, x: d.x + (dx / len) * d.r * 0.9, y: d.y + (dy / len) * d.r * 0.9, r: 17 });
+    // On the rim, as near straight away from the ring as it can be while no building slot (where a city or
+    // starport base would cover it) is in the way.
+    const out0 = Math.atan2(d.y - ring.cy, d.x - ring.cx);
+    const slots = calib.systems[s.id]?.slots ?? [];
+    let best = { x: 0, y: 0, cost: Infinity };
+    for (let deg = -180; deg < 180; deg += 5) {
+      const a = out0 + (deg * Math.PI) / 180;
+      const p = { x: d.x + Math.cos(a) * d.r * 0.9, y: d.y + Math.sin(a) * d.r * 0.9 };
+      const room = Math.min(Infinity, ...slots.map((q) => Math.hypot(p.x - q.x, p.y - q.y)));
+      const cost = Math.abs(deg) + (room < ICON_SLOT_CLEAR ? 1000 + (ICON_SLOT_CLEAR - room) * 10 : 0);
+      if (cost < best.cost) best = { ...p, cost };
+    }
+    out.push({ system: s.id, resource: s.resource, x: best.x, y: best.y, r: 17 });
   }
   return out;
 }

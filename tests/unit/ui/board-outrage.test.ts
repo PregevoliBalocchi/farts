@@ -112,4 +112,15 @@ describe('own Court panel', () => {
     expect(open).toContain('aria-expanded="true"');
     expect(open).toContain('--gap:8px');
   });
+
+  it('keeps guild cards and lore cards in two groups, each card with its resource above it, parted by a shadow when they overlap', () => {
+    const v = tableView(ix, game(ix, 3, 7, 0), 0);
+    const data = (id: string) => ({ card: id, kind: id.startsWith('l') ? 'lore' : 'guild', resource: id.startsWith('l') ? null : 'fuel', keys: 0, name: id, text: '' });
+    const p = { ...v.players[0], court: ['g1', 'g2', 'g3', 'g4', 'g5', 'g6'], lore: ['l1'] };
+    const html = ownCourtPanel(p, t, 'got', data as never, 454);
+    expect(count(html, 'class="mine-group')).toBe(2);
+    expect(html.indexOf('mine-group lore')).toBeGreaterThan(html.lastIndexOf('data-zoom="g6"'));
+    expect(count(html, 'class="r-fuel')).toBe(6);
+    expect(html).toContain('mine-cards stacked');
+  });
 });

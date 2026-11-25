@@ -61,7 +61,7 @@ export interface Board3DOptions {
   /** False with ?motion=off: no pulsing rings. */
   motion: boolean;
   /** A system was clicked (anywhere in its area) at client point x, y; `shipOf`: the seat whose ship model was clicked, if one was. */
-  onPick(id: string, shipOf: number | undefined, x: number, y: number): void;
+  onPick(id: string, shipOf: number | undefined, x: number, y: number, what?: PickWhat): void;
   /** Automatic graphics found even the lighter drawing too slow and stopped the idle animations. */
   onStill?(): void;
   /** The view moved (pan or zoom): things placed over the map follow it. */
@@ -190,6 +190,8 @@ export class Board3D {
   /** The system under the pointer, outlined so a click's target is plain before clicking (production/base-fixes.md #5). */
   private hoverRing: THREE.Mesh | null = null;
   private hoverId: string | null = null;
+  /** What the last hit touched besides its system (see PickWhat). */
+  private hitWhat: PickWhat | undefined;
   private holoMats = new Map<number, THREE.ShaderMaterial>();
   /** Glowing engine trails, kept after their ship lands until they fade out. */
   private trails: EngineTrail[] = [];
@@ -881,6 +883,7 @@ export class Board3D {
       const arc = buildingSpots(s.buildings.length);
       s.buildings.forEach((bd, i) => {
         const o = piece(bd.type, bd.owner, { damaged: bd.damaged });
+        o.userData.building = { type: bd.type, owner: bd.owner, index: i };
         // On the owner's picture a building sits on its slot; elsewhere on an arc under the system.
         const at = slots?.[i];
         if (at) o.position.set(at.x, 0, at.z);
@@ -1265,12 +1268,14 @@ export class Board3D {
   private hit(e: PointerEvent): string | null {
     this.ray.setFromCamera(this.pointer(e), this.camera);
     this.hitShipOf = undefined;
+    this.hitWhat = undefined;
     // A ship or building model picks its system; else the system's disc under the pointer.
     for (const h of this.ray.intersectObjects(this.pieces.children, true)) {
       if (!(h.object as THREE.Mesh).isMesh) continue;
       for (let o: THREE.Object3D | null = h.object; o; o = o.parent) {
         if (o.userData.system) {
           this.hitShipOf = o.userData.shipOf as number | undefined;
+          if (o.userData.building) this.hitWhat = { building: o.userData.building as PickWhat['building'] };
           return o.userData.system as string;
         }
       }
@@ -1290,6 +1295,12 @@ export class Board3D {
         best = id;
       }
     }
+    // On one of that system's building slots: that slot.
+    const slots = best ? slotSpots(this.calib, best) : null;
+    if (slots) {
+      const near = slots.map((p, i) => ({ i, d: Math.hypot(at.x - p.x, at.z - p.z) })).sort((a, b) => a.d - b.d)[0];
+      if (near && near.d < SLOT_REACH) this.hitWhat = { slot: near.i };
+    }
     return best;
   }
 
@@ -1306,7 +1317,7 @@ export class Board3D {
       return;
     }
     const id = this.hit(e);
-    if (id) this.opts.onPick(id, this.hitShipOf, e.clientX, e.clientY);
+    if (id) this.opts.onPick(id, this.hitShipOf, e.clientX, e.clientY, this.hitWhat);
   }
 
   private hover(e: PointerEvent): void {
@@ -1455,6 +1466,15 @@ const CLICK_SLOP = 10;
 const GROUND = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 /** How far from a system its area reaches, in its disc's radii (beyond: empty space, no system). */
 const AREA_REACH = 2.6;
+
+/** What a click on the map touched besides its system: a building (its slot index) or an empty building slot. */
+export interface PickWhat {
+  building?: { type: 'city' | 'starport'; owner: number; index: number };
+  slot?: number;
+}
+
+/** How near (world units) a click must fall to a building slot's centre to pick that slot. */
+const SLOT_REACH = 0.42;
 
 /** How the map draws: full (lighter by itself when slow), lighter, or lighter and still. */
 export type Graphics = 'auto' | 'lite' | 'still';
