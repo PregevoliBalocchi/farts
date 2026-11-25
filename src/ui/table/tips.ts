@@ -7,7 +7,7 @@ import { RESOURCES } from '../../game/engine';
 import type { ContentIndex, Resource } from '../../game/engine';
 import type { Translate } from '../../i18n';
 import { icon, seatColor, seatIcon } from './assets';
-import { esc, pieceIcon, playerName, resIcon, systemTag, seatBoardCard } from './render';
+import { AMB_RULE, esc, pieceIcon, playerName, resIcon, systemTag, seatBoardCard } from './render';
 import type { AmbitionRowView, PlayerView, SystemView, TableView } from './view';
 
 /** What a hover card is about: a seat, a map system or an ambition. */
@@ -90,7 +90,7 @@ function ambitionTip(ix: ContentIndex, a: AmbitionRowView, t: Translate): string
     .map((x) => `<div class="tip-tally">${seatTag(t, x.player)}<b class="num">${x.value}</b>${place(x.player)}</div>`)
     .join('');
   return `<div class="tip-head"><span class="tip-title">${esc(t(`ambition.${a.id}`))}</span></div>
-    <div class="tip-sub">${esc(`${t('detail.measures')}: ${measure}`)}${a.markers.length ? '' : ` · ${esc(t('detail.notDeclared'))}`}</div>
+    <div class="tip-sub">${esc(`${t('detail.measures')}: ${measure}`)}${a.markers.length ? '' : ` · ${esc(t('detail.notDeclared'))}`}</div>${AMB_RULE[a.id] ? `<div class="tip-sub">${esc(t(AMB_RULE[a.id]))}</div>` : ''}
     <div class="tip-tallies">${tallies}</div>`;
 }
 

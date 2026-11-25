@@ -1,5 +1,5 @@
 // Playwright: the problems the 2026-11-25 simulated playtest found, each as the check its fix must
-// turn green (production/piano-blindatura-tavolo-2026-11-25.md, Fase 0 step 7). Every test is marked
+// turn green (production/piano-blindatura-tavolo-2026-11-25.md, Fase 0 step 7). A test still open is marked
 // `test.fail()`: it fails today, so the suite passes; when a fix lands, the test passes, Playwright
 // reports "expected to fail but passed", and the fix's PR removes the mark. A check that has never
 // been seen failing is not known to test anything (.claude/rules/test-standards.md).
@@ -38,7 +38,6 @@ test.describe('known problems (playtest 2026-11-25)', () => {
   });
 
   test('in a 2-player game the empty part of the rivals region lets clicks reach the map (piano 2.1)', async ({ page }) => {
-    test.fail();
     await page.setViewportSize({ width: 1920, height: 1080 });
     await open(page, 'players=2&seed=3&seat=0');
     const hit = await page.evaluate(() => {
@@ -53,7 +52,6 @@ test.describe('known problems (playtest 2026-11-25)', () => {
   });
 
   test('the zoom of a Court card leaves the next Court card clickable (piano 2.4)', async ({ page }) => {
-    test.fail();
     await page.setViewportSize({ width: 1920, height: 1080 });
     await open(page, 'players=3&seed=3&seat=0');
     const cards = page.locator('[data-region="court"] [data-act="court"]');
@@ -69,7 +67,6 @@ test.describe('known problems (playtest 2026-11-25)', () => {
   });
 
   test('the zoomed card names the card, not its id, for a screen reader (piano A1)', async ({ page }) => {
-    test.fail();
     await page.setViewportSize({ width: 1920, height: 1080 });
     await open(page, 'players=3&seed=3&seat=0');
     await page.locator('[data-region="court"] [data-act="court"]').nth(0).hover();
@@ -78,16 +75,67 @@ test.describe('known problems (playtest 2026-11-25)', () => {
     for (const l of labels) expect(l).not.toMatch(RAW_ID);
   });
 
+  test('an ambition card opened by hovering stays off the command bar (piano 2.8)', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await open(page, 'players=2&seed=11&seat=0');
+    // Into the actions, where the bar is widest (its buttons reach the ambitions' column).
+    await page.evaluate(() => {
+      const s = structuredClone(window.game!.state) as unknown as { initiative: number };
+      s.initiative = 0;
+      window.game!.load(s as never);
+    });
+    await page.locator('.hand-card:not(.unplayable)').first().click();
+    await page.locator('.cmd-bar [data-act="lead"]').click();
+    await expect(page.locator('.cmd-bar [data-act="end-turn"]')).toBeVisible();
+    const rows = page.locator('[data-tip^="amb:"]');
+    const n = await rows.count();
+    expect(n).toBeGreaterThan(0);
+    const overlaps: string[] = [];
+    for (let i = 0; i < n; i++) {
+      if (!(await rows.nth(i).isVisible())) continue;
+      await rows.nth(i).hover();
+      const hit = await page.evaluate(() => {
+        const tip = document.querySelector('.hover-tip:not(.hover-sub):not([hidden])')?.getBoundingClientRect();
+        const bar = document.querySelector('.cmd-bar')?.getBoundingClientRect();
+        if (!tip || !bar || !bar.width) return '';
+        const over = tip.left < bar.right && tip.right > bar.left && tip.top < bar.bottom && tip.bottom > bar.top;
+        return over ? `${Math.round(tip.top)}-${Math.round(tip.bottom)} over ${Math.round(bar.top)}` : '';
+      });
+      if (hit) overlaps.push(`${await rows.nth(i).getAttribute('data-tip')}: ${hit}`);
+    }
+    expect(overlaps).toEqual([]);
+  });
+
   test('table controls are at least 24 px on a 1366×768 screen (piano 2.7)', async ({ page }) => {
-    test.fail();
     await page.setViewportSize({ width: 1366, height: 768 });
     await open(page, 'players=3&seed=3&seat=0');
-    const small = await page.evaluate(() =>
-      [...document.querySelectorAll('[data-act="amb-toggle"], [data-act="find-mine"], [data-act="court-sort"], [data-act="mine-open"]')]
-        .map((e) => ({ act: (e as HTMLElement).dataset.act, b: e.getBoundingClientRect() }))
-        .filter(({ b }) => b.width > 0 && (b.width < 24 || b.height < 24))
-        .map(({ act, b }) => `${act} ${Math.round(b.width)}×${Math.round(b.height)}`),
-    );
+    // Seat 0 holds Court cards (the own Court's side tab shows only then) and is about to lead.
+    await page.evaluate(() => {
+      const s = structuredClone(window.game!.state) as unknown as { courtDeck: string[]; players: { court: string[] }[] };
+      s.players[0].court = s.courtDeck.splice(0, 4);
+      window.game!.load(s as never);
+    });
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await expect(page.locator('[data-act="mine-open"]')).toHaveCount(1);
+    // Measured as a press reaches it: the box, grown by its invisible ::after hit area (base-fixes #42).
+    const small = await page.evaluate(() => {
+      const hit = (el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        const a = getComputedStyle(el, '::after');
+        if (a.content === 'none' || a.position !== 'absolute') return { w: r.width, h: r.height };
+        const k = el.offsetWidth ? r.width / el.offsetWidth : 1;
+        const px = (v: string) => (v.endsWith('px') ? parseFloat(v) * k : 0);
+        return {
+          w: Math.max(r.right, r.right - px(a.right)) - Math.min(r.left, r.left + px(a.left)),
+          h: Math.max(r.bottom, r.bottom - px(a.bottom)) - Math.min(r.top, r.top + px(a.top)),
+        };
+      };
+      return [...document.querySelectorAll<HTMLElement>('[data-act="amb-toggle"], [data-act="find-mine"], [data-act="court-sort"], [data-act="mine-open"]')]
+        .filter((e) => e.getBoundingClientRect().width > 0)
+        .map((e) => ({ act: e.dataset.act, b: hit(e) }))
+        .filter(({ b }) => b.w < 24 || b.h < 24)
+        .map(({ act, b }) => `${act} ${Math.round(b.w)}×${Math.round(b.h)}`);
+    });
     expect(small).toEqual([]);
   });
 });

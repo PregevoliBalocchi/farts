@@ -210,10 +210,21 @@ export async function scan(page, lang) {
       if (cs.overflow === 'visible' && cs.textOverflow !== 'ellipsis' && cs.webkitLineClamp === 'none') continue;
       if (el.scrollWidth > el.clientWidth + 2 || el.scrollHeight > el.clientHeight + 3) out.push(['cut', `${where(el)}: "${(el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 50)}"`]);
     }
+    // The area a press reaches: the box, grown by an invisible ::after hit area (base-fixes #42).
+    const hitBox = (el) => {
+      const r = el.getBoundingClientRect();
+      const a = getComputedStyle(el, '::after');
+      if (a.content === 'none' || a.position !== 'absolute') return { w: r.width, h: r.height };
+      const k = el.offsetWidth ? r.width / el.offsetWidth : 1;
+      const px = (v) => (String(v).endsWith('px') ? parseFloat(v) * k : 0);
+      const left = Math.min(r.left, r.left + px(a.left)), right = Math.max(r.right, r.right - px(a.right));
+      const top = Math.min(r.top, r.top + px(a.top)), bottom = Math.max(r.bottom, r.bottom - px(a.bottom));
+      return { w: right - left, h: bottom - top };
+    };
     for (const el of document.querySelectorAll('[data-act]')) {
       if (!vis(el) || el.disabled) continue;
-      const b = el.getBoundingClientRect();
-      if (b.width < 24 || b.height < 24) out.push(['tiny', `${where(el)}: ${el.dataset.act} "${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 30)}"`, `${Math.round(b.width)}×${Math.round(b.height)}`]);
+      const b = hitBox(el);
+      if (b.w < 24 || b.h < 24) out.push(['tiny', `${where(el)}: ${el.dataset.act} "${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 30)}"`, `${Math.round(b.w)}×${Math.round(b.h)}`]);
     }
     // A picture slot showing words instead of a picture.
     for (const el of document.querySelectorAll('.mo-pic, .well, .rd-card, .bt-die, .dr-card')) {
