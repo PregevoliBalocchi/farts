@@ -589,7 +589,8 @@ export function ambitionsStrip(ix: ContentIndex, v: TableView, t: Translate): st
 }
 
 /** The cleanup note printed in an ambition's box (i18n key), for the ambitions that have one. */
-const AMB_RULE: Record<string, string> = { captives: 'amb.rule.captives', trophies: 'amb.rule.trophies' };
+/** The ambitions whose declaration changes the cleanup (their note's text key). */
+export const AMB_RULE: Record<string, string> = { captives: 'amb.rule.captives', trophies: 'amb.rule.trophies' };
 
 /** An ambition marker as the kit's token (its side by its values), else the drawn hexagon. */
 function ambMarker(m: { id: string; first: number; second: number }, t: Translate): string {
@@ -663,21 +664,28 @@ export function handPanel(ix: ContentIndex, v: TableView, t: Translate, selected
   return `<div class="hand-top">${tools}</div><div class="hand-cards" aria-label="${esc(t(mine ? 'hand.title' : 'hand.waiting'))}">${cards || `<div class="hand-empty">${esc(t('empty'))}</div>`}</div>`;
 }
 
-/** A Court card as shown in the picker (the large variant). */
-export function largeCard(c: CourtFaceData, t: Translate, state: { selected: boolean; disabled: boolean }): string {
+/**
+ * A Court card as shown in the picker (the large variant), named by the card's name for a screen
+ * reader. `still`: a picture only (the hover zoom), not a button: it takes no click and no focus.
+ */
+export function largeCard(c: CourtFaceData, t: Translate, state: { selected: boolean; disabled: boolean; still?: boolean }): string {
   const art = cardArt(c.card);
   const keys = Array.from({ length: c.keys }, () => icon('key')).join('');
   const cls = `lcard${state.selected ? ' selected' : ''}${state.disabled ? ' disabled' : ''}${art ? ' full-art' : ''}`;
-  const attrs = `data-act="pick" data-card="${esc(c.card)}"${state.disabled ? ' aria-disabled="true"' : ''} aria-pressed="${state.selected}" aria-label="${esc(c.card)}"`;
+  const label = c.name || c.card;
+  const tag = state.still ? 'div' : 'button';
+  const attrs = state.still
+    ? `role="img" aria-label="${esc(label)}" data-card="${esc(c.card)}"`
+    : `type="button" data-act="pick" data-card="${esc(c.card)}"${state.disabled ? ' aria-disabled="true"' : ''} aria-pressed="${state.selected}" aria-label="${esc(label)}"`;
   // Drawn from the kit when the card's text is known, else the picture is the whole card face.
-  if (hasKitFace(c)) return `<button type="button" class="${cls} kit k-${c.kind}" ${attrs}>${courtCardFace(c)}</button>`;
-  if (art) return `<button type="button" class="${cls}" ${attrs}><img class="lcard-img" src="${esc(art)}" alt=""></button>`;
-  return `<button type="button" class="${cls}" ${attrs}>
+  if (hasKitFace(c)) return `<${tag} class="${cls} kit k-${c.kind}" ${attrs}>${courtCardFace(c)}</${tag}>`;
+  if (art) return `<${tag} class="${cls}" ${attrs}><img class="lcard-img" src="${esc(art)}" alt=""></${tag}>`;
+  return `<${tag} class="${cls}" ${attrs}>
     <div class="lcard-top"><span class="lcard-keys">${keys}</span>${c.resource ? `<span class="lcard-res">${resIcon(c.resource, t)}</span>` : ''}</div>
-    <div class="lcard-art">${art ? `<img src="${esc(art)}" alt="">` : esc(c.card)}</div>
-    <div class="lcard-name">${esc(c.card)}</div>
+    <div class="lcard-art">${art ? `<img src="${esc(art)}" alt="">` : esc(label)}</div>
+    <div class="lcard-name">${esc(label)}</div>
     <div class="lcard-foot"><span>${c.kind ? esc(t(`card.kind.${c.kind}`)) : ''}</span><span>${esc(c.card)}</span></div>
-  </button>`;
+  </${tag}>`;
 }
 
 /** One tab of the card picker: a seat, or a neutral group such as the Court. */

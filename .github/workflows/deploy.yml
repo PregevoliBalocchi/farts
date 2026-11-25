@@ -38,13 +38,14 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
-    timeout-minutes: 30
-    # Runners side by side: the other browser tests on one, each seeded game (a few minutes with the
-    # 3D map drawn in software) on its own. The names are those of tests/integration/playthrough/seeds.json.
+    timeout-minutes: 40
+    # Runners side by side (the table loads in about a minute here, with the 3D map drawn in software):
+    # the other browser tests split in 3 by Playwright's shards, so a new spec file is always run, and each
+    # seeded game on its own. The game names are those of tests/integration/playthrough/seeds.json.
     strategy:
       fail-fast: false
       matrix:
-        part: [table, 2p-base-1366-it, 3p-leaders-1366-it, 4p-leaders-1366-it, 4p-base-1920-en]
+        part: ['table 1/3', 'table 2/3', 'table 3/3', 2p-base-1366-it, 3p-leaders-1366-it, 4p-leaders-1366-it, 4p-base-1920-en]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -54,20 +55,24 @@ jobs:
       - run: npm ci
       - run: npm run build:single
       - name: Browser tests
-        if: matrix.part == 'table'
-        run: npx playwright test --workers=1 --reporter=line --grep-invert "a seeded game"
+        if: startsWith(matrix.part, 'table ')
         env:
           CI: 'true'
+          PART: ${{ matrix.part }}
+        run: |
+          npx playwright test --workers=1 --reporter=line --grep-invert "a seeded game" --shard="${PART#table }"
       - name: Seeded game
-        if: matrix.part != 'table'
-        run: npx playwright test tests/integration/playthrough.spec.ts --workers=1 --reporter=line --grep "${{ matrix.part }}: a seeded game"
+        if: "!startsWith(matrix.part, 'table ')"
+        # A block, not a plain line: the test title holds ": ", which YAML reads as a key.
+        run: |
+          npx playwright test tests/integration/playthrough.spec.ts --workers=1 --reporter=line --grep "${{ matrix.part }}: a seeded game"
         env:
           CI: 'true'
       - name: Keep the failures' screenshots and traces
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-results-${{ matrix.part }}
+          name: e2e-results-${{ strategy.job-index }}
           path: test-results/
           retention-days: 7
 

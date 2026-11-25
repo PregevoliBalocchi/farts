@@ -849,6 +849,30 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
   }
 
+  /**
+   * The command bar and the ambitions' column stay whole when the interface font draws wider than Segoe UI
+   * (macOS, Linux, Android: playtest 2026-11-25 on the CI runner). The bar, when its buttons do not fit, shows
+   * Undo and Cancel as their icon alone (their name stays in the tooltip and for screen readers); the column,
+   * when its rows do not fit, draws its rule notes and pictures smaller, then leaves the notes to the hover card.
+   */
+  function fitSide(): void {
+    const bar = stage.querySelector<HTMLElement>('.cmd-bar');
+    if (bar) {
+      bar.classList.remove('tight');
+      const row = bar.querySelector<HTMLElement>('.cmd-row');
+      const spills = () => !!row && [...row.querySelectorAll<HTMLElement>('button')].some((b) => b.scrollWidth > b.clientWidth + 1);
+      if (row && (row.scrollWidth > row.clientWidth + 1 || spills())) bar.classList.add('tight');
+    }
+    // Measured on the rows: the column's frame draws a little outside it, which its own scroll height counts.
+    const amb = stage.querySelector<HTMLElement>('.region.side .side-amb');
+    const rows = amb?.querySelector<HTMLElement>('.amb-rows');
+    if (amb && rows) {
+      amb.classList.remove('tight', 'tighter');
+      if (rows.scrollHeight > rows.clientHeight + 1) amb.classList.add('tight');
+      if (rows.scrollHeight > rows.clientHeight + 1) amb.classList.add('tighter');
+    }
+  }
+
   /** A named landmark for a part of the table, for screen readers and the skip links. */
   function zone(name: string): string {
     return ` role="region" aria-label="${esc(t(`zone.${name}`))}"`;
@@ -1620,7 +1644,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** The turn's left button: Cancel while a step is open, else Undo. */
   function undoOrCancel(step: boolean): string {
     return step
-      ? button('cancel', t('btn.cancel'), { cls: 'cmd-btn', html: `${icon('close')}<span>${esc(t('btn.cancel'))}</span>` })
+      ? button('cancel', t('btn.cancel'), { cls: 'cmd-btn', title: t('btn.cancel'), html: `${icon('close')}<span>${esc(t('btn.cancel'))}</span>` })
       : button('undo', t('btn.undo'), { cls: 'cmd-btn', title: t('btn.undoKey'), html: `${icon('undo')}<span>${esc(t('btn.undo'))}</span>`, disabled: history.length === 0 });
   }
 
@@ -2189,6 +2213,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     mountBattle();
     keepTips(openTips);
     fitPrompt();
+    fitSide();
     sizeAvatars(stage);
     restoreFocus(key);
     const dialog = stage.querySelector('.modal');
@@ -2814,12 +2839,18 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
     return agents3d;
   }
+  /**
+   * Shows the card large where it covers nothing the player may want next (production/piano-blindatura-
+   * tavolo-2026-11-25.md, 2.4-2.5): under the Court row, over the bottom bar for the hand and the own Court,
+   * beside a choice window (or not at all when the window leaves no room), beside the card elsewhere. The
+   * zoom is a picture: it takes no click (table.css), and any click closes it.
+   */
   function showZoom(el: HTMLElement): void {
     const zoom = stage.querySelector<HTMLElement>('.card-zoom');
     const id = el.dataset.zoom;
     if (!zoom || !id) return;
     const face = faceOf(ix, id, lang);
-    zoom.innerHTML = largeCard(face, t, { selected: false, disabled: false });
+    zoom.innerHTML = largeCard(face, t, { selected: false, disabled: false, still: true });
     const onCard = (el.dataset.agents ?? '')
       .split(',')
       .filter(Boolean)
@@ -2830,15 +2861,39 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       zoom.appendChild(view.canvas);
       view.show(onCard);
     } else agents3d?.hide();
-    const r = el.getBoundingClientRect();
     const s = stage.getBoundingClientRect();
-    const x = (r.left - s.left) / scale;
-    const y = (r.top - s.top) / scale;
-    const w = r.width / scale;
+    /** A screen rectangle in stage px. */
+    const inStage = (b: DOMRect) => ({ x: (b.left - s.left) / scale, y: (b.top - s.top) / scale, w: b.width / scale, h: b.height / scale });
+    const c = inStage(el.getBoundingClientRect());
     // A leader card is tarot size: taller than the others at the same width.
     const ZW = 300, ZH = (face.kind === 'leader' ? Math.round((ZW * 672) / 377) : 416) + (view ? AGENTS_VIEW.h - AGENTS_OVERLAP : 0), GAP = 14;
-    const left = x + w / 2 > STAGE.w / 2 ? x - ZW - GAP : x + w + GAP;
-    const top = Math.max(8, Math.min(STAGE.h - ZH - 8, y + (r.height / scale) / 2 - ZH / 2));
+    const clampX = (x: number) => Math.max(8, Math.min(STAGE.w - ZW - 8, x));
+    const clampY = (y: number) => Math.max(8, Math.min(STAGE.h - ZH - 8, y));
+    const beside = (b: { x: number; w: number }) => (b.x + b.w / 2 > STAGE.w / 2 ? b.x - ZW - GAP : b.x + b.w + GAP);
+    const win = el.closest<HTMLElement>('.modal, [role="dialog"]');
+    const region = el.closest<HTMLElement>('[data-region]')?.dataset.region ?? '';
+    let left: number, top: number;
+    if (win) {
+      // In a choice window the other choices stay in sight: beside the window, or no zoom.
+      const wr = inStage(win.getBoundingClientRect());
+      const room = (wr.x - GAP >= ZW + 8) || (STAGE.w - wr.x - wr.w - GAP >= ZW + 8);
+      if (!room) return hideZoom();
+      left = wr.x + wr.w / 2 > STAGE.w / 2 && wr.x - GAP >= ZW + 8 ? wr.x - ZW - GAP : wr.x + wr.w + GAP;
+      top = clampY(c.y + c.h / 2 - ZH / 2);
+    } else if (region === 'court') {
+      // The Court row: under the row, so its other cards stay clear.
+      const rr = inStage(el.closest('[data-region]')!.getBoundingClientRect());
+      left = clampX(c.x + c.w / 2 - ZW / 2);
+      top = clampY(rr.y + rr.h + GAP);
+    } else if (region === 'hand' || region === 'mine' || region === 'played' || region === 'local') {
+      // The bottom bar's cards: over the bar, clear of the row the pointer moves along.
+      const rr = inStage(el.closest('[data-region]')!.getBoundingClientRect());
+      left = clampX(c.x + c.w / 2 - ZW / 2);
+      top = clampY(rr.y - ZH - GAP);
+    } else {
+      left = beside(c);
+      top = clampY(c.y + c.h / 2 - ZH / 2);
+    }
     zoom.style.left = `${left}px`;
     zoom.style.top = `${top}px`;
     zoom.hidden = false;
@@ -2856,13 +2911,17 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   stage.addEventListener('mouseout', (e) => {
     if (zoomTarget(e)) hideZoom();
   });
+  // From the keyboard only: the focus a window gives its first card when it opens after a click, or the
+  // focus the table gives back after a redraw, is not the player asking to see the card.
   stage.addEventListener('focusin', (e) => {
     const el = zoomTarget(e);
-    if (el) showZoom(el);
+    if (el && el.matches(':focus-visible')) showZoom(el);
   });
   stage.addEventListener('focusout', (e) => {
     if (zoomTarget(e)) hideZoom();
   });
+  // Any press closes it: the click goes on to what is under it (a menu, the next card).
+  stage.addEventListener('pointerdown', () => hideZoom(), true);
 
   // ---- rearranging resources: drag a token onto another slot of the local board ----
   /** The place a drag started from ("2": slot 2; "o0": the first token set aside). */
@@ -2951,8 +3010,19 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const GAP = at instanceof HTMLElement ? 12 : 24;
     // Beside it, on the side with room; kept inside the screen.
     const left = x + w / 2 > STAGE.w / 2 ? x - tw - GAP : x + w + GAP;
-    tip.style.left = `${Math.max(8, Math.min(STAGE.w - tw - 8, left))}px`;
-    tip.style.top = `${Math.max(8, Math.min(STAGE.h - th - 8, y + (r.height / scale) / 2 - th / 2))}px`;
+    const tx = Math.max(8, Math.min(STAGE.w - tw - 8, left));
+    let ty = Math.max(8, Math.min(STAGE.h - th - 8, y + (r.height / scale) / 2 - th / 2));
+    // Never over the command bar: the pointer crossing the card on its way to a button there would keep the card
+    // open over it (playtest 2026-11-25, an ambition's card over "Fine turno"). Above the bar instead.
+    const bar = stage.querySelector<HTMLElement>('.cmd-bar')?.getBoundingClientRect();
+    if (bar && bar.width) {
+      const bx = (bar.left - s.left) / scale;
+      const by = (bar.top - s.top) / scale;
+      const overlaps = tx < bx + bar.width / scale && tx + tw > bx && ty < by + bar.height / scale && ty + th > by;
+      if (overlaps && by - th - 8 >= 8) ty = by - th - 8;
+    }
+    tip.style.left = `${tx}px`;
+    tip.style.top = `${ty}px`;
   }
   /**
    * A system's card, opened by a click on the system: a second click on it

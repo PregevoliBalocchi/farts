@@ -437,6 +437,15 @@ button.supply:hover { border-color: var(--rule-hi); }
 .map3d { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; cursor: grab; touch-action: none; z-index: 0; }
 .tbl.has-3d .tbl-stage { background: none; pointer-events: none; z-index: 1; }
 .tbl.has-3d .tbl-stage > * { pointer-events: auto; }
+/* Regions over the map that are mostly empty frame (the rivals' column, as tall as 3 bands in a 2-player game;
+   the top strip; the Court row; the played card's slot) let clicks through where they draw nothing: only their
+   parts take them (production/piano-blindatura-tavolo-2026-11-25.md, 2.1). */
+.tbl.has-3d .tbl-stage > :is(.rivals, .header, .court, .played, .card-zoom) { pointer-events: none; }
+.tbl.has-3d .tbl-stage > :is(.rivals, .court) > :not(.rival-wrap, .court-row),
+.tbl.has-3d .tbl-stage > .rivals > .rival-wrap > *,
+.tbl.has-3d .tbl-stage > .court > .court-row > *,
+.tbl.has-3d .tbl-stage > .header > :not(.prompt),
+.tbl.has-3d .tbl-stage > .played > * { pointer-events: auto; }
 .tbl.has-3d .tbl-stage > .tbl-stars { display: none; }
 .tbl.has-3d .tbl-stage > .map-area { pointer-events: none; overflow: visible; }
 .tbl.has-3d .map-area > * { pointer-events: auto; }
@@ -1787,6 +1796,10 @@ button.supply:hover { border-color: var(--rule-hi); }
 /* Card powers and Decisions as pictures (production/base-fixes.md #4). */
 .tbl-stage .power-menu { max-width: 640px; }
 .tbl-stage .power-menu .menu-lines, .tbl-stage .decide-list { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+/* A long list of answers scrolls inside the window, which stays whole on the screen (piano 2.5): the stage is
+   1080 px tall, the window's title, question and buttons take about 260. */
+.tbl-stage .decide-list { max-height: 640px; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px;
+  scrollbar-width: thin; scrollbar-color: var(--gilt-deep) var(--void-black); }
 .tbl-stage .btn.pp-opt { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 8px; min-height: 0; border-radius: 8px; border: 2px solid var(--bronze-rule); background: var(--void-black); text-align: center; }
 .tbl-stage .btn.pp-opt:hover:not(:disabled) { border-color: var(--gilt-highlight); box-shadow: 0 0 10px #f3c46388; }
 .tbl-stage .pp-pics { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; }
@@ -1904,7 +1917,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .region.actions.cmd-bar .cmd-pips .ic { width: 16px; height: 16px; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-text { min-width: 0; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-note { flex: none; margin-left: auto; font-size: 14px; color: #a8977a; white-space: nowrap; }
-.tbl-stage .region.actions.cmd-bar .cmd-x { flex: none; width: 30px; height: 30px; margin-left: auto; }
+.tbl-stage .region.actions.cmd-bar .cmd-x { flex: none; width: 34px; height: 34px; margin-left: auto; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-note + .cmd-x { margin-left: 0; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-body { display: grid; gap: 6px; min-width: 0; }
 .tbl-stage .region.actions.cmd-bar .cmd-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; }
@@ -1960,7 +1973,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 /* Every button of the window the same size, right-aligned in one row. */
 .battle-win .b-btns { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
 .battle-win .b-btns .hint { margin-right: auto; }
-.tbl-stage .battle-win .btn.b-btn { box-sizing: border-box; width: 200px; height: 48px; min-height: 0; padding: 0 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; white-space: nowrap; overflow: hidden; }
+.tbl-stage .battle-win .btn.b-btn { box-sizing: border-box; min-width: 200px; width: auto; height: 48px; min-height: 0; padding: 0 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; white-space: nowrap; overflow: hidden; }
 /* Bigger dice; while a reroll is asked, the ones it may take are dashed and the picked ones raised with a mark. */
 .battle-win .b-dice { min-height: 64px; gap: 12px; padding-top: 10px; }
 .battle-win .b-die { width: 52px; height: 52px; position: relative; overflow: visible; }
@@ -2063,7 +2076,10 @@ button.supply:hover { border-color: var(--rule-hi); }
 /* Adapt (base-fixes #42): every small control gets a hit area of at least 34 stage px (24 px on a 1366×768
    screen, where the stage shows at 71%), drawn by an invisible ::after so the look does not change. */
 .tbl-stage .cs-btn, .tbl-stage .board .sp-block { position: relative; }
-.tbl-stage .cs-btn::after, .tbl-stage .board .sp-block::after, .tbl-stage .btn.find-mine::after, .tbl-stage .amb-tab::after { content: ''; position: absolute; }
+.tbl-stage .cs-btn::after, .tbl-stage .board .sp-block::after, .tbl-stage .btn.find-mine::after, .tbl-stage .amb-tab::after,
+.tbl-stage .region.mine > .mine-open::after { content: ''; position: absolute; }
+/* The own Court's side tab (24 px wide): its hit area reaches into the hand's gap. The step's cancel cross is drawn at 34 px. */
+.tbl-stage .region.mine > .mine-open::after { inset: 0 0 0 -10px; }
 .tbl-stage .cs-btn::after { inset: -5px 0; }
 .tbl-stage [data-region="local"] .btn.find-mine::after { inset: -7px 0; }
 .tbl-stage .board.rband .sp-block::after { inset: -7px -2px; }
@@ -2103,3 +2119,15 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage.tbl-stage .board.rband .rb-body > .stats { grid-column: 3; grid-row: 1; }
 .tbl-stage.tbl-stage .tip-guild .mini-card.kitted { height: auto; aspect-ratio: 372 / 519; display: block; padding: 0; border: 0; border-radius: 5px; overflow: hidden; background: #0b0a08; box-shadow: 0 0 0 1px var(--bronze-edge), 0 4px 10px #000c; }
 .tbl-stage .tip-guild .mini-card.kitted .cface, .tbl-stage .tip-guild .mini-card.kitted .cf-plain { width: 100%; height: 100%; }
+
+/* A wider interface font (no Segoe UI: macOS, Linux, Android) must not cut the bar or the ambitions (playtest
+   2026-11-25 on the CI runner; table.ts fitSide). The bar: Undo and Cancel as their icon. The column: smaller
+   notes and pictures, then the notes left to the hover card (it names the rule too). */
+.tbl-stage .region.actions.cmd-bar.tight .cmd-turn { grid-template-columns: repeat(2, max-content); }
+.tbl-stage .region.actions.cmd-bar.tight .cmd-turn .btn.cmd-btn:not(.primary) { padding: 0 12px; }
+.tbl-stage .region.actions.cmd-bar.tight .cmd-turn .btn.cmd-btn:not(.primary) > span { display: none; }
+.tbl-stage .side-amb.tight .abox { padding-block: 4px; }
+.tbl-stage .side-amb.tight .abox .ab-rule { font-size: 10px; letter-spacing: 0; line-height: 1.1; }
+.tbl-stage .side-amb.tight .abox .ab-g .ic { width: 24px; height: 24px; }
+.tbl-stage .side-amb.tight .abox .ab-m .amk { height: 28px; }
+.tbl-stage .side-amb.tighter .abox .ab-rule { display: none; }

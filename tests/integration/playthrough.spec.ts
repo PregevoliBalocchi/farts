@@ -40,7 +40,8 @@ const OBSERVE_ONLY = new Set(['partly']);
 
 for (const c of configs) {
   test(`${c.name}: a seeded game shows no new problem`, async ({ browser }) => {
-    test.setTimeout(6 * 60_000);
+    // CI draws the 3D map in software on slow cores: a game there takes several times longer.
+    test.setTimeout((process.env.CI ? 30 : 8) * 60_000);
     const run = await runGame({ ...c, browser, ledger: pieceLedger });
     const findings = run.findings as Finding[];
     const fresh = findings.filter((f) => !OBSERVE_ONLY.has(f.category) && !known.some((k) => k.category === f.category && k.re.test(f.key)));
