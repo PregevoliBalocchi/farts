@@ -601,5 +601,8 @@
   "rule.scoring": "Scoring: for each declared ambition, the most gets the higher Power of all its markers, the second the lower. A tie for first: those tied are all second. A tie for second: nobody. Having none of it gives nothing.",
   "map.pickable": "{name}, can be picked",
   "map.litOne": "1 system can be picked: {names}.",
-  "map.litMany": "{n} systems can be picked: {names}. Arrow keys move between them, Ctrl+arrows between all systems."
+  "map.litMany": "{n} systems can be picked: {names}. Arrow keys move between them, Ctrl+arrows between all systems.",
+  "settings.palette": "Player colours",
+  "settings.palette.official": "Official",
+  "settings.palette.clear": "Easier to tell apart (colour blindness)"
 }

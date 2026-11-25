@@ -1041,6 +1041,16 @@ export class Board3D {
       ring.userData.pulse = on === VALID;
       if (ring.userData.pulse) this.pulsing = true;
       this.rings.add(ring);
+      // A9: the chosen system has a second, inner ring, so it differs from the ones to pick by shape, not only colour.
+      if (on === CHOSEN) {
+        const inner = new THREE.Mesh(
+          new THREE.RingGeometry(r - 0.17, r - 0.11, 64),
+          new THREE.MeshBasicMaterial({ color: on, transparent: true, opacity: 0.9, depthWrite: false }),
+        );
+        inner.rotation.x = -Math.PI / 2;
+        inner.position.set(p.x, 0.012, p.z);
+        this.rings.add(inner);
+      }
     }
     // Systems where the local player can act now (the map menu): a faint, still ring.
     for (const id of this.hints) {

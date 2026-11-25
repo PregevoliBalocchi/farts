@@ -13,6 +13,7 @@ import { messageTranslator } from '../../i18n/messages';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
 import { assetUrl, cardArt, icon, seatColor, seatIcon, setSeatColors } from './assets';
+import { useSeatPalette, type SeatPalette } from './pieces3d';
 import { cardFaceById, cardWords, courtCardFace, faceOf, fitCardText, hasKitFace, setActionFaceSource, setFaceSource } from './cardface';
 import { loadCardFonts } from './cardfonts';
 import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, faceKey, facePicture, hitsLeft } from './battle';
@@ -171,10 +172,21 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let seed = Number(params.get('seed') ?? 1) || 1;
   /** Locally, ?variant=leaders starts the Leaders & Lore variant (with its draft). */
   const variant = params.get('variant') === 'leaders' ? 'leaders' : 'base';
-  let state: GameState = online ? online.state : newGame(ix, { playerCount: players, seed, variant });
+  // A9: a local game survives the reload that repaints the seats in the colours chosen in the settings.
+  let resumed: GameState | null = null;
+  if (!online) {
+    try {
+      const r = sessionStorage.getItem('arcs.resume');
+      sessionStorage.removeItem('arcs.resume');
+      if (r) resumed = JSON.parse(r) as GameState;
+    } catch {
+      /* no storage or a broken copy: a new game */
+    }
+  }
+  let state: GameState = online ? online.state : (resumed ?? newGame(ix, { playerCount: players, seed, variant }));
   /** Locally, ?scenario=battle sets up a battle for the first seat to lead (applied once per game). */
   const scenario = online ? null : params.get('scenario');
-  let scenarioDone = false;
+  let scenarioDone = resumed !== null;
   let history: GameState[] = [];
   // Online the seat is fixed; locally the view follows the active seat unless ?seat= pins it.
   // Hotseat: a shared game whose seat is null, or locally ?hotseat=1 (to try the hand-over screen).
@@ -281,6 +293,17 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     /* no storage: automatic */
   }
   if (params.get('text') === 'large') textSize = 'large';
+  // Seat colours (A9): the official ones, or a set easier to tell apart with colour blindness; chosen in the
+  // settings and remembered, `?palette=clear` forces it. The pieces keep their paint, so it is set before the map.
+  let palette: SeatPalette = 'official';
+  try {
+    if (localStorage.getItem('arcs.palette') === 'clear') palette = 'clear';
+  } catch {
+    /* no storage: official */
+  }
+  if (params.get('palette') === 'clear') palette = 'clear';
+  useSeatPalette(palette);
+  shell.classList.toggle('pal-clear', palette === 'clear');
   const stage = document.createElement('div');
   stage.className = 'tbl-stage';
   const bg = assetUrl('map.background');
@@ -2292,6 +2315,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         <div class="settings-grid">
           <label for="set-lang">${esc(t('settings.lang'))}</label><select id="set-lang" data-set="lang">${langOpts}</select>
           <label for="set-text">${esc(t('settings.text'))}</label><select id="set-text" data-set="text">${(['auto', 'normal', 'large'] as const).map((x) => `<option value="${x}"${textSize === x ? ' selected' : ''}>${esc(t(`settings.text.${x}`))}</option>`).join('')}</select>
+          <label for="set-palette">${esc(t('settings.palette'))}</label><select id="set-palette" data-set="palette">${(['official', 'clear'] as const).map((x) => `<option value="${x}"${palette === x ? ' selected' : ''}>${esc(t(`settings.palette.${x}`))}</option>`).join('')}</select>
           ${board3d ? `<label for="set-graphics">${esc(t('settings.graphics'))}</label><select id="set-graphics" data-set="graphics">${(['auto', 'lite', 'still'] as const).map((g) => `<option value="${g}"${graphics === g ? ' selected' : ''}>${esc(t(`settings.graphics.${g}`))}</option>`).join('')}</select>` : ''}
         </div>
         ${exitRow()}
@@ -2302,6 +2326,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           <label for="set-seat">${esc(t('settings.view'))}</label><select id="set-seat" data-set="seat"${follow ? ' disabled' : ''}>${seatOpts}</select>
           <label for="set-lang">${esc(t('settings.lang'))}</label><select id="set-lang" data-set="lang">${langOpts}</select>
           <label for="set-text">${esc(t('settings.text'))}</label><select id="set-text" data-set="text">${(['auto', 'normal', 'large'] as const).map((x) => `<option value="${x}"${textSize === x ? ' selected' : ''}>${esc(t(`settings.text.${x}`))}</option>`).join('')}</select>
+          <label for="set-palette">${esc(t('settings.palette'))}</label><select id="set-palette" data-set="palette">${(['official', 'clear'] as const).map((x) => `<option value="${x}"${palette === x ? ' selected' : ''}>${esc(t(`settings.palette.${x}`))}</option>`).join('')}</select>
           <label for="set-players">${esc(t('settings.players'))}</label><select id="set-players" data-set="players">${countOpts}</select>
           <label for="set-seed">${esc(t('settings.seed'))}</label><input id="set-seed" type="number" min="1" value="${seed}" data-set="seed">
           ${board3d ? `<label for="set-graphics">${esc(t('settings.graphics'))}</label><select id="set-graphics" data-set="graphics">${(['auto', 'lite', 'still'] as const).map((g) => `<option value="${g}"${graphics === g ? ' selected' : ''}>${esc(t(`settings.graphics.${g}`))}</option>`).join('')}</select>` : ''}
@@ -3634,6 +3659,17 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         }
         applyTextSize();
         break;
+      case 'palette':
+        // The pieces keep their paint: save the choice and the local game, and reload.
+        try {
+          localStorage.setItem('arcs.palette', el.value);
+          if (!online) sessionStorage.setItem('arcs.resume', JSON.stringify(state));
+        } catch {
+          /* no storage: the choice cannot outlive the reload */
+          return;
+        }
+        location.reload();
+        return;
       case 'graphics':
         graphics = el.value as Graphics;
         board3d?.setGraphics(graphics);

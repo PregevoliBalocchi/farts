@@ -601,5 +601,8 @@
   "rule.scoring": "Punteggio: per ogni ambizione dichiarata chi ne ha di più prende il Potere più alto di tutti i suoi segnalini, il secondo quello più basso. Pari per il primo: tutti i pari sono secondi. Pari per il secondo: nessuno. Chi non ne ha non prende nulla.",
   "map.pickable": "{name}, selezionabile",
   "map.litOne": "1 sistema selezionabile: {names}.",
-  "map.litMany": "{n} sistemi selezionabili: {names}. Le frecce passano dall'uno all'altro, Ctrl+frecce tra tutti i sistemi."
+  "map.litMany": "{n} sistemi selezionabili: {names}. Le frecce passano dall'uno all'altro, Ctrl+frecce tra tutti i sistemi.",
+  "settings.palette": "Colori dei giocatori",
+  "settings.palette.official": "Ufficiali",
+  "settings.palette.clear": "Più distinguibili (daltonismo)"
 }

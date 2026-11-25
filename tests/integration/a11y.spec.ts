@@ -104,3 +104,25 @@ test.describe('accessibility: windows', () => {
     expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
   });
 });
+
+test.describe('accessibility: colours', () => {
+  test('the colour-blind seat colours apply at once and the local game goes on after the reload (A9)', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto(build('view=table&lang=it&motion=off&players=3&seed=3&seat=0'));
+    await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
+    // A move first, so the game to keep is not the new one.
+    const hand = await page.evaluate(() => {
+      const s = window.game!.state as unknown as { players: { hand: string[] }[]; initiative: number };
+      window.game!.send({ type: 'lead', player: s.initiative, card: s.players[s.initiative].hand[0] } as never);
+      return (window.game!.state as unknown as { players: { hand: string[] }[] }).players.map((p) => p.hand.length);
+    });
+    await page.locator('[data-act="settings"]').click();
+    await Promise.all([page.waitForEvent('load'), page.locator('#set-palette').selectOption('clear')]);
+    await expect.poll(() => page.evaluate(() => document.querySelector('.tbl')?.classList.contains('pal-clear'))).toBe(true);
+    await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
+    const seat2 = await page.evaluate(() => getComputedStyle(document.querySelector('.tbl')!).getPropertyValue('--seat-2').trim());
+    expect(seat2).toBe('#cc79a7');
+    const after = await page.evaluate(() => (window.game!.state as unknown as { players: { hand: string[] }[] }).players.map((p) => p.hand.length));
+    expect(after).toEqual(hand);
+  });
+});
