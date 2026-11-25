@@ -143,7 +143,7 @@
   "prompt.pick.system": "Choose a system on the map.",
   "prompt.pick.from": "Choose where the ships move from.",
   "prompt.pick.to": "Choose where the ships move to.",
-  "prompt.pick.court": "Pick a Court card in the column on the right.",
+  "prompt.pick.court": "Pick a Court card in the row at the top.",
   "play.lead": "Lead",
   "play.leadDeclare": "Lead + declare",
   "play.pass": "Pass initiative",

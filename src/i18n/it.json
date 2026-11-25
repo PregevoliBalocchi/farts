@@ -143,7 +143,7 @@
   "prompt.pick.system": "Scegli un sistema sulla mappa.",
   "prompt.pick.from": "Scegli da dove partono le navi.",
   "prompt.pick.to": "Scegli dove vanno le navi.",
-  "prompt.pick.court": "Scegli una carta della Corte, nella colonna a destra.",
+  "prompt.pick.court": "Scegli una carta della Corte, nella fila in alto.",
   "play.lead": "Guida",
   "play.leadDeclare": "Guida e dichiara",
   "play.pass": "Passa l'iniziativa",
