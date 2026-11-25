@@ -59,7 +59,7 @@
   color: var(--text);
   user-select: none;
 }
-.tbl.large-text { --text-scale: 1.15; }
+.tbl.large-text { --text-scale: 1.25; }
 .tbl-stage {
   position: absolute;
   left: 0;
@@ -742,7 +742,8 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage { --text: var(--dg-text); --text-dim: var(--vellum-muted); --text-faint: var(--vellum-faint); --rule: var(--bronze-rule); --rule-hi: var(--gilt-highlight); --select: 0 0 0 2px #000, 0 0 0 4px #f3c463, 0 0 18px 2px rgba(255, 196, 100, .55); --panel: rgba(22, 17, 11, .92); --panel-solid: var(--frame-umber); --panel-raise: var(--frame-raise); }
 .tbl-stage { --bronze-rule: #4a3a22; --vellum-faint: #8a7a58; --frame-raise: #2a2016; }
 .tbl-stage { --gilt-highlight: #f3c463; --gilt-deep: #c8892a; --gilt-pale: #ffd27a; --bronze-edge: #6b4a14; --void-black: #0b0806; --frame-umber: #16110b; --frame-brown: #2b2015; --vellum-title: #efe3c4; --vellum-muted: #c7b896; --card-cream: #fbf7ee; }
-.tbl-stage { --fs-card: 11px; --fs-caption: 13px; --fs-label: 14px; --fs-body: 16px; --fs-headline: 18px; --fs-title: 22px; --fs-display: 24px; }
+/* The type scale; every step but card faces grows with the text size setting (--text-scale, base-fixes #44). */
+.tbl-stage { --fs-card: 11px; --fs-caption: calc(13px * var(--text-scale)); --fs-label: calc(14px * var(--text-scale)); --fs-body: calc(16px * var(--text-scale)); --fs-headline: calc(18px * var(--text-scale)); --fs-title: calc(22px * var(--text-scale)); --fs-display: calc(24px * var(--text-scale)); }
 
 /* Top strip */
 .tbl-stage .header { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px 0; background: none; border: 0; pointer-events: none; }
@@ -1996,7 +1997,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .board.local.slim .pb-low .stats { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: calc(5 * var(--u)); height: 100%; padding: 0; font-size: calc(16 * var(--u)); }
 .tbl-stage .board.local.slim .pb-low .st { justify-content: center; gap: calc(4 * var(--u)); border: 1px solid var(--bronze-rule); border-radius: calc(5 * var(--u)); background: var(--void-black); }
 /* "My pieces", inside the board: the free corner over the last slots (their key tabs are blank). */
-.tbl-stage [data-region="local"] .btn.find-mine { position: absolute; right: 14px; top: 9px; left: auto; width: 100px; height: 20px; min-height: 0; padding: 0 6px; border-width: 1px; border-radius: 4px; line-height: 18px; font-size: var(--fs-caption); z-index: 4; }
+.tbl-stage [data-region="local"] .btn.find-mine { position: absolute; right: 14px; top: 9px; left: auto; width: auto; min-width: 100px; white-space: nowrap; height: 20px; min-height: 0; padding: 0 6px; border-width: 1px; border-radius: 4px; line-height: 18px; font-size: var(--fs-caption); z-index: 4; }
 
 
 /* ---- The table's frame (base-fixes #36) ---- */
@@ -2045,3 +2046,55 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .region.actions.cmd-bar.bare { background: none; border-color: transparent; box-shadow: none; pointer-events: none; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar.bare::before, .tbl-stage.tbl-stage .region.actions.cmd-bar.bare::after { display: none; }
 .tbl-stage .region.actions.cmd-bar.bare button { pointer-events: auto; }
+
+/* Skip links (harden, base-fixes #41): first in the Tab order, out of sight until one is focused,
+   then a row of gold-framed buttons over the top-left corner of the table. */
+.tbl-stage .skip-nav { position: absolute; left: 10px; top: 10px; z-index: 200; display: flex; gap: 6px; padding: 6px; border-radius: 6px; background: var(--frame-umber); box-shadow: 0 0 0 1px var(--dg-gold), 0 8px 20px #000c; clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; white-space: nowrap; }
+.tbl-stage .skip-nav:focus-within { clip-path: none; width: auto; height: auto; overflow: visible; }
+.tbl-stage .skip-link { min-height: 40px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--dg-gold-dim); background: linear-gradient(180deg, var(--frame-raise), var(--void-black)); color: var(--dg-text); font: 600 var(--fs-body) var(--font-ui, 'Segoe UI', system-ui, sans-serif); cursor: pointer; }
+.tbl-stage .skip-link:focus-visible { outline: 3px solid var(--gilt-highlight); outline-offset: 2px; border-color: var(--dg-gold); }
+.tbl-stage [data-region]:focus { outline: 3px solid var(--gilt-highlight); outline-offset: -3px; }
+
+/* Adapt (base-fixes #42): every small control gets a hit area of at least 34 stage px (24 px on a 1366×768
+   screen, where the stage shows at 71%), drawn by an invisible ::after so the look does not change. */
+.tbl-stage .cs-btn, .tbl-stage .board .sp-block { position: relative; }
+.tbl-stage .cs-btn::after, .tbl-stage .board .sp-block::after, .tbl-stage .btn.find-mine::after, .tbl-stage .amb-tab::after { content: ''; position: absolute; }
+.tbl-stage .cs-btn::after { inset: -5px 0; }
+.tbl-stage [data-region="local"] .btn.find-mine::after { inset: -7px 0; }
+.tbl-stage .board.rband .sp-block::after { inset: -7px -2px; }
+.tbl-stage .board.rband .rb-row { overflow: clip; overflow-clip-margin: 8px; }
+.tbl-stage .amb-tab::after { inset: 0 -9px; }
+
+/* Readable commands (base-fixes #44): the action and turn buttons take the width of their words, so the
+   labels ("Annulla mossa", "Passa l'iniziativa") and the short reasons ("Nessun rivale") show whole at any
+   text size; the powers' column in the middle gives up the room. */
+.tbl-stage .region.actions.cmd-bar .cmd-main { grid-template-columns: repeat(var(--n, 3), minmax(132px, max-content)); }
+.tbl-stage .region.actions.cmd-bar .cmd-turn { grid-template-columns: repeat(2, minmax(124px, max-content)); }
+.tbl-stage .region.actions.cmd-bar .btn.cmd-btn, .tbl-stage .region.actions.cmd-bar .btn.kind-btn { white-space: nowrap; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.kind-btn .kb-why { display: block; -webkit-line-clamp: none; overflow: visible; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar .btn.kind-btn .kb-name, .tbl-stage.tbl-stage .region.actions.cmd-bar .btn.kind-btn .kb-why { line-height: 1; }
+
+/* Rival bands laid out like the local board (base-fixes #45): slots | trophies over captives | 2×2 counts,
+   each count in its own cell; the band is as wide as that, the Court count and Outrage on the name bar. */
+.tbl-stage .rival-wrap.band .board.rband { flex: none; }
+.tbl-stage.tbl-stage .board.rband .rb-body { display: grid; grid-template-columns: auto auto auto; gap: 6px; align-items: stretch; }
+.tbl-stage.tbl-stage .board.rband .spoils { display: grid; grid-template-rows: 1fr 1fr; gap: 4px; padding: 0; background: none; box-shadow: none; border-radius: 0; }
+.tbl-stage.tbl-stage .board.rband .sp-block { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 52px; padding: 0 7px; }
+.tbl-stage.tbl-stage .board.rband .stats { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; padding: 0; font-size: var(--fs-body); }
+.tbl-stage.tbl-stage .board.rband .stats .st { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 50px; padding: 0 6px; border: 1px solid var(--bronze-rule); border-radius: 4px; background: var(--void-black); }
+.tbl-stage.tbl-stage .board.rband .stats .ic, .tbl-stage.tbl-stage .board.rband .stats .pc { width: 18px; height: 18px; }
+.tbl-stage .board.rband .name-bar .rb-court { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; padding: 0 6px; border-radius: 4px; background: #0005; color: var(--dg-text); font-size: var(--fs-caption); }
+.tbl-stage .board.rband .name-bar .rb-court .ic { width: 14px; height: 14px; }
+.tbl-stage .board.rband .name-bar .outrage { display: inline-flex; margin-left: auto; }
+.tbl-stage .board.rband .name-bar .outrage + .rb-court { margin-left: 4px; }
+.tbl-stage .board.rband .name-bar .o-space { width: 22px; height: 18px; }
+
+/* A rival's Court cards in the board a click opens: large, in rows, clear of the frame's edge. */
+.tbl-stage.tbl-stage .tip-guild { margin-top: 10px; padding: 4px 2px 6px; }
+.tbl-stage.tbl-stage .tip-guild .mini-cards { display: flex; flex-wrap: wrap; gap: 8px; max-width: 560px; }
+.tbl-stage.tbl-stage .tip-guild .mini-card.kitted { width: 84px; margin: 0; }
+.tbl-stage.tbl-stage .board.rband .rb-body > .slots { grid-column: 1; grid-row: 1; }
+.tbl-stage.tbl-stage .board.rband .rb-body > .spoils { grid-column: 2; grid-row: 1; }
+.tbl-stage.tbl-stage .board.rband .rb-body > .stats { grid-column: 3; grid-row: 1; }
+.tbl-stage.tbl-stage .tip-guild .mini-card.kitted { height: auto; aspect-ratio: 372 / 519; display: block; padding: 0; border: 0; border-radius: 5px; overflow: hidden; background: #0b0a08; box-shadow: 0 0 0 1px var(--bronze-edge), 0 4px 10px #000c; }
+.tbl-stage .tip-guild .mini-card.kitted .cface, .tbl-stage .tip-guild .mini-card.kitted .cf-plain { width: 100%; height: 100%; }

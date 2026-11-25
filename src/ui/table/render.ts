@@ -153,13 +153,13 @@ function spoils(p: PlayerView, t: Translate): string {
   return `<div class="spoils">${block('trophies', 'ambTrophies', p.stats.trophies)}${block('captives', 'ambCaptives', p.stats.captives)}</div>`;
 }
 
-/** The name bar under a seat board: seat shape, name, initiative, and power in a laurel ring. */
-function nameBar(p: PlayerView, t: Translate): string {
+/** The name bar under a seat board: seat shape, name, initiative, `extra` (a rival band's chips), and power in a laurel ring. */
+function nameBar(p: PlayerView, t: Translate, extra = ''): string {
   const token = assetUrl('token.initiative');
   const mark = token ? `<img class="ic init-img" src="${esc(token)}" alt="${esc(t('initiative'))}">` : icon('power', '', t('initiative'));
   const title = p.initiativeSeized ? t('initiative.seized') : t('initiative');
   const init = p.hasInitiative ? `<span class="init-mark${p.initiativeSeized ? ' seized' : ''}" title="${esc(title)}">${mark}</span>` : '';
-  return `<div class="name-bar"><span class="seat-c">${icon(seatIcon(p.id))}</span><span class="nm">${esc(playerName(t, p.id))}</span>${init}<span class="pow num" title="${esc(t('stat.power'))}">${p.power}</span></div>`;
+  return `<div class="name-bar"><span class="seat-c">${icon(seatIcon(p.id))}</span><span class="nm">${esc(playerName(t, p.id))}</span>${init}${extra}<span class="pow num" title="${esc(t('stat.power'))}">${p.power}</span></div>`;
 }
 
 /** The city triangle printed on the board (rounded corners, like the map's), as an SVG outline. */
@@ -373,18 +373,21 @@ export function playedCard(ix: ContentIndex, v: TableView, t: Translate, player:
 }
 
 /**
- * One rival as a compact band: name and power, the resource slots small with
- * the cities on them, pieces, hand, trophies and captives, Outrage, the Court
- * cards they hold; hovering it shows their whole board. The card they played
- * sits at its right end.
+ * One rival as a compact band, its counts laid out like the local board's (base-fixes #45): the resource
+ * slots with the cities on them; trophies over captives; the reserve and the hand as a 2×2 grid of cells;
+ * on the name bar, the Outraged resources and how many Court cards they hold (the cards themselves in the
+ * board a click opens). The card they played sits at its right end.
  */
 export function rivalPanel(ix: ContentIndex, v: TableView, p: PlayerView, t: Translate): string {
-  const cards = [...p.court, ...p.lore];
+  const n = p.court.length + p.lore.length;
+  const court = n ? `<span class="rb-court" title="${esc(t('stat.court'))}">${icon('court', '', t('stat.court'))}<b class="num">${n}</b></span>` : '';
+  const out = p.outraged.length ? outrage(p, t) : '';
   return `<div class="rival-wrap band"><div class="board rband s-${seatColor(p.id)}${p.isActive ? ' active' : ''}" data-tip="seat:${p.id}" tabindex="0" role="group" aria-label="${esc(playerName(t, p.id))}">
-    ${nameBar(p, t)}
+    ${nameBar(p, t, `${out}${court}`)}
     <div class="rb-body">
       ${slotsHtml(p, t, new Set(), null)}
-      <div class="rb-side">${stats(p, t, false)}<div class="rb-row">${spoils(p, t)}${outrage(p, t)}${cards.length ? miniCards(cards, 5) : ''}</div></div>
+      ${spoils(p, t)}
+      ${stats(p, t, false)}
     </div>
   </div>${playedCard(ix, v, t, p.id)}</div>`;
 }

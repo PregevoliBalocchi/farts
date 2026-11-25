@@ -12,10 +12,10 @@ const count = (html: string, needle: string) => html.split(needle).length - 1;
 describe('seat board', () => {
   const ix = index();
 
-  it('leaves the outrage corner empty when nothing is Outraged', () => {
+  it('shows no Outrage on a rival band when nothing is Outraged (base-fixes #45: only on the name bar when there is)', () => {
     const v = tableView(ix, game(ix, 3, 7, 0), 0);
     const html = rivalPanel(ix, v, v.players[1], t);
-    expect(html).toContain('class="outrage"');
+    expect(html).not.toContain('class="outrage"');
     expect(html).not.toContain('o-space');
   });
 
