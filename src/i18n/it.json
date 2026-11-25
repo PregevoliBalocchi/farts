@@ -429,5 +429,9 @@
   "reroll.go": "Ritira {n}",
   "reroll.skip": "Non usare",
   "reroll.next": "Dopo: {cards}",
-  "reroll.first": "Prima decidi i poteri delle carte, poi assegni i colpi."
+  "reroll.first": "Prima decidi i poteri delle carte, poi assegni i colpi.",
+  "piles.courtDeckShort": "Mazzo Corte",
+  "piles.actionDiscardShort": "Scarti azioni",
+  "amb.shut": "Chiudi le ambizioni",
+  "amb.open": "Apri le ambizioni"
 }

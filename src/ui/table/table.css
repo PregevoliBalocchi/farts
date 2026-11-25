@@ -1961,7 +1961,6 @@ button.supply:hover { border-color: var(--rule-hi); }
 /* The move's counters, in the bar's body. */
 .tbl-stage.tbl-stage .region.actions.cmd-bar .mv-plan { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
 /* The prompt line under the hand says the same as the bar's head: off while the bar is shown. */
-.tbl-stage.bar-on .hd.prompt { display: none; }
 /* Ambitions the picked card may declare: lit, with the word on them. */
 .tbl-stage .abox .ab-declare { position: absolute; right: 8px; bottom: 6px; z-index: 1; padding: 2px 7px; border-radius: 4px; background: #f3c463; color: #1d150d; font: 800 11px var(--font-ui, inherit); letter-spacing: .06em; text-transform: uppercase; pointer-events: none; }
 
@@ -1997,3 +1996,76 @@ button.supply:hover { border-color: var(--rule-hi); }
 .battle-win .rr-how { font-size: 15px; line-height: 1.3; color: var(--dg-text); }
 .battle-win .rr-next { margin-top: 4px; font-size: 13px; color: #cdbb98; }
 .battle-win .rr-btns { display: grid; gap: 8px; }
+
+/* ---- The local board (base-fixes #36): leader | resource slots on top, a rule across, then trophies and captives |
+   the five Prelude resources (equal cells) | the four reserves (2 x 2). No black box behind the slots: their key
+   tabs hang from the board's top edge; "My pieces" sits in the free corner over the last slots. ---- */
+.tbl-stage.tbl-stage .board.local.slim { position: relative; }
+.tbl-stage.tbl-stage .board.local.slim .pb-body.with-legend {
+  display: grid; grid-template-columns: calc(80 * var(--u)) minmax(0, 5fr) minmax(0, 2fr); grid-template-rows: auto 1px minmax(0, 1fr);
+  column-gap: calc(8 * var(--u)); row-gap: calc(6 * var(--u)); align-content: stretch; padding: 0 calc(10 * var(--u)) calc(6 * var(--u)); }
+.tbl-stage.tbl-stage .board.local.slim .pb-face { grid-row: 1; grid-column: 1; position: relative; overflow: hidden; margin: 0; align-self: stretch; justify-self: stretch; display: grid; place-items: end center; }
+.tbl-stage.tbl-stage .board.local.slim .portrait.leader.bust { position: absolute; inset: 0; width: auto; height: auto; }
+.tbl-stage.tbl-stage .board.local.slim .portrait.leader.bust img { left: 50%; bottom: 0; width: auto; height: 100%; max-width: 100%; transform: translateX(-50%); object-fit: contain; object-position: 50% 100%; }
+.tbl-stage.tbl-stage .board.local.slim .portrait.leader.bust:hover img { transform: translateX(-50%); }
+.tbl-stage.tbl-stage .board.local.slim .portrait:not(.bust) { align-self: center; width: calc(64 * var(--u)); height: calc(64 * var(--u)); }
+.tbl-stage.tbl-stage .board.local.slim .slots { grid-row: 1; grid-column: 2 / 4; margin: 0; padding: 0; background: none; box-shadow: none; align-items: flex-start; }
+.tbl-stage.tbl-stage .board.local.slim .slot { grid-template-rows: calc(34 * var(--u)) calc(42 * var(--u)); align-content: start; }
+.tbl-stage.tbl-stage .board.local.slim .slot .keys.kit { align-self: start; margin-top: 0; }
+.tbl-stage.tbl-stage .board.local.slim .pb-rule { display: block; grid-row: 2; grid-column: 1 / -1; height: 1px; background: linear-gradient(90deg, transparent, #b8862a 6%, #b8862a 94%, transparent); }
+.tbl-stage.tbl-stage .board.local.slim .pb-body.with-legend .spoils { grid-row: 3; grid-column: 1; display: grid; grid-template-rows: 1fr 1fr; grid-auto-flow: row; gap: calc(5 * var(--u)); align-content: stretch; justify-content: stretch; padding: 0; }
+.tbl-stage.tbl-stage .board.local.slim .sp-block { display: flex; align-items: center; justify-content: space-between; gap: calc(4 * var(--u)); min-width: 0; padding: 0 calc(8 * var(--u)); }
+.tbl-stage.tbl-stage .board.local.slim .pb-body.with-legend .pl-legend { grid-row: 3; grid-column: 2; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: calc(5 * var(--u)); align-items: stretch; }
+.tbl-stage.tbl-stage .board.local.slim .pl-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(2 * var(--u)); padding: calc(2 * var(--u)) 0; min-width: 0; }
+.tbl-stage.tbl-stage .board.local.slim .pl-chip .pl-n { padding: 0; min-width: 0; text-align: center; }
+.tbl-stage.tbl-stage .board.local.slim .pl-chip .pl-agent { position: absolute; right: calc(2 * var(--u)); top: calc(2 * var(--u)); }
+.tbl-stage.tbl-stage .board.local.slim .pb-body.with-legend .pb-low { grid-row: 3; grid-column: 3; border: 0; padding: 0; min-height: 0; display: block; }
+.tbl-stage.tbl-stage .board.local.slim .pb-low .stats { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: calc(5 * var(--u)); height: 100%; padding: 0; font-size: calc(16 * var(--u)); }
+.tbl-stage.tbl-stage .board.local.slim .pb-low .st { justify-content: center; gap: calc(4 * var(--u)); border: 1px solid #3d2f1a; border-radius: calc(5 * var(--u)); background: #0c0906; }
+/* "My pieces", inside the board: the free corner over the last slots (their key tabs are blank). */
+.tbl-stage.tbl-stage [data-region="local"] .btn.find-mine { position: absolute; right: 16px; top: 7px; left: auto; width: 116px; height: 30px; padding: 0 8px; border-radius: 4px; font-size: 13px; z-index: 4; }
+
+/* My pieces over the two last slots (their key tabs are blank), clear of the sixth slot's tab. */
+.tbl-stage.tbl-stage [data-region="local"] .btn.find-mine { width: 100px; right: 15px; font-size: 12px; }
+
+/* ---- The table's frame (base-fixes #36) ---- */
+/* The piles: the Court deck shows the Court card back; the action discard pile left of it. */
+.tbl-stage .cp-stack i { overflow: hidden; }
+.tbl-stage .cp-stack .cp-back { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tbl-stage .cpile.adiscard .cp-face.act { position: absolute; inset: 0; display: block; overflow: hidden; border-radius: 6px; }
+.tbl-stage .cpile.adiscard .cp-face.act .facedown { display: block; width: 100%; height: 100%; border-radius: 6px; }
+/* The ambitions column: under the menu buttons, down to the bottom bar, its rows sharing the height; a tab folds it. */
+.tbl-stage .region.side { display: flex; }
+.tbl-stage .region.side .side-amb { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.tbl-stage .region.side .side-amb .amb-rows { flex: 1; display: flex; flex-direction: column; justify-content: space-between; min-height: 0; }
+.tbl-stage .side-amb .amb-tab { position: absolute; left: -2px; top: 10px; width: 24px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 0 6px 6px 0; background: #b8862a; color: #1d150d; font-size: 14px; cursor: pointer; z-index: 2; }
+.tbl-stage .side-amb .amb-tab:hover { background: #f3c463; }
+.tbl-stage .side-amb.shut .amb-tab { position: static; width: 100%; height: 100%; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 14px; padding-top: 14px; background: none; color: #f3c463; }
+.tbl-stage .side-amb.shut .amb-tab-name { writing-mode: vertical-rl; font: 700 16px Georgia, "Times New Roman", serif; letter-spacing: .12em; text-transform: uppercase; color: #efe3c4; }
+/* The instruction under the hand: centred, larger, underlined, glowing; on the local turn too. */
+.tbl-stage.tbl-stage .hd.prompt { gap: 3px; }
+.tbl-stage.tbl-stage .hd.prompt .pr-text { font-size: 25px; font-weight: 600; color: #f6e7c4; text-shadow: 0 0 14px rgba(255, 196, 100, .8), 0 0 4px rgba(255, 196, 100, .5), 0 2px 6px #000; }
+.tbl-stage.tbl-stage .hd.prompt::after { display: block; width: 520px; height: 2px; box-shadow: 0 0 10px rgba(255, 196, 100, .8); }
+/* Pile names on up to two lines under the pile, never over the next one. */
+.tbl-stage.tbl-stage .cpile { width: 84px; }
+.tbl-stage.tbl-stage .cp-n { white-space: normal; text-align: center; line-height: 1.15; }
+.tbl-stage.tbl-stage .hd.prompt .pr-text { font-size: 21px; max-width: var(--pr-w); overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- Owner's notes of 2026-11-25, second round (base-fixes #36) ---- */
+/* The slots keep their row: the two spare cities (no key tab) sit level with the others. */
+.tbl-stage.tbl-stage .board.local.slim .slots { align-items: flex-end; }
+/* No veil nor rule over the hand's band: it still keeps the map's clicks off. */
+.tbl-stage.tbl-stage .hand-zone { background: none; border-top: 0; box-shadow: none; }
+/* Action cards in the shape of every other card (372 × 519). */
+.tbl-stage.tbl-stage .region.hand .hand-card { height: auto; aspect-ratio: 372 / 519; }
+.tbl-stage.tbl-stage .region.hand .hand-card .acard { height: 100%; }
+.tbl-stage.tbl-stage .play .acard { height: auto; aspect-ratio: 372 / 519; }
+.tbl-stage.tbl-stage .region.actions .act-card .acard { height: auto; aspect-ratio: 372 / 519; }
+.tbl-stage.tbl-stage .cpile.adiscard .cp-face.act .acard { width: 100%; height: 100%; }
+.tbl-stage.tbl-stage .region.played .play .acard, .tbl-stage.tbl-stage .region.played .play .facedown, .tbl-stage.tbl-stage .region.played .play.none { width: 84px; height: auto; aspect-ratio: 372 / 519; }
+.tbl-stage.tbl-stage .rival-wrap.band .play .acard, .tbl-stage.tbl-stage .rival-wrap.band .play .facedown { width: 62px; height: auto; aspect-ratio: 372 / 519; }
+.tbl-stage.tbl-stage .pile .acard.pile-card, .tbl-stage.tbl-stage .pile .facedown.pile-card { width: 46px; height: auto; aspect-ratio: 372 / 519; }
+/* My pieces centred over the two spare cities, in the gap above them (the key tabs' height). */
+.tbl-stage.tbl-stage [data-region="local"] .btn.find-mine { right: 10px; top: 3px; width: 100px; height: 22px; min-height: 0; padding: 0 6px; line-height: 20px; }
+/* The top card of the action discard: drawn as a hand card, scaled down to the pile. */
+.tbl-stage.tbl-stage .cpile.adiscard .cp-face.act .acard { width: 100px; height: 140px; transform: scale(.6); transform-origin: 0 0; }
