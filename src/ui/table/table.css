@@ -2069,3 +2069,15 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage.tbl-stage [data-region="local"] .btn.find-mine { right: 10px; top: 3px; width: 100px; height: 22px; min-height: 0; padding: 0 6px; line-height: 20px; }
 /* The top card of the action discard: drawn as a hand card, scaled down to the pile. */
 .tbl-stage.tbl-stage .cpile.adiscard .cp-face.act .acard { width: 100px; height: 140px; transform: scale(.6); transform-origin: 0 0; }
+
+/* ---- Owner's notes of 2026-11-25, third round (base-fixes #37) ---- */
+/* My pieces whole, inside the board's frame: under its top edge, over the two spare cities. */
+.tbl-stage.tbl-stage [data-region="local"] .btn.find-mine { top: 9px; right: 14px; height: 20px; line-height: 18px; font-size: 11px; border-width: 1px; }
+/* The ambitions column's tab: a handle on the middle of its left edge, outside the frame, like a drawer's. */
+.tbl-stage.tbl-stage .region.side { overflow: visible; }
+.tbl-stage.tbl-stage .side-amb:not(.shut) .amb-tab { left: -22px; top: 50%; transform: translateY(-50%); width: 22px; height: 76px; border: 2px solid #c9a25a; border-right: 0; border-radius: 8px 0 0 8px; background: #b8862a; color: #1d150d; box-shadow: -3px 0 8px #000a; }
+.tbl-stage.tbl-stage .side-amb:not(.shut) .amb-tab:hover { background: #f3c463; color: #1d150d; }
+/* Before a card is picked there is no bar: only the turn's buttons (Undo, Pass) stay in their places. */
+.tbl-stage.tbl-stage .region.actions.cmd-bar.bare { background: none; border-color: transparent; box-shadow: none; pointer-events: none; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar.bare::before, .tbl-stage.tbl-stage .region.actions.cmd-bar.bare::after { display: none; }
+.tbl-stage.tbl-stage .region.actions.cmd-bar.bare button { pointer-events: auto; }

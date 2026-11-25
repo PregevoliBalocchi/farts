@@ -25,8 +25,8 @@ test('boots the table with every region and no errors', async ({ page }) => {
   for (const r of ['header', 'rivals', 'map', 'side', 'ambitions', 'court', 'recent', 'local', 'hand']) {
     await expect(page.locator(`[data-region="${r}"]`)).toBeVisible();
   }
-  // On the local turn the command bar is there from the start (base-fixes #35): what to do, Undo and Pass.
-  await expect(page.locator('[data-region="actions"].cmd-bar')).toBeVisible();
+  // Before a card is picked there is no bar, only the turn's buttons (base-fixes #37): Undo and Pass.
+  await expect(page.locator('[data-region="actions"].cmd-bar.bare')).toBeAttached();
   await expect(page.locator('.cmd-bar [data-act="pass"]')).toBeVisible();
   // The 3D map (a canvas plus keyboard stand-ins for its systems), or the 2D map without WebGL.
   await expect(page.locator('[data-region="map"] [data-sys]').first()).toBeAttached();
@@ -68,15 +68,23 @@ test('the settings window and the log drop-down open and close with Escape', asy
   await expect(page.locator('.drop-win')).toHaveCount(0);
 });
 
-test('hovering a rival band shows its hover card, with no window to close', async ({ page }) => {
+test('a click on a rival band opens its board and a second click closes it; hovering does not', async ({ page }) => {
   await open(page);
-  await page.locator('.board.rband').first().hover();
-  await expect(page.locator('.hover-tip:not(.hover-sub)')).toBeVisible();
+  const band = page.locator('.board.rband').first();
+  const tip = page.locator('.hover-tip:not(.hover-sub)');
+  // Hovering the band opens nothing (base-fixes #37).
+  await band.hover();
+  await page.waitForTimeout(300);
+  await expect(tip).toBeHidden();
+  await band.click({ position: { x: 20, y: 10 } });
+  await expect(tip).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  // The mouse can leave the band for the card itself: the card stays open.
-  await page.locator('.hover-tip:not(.hover-sub)').hover();
+  // It stays while the mouse moves away, until the band is clicked again.
+  await page.mouse.move(960, 600);
   await page.waitForTimeout(600);
-  await expect(page.locator('.hover-tip:not(.hover-sub)')).toBeVisible();
+  await expect(tip).toBeVisible();
+  await band.click({ position: { x: 20, y: 10 } });
+  await expect(tip).toBeHidden();
 });
 
 test('hotseat covers the screen between players until the next one is ready', async ({ page }) => {
