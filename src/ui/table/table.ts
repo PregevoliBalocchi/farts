@@ -13,7 +13,7 @@ import { messageTranslator } from '../../i18n/messages';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
 import { assetUrl, cardArt, icon, seatColor, seatIcon, setSeatColors } from './assets';
-import { cardFaceById, cardWords, courtCardFace, faceOf, fitCardText, hasKitFace, setFaceSource } from './cardface';
+import { cardFaceById, cardWords, courtCardFace, faceOf, fitCardText, hasKitFace, setActionFaceSource, setFaceSource } from './cardface';
 import { loadCardFonts } from './cardfonts';
 import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, faceKey, facePicture, hitsLeft } from './battle';
 import type { BattlePick } from './battle';
@@ -41,7 +41,7 @@ import { patchChildren } from './patch';
 import {
   actionCard, button, cardLabel, sizeAvatars, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon,
 } from './render';
-import { legal, othersTurn, tableView, whyNot } from './view';
+import { actionCardView, legal, othersTurn, tableView, whyNot } from './view';
 import type { TableView } from './view';
 
 /** The windows that still dim the table: the settings and a card's choice. */
@@ -120,6 +120,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   const ix = indexContent(content, BASE_EFFECTS);
   // Every panel draws a card by id the same way: from the kit, in the table's language.
   setFaceSource((id) => faceOf(ix, id, lang));
+  setActionFaceSource((id) => {
+    const c = actionCardView(ix, id);
+    return c ? actionCard(ix, c, t) : null;
+  });
   /** The engine's sentences (log, errors) in the table's language, players and ids by name. */
   const engineSay = () =>
     messageTranslator(lang, {
@@ -770,6 +774,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'allocate':
         return t('prompt.allocate');
       case 'decide': {
+        if (intent.step === 'battle' && intent.collect) return t('prompt.collectDice');
         const tp = tablePick(v);
         return tp && v.decision ? t(`decide.onTable.${tp.kind}`, { card: cardName(v.decision.card) }) : t('prompt.decide');
       }
@@ -1254,21 +1259,41 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
    * type (skirmish, assault, raid, none); a free place adds one. Then Roll,
    * and the same window shows the roll and takes the hits.
    */
+  /**
+   * The attacker collecting dice after the defender reacted (Predictive Sensors, lore-15): the battle window
+   * again, with the dice first asked for, so they can be changed now that the defender's ships moved in
+   * (rules: dice are collected after the reactions; piano D1). Any other moment leaves the intent as it is.
+   */
+  function syncCollectIntent(): void {
+    const ph = state.phase;
+    const b = state.battleSetup;
+    const due = ph.type === 'decide' && ph.decision.effect === 'collectDice' && ph.decision.player === local() && !!b && typeof b.target === 'number';
+    if (!due) {
+      if (intent.step === 'battle' && intent.collect) intent = IDLE;
+      return;
+    }
+    if (intent.step === 'battle' && intent.collect) return;
+    intent = { step: 'battle', system: b!.system, target: b!.target as PlayerId, dice: { skirmish: b!.dice.skirmish ?? 0, assault: b!.dice.assault ?? 0, raid: b!.dice.raid ?? 0 }, collect: true };
+  }
+
   function battleSetup(v: TableView): string {
     const i = intent;
     if (!board3d || i.step !== 'battle' || i.target === null || !myTurn()) return '';
     const me = local();
     const target = i.target;
     const total = i.dice.skirmish + i.dice.assault + i.dice.raid;
-    const payload = battlePayload(i);
+    // Collecting after the defender reacted (Predictive Sensors): the dice are the Decision's answer (piano D1).
+    const collect = !!i.collect;
+    const payload = collect ? null : battlePayload(i);
     const why = payload && total > 0 ? whyNot(ix, state, act(payload, i.prelude)) : null;
-    const ok = payload !== null && total > 0 && why === null;
+    const ok = collect ? total > 0 && can({ type: 'decide', player: me, args: { dice: { ...i.dice } } }) : payload !== null && total > 0 && why === null;
     const here = v.systems.find((s) => s.id === i.system)?.ships.find((x) => x.player === me);
     // A die can be added when the pool it makes is legal, or becomes legal with more skirmish dice (a card's
     // mandatory extra dice make the small pools on the way illegal): from none, a die can always be added again.
     const grows = (dice: { skirmish: number; assault: number; raid: number }) => {
       for (let k = 0; dice.skirmish + dice.assault + dice.raid + k <= MAX_STEPPER_DICE; k++) {
-        if (can(act({ kind: 'battle', system: i.system, target, dice: { ...dice, skirmish: dice.skirmish + k } }, i.prelude))) return true;
+        const pool = { ...dice, skirmish: dice.skirmish + k };
+        if (collect ? can({ type: 'decide', player: me, args: { dice: pool } }) : can(act({ kind: 'battle', system: i.system, target, dice: pool }, i.prelude))) return true;
       }
       return false;
     };
@@ -1291,7 +1316,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const extra = extraDiceNotes(i.system);
     // A move before or after the battle (the Warrior on a Copy or Pivot): planned on the map, then back here.
     let tactical = '';
-    if (i.tactical) {
+    if (collect) {
+      // The battle is already declared: no move to add.
+    } else if (i.tactical) {
       const m = i.tactical.move;
       tactical = `<div class="opt-row b-tactical"><span class="hint small">${esc(t(`battle.tactical.${i.tactical.when}`, { from: systemLabel(v, m.from), to: systemLabel(v, m.to), n: m.ships + (m.damaged ?? 0) }))}</span>${button('tactical-off', t('battle.tacticalOff'), { cls: 'link' })}</div>`;
     } else if (payload && tacticalPossible(v, payload)) {
@@ -1300,7 +1327,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     // The defender hits first (Railgun Arrays, lore-12): with fresh and damaged ships, which one takes it.
     let preHit = '';
     const theirs = v.systems.find((s) => s.id === i.system)?.ships.find((x) => x.player === target);
-    if (here && here.fresh > 0 && here.damaged > 0 && (theirs?.fresh ?? 0) > 0 && ownedEffects(ix, state, target).some((f) => f.effect.hitAttackerIfFresh)) {
+    if (!collect && here && here.fresh > 0 && here.damaged > 0 && (theirs?.fresh ?? 0) > 0 && ownedEffects(ix, state, target).some((f) => f.effect.hitAttackerIfFresh)) {
       const on = i.preHit ?? 'fresh';
       preHit = `<div class="opt-row b-prehit"><span class="hint small">${esc(t('battle.preHitAsk'))}</span>${(['fresh', 'damaged'] as const).map((h) => button('pre-hit', t(`battle.preHit.${h}`), { args: { hit: h }, cls: on === h ? 'on' : '' })).join('')}</div>`;
     }
@@ -1313,7 +1340,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       ${tactical}${preHit}
       <div class="battle-slot" style="width:${BATTLE_VIEW.w}px"></div>
       ${why ? `<div class="hint b-why">${esc(say(why))}</div>` : ''}
-      <div class="b-foot"><div class="b-btns">${button('cancel', t('btn.cancel'), { cls: 'b-btn' })}${button('do-battle', t('battle.go'), { cls: 'primary b-btn', disabled: !ok })}</div></div>
+      ${collect ? `<div class="hint b-why">${esc(t('battle.collectAfter', { name: playerName(t, target) }))}</div>` : ''}
+      <div class="b-foot"><div class="b-btns">${collect ? '' : button('cancel', t('btn.cancel'), { cls: 'b-btn' })}${button('do-battle', t('battle.go'), { cls: 'primary b-btn', disabled: !ok })}</div></div>
     </div>`;
   }
 
@@ -1379,6 +1407,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   /** A card's printed name in the table's language (its id when the content has none). */
   function cardName(id: string): string {
+    // An action card by its suit and number ("Costruzione 2"), never its id.
+    const action = actionCardView(ix, id);
+    if (action) return cardLabel(t, action);
     return faceOf(ix, id, lang).name ?? id;
   }
 
@@ -1752,7 +1783,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       return { title: `${systemLabel(v, b.system)}: ${playerName(t, b.attacker)} → ${defenderName(b.target)}`, text: summary, body: raidChoices(b) || undefined, main: [button('allocate', t('battle.assign'), { cls: 'cmd-btn primary', disabled: !ok })], powers: [], turn: [undoOrCancel(false), ''] };
     }
 
+    // Collecting dice after the defender reacted: the battle window asks (syncCollectIntent).
+    if (v.phase === 'decide' && v.decision && intent.step === 'battle' && intent.collect && board3d) return null;
     if (v.phase === 'decide' && v.decision) {
+      if (v.decision.effect === 'swap' && state.phase.type === 'decide' && state.phase.decision.player === me) {
+        const name = playerName(t, state.phase.decision.data?.rival as PlayerId);
+        return { text: t('swap.ask', { card: cardName(v.decision.card), name }), main: [button('decide-open', t('swap.open'), { cls: 'cmd-btn primary' }), button('decline', t('swap.no'), { cls: 'cmd-btn' })], powers: [], turn: [undoOrCancel(false), ''] };
+      }
       // Decline only when the empty answer declines (a campaign event's empty answer takes the rules' default).
       const declinable = decisionAsk(ix, v.decision)?.empty === 'decline' && can({ type: 'decide', player: me, args: {} });
       // Nothing to choose (a saved game, or a choice the engine left open): one Continue, no empty list (piano D2).
@@ -2020,6 +2057,21 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       inner = `<h2 id="modal-title">${esc(t('pass.title'))}</h2>
         <p class="hint">${esc(t('pass.sure'))}</p>
         <div class="modal-foot">${button('close-modal', t('btn.cancel'))}${button('pass-confirm', t('play.pass'), { cls: 'primary' })}</div>`;
+    } else if (modal.type === 'decide' && v.decision && v.decision.effect === 'swap' && state.phase.type === 'decide') {
+      // Farseers' second step (piano D3): the Rival's hand and yours as cards; one of each, or no swap.
+      const r = state.phase.decision.data?.rival as PlayerId;
+      const [give = '', take = ''] = modal.chosen ?? [];
+      const row = (ids: string[], act: string, on: string) =>
+        ids.map((id) => `<button type="button" class="dr-card pickable${id === on ? ' chosen' : ''}" data-act="${act}" data-card="${esc(id)}" aria-pressed="${id === on}" aria-label="${esc(cardName(id))}">${cardFaceById(id)}</button>`).join('');
+      size = 'l';
+      inner = `<h2 id="modal-title">${esc(t('swap.title', { card: cardName(v.decision.card) }))}</h2>
+        <div class="modal-body keep-cards swap-cards">
+          <p class="hint">${esc(t('swap.theirs', { name: playerName(t, r) }))}</p>
+          <div class="dr-row">${row(state.players[r]?.hand ?? [], 'swap-take', take)}</div>
+          <p class="hint">${esc(t('swap.mine'))}</p>
+          <div class="dr-row">${row(state.players[local()].hand, 'swap-give', give)}</div>
+        </div>
+        <div class="modal-foot">${button('decline', t('swap.no'))}${button('swap-confirm', t('swap.go'), { cls: 'primary', disabled: !give || !take })}</div>`;
     } else if (modal.type === 'decide' && v.decision && keepChoice(v.decision)) {
       // Keep N of the cards drawn: the cards themselves, clicked to choose.
       const { cards, keep } = keepChoice(v.decision)!;
@@ -2028,7 +2080,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         .map((id) => {
           const on = chosen.includes(id);
           const { face, kind } = drawnCard(id);
-          return `<button type="button" class="dr-card pickable k-${kind}${on ? ' chosen' : ''}" data-act="keep-toggle" data-card="${esc(id)}" data-zoom="${esc(id)}" aria-pressed="${on}" aria-label="${esc(id)}">${face}</button>`;
+          return `<button type="button" class="dr-card pickable k-${kind}${on ? ' chosen' : ''}" data-act="keep-toggle" data-card="${esc(id)}" data-zoom="${esc(id)}" aria-pressed="${on}" aria-label="${esc(cardName(id))}">${face}</button>`;
         })
         .join('');
       size = 'l';
@@ -2129,6 +2181,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** Whether the hand was slid away at the last render (to animate only the change). */
   let lastHandAway = false;
   function render(): void {
+    syncCollectIntent();
     // A "spent as" type lasts while its spend is being chosen.
     if (intent.step === 'idle') spendAs = null;
     // A tactical move is planned only in the move steps; leaving them otherwise drops it.
@@ -2625,6 +2678,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         if (intent.step === 'battle') intent = { ...intent, tactical: undefined };
         break;
       case 'do-battle':
+        if (intent.step === 'battle' && intent.collect) {
+          const dice = { ...intent.dice };
+          intent = IDLE;
+          send({ type: 'decide', player: me, args: { dice } });
+          return;
+        }
         if (intent.step === 'battle') {
           const p = battlePayload(intent);
           if (p) send(act(p, intent.prelude));
@@ -2697,6 +2756,20 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           modal.chosen = chosen.includes(d.card) ? chosen.filter((c) => c !== d.card) : chosen.length < keep ? [...chosen, d.card] : chosen;
         }
         break;
+      case 'swap-give':
+      case 'swap-take':
+        if (modal?.type === 'decide' && d.card) {
+          const [give = '', take = ''] = modal.chosen ?? [];
+          modal.chosen = d.act === 'swap-give' ? [d.card, take] : [give, d.card];
+        }
+        break;
+      case 'swap-confirm':
+        if (modal?.type === 'decide' && modal.chosen?.[0] && modal.chosen[1]) {
+          const [give, take] = modal.chosen;
+          modal = null;
+          send({ type: 'decide', player: me, args: { give, take } });
+        }
+        return;
       case 'keep-confirm':
         if (modal?.type === 'decide' && modal.chosen) {
           const keep = modal.chosen;

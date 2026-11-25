@@ -77,6 +77,19 @@ describe('declaring', () => {
     expect(s.players[0].hand).toEqual(['suitA-5']);
     expect(s.players[1].hand).toEqual(['suitC-4', 'suitA-3']);
   });
+
+  it('Farseers asks in two steps: the Rival, then the swap with that hand in view, which may be refused', () => {
+    let s = start(ix, [['suitC-2', 'suitA-3'], ['suitC-4', 'suitA-5']]);
+    s.players[0].court = ['g:court-17'];
+    s = dispatch(ix, s, { type: 'lead', player: 0, card: 'suitC-2', declare: true });
+    s = dispatch(ix, s, { type: 'decide', player: 0, args: { rival: 1 } });
+    expect(s.phase.type === 'decide' && s.phase.decision).toMatchObject({ player: 0, effect: 'swap', data: { rival: 1 } });
+    const swapped = dispatch(ix, s, { type: 'decide', player: 0, args: { give: 'suitA-3', take: 'suitA-5' } });
+    expect(swapped.players[0].hand).toEqual(['suitA-5']);
+    const kept = dispatch(ix, s, { type: 'decide', player: 0, args: {} });
+    expect(kept.players[0].hand).toEqual(['suitA-3']);
+    expect(kept.phase.type).not.toBe('decide');
+  });
 });
 
 describe('Copy and Pivot options', () => {

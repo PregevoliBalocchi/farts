@@ -170,7 +170,17 @@ export function setFaceSource(f: ((id: string) => CourtFaceData) | null): void {
 }
 
 /** Any card's face by id, the same everywhere: the kit card when possible, else its picture, else its id. */
+/** How action cards are drawn (the table sets it: their number, pips and actions; piano PR 4). */
+let actionFaceSource: ((id: string) => string | null) | null = null;
+
+/** Sets how action cards are drawn by `cardFaceById` (null: only Court, lore and leader cards). */
+export function setActionFaceSource(f: ((id: string) => string | null) | null): void {
+  actionFaceSource = f;
+}
+
 export function cardFaceById(id: string): string {
+  const action = actionFaceSource?.(id);
+  if (action) return action;
   if (faceSource) return courtCardFace(faceSource(id));
   const art = cardArt(id);
   return art ? `<img class="cf-plain" src="${esc(art)}" alt="">` : `<span class="cf-plain cf-id">${esc(id)}</span>`;

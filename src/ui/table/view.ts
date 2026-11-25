@@ -229,7 +229,8 @@ export function rivalsOf(playerCount: number, local: PlayerId): PlayerId[] {
   return Array.from({ length: playerCount - 1 }, (_, i) => (local + 1 + i) % playerCount);
 }
 
-function actionCard(ix: ContentIndex, id: string): ActionCardView | null {
+/** An action card's view (number, suit, pips, actions), or null when `id` is not an action card. */
+export function actionCardView(ix: ContentIndex, id: string): ActionCardView | null {
   const d = ix.actionCards.get(id);
   if (!d) return null;
   return { card: id, suit: d.suit, number: d.number, pips: d.pips, kinds: ix.content.suits[d.suit] ?? [] };
@@ -244,7 +245,7 @@ export function pilesView(ix: ContentIndex, s: GameState, local: PlayerId, lang 
     discard: [...s.discard].reverse().map((id) => {
       const by = hidden[id];
       const faceDown = by !== undefined;
-      return { card: !faceDown || by === local ? actionCard(ix, id) : null, faceDown };
+      return { card: !faceDown || by === local ? actionCardView(ix, id) : null, faceDown };
     }),
     courtDiscard: [...s.courtDiscard].reverse(),
     courtDeck: s.courtDeck.filter((id) => !secret.has(id)).sort((a, b) => name(a).localeCompare(name(b)) || a.localeCompare(b)),
@@ -351,7 +352,7 @@ export function tableView(ix: ContentIndex, s: GameState, local: PlayerId, lang 
   const c = ix.content;
   const active = activePlayer(s);
   const leadPlay = s.round.plays.find((p) => p.mode === 'lead' && p.card);
-  const leadCard = leadPlay?.card ? actionCard(ix, leadPlay.card) : null;
+  const leadCard = leadPlay?.card ? actionCardView(ix, leadPlay.card) : null;
 
   const ambitions: AmbitionRowView[] = AMBITIONS.map((a) => {
     const tallies = s.players
@@ -387,7 +388,7 @@ export function tableView(ix: ContentIndex, s: GameState, local: PlayerId, lang 
     plays: s.round.plays.map((p) => ({
       player: p.player,
       mode: p.mode,
-      card: p.card && p.faceUp ? actionCard(ix, p.card) : null,
+      card: p.card && p.faceUp ? actionCardView(ix, p.card) : null,
       zeroed: !!p.zeroed,
       seized: !!p.seized,
     })),
@@ -416,7 +417,7 @@ export function tableView(ix: ContentIndex, s: GameState, local: PlayerId, lang 
     courtDeck: s.courtDeck.length,
     piles: pilesView(ix, s, local, lang),
     hand: s.players[local].hand
-      .map((id) => actionCard(ix, id))
+      .map((id) => actionCardView(ix, id))
       .filter((x): x is ActionCardView => x !== null)
       .map((card) => ({ ...card, playable: playable(ix, s, local, card.card) })),
     budget,

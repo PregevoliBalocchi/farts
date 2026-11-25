@@ -205,7 +205,7 @@ const justScoring = (a: AmbitionId): CardEffect => ({ scoringSecondOnFirst: [a] 
 
 // ---------------------------------------------------------------- registry ---
 
-/** Base-game Court, lore and leader effects (status per card: design/gdd/card-effects.md). */
+/** Base-game Court, lore and leader effects (status per card: design/gdd/card-effects.md). */
 // ------------------------------------------- how each Decision is answered ---
 // Every card that asks a Decision declares the answers to try (engine decisions.ts): the table offers the
 // legal ones, and a choice that may be declined with none legal is not asked (piano D2).
@@ -223,6 +223,21 @@ function rivalsOf(s: GameState, p: PlayerId): PlayerId[] {
 /** Court slot indices. */
 function courtSlots(s: GameState): number[] {
   return s.court.map((_, i) => i);
+}
+
+/** Farseers (court-17): swaps a card of your hand with one of `other`'s hand. */
+function swapWith(ctx: EffectContext, other: PlayerId): string {
+  const s = ctx.state;
+  if (!s.players[other] || other === ctx.player) fail('Choose a Rival');
+  const give = argStr(ctx, 'give');
+  const take = argStr(ctx, 'take');
+  const mine = s.players[ctx.player].hand;
+  const theirs = s.players[other].hand;
+  if (!mine.includes(give)) fail(`${give} is not in your hand`);
+  if (!theirs.includes(take)) fail(`${take} is not in P${other}'s hand`);
+  mine.splice(mine.indexOf(give), 1, take);
+  theirs.splice(theirs.indexOf(take), 1, give);
+  return `looks at P${other}'s hand and swaps a card`;
 }
 
 /** Most answers offered for moving ships in from several systems (lore-15). */
@@ -338,20 +353,19 @@ export const BASE_EFFECTS: EffectRegistry = {
   },
   'court-17': {
     asks: {
-      // Look at a Rival's hand, then maybe swap a card with them (D3 splits it in two steps).
-      onDeclare: {
+      // Two steps (piano D3): which Rival's hand to look at, then which card to swap, if any.
+      onDeclare: { empty: 'decline', answers: ({ state, player }) => each('rival', 'player', rivalsOf(state, player)) },
+      swap: {
         empty: 'decline',
-        answers: ({ state, player }) =>
-          rivalsOf(state, player).flatMap((r): DecisionAnswer[] => [
-            [{ key: 'rival', kind: 'player', value: r }],
-            ...state.players[player].hand.flatMap((give) =>
-              state.players[r].hand.map((take): DecisionAnswer => [
-                { key: 'rival', kind: 'player', value: r },
-                { key: 'give', kind: 'card', value: give },
-                { key: 'take', kind: 'card', value: take },
-              ]),
-            ),
-          ]),
+        answers: ({ state, player, data }) => {
+          const r = data?.rival as PlayerId;
+          return state.players[player].hand.flatMap((give) =>
+            (state.players[r]?.hand ?? []).map((take): DecisionAnswer => [
+              { key: 'give', kind: 'card', value: give },
+              { key: 'take', kind: 'card', value: take },
+            ]),
+          );
+        },
       },
     },
     prelude: {
@@ -380,16 +394,17 @@ export const BASE_EFFECTS: EffectRegistry = {
         if (ctx.args.rival === undefined) return 'looks at no hand';
         const s = ctx.state;
         const other = rival(ctx, 'rival');
-        if (ctx.args.give === undefined) return `looks at P${other}'s hand`;
-        const give = argStr(ctx, 'give');
-        const take = argStr(ctx, 'take');
-        const mine = s.players[ctx.player].hand;
-        const theirs = s.players[other].hand;
-        if (!mine.includes(give)) fail(`${give} is not in your hand`);
-        if (!theirs.includes(take)) fail(`${take} is not in P${other}'s hand`);
-        mine.splice(mine.indexOf(give), 1, take);
-        theirs.splice(theirs.indexOf(take), 1, give);
-        return `looks at P${other}'s hand and swaps a card`;
+        if (ctx.args.give === undefined) {
+          // Then the swap, asked on its own with that hand in view.
+          (s.pendingDecisions ??= []).unshift({ player: ctx.player, card: ctx.card, effect: 'swap', data: { rival: other } });
+          return `looks at P${other}'s hand`;
+        }
+        return swapWith(ctx, other);
+      },
+      // The second step: swap 1 card with the Rival whose hand was looked at (empty answer: no swap).
+      swap: (ctx) => {
+        if (ctx.args.give === undefined) return 'swaps no card';
+        return swapWith(ctx, ctx.data?.rival as PlayerId);
       },
     },
   },
