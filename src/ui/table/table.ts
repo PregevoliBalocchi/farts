@@ -123,6 +123,8 @@ const AUTO_LARGE_BELOW = 0.85;
 /** Mounts the table into `root`. */
 export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle {
   const params = new URLSearchParams(location.search);
+  // Motion (piano A7): off with ?motion=off or when the system asks to reduce motion, for the 3D views too.
+  const motionOn = params.get('motion') !== 'off' && !(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
   let lang: Lang = pickLang(location.search, navigator.language);
   let t = translator(lang);
   const { content, source } = online ? { content: online.content, source: 'owner' as const } : loadContent();
@@ -265,7 +267,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   const shell = document.createElement('div');
   shell.className = 'tbl';
   if (params.get('debug') === 'layout') shell.classList.add('debug-layout');
-  if (params.get('motion') === 'off') shell.classList.add('no-motion');
+  if (!motionOn) shell.classList.add('no-motion');
   // Text size (base-fixes #44): large, normal, or automatic (large when the stage shows below 85%, as on a
   // 1366×768 laptop); chosen in the settings and remembered, `?text=large` forces it.
   let textSize: TextSize = 'auto';
@@ -331,7 +333,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   const board3d = params.get('map') === '2d'
     ? null
     : createBoard3D(ix, {
-        motion: params.get('motion') !== 'off',
+        motion: motionOn,
         picture: params.get('map') === 'picture',
         showSpots: params.get('debug') === 'spots',
         // A system's card opens on a click (production/base-fixes.md #8), not on hover.
@@ -1514,7 +1516,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const faces = b.faces ?? [];
     if (!faces.length) return '';
     const key = rollKeyOf(b);
-    const roll = key !== diceShown && params.get('motion') !== 'off';
+    const roll = key !== diceShown && motionOn;
     diceShown = key;
     // Each die a cube with its six printed faces (production/base-fixes.md #14): it tumbles in and lands with the
     // rolled face towards the player.
@@ -1626,7 +1628,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
     if (battle3d === undefined) {
       try {
-        battle3d = new BattleView3D(params.get('motion') !== 'off');
+        battle3d = new BattleView3D(motionOn);
       } catch {
         battle3d = null;
       }
@@ -2385,6 +2387,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
    * systems (the canvas itself is not focusable), the camera hint, and in
    * calibration mode the system to click next.
    */
+  /** For a screen reader: how many systems can be picked now, and the first ones by name (A3). */
+  function litAnnounce(v: TableView, valid: ReadonlySet<string>): string {
+    const names = v.systems.filter((s) => valid.has(s.id)).map((s) => systemName(s, t));
+    const shown = names.slice(0, 5).join(', ');
+    return t(names.length === 1 ? 'map.litOne' : 'map.litMany', { n: names.length, names: names.length > 5 ? `${shown}…` : shown });
+  }
+
   function map3dOverlay(v: TableView, valid: ReadonlySet<string>): string {
     const shown = v.systems.filter((s) => s.inPlay);
     // One tab stop for the whole map (the arrow keys move between systems): the system last
@@ -2392,8 +2401,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const stop = shown.find((s) => s.id === mapKey)?.id ?? shown.find((s) => valid.has(s.id))?.id ?? shown[0]?.id;
     const keys = shown
       .map((s) => {
-        const label = systemName(s, t);
-        return `<span role="button" tabindex="${s.id === stop ? 0 : -1}" class="sys-key${valid.has(s.id) ? ' valid' : ''}" data-sys="${esc(s.id)}" data-tip="sys:${esc(s.id)}" aria-label="${esc(label)}">${esc(s.id)}</span>`;
+        // Its name, never the id (A12); a system that can be picked now says so (A3), not by colour alone (A9).
+        const name = systemName(s, t);
+        const label = valid.has(s.id) ? t('map.pickable', { name }) : name;
+        return `<span role="button" tabindex="${s.id === stop ? 0 : -1}" class="sys-key${valid.has(s.id) ? ' valid' : ''}" data-sys="${esc(s.id)}" data-tip="sys:${esc(s.id)}" aria-label="${esc(label)}">${valid.has(s.id) ? '✓ ' : ''}${esc(name)}</span>`;
       })
       .join('');
     let cal = '';
@@ -2533,7 +2544,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       awayHtml(),
       ruleBoxHtml(),
       bar ?`<div class="region actions cmd-bar${barNow?.bare ? ' bare' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)};width:${REGIONS.actions.w}px">${bar}</div>` : ctx ? `<div class="region actions waiting" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${othersTurn(state, 3) ? placeDown(REGIONS.waiting) : placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : '',
-      `<div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>`,
+      `<div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}${valid.size ? ` ${esc(litAnnounce(v, valid))}` : ''}</div>`,
       modalHtml(v),
       dropHtml(),
       curtainFor !== null ? handOver(curtainFor) : '',
@@ -3228,7 +3239,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   function agentsView(): CourtAgents3D | null {
     if (agents3d === undefined) {
       try {
-        agents3d = new CourtAgents3D(params.get('motion') !== 'off');
+        agents3d = new CourtAgents3D(motionOn);
       } catch {
         agents3d = null;
       }
@@ -3522,18 +3533,24 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   stage.addEventListener('keydown', (e) => {
     const el = e.target as HTMLElement;
-    // The map is one tab stop: the arrow keys (and Home, End) move between its systems.
+    // The map is one tab stop: the arrow keys (and Home, End) move between its systems; while some can be picked,
+    // between those (A3), and with Ctrl between all of them.
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1, Home: -Infinity, End: Infinity }[e.key];
     if (step !== undefined && el.dataset.sys) {
-      const all = [...stage.querySelectorAll<HTMLElement>('.sys-key')];
+      const keys = [...stage.querySelectorAll<HTMLElement>('.sys-key')];
+      const lit = keys.filter((k) => k.classList.contains('valid'));
+      const all = lit.length && !e.ctrlKey ? lit : keys;
       const i = all.indexOf(el);
-      const next = all[step === -Infinity ? 0 : step === Infinity ? all.length - 1 : (i + step + all.length) % all.length];
+      const from = i < 0 ? (step > 0 ? -1 : 0) : i;
+      const next = all[step === -Infinity ? 0 : step === Infinity ? all.length - 1 : (from + step + all.length) % all.length];
       if (next && next !== el) {
         e.preventDefault();
         el.tabIndex = -1;
         next.tabIndex = 0;
         mapKey = next.dataset.sys ?? null;
         next.focus();
+        // The map brings the system reached into view (A3).
+        if (next.dataset.sys) board3d?.ensureVisible(next.dataset.sys);
       }
       return;
     }

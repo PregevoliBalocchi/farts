@@ -1,0 +1,56 @@
+// Playwright: accessibility of the table (production/piano-blindatura-tavolo-2026-11-25.md, PR 7, Fase 5).
+import { expect, test, type Page } from '@playwright/test';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const build = (query: string): string => `${pathToFileURL(resolve('dist-single/index.html')).href}?${query}`;
+const RAW_SYSTEM = /\bc\d+-(gate|p\d)\b/;
+
+/** A 3-player table at seat 0, which leads its first card and starts a Move (systems to pick light up). */
+async function moving(page: Page): Promise<void> {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto(build('view=table&lang=it&motion=off&players=3&seed=11&seat=0'));
+  await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
+  await page.evaluate(() => {
+    const s = structuredClone(window.game!.state) as unknown as { initiative: number };
+    s.initiative = 0;
+    window.game!.load(s as never);
+  });
+  await page.locator('.hand-card:not(.unplayable)').first().click();
+  await page.locator('.cmd-bar [data-act="lead"]').click();
+  await page.locator('.cmd-bar [data-act="kind"][data-kind="move"]').click();
+  await expect(page.locator('.sys-key.valid').first()).toBeAttached();
+}
+
+test.describe('accessibility', () => {
+  test('the map names its systems, says which can be picked and the arrows move between those (A3, A12)', async ({ page }) => {
+    await moving(page);
+    const lit = page.locator('.sys-key.valid');
+    const n = await lit.count();
+    expect(n).toBeGreaterThan(1);
+    // The one tab stop is a system that can be picked, named and said to be pickable; no raw id anywhere.
+    const stop = page.locator('.sys-key[tabindex="0"]');
+    await expect(stop).toHaveClass(/valid/);
+    await expect(stop).toHaveAttribute('aria-label', /, selezionabile$/);
+    for (const el of await page.locator('.sys-key').all()) {
+      expect(await el.getAttribute('aria-label')).not.toMatch(RAW_SYSTEM);
+      expect(await el.textContent()).not.toMatch(RAW_SYSTEM);
+    }
+    // The live status announces how many can be picked.
+    await expect(page.locator('[role="status"][aria-live="polite"].sr-only')).toContainText(`${n} sistemi selezionabili`);
+    // ArrowRight goes to the next system that can be picked, not to any system.
+    await stop.focus();
+    await page.keyboard.press('ArrowRight');
+    const focused = page.locator('.sys-key:focus');
+    await expect(focused).toHaveClass(/valid/);
+    await expect(focused).not.toHaveAttribute('data-sys', (await lit.first().getAttribute('data-sys'))!);
+  });
+
+  test('the system setting "reduce motion" stops the table\'s motion like ?motion=off (A7)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto(build('view=table&lang=it&players=3&seed=11&seat=0'));
+    await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
+    await expect(page.locator('.tbl.no-motion')).toHaveCount(1);
+  });
+});
