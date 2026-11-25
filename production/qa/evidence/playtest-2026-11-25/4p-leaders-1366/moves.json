@@ -1,0 +1,2492 @@
+[
+ {
+  "step": 1,
+  "seat": 0,
+  "phase": "draft",
+  "click": "draft-pick Prendi lore-07"
+ },
+ {
+  "step": 2,
+  "seat": 3,
+  "phase": "draft",
+  "click": "draft-pick Prendi lore-26"
+ },
+ {
+  "step": 3,
+  "seat": 2,
+  "phase": "draft",
+  "click": "draft-pick Prendi lore-15"
+ },
+ {
+  "step": 4,
+  "seat": 1,
+  "phase": "draft",
+  "click": "draft-pick Prendi leader-16"
+ },
+ {
+  "step": 5,
+  "seat": 0,
+  "phase": "draft",
+  "click": "draft-pick Prendi leader-07"
+ },
+ {
+  "step": 6,
+  "seat": 3,
+  "phase": "draft",
+  "click": "draft-pick Prendi leader-12"
+ },
+ {
+  "step": 7,
+  "seat": 2,
+  "phase": "draft",
+  "click": "draft-pick Prendi leader-15"
+ },
+ {
+  "step": 8,
+  "seat": 1,
+  "phase": "lead",
+  "click": "draft-pick Prendi lore-06"
+ },
+ {
+  "step": 9,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Amministrazione 7"
+ },
+ {
+  "step": 10,
+  "seat": 1,
+  "phase": "actions",
+  "click": "court Rivolta di Massa"
+ },
+ {
+  "step": 11,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 12,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Amministrazione 4"
+ },
+ {
+  "step": 13,
+  "seat": 2,
+  "phase": "actions",
+  "click": "kind Tassa"
+ },
+ {
+  "step": 14,
+  "seat": 2,
+  "phase": "actions",
+  "click": "kind Influenza"
+ },
+ {
+  "step": 15,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Veggenti"
+ },
+ {
+  "step": 16,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 17,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Amministrazione 2"
+ },
+ {
+  "step": 18,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Rivolta di Massa"
+ },
+ {
+  "step": 19,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Marines Leali"
+ },
+ {
+  "step": 20,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Marines Leali"
+ },
+ {
+  "step": 21,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Veggenti"
+ },
+ {
+  "step": 22,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 23,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Amministrazione 6"
+ },
+ {
+  "step": 24,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Veggenti"
+ },
+ {
+  "step": 25,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Marines Leali"
+ },
+ {
+  "step": 26,
+  "seat": 0,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 27,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Mobilitazione 4"
+ },
+ {
+  "step": 28,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Marines Leali"
+ },
+ {
+  "step": 29,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Guardiani Giurati"
+ },
+ {
+  "step": 30,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Marines Leali"
+ },
+ {
+  "step": 31,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 32,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Aggressione 3"
+ },
+ {
+  "step": 33,
+  "seat": 1,
+  "phase": "actions",
+  "click": "spend Carburante"
+ },
+ {
+  "step": 34,
+  "seat": 1,
+  "phase": "actions",
+  "click": "spend Armi"
+ },
+ {
+  "step": 35,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 36,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Mobilitazione 2"
+ },
+ {
+  "step": 37,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Veggenti"
+ },
+ {
+  "step": 38,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 39,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Costruzione 3"
+ },
+ {
+  "step": 40,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 41,
+  "seat": 3,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 42,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Aggressione 4"
+ },
+ {
+  "step": 43,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Marines Leali"
+ },
+ {
+  "step": 44,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 45,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 46,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Aggressione 7"
+ },
+ {
+  "step": 47,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 48,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Costruzione 2"
+ },
+ {
+  "step": 49,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Veggenti"
+ },
+ {
+  "step": 50,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 51,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Costruzione 1"
+ },
+ {
+  "step": 52,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 53,
+  "seat": 3,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 54,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Costruzione 6"
+ },
+ {
+  "step": 55,
+  "seat": 0,
+  "phase": "actions",
+  "click": "spend Materiale"
+ },
+ {
+  "step": 56,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 57,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 58,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Aggressione 7"
+ },
+ {
+  "step": 59,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 60,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 61,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Amministrazione 5"
+ },
+ {
+  "step": 62,
+  "seat": 2,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 63,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 64,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Mobilitazione 6"
+ },
+ {
+  "step": 65,
+  "seat": 3,
+  "phase": "actions",
+  "click": "spend Psicoenergia"
+ },
+ {
+  "step": 66,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 67,
+  "seat": 3,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 68,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Mobilitazione 3"
+ },
+ {
+  "step": 69,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Canto di Libertà"
+ },
+ {
+  "step": 70,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Canto di Libertà"
+ },
+ {
+  "step": 71,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Canto di Libertà"
+ },
+ {
+  "step": 72,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 73,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Costruzione 5"
+ },
+ {
+  "step": 74,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 75,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 76,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Costruzione 7"
+ },
+ {
+  "step": 77,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Guardiani Giurati"
+ },
+ {
+  "step": 78,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 79,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Aggressione 5"
+ },
+ {
+  "step": 80,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Guardiani Giurati"
+ },
+ {
+  "step": 81,
+  "seat": 3,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 82,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Aggressione 6"
+ },
+ {
+  "step": 83,
+  "seat": 0,
+  "phase": "decide",
+  "click": "court Canto di Libertà"
+ },
+ {
+  "step": 84,
+  "seat": 0,
+  "phase": "actions",
+  "click": "decide-open Scegli"
+ },
+ {
+  "step": 85,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 86,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 88,
+  "seat": 1,
+  "phase": "actions",
+  "click": "follow Cambia"
+ },
+ {
+  "step": 89,
+  "seat": 1,
+  "phase": "actions",
+  "click": "court Rivolta di Massa"
+ },
+ {
+  "step": 90,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 91,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Aggressione 1"
+ },
+ {
+  "step": 92,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Guardiani Giurati"
+ },
+ {
+  "step": 93,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 94,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Mobilitazione 7"
+ },
+ {
+  "step": 95,
+  "seat": 3,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 96,
+  "seat": 0,
+  "phase": "actions",
+  "click": "close-modal Continua"
+ },
+ {
+  "step": 97,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Influenza"
+ },
+ {
+  "step": 98,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Anziano Mediatore"
+ },
+ {
+  "step": 99,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Rivolta di Massa"
+ },
+ {
+  "step": 100,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 101,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Amministrazione 3"
+ },
+ {
+  "step": 102,
+  "seat": 1,
+  "phase": "actions",
+  "click": "court Anziano Mediatore"
+ },
+ {
+  "step": 103,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 104,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Costruzione 5"
+ },
+ {
+  "step": 105,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Ingegneri Leali"
+ },
+ {
+  "step": 106,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 107,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Aggressione 4"
+ },
+ {
+  "step": 108,
+  "seat": 3,
+  "phase": "actions",
+  "click": "spend Psicoenergia"
+ },
+ {
+  "step": 109,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 110,
+  "seat": 3,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 111,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Costruzione 3"
+ },
+ {
+  "step": 112,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 113,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 114,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 115,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 116,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Amministrazione 5"
+ },
+ {
+  "step": 117,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Influenza"
+ },
+ {
+  "step": 118,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 119,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Costruzione 6"
+ },
+ {
+  "step": 120,
+  "seat": 2,
+  "phase": "actions",
+  "click": "power-card Veggenti: Scarta: cambia carte dal fondo degli scarti"
+ },
+ {
+  "step": 121,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 122,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Costruzione 7"
+ },
+ {
+  "step": 123,
+  "seat": 3,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 124,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Aggressione 1"
+ },
+ {
+  "step": 125,
+  "seat": 3,
+  "phase": "actions",
+  "click": "power-card Marines Leali: Scarta: 3 navi in un sistema che controlli"
+ },
+ {
+  "step": 126,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 127,
+  "seat": 3,
+  "phase": "allocate",
+  "click": "kind Combatti"
+ },
+ {
+  "step": 128,
+  "seat": 3,
+  "phase": "actions",
+  "click": "allocate Conferma i colpi"
+ },
+ {
+  "step": 129,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 130,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 131,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Amministrazione 1"
+ },
+ {
+  "step": 132,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Sindacato Spaziale"
+ },
+ {
+  "step": 133,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 134,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Mobilitazione 7"
+ },
+ {
+  "step": 135,
+  "seat": 1,
+  "phase": "decide",
+  "click": "court Rivolta di Massa"
+ },
+ {
+  "step": 136,
+  "seat": 1,
+  "phase": "actions",
+  "click": "decide-open Scegli"
+ },
+ {
+  "step": 137,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 138,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Mobilitazione 6"
+ },
+ {
+  "step": 139,
+  "seat": 2,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 140,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 141,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Costruzione 4"
+ },
+ {
+  "step": 142,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 143,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 144,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 145,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Aggressione 3"
+ },
+ {
+  "step": 146,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 147,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 148,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Aggressione 7"
+ },
+ {
+  "step": 149,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 150,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 151,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Mobilitazione 4"
+ },
+ {
+  "step": 152,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Interessi Navali"
+ },
+ {
+  "step": 153,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 154,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Amministrazione 2"
+ },
+ {
+  "step": 155,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Interessi Navali"
+ },
+ {
+  "step": 156,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Influenza"
+ },
+ {
+  "step": 157,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Ingegneri Leali"
+ },
+ {
+  "step": 158,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Tassa"
+ },
+ {
+  "step": 159,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 160,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Mobilitazione 1"
+ },
+ {
+  "step": 161,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Sindacato Spaziale"
+ },
+ {
+  "step": 162,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 163,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Costruzione 1"
+ },
+ {
+  "step": 164,
+  "seat": 1,
+  "phase": "actions",
+  "click": "court Interessi Navali"
+ },
+ {
+  "step": 165,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 166,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Amministrazione 4"
+ },
+ {
+  "step": 167,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Ingegneri Leali"
+ },
+ {
+  "step": 168,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 169,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Mobilitazione 5"
+ },
+ {
+  "step": 170,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 171,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 172,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Aggressione 3"
+ },
+ {
+  "step": 173,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Sindacato Spaziale"
+ },
+ {
+  "step": 174,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 175,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Aggressione 7"
+ },
+ {
+  "step": 176,
+  "seat": 1,
+  "phase": "actions",
+  "click": "court Ingegneri Leali"
+ },
+ {
+  "step": 177,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 178,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Mobilitazione 3"
+ },
+ {
+  "step": 179,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Ingegneri Leali"
+ },
+ {
+  "step": 180,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Ingegneri Leali"
+ },
+ {
+  "step": 181,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Ingegneri Leali"
+ },
+ {
+  "step": 182,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 183,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Aggressione 5"
+ },
+ {
+  "step": 184,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Ingegneri Leali"
+ },
+ {
+  "step": 185,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 186,
+  "seat": 2,
+  "phase": "actions",
+  "click": "close-modal Continua"
+ },
+ {
+  "step": 187,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Richieste Populiste"
+ },
+ {
+  "step": 188,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 189,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Costruzione 4"
+ },
+ {
+  "step": 190,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 191,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 192,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Mobilitazione 1"
+ },
+ {
+  "step": 193,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Richieste Populiste"
+ },
+ {
+  "step": 194,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 195,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Mobilitazione 4"
+ },
+ {
+  "step": 196,
+  "seat": 1,
+  "phase": "actions",
+  "click": "court Interessi Navali"
+ },
+ {
+  "step": 197,
+  "seat": 1,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 198,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Amministrazione 1"
+ },
+ {
+  "step": 199,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Anziano Mediatore"
+ },
+ {
+  "step": 200,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Canto di Libertà"
+ },
+ {
+  "step": 201,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Richieste Populiste"
+ },
+ {
+  "step": 202,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Richieste Populiste"
+ },
+ {
+  "step": 203,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 204,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Aggressione 6"
+ },
+ {
+  "step": 205,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 206,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Aggressione 2"
+ },
+ {
+  "step": 207,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Canto di Libertà"
+ },
+ {
+  "step": 208,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 209,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Aggressione 1"
+ },
+ {
+  "step": 210,
+  "seat": 1,
+  "phase": "actions",
+  "click": "court Canto di Libertà"
+ },
+ {
+  "step": 211,
+  "seat": 1,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 212,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Costruzione 5"
+ },
+ {
+  "step": 213,
+  "seat": 2,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 214,
+  "seat": 2,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 215,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 216,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Aggressione 5"
+ },
+ {
+  "step": 217,
+  "seat": 3,
+  "phase": "actions",
+  "click": "power-card Poteri delle tue carte"
+ },
+ {
+  "step": 218,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 219,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 220,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Amministrazione 2"
+ },
+ {
+  "step": 221,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Richieste Populiste"
+ },
+ {
+  "step": 222,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 223,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Mobilitazione 2"
+ },
+ {
+  "step": 224,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 225,
+  "seat": 1,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 226,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Costruzione 7"
+ },
+ {
+  "step": 227,
+  "seat": 2,
+  "phase": "actions",
+  "click": "spend Carburante"
+ },
+ {
+  "step": 228,
+  "seat": 2,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 229,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 230,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Costruzione 3"
+ },
+ {
+  "step": 231,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 232,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Amministrazione 3"
+ },
+ {
+  "step": 233,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Interessi Navali"
+ },
+ {
+  "step": 234,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 235,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Aggressione 3"
+ },
+ {
+  "step": 236,
+  "seat": 1,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 237,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Amministrazione 5"
+ },
+ {
+  "step": 238,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Tassa"
+ },
+ {
+  "step": 239,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Tassa"
+ },
+ {
+  "step": 240,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 241,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Amministrazione 4"
+ },
+ {
+  "step": 242,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Influenza"
+ },
+ {
+  "step": 243,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 244,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Costruzione 1"
+ },
+ {
+  "step": 245,
+  "seat": 1,
+  "phase": "actions",
+  "click": "court Canto di Libertà"
+ },
+ {
+  "step": 246,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 247,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Aggressione 7"
+ },
+ {
+  "step": 248,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Interessi Navali"
+ },
+ {
+  "step": 249,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 250,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Aggressione 5"
+ },
+ {
+  "step": 251,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 252,
+  "seat": 3,
+  "phase": "allocate",
+  "click": "kind Combatti"
+ },
+ {
+  "step": 253,
+  "seat": 3,
+  "phase": "actions",
+  "click": "battle-auto Assegna in automatico"
+ },
+ {
+  "step": 254,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 255,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Mobilitazione 1"
+ },
+ {
+  "step": 256,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 257,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 259,
+  "seat": 1,
+  "phase": "actions",
+  "click": "follow Copia"
+ },
+ {
+  "step": 260,
+  "seat": 1,
+  "phase": "decide",
+  "click": "court Canto di Libertà"
+ },
+ {
+  "step": 261,
+  "seat": 1,
+  "phase": "actions",
+  "click": "decide-open Scegli"
+ },
+ {
+  "step": 262,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 263,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Aggressione 7"
+ },
+ {
+  "step": 264,
+  "seat": 2,
+  "phase": "allocate",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 265,
+  "seat": 2,
+  "phase": "actions",
+  "click": "battle-auto Assegna in automatico"
+ },
+ {
+  "step": 266,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 267,
+  "seat": 2,
+  "phase": "actions",
+  "click": "close-modal Continua"
+ },
+ {
+  "step": 268,
+  "seat": 2,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 269,
+  "seat": 2,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 270,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 271,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Mobilitazione 1"
+ },
+ {
+  "step": 272,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 273,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Amministrazione 4"
+ },
+ {
+  "step": 274,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 275,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Aggressione 3"
+ },
+ {
+  "step": 276,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 277,
+  "seat": 1,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 278,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Aggressione 5"
+ },
+ {
+  "step": 279,
+  "seat": 2,
+  "phase": "allocate",
+  "click": "kind Combatti"
+ },
+ {
+  "step": 280,
+  "seat": 2,
+  "phase": "actions",
+  "click": "battle-auto Assegna in automatico"
+ },
+ {
+  "step": 281,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 282,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Amministrazione 2"
+ },
+ {
+  "step": 283,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Interessi Navali"
+ },
+ {
+  "step": 284,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 285,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Costruzione 1"
+ },
+ {
+  "step": 286,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 287,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 288,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Amministrazione 6"
+ },
+ {
+  "step": 289,
+  "seat": 1,
+  "phase": "actions",
+  "click": "court L'Oltraggio Dilaga"
+ },
+ {
+  "step": 290,
+  "seat": 1,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 291,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Aggressione 6"
+ },
+ {
+  "step": 292,
+  "seat": 2,
+  "phase": "actions",
+  "click": "spend Materiale"
+ },
+ {
+  "step": 293,
+  "seat": 2,
+  "phase": "follow",
+  "click": "kind Combatti"
+ },
+ {
+  "step": 294,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Aggressione 7"
+ },
+ {
+  "step": 295,
+  "seat": 3,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 296,
+  "seat": 3,
+  "phase": "allocate",
+  "click": "kind Combatti"
+ },
+ {
+  "step": 297,
+  "seat": 3,
+  "phase": "actions",
+  "click": "battle-auto Assegna in automatico"
+ },
+ {
+  "step": 298,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 299,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Amministrazione 5"
+ },
+ {
+  "step": 300,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Interessi Navali"
+ },
+ {
+  "step": 301,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 302,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Mobilitazione 3"
+ },
+ {
+  "step": 303,
+  "seat": 1,
+  "phase": "decide",
+  "click": "court L'Oltraggio Dilaga"
+ },
+ {
+  "step": 304,
+  "seat": 1,
+  "phase": "actions",
+  "click": "decide-open Scegli"
+ },
+ {
+  "step": 305,
+  "seat": 1,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 306,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Mobilitazione 1"
+ },
+ {
+  "step": 307,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Sgherri della Corte"
+ },
+ {
+  "step": 308,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Sgherri della Corte"
+ },
+ {
+  "step": 309,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Richieste Populiste"
+ },
+ {
+  "step": 310,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Sgherri della Corte"
+ },
+ {
+  "step": 311,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 312,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Aggressione 4"
+ },
+ {
+  "step": 313,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 314,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 315,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Mobilitazione 7"
+ },
+ {
+  "step": 316,
+  "seat": 1,
+  "phase": "actions",
+  "click": "court Sgherri della Corte"
+ },
+ {
+  "step": 317,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 318,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Costruzione 5"
+ },
+ {
+  "step": 319,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Sgherri della Corte"
+ },
+ {
+  "step": 320,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Richieste Populiste"
+ },
+ {
+  "step": 321,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 322,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Costruzione 5"
+ },
+ {
+  "step": 323,
+  "seat": 2,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 324,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Costruzione 7"
+ },
+ {
+  "step": 325,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 326,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Amministrazione 7"
+ },
+ {
+  "step": 327,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 328,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Costruzione 4"
+ },
+ {
+  "step": 329,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 330,
+  "seat": 1,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 331,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Costruzione 2"
+ },
+ {
+  "step": 332,
+  "seat": 3,
+  "phase": "actions",
+  "click": "spend Reliquie"
+ },
+ {
+  "step": 333,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 334,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Amministrazione 7"
+ },
+ {
+  "step": 335,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 336,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 338,
+  "seat": 1,
+  "phase": "actions",
+  "click": "follow Copia"
+ },
+ {
+  "step": 339,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 340,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 341,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Aggressione 1"
+ },
+ {
+  "step": 342,
+  "seat": 2,
+  "phase": "decide",
+  "click": "court Richieste Populiste"
+ },
+ {
+  "step": 343,
+  "seat": 2,
+  "phase": "actions",
+  "click": "decide-open Elenco"
+ },
+ {
+  "step": 344,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 345,
+  "seat": 3,
+  "phase": "actions",
+  "click": "close-modal Continua"
+ },
+ {
+  "step": 346,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 347,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Amministrazione 5"
+ },
+ {
+  "step": 348,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 349,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 350,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Amministrazione 6"
+ },
+ {
+  "step": 351,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 352,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 353,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Amministrazione 7"
+ },
+ {
+  "step": 354,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 355,
+  "seat": 3,
+  "phase": "decide",
+  "click": "hand Mobilitazione 4"
+ },
+ {
+  "step": 361,
+  "seat": 3,
+  "phase": "actions",
+  "click": "decline (via d'uscita)"
+ },
+ {
+  "step": 362,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Sindacato Edile"
+ },
+ {
+  "step": 363,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Chiamata all'Azione"
+ },
+ {
+  "step": 364,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Chiamata all'Azione"
+ },
+ {
+  "step": 365,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 366,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Mobilitazione 6"
+ },
+ {
+  "step": 367,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Anziano Mediatore"
+ },
+ {
+  "step": 368,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 369,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Amministrazione 4"
+ },
+ {
+  "step": 370,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Muovi"
+ },
+ {
+  "step": 371,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 372,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Aggressione 1"
+ },
+ {
+  "step": 373,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Sindacato Edile"
+ },
+ {
+  "step": 374,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 375,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Aggressione 7"
+ },
+ {
+  "step": 376,
+  "seat": 3,
+  "phase": "actions",
+  "click": "court Chiamata all'Azione"
+ },
+ {
+  "step": 377,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 378,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Costruzione 5"
+ },
+ {
+  "step": 379,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Anziano Mediatore"
+ },
+ {
+  "step": 380,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 381,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Mobilitazione 1"
+ },
+ {
+  "step": 382,
+  "seat": 1,
+  "phase": "allocate",
+  "click": "kind Combatti"
+ },
+ {
+  "step": 383,
+  "seat": 1,
+  "phase": "actions",
+  "click": "battle-auto Assegna in automatico"
+ },
+ {
+  "step": 384,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 385,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Mobilitazione 5"
+ },
+ {
+  "step": 386,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Piloti Leali"
+ },
+ {
+  "step": 387,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 388,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Costruzione 7"
+ },
+ {
+  "step": 389,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 390,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Amministrazione 1"
+ },
+ {
+  "step": 391,
+  "seat": 0,
+  "phase": "actions",
+  "click": "power-card Poteri delle tue carte"
+ },
+ {
+  "step": 392,
+  "seat": 0,
+  "phase": "actions",
+  "click": "spend Materiale"
+ },
+ {
+  "step": 393,
+  "seat": 0,
+  "phase": "actions",
+  "click": "kind Ripara"
+ },
+ {
+  "step": 394,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 395,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Costruzione 4"
+ },
+ {
+  "step": 396,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 397,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 398,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Costruzione 6"
+ },
+ {
+  "step": 399,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 400,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Costruzione 3"
+ },
+ {
+  "step": 401,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 402,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Aggressione 5"
+ },
+ {
+  "step": 403,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 404,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Costruzione 1"
+ },
+ {
+  "step": 405,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 406,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 407,
+  "seat": 2,
+  "phase": "actions",
+  "click": "hand Aggressione 1"
+ },
+ {
+  "step": 408,
+  "seat": 2,
+  "phase": "actions",
+  "click": "court Piloti Leali"
+ },
+ {
+  "step": 409,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 410,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Costruzione 2"
+ },
+ {
+  "step": 411,
+  "seat": 3,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 412,
+  "seat": 0,
+  "phase": "actions",
+  "click": "hand Mobilitazione 7"
+ },
+ {
+  "step": 413,
+  "seat": 0,
+  "phase": "actions",
+  "click": "court Interessi Navali"
+ },
+ {
+  "step": 414,
+  "seat": 0,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 415,
+  "seat": 1,
+  "phase": "actions",
+  "click": "hand Costruzione 1"
+ },
+ {
+  "step": 416,
+  "seat": 1,
+  "phase": "actions",
+  "click": "kind Costruisci"
+ },
+ {
+  "step": 417,
+  "seat": 1,
+  "phase": "follow",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 419,
+  "seat": 2,
+  "phase": "actions",
+  "click": "follow Copia"
+ },
+ {
+  "step": 420,
+  "seat": 2,
+  "phase": "lead",
+  "click": "end-turn Fine turno"
+ },
+ {
+  "step": 421,
+  "seat": 3,
+  "phase": "actions",
+  "click": "hand Aggressione 4"
+ },
+ {
+  "step": 422,
+  "seat": 3,
+  "phase": "allocate",
+  "click": "kind Combatti"
+ },
+ {
+  "step": 423,
+  "seat": 3,
+  "phase": "actions",
+  "click": "battle-auto Assegna in automatico"
+ },
+ {
+  "step": 424,
+  "seat": 3,
+  "phase": "gameOver",
+  "click": "end-turn Fine turno"
+ }
+]

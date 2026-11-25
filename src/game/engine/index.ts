@@ -25,3 +25,5 @@ export type { ControlPurpose } from './campaign';
 export { campaignContent, eventCardIds, isEventCard, newCampaignGame, placeStartingPieces } from './campaign-setup';
 export type { NewCampaignOptions } from './campaign-setup';
 export { blightCrises, decideEvent, inEvent, isEventDecision, runEvent, startEvent } from './events';
+export { pieceLedger } from './ledger';
+export type { Ledger, PieceCount } from './ledger';

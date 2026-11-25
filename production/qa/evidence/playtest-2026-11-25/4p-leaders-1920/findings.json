@@ -1,0 +1,242 @@
+{
+  "players": 4,
+  "variant": "leaders",
+  "seed": 26,
+  "steps": 429,
+  "moves": 426,
+  "chapter": 5,
+  "phase": "gameOver",
+  "power": [
+    11,
+    5,
+    9,
+    6
+  ],
+  "findings": [
+    {
+      "key": "tiny:ambitions: amb-toggle \"Chiudi le ambizioni\"",
+      "what": "Bersaglio cliccabile sotto 24 px",
+      "detail": "ambitions: amb-toggle \"Chiudi le ambizioni\" 22×76",
+      "count": 277,
+      "step": 8,
+      "seat": 2,
+      "shot": "f01-tiny-ambitions-amb-toggle-Chiudi-le-ambizioni-.png"
+    },
+    {
+      "key": "tiny:local: find-mine \"Evidenzia per qualche secondo \"",
+      "what": "Bersaglio cliccabile sotto 24 px",
+      "detail": "local: find-mine \"Evidenzia per qualche secondo \" 100×20",
+      "count": 277,
+      "step": 8,
+      "seat": 2,
+      "shot": "f02-tiny-local-find-mine-Evidenzia-per-qualche-secondo.png"
+    },
+    {
+      "key": "covered:map:c4-p2",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c4-p2\" a 855,973, sotto div.acard.su-0",
+      "count": 3,
+      "step": 17,
+      "seat": 0,
+      "shot": "f03-covered-map-c4-p2.png"
+    },
+    {
+      "key": "covered:map:c6-p2",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c6-p2\" a 472,320, sotto div.region.rivals",
+      "count": 1,
+      "step": 31,
+      "seat": 3,
+      "shot": "f04-covered-map-c6-p2.png"
+    },
+    {
+      "key": "covered:map:c3-p2",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c3-p2\" a 1348,820, sotto div.region.actions",
+      "count": 5,
+      "step": 55,
+      "seat": 2,
+      "shot": "f05-covered-map-c3-p2.png"
+    },
+    {
+      "key": "covered:map:c3-p1",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c3-p1\" a 1552,747, sotto div.cmd-head",
+      "count": 2,
+      "step": 55,
+      "seat": 2,
+      "shot": "f06-covered-map-c3-p1.png"
+    },
+    {
+      "key": "covered:court:Bardi Galattici",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Bardi Galattici\" a 863,62, sotto img.cf-art",
+      "count": 1,
+      "step": 96,
+      "seat": 2,
+      "shot": "f07-covered-court-Bardi-Galattici.png"
+    },
+    {
+      "key": "covered:map:c6-p1",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c6-p1\" a 475,454, sotto div.region.rivals",
+      "count": 1,
+      "step": 121,
+      "seat": 1,
+      "shot": "f08-covered-map-c6-p1.png"
+    },
+    {
+      "key": "covered:map:c3-p3",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c3-p3\" a 1374,944, sotto div.hand-cards",
+      "count": 1,
+      "step": 126,
+      "seat": 2,
+      "shot": "f09-covered-map-c3-p3.png"
+    },
+    {
+      "key": "covered:map:c2-p3",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c2-p3\" a 1738,588, sotto div.amb-rows",
+      "count": 1,
+      "step": 128,
+      "seat": 3,
+      "shot": "f10-covered-map-c2-p3.png"
+    },
+    {
+      "key": "covered:court:Secondini",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Secondini\" a 1019,62, sotto img.cf-art",
+      "count": 2,
+      "step": 170,
+      "seat": 0,
+      "shot": "f11-covered-court-Secondini.png"
+    },
+    {
+      "key": "covered:court:Lotta tra Gilde",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Lotta tra Gilde\" a 1175,62, sotto img.cf-art",
+      "count": 1,
+      "step": 207,
+      "seat": 2,
+      "shot": "f12-covered-court-Lotta-tra-Gilde.png"
+    },
+    {
+      "key": "covered:court-do:Influenza · poi infl",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court-do \"Influenza · poi influenza Guardiani Giurati\" a 964,231, sotto img.cf-art",
+      "count": 2,
+      "step": 272,
+      "seat": 2,
+      "shot": "f13-covered-court-do-Influenza-poi-infl.png"
+    },
+    {
+      "key": "totale:P0 agenti:10>9",
+      "what": "Cambia un totale che le regole tengono fisso: P0 agenti 10 → 9",
+      "detail": "dopo: P2 pivots with mobilization-3 | leader-12: secures court-28 from the Court deck; court-28 waits for P2's choice | P2 resolves court-28: every player Provokes material Outrage",
+      "count": 1,
+      "step": 285,
+      "seat": 2,
+      "shot": "f14-totale-P0-agenti-10-9.png"
+    },
+    {
+      "key": "totale:P1 agenti:10>9",
+      "what": "Cambia un totale che le regole tengono fisso: P1 agenti 10 → 9",
+      "detail": "dopo: P2 pivots with mobilization-3 | leader-12: secures court-28 from the Court deck; court-28 waits for P2's choice | P2 resolves court-28: every player Provokes material Outrage",
+      "count": 1,
+      "step": 285,
+      "seat": 2,
+      "shot": "f15-totale-P1-agenti-10-9.png"
+    },
+    {
+      "key": "totale:P2 agenti:10>9",
+      "what": "Cambia un totale che le regole tengono fisso: P2 agenti 10 → 9",
+      "detail": "dopo: P2 pivots with mobilization-3 | leader-12: secures court-28 from the Court deck; court-28 waits for P2's choice | P2 resolves court-28: every player Provokes material Outrage",
+      "count": 1,
+      "step": 285,
+      "seat": 2,
+      "shot": "f16-totale-P2-agenti-10-9.png"
+    },
+    {
+      "key": "totale:P3 agenti:10>9",
+      "what": "Cambia un totale che le regole tengono fisso: P3 agenti 10 → 9",
+      "detail": "dopo: P2 pivots with mobilization-3 | leader-12: secures court-28 from the Court deck; court-28 waits for P2's choice | P2 resolves court-28: every player Provokes material Outrage",
+      "count": 1,
+      "step": 285,
+      "seat": 2,
+      "shot": "f17-totale-P3-agenti-10-9.png"
+    },
+    {
+      "key": "offscreen:decide-pick:Rivale: Giocatore 2 ",
+      "what": "Comando acceso ma fuori dallo schermo",
+      "detail": "decide-pick \"Rivale: Giocatore 2 · Dai: administration-1 · Prendi: admini\"",
+      "count": 1,
+      "step": 286,
+      "seat": 2,
+      "shot": "f18-offscreen-decide-pick-Rivale-Giocatore-2-.png"
+    },
+    {
+      "key": "covered:decide-pick:Rivale: Giocatore 2 ",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "decide-pick \"Rivale: Giocatore 2 · Dai: administration-1 · Prendi: admini\" a 1223,1078, sotto span.pp-pics",
+      "count": 1,
+      "step": 286,
+      "seat": 2,
+      "shot": "f19-covered-decide-pick-Rivale-Giocatore-2-.png"
+    },
+    {
+      "key": "covered:court:Sindacato Amministra",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Sindacato Amministrativo\" a 1175,62, sotto img.cf-art",
+      "count": 1,
+      "step": 323,
+      "seat": 1,
+      "shot": "f20-covered-court-Sindacato-Amministra.png"
+    },
+    {
+      "key": "covered:court:Guardiani Giurati",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Guardiani Giurati\" a 1019,62, sotto img.cf-art",
+      "count": 1,
+      "step": 338,
+      "seat": 2,
+      "shot": "f21-covered-court-Guardiani-Giurati.png"
+    },
+    {
+      "key": "covered:map:c1-p3",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c1-p3\" a 1244,83, sotto span.cb-title.t-3",
+      "count": 1,
+      "step": 340,
+      "seat": 2,
+      "shot": "f22-covered-map-c1-p3.png"
+    },
+    {
+      "key": "covered:power-card:Poteri delle tue car",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "power-card \"Poteri delle tue carte\" a 1681,984, sotto img.cf-art",
+      "count": 2,
+      "step": 364,
+      "seat": 2,
+      "shot": "f23-covered-power-card-Poteri-delle-tue-car.png"
+    },
+    {
+      "key": "covered:court:Ricettatore di Reliq",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Ricettatore di Reliquie\" a 1019,62, sotto img.cf-art",
+      "count": 1,
+      "step": 410,
+      "seat": 3,
+      "shot": "f24-covered-court-Ricettatore-di-Reliq.png"
+    },
+    {
+      "key": "covered:map:c4-gate",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c4-gate\" a 1118,778, sotto div.cmd-row",
+      "count": 1,
+      "step": 417,
+      "seat": 1,
+      "shot": "f25-covered-map-c4-gate.png"
+    }
+  ]
+}

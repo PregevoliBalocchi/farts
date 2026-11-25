@@ -7,6 +7,7 @@ import { emptyAmbitionBoard } from './ambitions';
 import { gainResource } from './board';
 import type { EffectRegistry } from './effects';
 import { ownedEffects } from './effects';
+import { coverOutrage } from './ops';
 import type {
   ActionCardDef,
   CourtCardDef,
@@ -317,15 +318,15 @@ function leaderSetup(ix: ContentIndex, s: GameState): void {
     for (const { card, effect } of ownedEffects(ix, s, pl.id)) {
       const st = effect.setup;
       if (!st) continue;
-      for (const t of st.outrage ?? []) {
-        if (pl.outraged.includes(t)) continue;
-        if (pl.supply.agents > 0) pl.supply.agents -= 1;
-        pl.outraged.push(t);
-      }
-      pl.supply.ships -= Math.min(st.scrapShips ?? 0, pl.supply.ships);
-      pl.supply.agents -= Math.min(st.scrapAgents ?? 0, pl.supply.agents);
+      for (const t of st.outrage ?? []) if (!pl.outraged.includes(t)) coverOutrage(pl, t);
+      // Scrapped pieces leave the game; the piece ledger still counts them.
       // Cities leave the board from the left: the slots under them open as if built.
-      pl.supply.cities -= Math.min(st.scrapCities ?? 0, pl.supply.cities);
+      for (const [piece, n] of [['ships', st.scrapShips], ['agents', st.scrapAgents], ['cities', st.scrapCities]] as const) {
+        const k = Math.min(n ?? 0, pl.supply[piece]);
+        if (!k) continue;
+        pl.supply[piece] -= k;
+        pl.removed = { ...pl.removed, [piece]: (pl.removed?.[piece] ?? 0) + k };
+      }
       if (st.extraLore) {
         const held = new Set([...s.players.flatMap((x) => x.lore), ...(s.loreDiscard ?? [])]);
         const deck = shuffle(s, (ix.content.loreCards ?? []).map((l) => l.id).filter((id) => !held.has(id)));

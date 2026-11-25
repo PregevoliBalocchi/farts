@@ -1,7 +1,7 @@
 # Runs the type check and the unit tests on every push and pull request
 # (docs/collaboration.md). data/content.json is committed, so the content
-# checks run here too. The browser tests
-# (npm run test:e2e) run locally.
+# checks run here too. The browser tests (npm run test:e2e) run in deploy.yml's
+# e2e job, on every pull request and push to main, before anything is deployed.
 name: tests
 
 on:

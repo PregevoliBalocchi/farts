@@ -1,0 +1,6 @@
+[
+  { "name": "2p-base-1366-it", "players": 2, "variant": "base", "seed": 11, "steps": 80, "w": 1366, "h": 768, "lang": "it" },
+  { "name": "3p-leaders-1366-it", "players": 3, "variant": "leaders", "seed": 3, "steps": 80, "w": 1366, "h": 768, "lang": "it" },
+  { "name": "4p-leaders-1366-it", "players": 4, "variant": "leaders", "seed": 3, "steps": 80, "w": 1366, "h": 768, "lang": "it" },
+  { "name": "4p-base-1920-en", "players": 4, "variant": "base", "seed": 3, "steps": 80, "w": 1920, "h": 1080, "lang": "en" }
+]

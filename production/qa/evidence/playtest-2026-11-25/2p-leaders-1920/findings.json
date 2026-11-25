@@ -1,0 +1,195 @@
+{
+  "players": 2,
+  "variant": "leaders",
+  "seed": 22,
+  "steps": 280,
+  "moves": 263,
+  "chapter": 5,
+  "phase": "gameOver",
+  "power": [
+    13,
+    37
+  ],
+  "findings": [
+    {
+      "key": "totale:P0 navi:15>13",
+      "what": "Cambia un totale che le regole tengono fisso: P0 navi 15 → 13",
+      "detail": "dopo: P1 applies leader-02 setup | P0 applies leader-10 setup | Chapter 1 begins; P1 has initiative",
+      "count": 1,
+      "step": 4,
+      "seat": 1,
+      "shot": "f01-totale-P0-navi-15-13.png"
+    },
+    {
+      "key": "totale:P0 agenti:10>7",
+      "what": "Cambia un totale che le regole tengono fisso: P0 agenti 10 → 7",
+      "detail": "dopo: P1 applies leader-02 setup | P0 applies leader-10 setup | Chapter 1 begins; P1 has initiative",
+      "count": 1,
+      "step": 4,
+      "seat": 1,
+      "shot": "f02-totale-P0-agenti-10-7.png"
+    },
+    {
+      "key": "totale:P1 agenti:10>8",
+      "what": "Cambia un totale che le regole tengono fisso: P1 agenti 10 → 8",
+      "detail": "dopo: P1 applies leader-02 setup | P0 applies leader-10 setup | Chapter 1 begins; P1 has initiative",
+      "count": 1,
+      "step": 4,
+      "seat": 1,
+      "shot": "f03-totale-P1-agenti-10-8.png"
+    },
+    {
+      "key": "tiny:ambitions: amb-toggle \"Chiudi le ambizioni\"",
+      "what": "Bersaglio cliccabile sotto 24 px",
+      "detail": "ambitions: amb-toggle \"Chiudi le ambizioni\" 22×76",
+      "count": 157,
+      "step": 4,
+      "seat": 1,
+      "shot": "f04-tiny-ambitions-amb-toggle-Chiudi-le-ambizioni-.png"
+    },
+    {
+      "key": "tiny:local: find-mine \"Evidenzia per qualche secondo \"",
+      "what": "Bersaglio cliccabile sotto 24 px",
+      "detail": "local: find-mine \"Evidenzia per qualche secondo \" 100×20",
+      "count": 157,
+      "step": 4,
+      "seat": 1,
+      "shot": "f05-tiny-local-find-mine-Evidenzia-per-qualche-secondo.png"
+    },
+    {
+      "key": "covered:court:Sgherri della Corte",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Sgherri della Corte\" a 1097,62, sotto img.cf-art",
+      "count": 2,
+      "step": 17,
+      "seat": 1,
+      "shot": "f06-covered-court-Sgherri-della-Corte.png"
+    },
+    {
+      "key": "covered:map:c3-p3",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c3-p3\" a 1609,944, sotto div.mine-cards",
+      "count": 1,
+      "step": 23,
+      "seat": 1,
+      "shot": "f07-covered-map-c3-p3.png"
+    },
+    {
+      "key": "covered:map:c5-p3",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c5-p3\" a 510,364, sotto div.region.rivals",
+      "count": 2,
+      "step": 31,
+      "seat": 1,
+      "shot": "f08-covered-map-c5-p3.png"
+    },
+    {
+      "key": "covered:map:c4-p1",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c4-p1\" a 1117,921, sotto span.kinds",
+      "count": 1,
+      "step": 35,
+      "seat": 0,
+      "shot": "f09-covered-map-c4-p1.png"
+    },
+    {
+      "key": "covered:court:Spie del Reticolo",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Spie del Reticolo\" a 1097,62, sotto img.cf-art",
+      "count": 1,
+      "step": 56,
+      "seat": 1,
+      "shot": "f10-covered-court-Spie-del-Reticolo.png"
+    },
+    {
+      "key": "covered:court:Canto di Libertà",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Canto di Libertà\" a 941,62, sotto img.cf-art",
+      "count": 3,
+      "step": 57,
+      "seat": 1,
+      "shot": "f11-covered-court-Canto-di-Libert-.png"
+    },
+    {
+      "key": "covered:court:Sindacato Spaziale",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Sindacato Spaziale\" a 1253,62, sotto img.cf-art",
+      "count": 2,
+      "step": 89,
+      "seat": 0,
+      "shot": "f12-covered-court-Sindacato-Spaziale.png"
+    },
+    {
+      "key": "covered:court:Sindacato delle Armi",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Sindacato delle Armi\" a 941,62, sotto img.cf-art",
+      "count": 1,
+      "step": 90,
+      "seat": 0,
+      "shot": "f13-covered-court-Sindacato-delle-Armi.png"
+    },
+    {
+      "key": "covered:map:c3-p1",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c3-p1\" a 1808,496, sotto span.ab-g",
+      "count": 3,
+      "step": 110,
+      "seat": 0,
+      "shot": "f14-covered-map-c3-p1.png"
+    },
+    {
+      "key": "totale:P1 agenti:8>7",
+      "what": "Cambia un totale che le regole tengono fisso: P1 agenti 8 → 7",
+      "detail": "dopo: P1 leads aggression-4 | P1 secures court-28; court-28 waits for P1's choice | P1 resolves court-28: every player Provokes weapons Outrage",
+      "count": 1,
+      "step": 127,
+      "seat": 1,
+      "shot": "f15-totale-P1-agenti-8-7.png"
+    },
+    {
+      "key": "stuck:decide:court,decide-open,decline,hand",
+      "what": "Il giocatore di turno non trova come andare avanti",
+      "detail": "fase decide, giocatore 1; comandi accesi: court, hand, decide-open, decline",
+      "count": 3,
+      "step": 144,
+      "seat": 1,
+      "shot": "f16-stuck-decide-court-decide-open-decline-hand.png"
+    },
+    {
+      "key": "covered:court:Rivolta di Massa",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Rivolta di Massa\" a 941,62, sotto img.cf-art",
+      "count": 2,
+      "step": 152,
+      "seat": 1,
+      "shot": "f17-covered-court-Rivolta-di-Massa.png"
+    },
+    {
+      "key": "covered:court:Piloti Leali",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Piloti Leali\" a 1097,62, sotto img.cf-art",
+      "count": 2,
+      "step": 186,
+      "seat": 1,
+      "shot": "f18-covered-court-Piloti-Leali.png"
+    },
+    {
+      "key": "covered:court:Guardiani Giurati",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Guardiani Giurati\" a 1097,62, sotto img.cf-art",
+      "count": 1,
+      "step": 218,
+      "seat": 1,
+      "shot": "f19-covered-court-Guardiani-Giurati.png"
+    },
+    {
+      "key": "covered:court:Interessi Minerari",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Interessi Minerari\" a 941,62, sotto img.cf-art",
+      "count": 2,
+      "step": 227,
+      "seat": 1,
+      "shot": "f20-covered-court-Interessi-Minerari.png"
+    }
+  ]
+}
