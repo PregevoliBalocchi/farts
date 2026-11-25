@@ -308,6 +308,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     board3d.canvas.addEventListener('pointerenter', (e) => {
       const tip = stage.querySelector<HTMLElement>('.hover-tip:not(.hover-sub)');
       if (!tip || tip.hidden) return;
+      if (tip.dataset.key?.startsWith('seat:')) return; // a rival's board, opened by a click, stays
       if (!tip.dataset.key?.startsWith('sys:')) return hideTipSoon();
       if ((e.relatedTarget as Element | null)?.closest?.('.hover-tip')) {
         clearTimeout(tipTimer);
@@ -1344,6 +1345,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     main: string[];
     powers: string[];
     turn: [string, string];
+    /** No card picked yet: no bar, only the turn's buttons in their places (base-fixes #37). */
+    bare?: boolean;
   }
 
   /**
@@ -1413,7 +1416,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       const pass = lead ? button('pass', t('play.pass'), { cls: 'cmd-btn', title: t('play.pass'), html: esc(t('play.passShort')), disabled: !can({ type: 'pass', player: me }) }) : '';
       const mull = lead && v.canMulligan ? [button('mulligan', t('play.mulligan'), { cls: 'cmd-btn' })] : [];
       const card = selected ? v.hand.find((x) => x.card === selected) : undefined;
-      if (!card) return { text: prompt(v), main: mull, powers: [], turn: [undoOrCancel(false), pass] };
+      // No card picked yet: no bar (base-fixes #37), unless there is something to do without a card (pass, mulligan).
+      const passable = lead && can({ type: 'pass', player: me });
+      if (!card) return mull.length || passable || history.length ? { bare: true, text: prompt(v), main: mull, powers: [], turn: [undoOrCancel(false), pass] } : null;
       const kinds = card.kinds.map((k) => t(`action.${k}`)).join(` ${t('word.or')} `);
       if (lead) {
         // Declaring: the ambitions it may declare light up in their column, a click there leads and declares.
@@ -1829,7 +1834,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>
       <div class="region mine${mineOpen ? ' open' : ''}" data-region="mine" style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 50, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen)}</div>
       <div class="region hand" data-region="hand" style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>
-      ${bar ? `<div class="region actions cmd-bar${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)};width:${REGIONS.actions.w}px">${bar}</div>`
+      ${bar ? `<div class="region actions cmd-bar${barNow?.bare ? ' bare' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)};width:${REGIONS.actions.w}px">${bar}</div>`
         : ctx ? `<div class="region actions waiting" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${othersTurn(state, 3) ? placeDown(REGIONS.waiting) : placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : ''}
       <div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>
       ${modalHtml(v)}
@@ -2388,7 +2393,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const sys = target.closest('[data-sys]') as HTMLElement | null;
     if (sys) return pickSystem(sys.dataset.sys!);
     const el = target.closest('[data-act]') as HTMLElement | null;
-    if (el && !(el as HTMLButtonElement).disabled) onAct(el);
+    if (el && !(el as HTMLButtonElement).disabled) return onAct(el);
+    // A rival's board opens on a click on its band and closes on a second click (base-fixes #37); a card in the
+    // band still zooms by itself.
+    const band = target.closest('.hover-tip, [data-zoom]') ? null : target.closest<HTMLElement>('[data-tip^="seat:"]');
+    if (band) toggleSeatTip(band);
   });
 
   // ---- card zoom: hovering or focusing any [data-zoom] card shows it large beside it ----
@@ -2555,6 +2564,19 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     clearTimeout(tipTimer);
     tipTimer = window.setTimeout(hideTip, SYSTEM_TIP_MS);
   }
+  /** A rival's board opened by a click: a second click on the same band closes it. */
+  function toggleSeatTip(band: HTMLElement): void {
+    const tip = stage.querySelector<HTMLElement>('.hover-tip:not(.hover-sub)');
+    if (tip && !tip.hidden && tip.dataset.key?.startsWith(`${band.dataset.tip}|`)) return hideTip();
+    showTip(band.dataset.tip!, band);
+    // The pointer crossing the band may have set the card to close: opened by a click, it stays.
+    clearTimeout(tipTimer);
+  }
+  /** Whether the open card is a rival's board, opened by a click: it stays until clicked again. */
+  function seatTipOpen(): boolean {
+    const tip = stage.querySelector<HTMLElement>('.hover-tip:not(.hover-sub)');
+    return !!tip && !tip.hidden && !!tip.dataset.key?.startsWith('seat:');
+  }
   /** Puts the hover cards that were open before a redraw back in place, their contents brought up to date. */
   function keepTips(open: HTMLElement[]): void {
     if (!open.length) return;
@@ -2609,7 +2631,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       return;
     }
     const el = tipTarget(e);
-    if (el) return showTip(el.dataset.tip!, el);
+    // A rival's band does not open on hover: a click opens it (base-fixes #37).
+    const seat = !!el?.dataset.tip?.startsWith('seat:');
+    if (el && !seat) return showTip(el.dataset.tip!, el);
+    if (seatTipOpen()) return;
     const tip = stage.querySelector<HTMLElement>('.hover-tip:not(.hover-sub)');
     const systemCard = !!tip && !tip.hidden && !!tip.dataset.key?.startsWith('sys:');
     if (!(e.target as Element).closest('canvas') || !systemCard) hideTipSoon();
@@ -2622,15 +2647,22 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   });
   stage.addEventListener('focusin', (e) => {
     const el = tipTarget(e);
-    if (el) showTip(el.dataset.tip!, el);
+    if (el && !el.dataset.tip?.startsWith('seat:')) showTip(el.dataset.tip!, el);
   });
-  stage.addEventListener('focusout', () => hideTip());
+  stage.addEventListener('focusout', () => {
+    if (!seatTipOpen()) hideTip();
+  });
 
   stage.addEventListener('keydown', (e) => {
     const el = e.target as HTMLElement;
     if ((e.key === 'Enter' || e.key === ' ') && el.dataset.sys) {
       e.preventDefault();
       pickSystem(el.dataset.sys);
+    }
+    // The keyboard opens and closes a rival's board like a click.
+    if ((e.key === 'Enter' || e.key === ' ') && el.dataset.tip?.startsWith('seat:')) {
+      e.preventDefault();
+      toggleSeatTip(el);
     }
   });
 

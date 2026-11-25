@@ -82,11 +82,11 @@ for (const [w, h] of [
     for (let round = 0; round < 4; round++) {
       await fill(page, round, round % 2 ? 0 : 5);
       expect(await problems(page), `round ${round}`).toEqual([]);
-      // A rival's whole board, in its hover card.
-      await page.locator('.board.rband').first().hover();
+      // A rival's whole board, opened by a click on its band (closed by a second click).
+      await page.locator(".board.rband").first().click({ position: { x: 20, y: 10 } });
       await expect(page.locator('.hover-tip:not(.hover-sub)')).toBeVisible();
       expect(await problems(page), `round ${round}, rival card`).toEqual([]);
-      await page.mouse.move(w / 2, h / 2);
+      await page.locator(".board.rband").first().click({ position: { x: 20, y: 10 } });
     }
   });
 }
