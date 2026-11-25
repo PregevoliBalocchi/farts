@@ -201,7 +201,8 @@ export class Board3D {
   private size2 = { w: 1, h: 1 };
   private focus: Rect = { x: 0, y: 0, w: 1, h: 1 };
   /** A smooth pan under way (ensureVisible): the whole shift, how much is done, start time. */
-  private pan: { delta: THREE.Vector3; done: THREE.Vector3; t0: number | null } | null = null;
+  /** `dolly`: how much farther the camera ends up (1: same distance); `d0`: its distance at the start; `again`: the set to check once more. */
+  private pan: { delta: THREE.Vector3; done: THREE.Vector3; t0: number | null; dolly?: number; d0?: number; again?: string[]; bottom?: number } | null = null;
   /** Systems where the local player can act now: a faint ring on each. */
   private hints: ReadonlySet<string> = new Set();
   private down: { x: number; y: number } | null = null;
@@ -1108,6 +1109,46 @@ export class Board3D {
     this.dirty = true;
   }
 
+  /**
+   * Pans, and zooms out when they do not fit, so every system in `ids` sits inside the area the panels
+   * leave free (piano 2.3: the lit systems of a choice, never under the hand or a panel). Nothing happens
+   * when they already do; the table calls it only when the set changes, so a map moved by hand stays put.
+   * `bottom`: a screen y the group must stay above (the command bar's top, whose height varies).
+   */
+  ensureVisibleSet(ids: readonly string[], bottom = Infinity, margin = 90, retry = true): void {
+    const pts = ids.map((id) => this.screenOf(id)).filter((p): p is { x: number; y: number } => !!p);
+    if (!pts.length) return;
+    const f0 = this.focus;
+    const f = { ...f0, h: Math.max(1, Math.min(f0.y + f0.h, bottom) - f0.y) };
+    const x0 = Math.min(...pts.map((p) => p.x));
+    const x1 = Math.max(...pts.map((p) => p.x));
+    const y0 = Math.min(...pts.map((p) => p.y));
+    const y1 = Math.max(...pts.map((p) => p.y));
+    const w = Math.max(1, f.w - 2 * margin);
+    const h = Math.max(1, f.h - 2 * margin);
+    const inside = x0 >= f.x + margin && x1 <= f.x + f.w - margin && y0 >= f.y + margin && y1 <= f.y + f.h - margin;
+    if (inside) return;
+    const scale = Math.max((x1 - x0) / w, (y1 - y0) / h);
+    // Fits: the smallest shift that brings the group in. Too large: its centre on the free area's, then out.
+    let dx = 0;
+    let dy = 0;
+    if (scale <= 1) {
+      dx = x0 < f.x + margin ? f.x + margin - x0 : x1 > f.x + f.w - margin ? f.x + f.w - margin - x1 : 0;
+      dy = y0 < f.y + margin ? f.y + margin - y0 : y1 > f.y + f.h - margin ? f.y + f.h - margin - y1 : 0;
+    } else {
+      dx = f.x + f.w / 2 - (x0 + x1) / 2;
+      dy = f.y + f.h / 2 - (y0 + y1) / 2;
+    }
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+    const a = this.groundAt(cx, cy);
+    const b = this.groundAt(cx + dx, cy + dy);
+    if (!a || !b) return;
+    const d0 = this.camera.position.distanceTo(this.controls.target);
+    this.pan = { delta: a.sub(b).setY(0), done: new THREE.Vector3(), t0: null, dolly: scale > 1 ? scale * 1.08 : 1, d0, again: retry ? [...ids] : undefined, bottom };
+    this.dirty = true;
+  }
+
   /** One frame of a pan: moves the camera and the point it looks at by the next share of the shift. */
   private stepPan(t: number): void {
     const pan = this.pan;
@@ -1119,8 +1160,19 @@ export class Board3D {
     pan.done.add(step);
     this.controls.target.add(step);
     this.camera.position.add(step);
+    if (pan.dolly && pan.dolly !== 1 && pan.d0) {
+      // Out (or in) along the line of sight, as the wheel does; the 'change' handler sets the tilt.
+      const dist = Math.min(this.controls.maxDistance, pan.d0 * (1 + (pan.dolly - 1) * e));
+      const dir = this.camera.position.clone().sub(this.controls.target).normalize();
+      this.camera.position.copy(this.controls.target).add(dir.multiplyScalar(dist));
+    }
     this.controls.update();
-    if (k >= 1) this.pan = null;
+    if (k >= 1) {
+      const again = pan.again;
+      this.pan = null;
+      // A zoom moves the group on the screen too: one more look, without another try after it.
+      if (again && pan.dolly && pan.dolly !== 1) this.ensureVisibleSet(again, pan.bottom, 90, false);
+    }
     this.dirty = true;
   }
 

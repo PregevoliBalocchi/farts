@@ -135,6 +135,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         if (court) return cardWords(court, lang).name;
         const action = ix.actionCards.get(w);
         if (action) return cardLabel(t, action);
+        // Lore and leader cards by their printed name too (piano A1: never an id in the log or its labels).
+        if (/^(lore|leader)-\d+$/.test(w)) {
+          const name = faceOf(ix, w, lang).name;
+          if (name) return name;
+        }
         for (const k of ['resource', 'ambition', 'suit', 'action', 'piece', 'battle.dice', 'word']) {
           const v = t(`${k}.${w}`);
           if (v !== `${k}.${w}`) return v;
@@ -189,6 +194,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let courtMenu: { slot: number; only?: ActionKind[]; prelude?: Resource } | null = null;
   /** The system the map was last panned to show, so it is not pulled back while the player looks elsewhere. */
   let shownSystem: string | null = null;
+  /** The lit systems last brought into view (sorted ids), so the map moves only when they change. */
+  let shownLit = '';
   let modal: Modal | null = null;
   /** The drop-down open under the header (log or help), and the choices of a card power open over its card. */
   let drop: Drop | null = null;
@@ -1435,7 +1442,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       const ok = mine && can({ type: 'draft', player: me, card: id });
       const { face, kind } = drawnCard(id);
       return ok
-        ? `<button type="button" class="dr-card pickable k-${kind}" data-act="draft-pick" data-card="${esc(id)}" data-zoom="${esc(id)}" aria-label="${esc(t('draft.take', { card: id }))}">${face}</button>`
+        ? `<button type="button" class="dr-card pickable k-${kind}" data-act="draft-pick" data-card="${esc(id)}" data-zoom="${esc(id)}" aria-label="${esc(t('draft.take', { card: cardName(id) }))}">${face}</button>`
         : `<span class="dr-card k-${kind}" data-zoom="${esc(id)}">${face}</span>`;
     };
     const order = d.order
@@ -2276,6 +2283,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (focus !== shownSystem) {
       shownSystem = focus;
       if (focus) board3d?.ensureVisible(focus);
+    }
+    // The lit systems of a choice come into the free part of the screen, all of them (piano 2.3): only when the
+    // set changes, so a map moved by hand is left alone.
+    const litKey = focus ? '' : [...valid].sort().join(',');
+    if (litKey !== shownLit) {
+      shownLit = litKey;
+      if (litKey) board3d?.ensureVisibleSet([...valid], stage.querySelector('.cmd-bar')?.getBoundingClientRect().top || Infinity);
     }
     placeMenu();
     const powers = powerMenuHtml();
