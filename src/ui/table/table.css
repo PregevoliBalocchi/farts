@@ -689,7 +689,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .board .slot-sep { width: 1px; align-self: stretch; background: #ffffff22; margin: calc(6 * var(--u)) calc(2 * var(--u)) 0; }
 /* A city's printed triangle over the slot(s) it covers, as on the physical board; the unbuilt city stands on it. */
 .board .cover { position: relative; display: flex; gap: calc(5 * var(--u)); align-items: flex-end; margin: 0 calc(2 * var(--u)); }
-.board .cover.pair .slot + .slot { margin-left: calc(-17 * var(--u)); }
+.board .cover.pair .slot + .slot { margin-left: calc(-9 * var(--u)); } /* the pair apart enough to read both (base-fixes #33) */
 .board .slot.covered .well { border: 2px dotted #8a7a58; background: #070708; }
 .board .cover .tri { position: absolute; left: 50%; bottom: calc(-3 * var(--u)); width: calc(50 * var(--u)); height: calc(46 * var(--u)); transform: translateX(-50%); pointer-events: none; overflow: visible; }
 .board .cover .tri polygon { fill: none; stroke: #d8d2c4; stroke-width: 4; stroke-linejoin: round; opacity: .85; }
@@ -1876,11 +1876,36 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .mine-item { position: relative; flex: none; display: flex; flex-direction: column; align-items: flex-start; margin-left: var(--gap, 8px); }
 .tbl-stage .mine-group .mine-item:first-child { margin-left: 0; }
 .tbl-stage .mine-item .mine-card { margin-left: 0; }
-.tbl-stage .mine-res { height: 22px; display: flex; align-items: center; padding-left: 2px; }
-.tbl-stage .mine-res > span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #000c; box-shadow: 0 0 0 1px #c9a25a88; }
-.tbl-stage .mine-res svg { width: 16px; height: 16px; }
-.tbl-stage .mine-cards.stacked .mine-item + .mine-item .mine-card { box-shadow: -7px 0 9px -2px #000, 0 2px 6px #000c; }
-.tbl-stage .mine-item:hover { z-index: 3; }
+.tbl-stage .mine-item { align-items: stretch; }
+.tbl-stage .mine-keys { height: 22px; display: flex; align-items: center; justify-content: flex-end; gap: 1px; padding-right: 3px; color: #f3a64a; }
+.tbl-stage .mine-keys svg { width: 13px; height: 17px; filter: drop-shadow(0 1px 1px #000); }
+.tbl-stage .mine-cards.stacked .mine-card { box-shadow: 7px 0 9px -2px #000, 0 2px 6px #000c; }
+.tbl-stage .mine-item:hover, .tbl-stage .mine-item:focus-within { z-index: 50 !important; }
 .tbl-stage .region.mine.open .mine-cards { flex-wrap: wrap; }
 .tbl-stage .region.mine.open .mine-group { flex-wrap: wrap; gap: 10px 8px; }
 .tbl-stage .region.mine.open .mine-item { margin-left: 0; }
+.tbl-stage .mine-keys b { font-size: 13px; color: #ffe3a3; text-shadow: 0 1px 2px #000; }
+
+/* Action box fit (base-fixes #33): never a scroll bar; Prelude choices share the width and keep inside their
+   buttons; "On to the card's actions" spans the box on one line. */
+.tbl-stage .region.actions .actions-body { overflow: visible; max-height: none; }
+.tbl-stage .region.actions .act-row.pre-grid { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 8px; }
+.tbl-stage .region.actions .act-row.pre-grid .btn.kind-btn { min-width: 0; overflow: hidden; }
+.tbl-stage .region.actions .pre-btn .kb-name { max-width: 100%; font-size: 13.5px; letter-spacing: -.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tbl-stage .region.actions .pre-btn .kb-why { max-width: 100%; overflow-wrap: anywhere; }
+.tbl-stage .region.actions .btn-grid.one { display: grid; grid-template-columns: 1fr; }
+.tbl-stage .region.actions .btn-grid.one > .btn { width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tbl-stage .region.actions .ctx-head { flex-wrap: wrap; }
+
+/* Rival band (base-fixes #33): the stats on one line, the Court cards overlapping inside the frame. */
+.tbl-stage .board.rband .rb-side .stats { flex-wrap: nowrap; white-space: nowrap; }
+.tbl-stage .board.rband .rb-row { overflow: hidden; }
+.tbl-stage .board.rband .mini-cards { flex: 0 1 auto; min-width: 0; gap: 0; }
+.tbl-stage .board.rband .mini-card { position: relative; flex: none; }
+.tbl-stage .board.rband .mini-card + .mini-card { margin-left: -9px; }
+.tbl-stage .board.rband .mini-card.kitted { box-shadow: 0 0 0 1px #6b5320, 4px 0 5px -1px #000; }
+.tbl-stage .board.rband .mini-card:hover { z-index: 20 !important; }
+
+/* The hand's band (base-fixes #33): the map under it does not take clicks; a veil and a gold rule say so. */
+.tbl-stage .hand-zone { position: absolute; z-index: 10; pointer-events: auto; background: linear-gradient(180deg, #0a0705b8 0, #0a0705e0 40px, #060403f2); border-top: 1px solid #c9a25a55; box-shadow: 0 -10px 24px -8px #000c; }
+.tbl-stage .btn.find-mine { z-index: 21; } /* over the hand veil */

@@ -197,7 +197,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** How the 3D map draws, chosen in the settings (production/base-fixes.md #1). */
   let graphics: Graphics = 'auto';
   /** How the local player's own Court cards are ordered in the bar. */
-  let courtSort: CourtSort = 'got';
+  let courtSort: CourtSort = 'kind';
   /** The own Court opened leftwards over the bar, to see all of it. */
   let mineOpen = false;
   /** The turn (see turnKey) whose Prelude the local player closed to take the card's actions. */
@@ -745,6 +745,15 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   function powerName(ability: string): string {
     const s = t(`power.${ability}`);
     return s === `power.${ability}` ? ability : s;
+  }
+
+  /**
+   * The band at the bottom where the hand, the own board and the own Court lie (production/base-fixes.md #33):
+   * the map under it cannot be clicked, so a dark veil says so; only cards and tokens are used there.
+   */
+  function handZone(): string {
+    const top = Math.min(REGIONS.bar.y, REGIONS.local.y - 40);
+    return `<div class="hand-zone" aria-hidden="true" style="left:0;top:${top}px;width:${STAGE.w}px;height:${STAGE.h - top}px"></div>`;
   }
 
   /** The Prelude box: every resource that can be spent and every card power usable now, then on to the card's actions. */
@@ -1682,6 +1691,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       <div class="region court" data-region="court" style="${place(REGIONS.court)}">${courtPanel(v, t, courtPickable(intent))}</div>
       <div class="region side" data-region="side" style="${place(REGIONS.side)}">${sidePanel(ix, v, t)}</div>
       <div class="region bar" aria-hidden="true" style="${place(REGIONS.bar)}"></div>
+      ${handZone()}
       <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, [], true, v.phase !== 'gameOver')}</div>
       ${button('find-mine', t('btn.findMine'), { cls: `find-mine${Date.now() < findMineUntil ? ' on' : ''}`, title: t('btn.findMineTip'), html: `${icon('ship')}<span>${esc(t('btn.findMine'))}</span>` }).replace('<button ', `<button style="left:${REGIONS.local.x + REGIONS.local.w - FIND_W}px;top:${REGIONS.local.y - 36}px;width:${FIND_W}px" `)}
       <div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>
@@ -2119,7 +2129,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         courtMenu = null;
         break;
       case 'court-sort':
-        courtSort = COURT_SORTS.includes(el.dataset.sort as CourtSort) ? (el.dataset.sort as CourtSort) : 'got';
+        courtSort = COURT_SORTS.includes(el.dataset.sort as CourtSort) ? (el.dataset.sort as CourtSort) : 'kind';
         break;
       case 'mine-open':
         mineOpen = !mineOpen;

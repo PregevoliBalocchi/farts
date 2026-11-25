@@ -335,7 +335,8 @@ export function seatBoardCard(p: PlayerView, t: Translate): string {
 function miniCards(cards: string[], max: number): string {
   const shown = cards
     .slice(0, max)
-    .map((c) => `<div class="mini-card kitted" data-zoom="${esc(c)}">${cardFaceById(c)}</div>`)
+    // Each card over the next one: overlapping (a rival's band), their right sides stay in sight.
+    .map((c, i) => `<div class="mini-card kitted" data-zoom="${esc(c)}" style="z-index:${max - i}">${cardFaceById(c)}</div>`)
     .join('');
   return `<div class="mini-cards">${shown}${cards.length > max ? `<div class="mini-card more">+${cards.length - max}</div>` : ''}</div>`;
 }
@@ -415,7 +416,8 @@ const LORE_GAP = 18;
 
 /** How the local player's own Court cards are ordered: as acquired, by type, or by resource. */
 export type CourtSort = 'got' | 'kind' | 'resource';
-export const COURT_SORTS: readonly CourtSort[] = ['got', 'kind', 'resource'];
+/** The sort buttons shown: by type and by resource (the owner dropped "as acquired", base-fixes #33). */
+export const COURT_SORTS: readonly CourtSort[] = ['kind', 'resource'];
 
 /** `cards` in the order `sort` asks for (stable: ties keep the order acquired). Pure. */
 export function sortCourt<T extends { kind?: string | null; resource?: string | null }>(cards: readonly T[], sort: CourtSort): T[] {
@@ -455,14 +457,17 @@ export function ownCourtPanel(p: PlayerView, t: Translate, sort: CourtSort, data
     ? `<button type="button" class="mine-open" data-act="mine-open" aria-expanded="${open}" title="${esc(t(open ? 'mine.collapse' : 'mine.expand'))}" aria-label="${esc(t(open ? 'mine.collapse' : 'mine.expand'))}">${open ? '&#x25B6;' : '&#x25C0;'}</button>`
     : '';
   const sorts = COURT_SORTS.map((k) => `<button type="button" class="cs-btn${k === sort ? ' on' : ''}" data-act="court-sort" data-sort="${k}" aria-pressed="${k === sort}">${esc(t(`mine.sort.${k}`))}</button>`).join('');
-  // Each card with its resource above it, always in sight even where the next card covers its corner.
+  // Overlapping cards leave their right side in sight (the printed resource): each card lies over the next one.
+  // The keys, printed top left and so covered, stand above each card at its right end.
   // A card whose power can be used now glows and uses it on a click.
+  let z = n;
   const item = (c: CourtFaceData) => {
-    const res = c.resource ? `<span class="mine-res">${resIcon(c.resource as Resource, t)}</span>` : '<span class="mine-res"></span>';
+    const keys = c.keys ? `${icon('key')}<b class="num">${c.keys}</b>` : '';
+    const res = `<span class="mine-keys" aria-label="${c.keys}">${keys}</span>`;
     const face = lit.has(c.card)
       ? `<button type="button" class="mine-card lit k-${esc(c.kind ?? 'none')}" data-act="power-card" data-card="${esc(c.card)}" data-zoom="${esc(c.card)}" title="${esc(t('powers.title'))}">${cardFaceById(c.card)}</button>`
       : `<div class="mine-card k-${esc(c.kind ?? 'none')}" data-zoom="${esc(c.card)}" tabindex="0">${cardFaceById(c.card)}</div>`;
-    return `<div class="mine-item">${res}${face}</div>`;
+    return `<div class="mine-item" style="z-index:${z--}">${res}${face}</div>`;
   };
   const groups = [guild, lore].filter((g) => g.length).map((g, i) => `<div class="mine-group${i ? ' lore' : ''}">${g.map(item).join('')}</div>`).join('');
   return `${toggle}<div class="mine-head" aria-label="${esc(t('mine.title'))}">${sorts}</div>

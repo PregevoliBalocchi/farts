@@ -290,16 +290,43 @@ export function orbitLayouts(
   });
 }
 
-/** How ships stand at a gate (picture pixels): room kept round the gate's number, from the segment's edges, and between two seats. */
-export const GATE = { number: 62, clear: 26, apart: 78, along: 88 } as const;
+/** How ships stand at a gate (picture pixels): the gap kept between a ship and the gate's number (their boxes), room from the segment's edges, between two seats. */
+export const GATE = { number: 8, clear: 40, apart: 78, along: 88 } as const;
+/** The least room (picture pixels) a ship at a gate keeps from its segment's edge, in a narrow segment. */
+const GATE_EDGE_MIN = 18;
+/** How far up the picture (pixels) a ship model at a gate is seen from the point it stands on (measured on the map). */
+export const GATE_LIFT = 30;
+/** A ship model as seen with its count tag up and right of it (picture pixels from where it is seen), and half a gate's printed number. */
+const SHIP_BOX = { left: 26, right: 44, up: 28, down: 16 } as const;
+const NUMBER_HALF = { w: 18, h: 26 } as const;
+
+/** Where a ship standing at `p` is seen: up the screen from it. */
+export function seenAt(p: PicturePoint): PicturePoint {
+  return { x: p.x, y: p.y - GATE_LIFT };
+}
+
+/** The gap (picture pixels) between a ship standing at `p` as seen and the number at `at`; negative when they overlap. */
+export function numberGap(p: PicturePoint, at: PicturePoint): number {
+  const s = seenAt(p);
+  const dx = s.x < at.x ? at.x - NUMBER_HALF.w - (s.x + SHIP_BOX.right) : s.x - SHIP_BOX.left - (at.x + NUMBER_HALF.w);
+  const dy = s.y < at.y ? at.y - NUMBER_HALF.h - (s.y + SHIP_BOX.down) : s.y - SHIP_BOX.up - (at.y + NUMBER_HALF.h);
+  return Math.max(dx, dy);
+}
+
+/** Room (picture pixels) a ship standing at `p` keeps from the segment's edges, where it stands and as seen; -1 when outside. */
+function gateRoom(p: PicturePoint, sector: readonly PicturePoint[]): number {
+  const s = seenAt(p);
+  if (!insidePolygon(p, sector) || !insidePolygon(s, sector)) return -1;
+  return Math.min(edgeDistance(p, sector), edgeDistance(s, sector));
+}
 
 /**
  * Where the ships of 1, 2, 3 and 4 seats stand at a gate, a segment of the
- * ring round the map's centre `centre`: in a row along the ring at the
- * gate's number `at` (the number itself left clear, one seat each side of
- * it first), a second row further in or out only when the first is full;
- * always inside the segment `sector` and clear of its edges, in order along
- * the ring. A figure that does not fit is null.
+ * ring round the map's centre `centre` with its number at `at`: deep inside
+ * the segment (its edges run along the drawn rifts, wide dark cracks), the
+ * model as seen clear of the number, near the number; seats `apart`, in
+ * order along the ring (production/base-fixes.md #33). A figure that does
+ * not fit is null.
  */
 export function gateLayouts(
   centre: PicturePoint,
@@ -307,44 +334,49 @@ export function gateLayouts(
   sector: readonly PicturePoint[],
   o: { number: number; clear: number; apart: number; along: number } = GATE,
 ): (PicturePoint[] | null)[] {
-  const d0 = Math.hypot(at.x - centre.x, at.y - centre.y);
   const a0 = Math.atan2(at.y - centre.y, at.x - centre.x);
-  const free: { p: PicturePoint; cost: number; a: number }[] = [];
-  for (let dr = -70; dr <= 70; dr += 10) {
-    const d = d0 + dr;
-    for (let da = -40; da <= 40; da += 1.5) {
-      const a = a0 + (da * Math.PI) / 180;
-      const p = { x: centre.x + d * Math.cos(a), y: centre.y + d * Math.sin(a) };
-      if (!insidePolygon(p, sector) || edgeDistance(p, sector) < o.clear) continue;
-      if (Math.hypot(p.x - at.x, p.y - at.y) < o.number) continue;
-      // Best on the number's own circle, about `along` from it either side.
-      const arc = Math.abs((da * Math.PI) / 180) * d;
-      free.push({ p, a: da, cost: Math.abs(dr) * 1.2 + Math.abs(arc - o.along) * 0.6 });
+  const side = (p: PicturePoint) => {
+    const a = Math.atan2(p.y - centre.y, p.x - centre.x) - a0;
+    return (Math.atan2(Math.sin(a), Math.cos(a)) * 180) / Math.PI;
+  };
+  const xs = sector.map((q) => q.x);
+  const ys = sector.map((q) => q.y);
+  // Candidates under one strictness: least room from the edges, least gap from the number.
+  const candidates = (min: number, gap: number) => {
+    const free: { p: PicturePoint; cost: number; a: number }[] = [];
+    for (let x = Math.min(...xs); x <= Math.max(...xs); x += 5) {
+      for (let y = Math.min(...ys); y <= Math.max(...ys); y += 5) {
+        const p = { x, y };
+        const room = gateRoom(p, sector);
+        if (room < min || numberGap(p, at) < gap) continue;
+        const s = seenAt(p);
+        free.push({ p, a: side(p), cost: -Math.min(room, 90) + Math.max(0, o.clear - room) * 6 + Math.hypot(s.x - at.x, s.y - at.y) * 0.25 });
+      }
     }
-  }
-  free.sort((x, y) => x.cost - y.cost);
-  return [1, 2, 3, 4].map((n) => {
+    return free.sort((x, y) => x.cost - y.cost);
+  };
+  const pick = (free: { p: PicturePoint; a: number }[], n: number, apart: number) => {
     const picked: { p: PicturePoint; a: number }[] = [];
     for (const f of free) {
       if (picked.length === n) break;
       // Two seats: one each side of the number, when both sides have room.
-      if (n === 2 && picked.length === 1 && Math.sign(f.a) === Math.sign(picked[0].a) && free.some((g) => Math.sign(g.a) !== Math.sign(picked[0].a))) continue;
-      if (picked.every((q) => Math.hypot(q.p.x - f.p.x, q.p.y - f.p.y) >= o.apart)) picked.push(f);
+      if (n === 2 && picked.length === 1 && Math.sign(f.a) === Math.sign(picked[0].a) && free.some((g) => Math.sign(g.a) !== Math.sign(picked[0].a) && Math.hypot(g.p.x - picked[0].p.x, g.p.y - picked[0].p.y) >= apart)) continue;
+      if (picked.every((q) => Math.hypot(q.p.x - f.p.x, q.p.y - f.p.y) >= apart)) picked.push(f);
     }
-    if (picked.length === n) return picked.sort((x, y) => x.a - y.a).map((x) => x.p);
-    // No room for one row: two rows, one seat each side of the number in each (a 2 by 2 square round it).
-    for (const g of [40, 46, 52]) {
-      for (const s of [60, 70, 80, 90]) {
-        const spots = [-g, g].flatMap((dr) =>
-          [-1, 1].map((side) => {
-            const d = d0 + dr;
-            const a = a0 + (side * s) / d;
-            return { p: { x: centre.x + d * Math.cos(a), y: centre.y + d * Math.sin(a) }, a: side * s };
-          }),
-        );
-        const ok = spots.filter((f) => insidePolygon(f.p, sector) && edgeDistance(f.p, sector) >= o.clear && Math.hypot(f.p.x - at.x, f.p.y - at.y) >= o.number);
-        if (ok.length >= n && 2 * g >= o.apart) return ok.slice(0, n).sort((x, y) => x.a - y.a).map((x) => x.p);
-      }
+    return picked.length === n ? picked.sort((x, y) => x.a - y.a).map((x) => x.p) : null;
+  };
+  // Strict first; a narrow segment with several seats eases the room from the edges, then how far apart
+  // they stand: never over the number.
+  const levels = [
+    { min: GATE_EDGE_MIN, gap: o.number, apart: o.apart },
+    { min: 12, gap: 0, apart: o.apart },
+    { min: 8, gap: 0, apart: o.apart * 0.8 },
+    { min: 4, gap: 0, apart: o.apart * 0.62 },
+  ].map((l) => ({ ...l, free: candidates(l.min, l.gap) }));
+  return [1, 2, 3, 4].map((n) => {
+    for (const l of levels) {
+      const fig = pick(l.free, n, l.apart);
+      if (fig) return fig;
     }
     return null;
   });
