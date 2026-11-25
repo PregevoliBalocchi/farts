@@ -567,5 +567,20 @@
   "battle.defend.ships": "{n} hits on your ships",
   "battle.defend.buildings": "{n} on your buildings",
   "battle.defend.keys": "{n} keys to raid",
-  "battle.defend.nothing": "nothing rolled hits you"
+  "battle.defend.nothing": "nothing rolled hits you",
+  "turn.phase.draft": "choosing leader and lore",
+  "turn.phase.campaignSetup": "placing pieces",
+  "turn.phase.lead": "leads",
+  "turn.phase.follow": "follows",
+  "turn.phase.actions": "takes actions",
+  "turn.phase.allocate": "battle",
+  "turn.phase.decide": "a card's choice",
+  "turn.lead": "lead: {card}",
+  "away.title": "While you were waiting",
+  "away.close": "Close",
+  "away.ships": "Ships destroyed: {n}",
+  "away.buildings": "Buildings destroyed: {n}",
+  "away.resource": "Taken from you: {n} {res}",
+  "away.card": "Taken from you: {card}",
+  "away.captured": "Agents captured: {n}"
 }

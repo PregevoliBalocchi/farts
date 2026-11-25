@@ -46,6 +46,15 @@ import type { HandCardView, TableView } from './view';
 
 /** The windows that still dim the table: the settings and a card's choice. */
 /** `gift`: which Guild card to give, and to whom, to declare `ambition` (the Feastbringer, leader-07; base-fixes #48). */
+/** One seat's pieces that rivals can take or destroy, as counted when its turn ends ("while you were waiting"). */
+interface AwaySnap {
+  ships: number;
+  buildings: number;
+  resources: Record<string, number>;
+  guild: string[];
+  captured: number;
+}
+
 type Modal = { type: 'settings' } | { type: 'confirm-pass' } | { type: 'scoring' } | { type: 'end' } | { type: 'decide'; options: DecisionOption[]; chosen?: string[] } | { type: 'gift'; ambition?: AmbitionId; gifts: DeclareGift[] };
 
 /** A drop-down under its header button: the log or the map help. */
@@ -213,6 +222,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let scoringSeen = state.lastScoring?.chapter ?? 0;
   /** The end screen was shown for this game (it opens once, after the last scoring window). */
   let endSeen = false;
+  /** "While you were waiting" (piano PR 6): each seat's pieces when its turn ended, and what changed since. */
+  const awaySnaps = new Map<PlayerId, AwaySnap>();
+  let awayNote: string[] = [];
+  let wasMine: PlayerId | null = null;
   let findMineTimer = 0;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
   let controlLayer = false;
@@ -1235,6 +1248,52 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         return `<li><i class="num">${k + 1}</i>${img}<span>${esc(t(key, { n, a: playerName(t, b.attacker), d: defenderName(b.target) }))}</span></li>`;
       });
     return items.length ? `<ol class="b-order" aria-label="${esc(t('battle.order.title'))}">${items.join('')}</ol>` : '';
+  }
+
+  /** Seat `p`'s pieces that rivals can take or destroy: ships and buildings on the map, resources, Guild cards, captured agents. */
+  function awaySnap(v: TableView, p: PlayerId): AwaySnap {
+    const resources: Record<string, number> = {};
+    for (const r of state.players[p].resources) if (r) resources[r] = (resources[r] ?? 0) + 1;
+    return {
+      ships: v.systems.reduce((n, s) => n + s.ships.filter((x) => x.player === p).reduce((m, x) => m + x.fresh + x.damaged, 0), 0),
+      buildings: v.systems.reduce((n, s) => n + s.buildings.filter((b) => b.owner === p).length, 0),
+      resources,
+      guild: state.players[p].court.filter((c) => ix.courtCards.get(c)?.kind === 'faction'),
+      captured: state.players.reduce((n, o) => n + (o.id === p ? 0 : o.captives.filter((c) => c === p).length), 0),
+    };
+  }
+
+  /** What rivals did to a seat between two of its turns, as short lines ("while you were waiting"). */
+  function awayLines(a: AwaySnap, b: AwaySnap): string[] {
+    const out: string[] = [];
+    if (b.ships < a.ships) out.push(t('away.ships', { n: a.ships - b.ships }));
+    if (b.buildings < a.buildings) out.push(t('away.buildings', { n: a.buildings - b.buildings }));
+    for (const [r, n] of Object.entries(a.resources)) if ((b.resources[r] ?? 0) < n) out.push(t('away.resource', { n: n - (b.resources[r] ?? 0), res: t(`resource.${r}`) }));
+    for (const c of a.guild) if (!b.guild.includes(c)) out.push(t('away.card', { card: cardName(c) }));
+    if (b.captured > a.captured) out.push(t('away.captured', { n: b.captured - a.captured }));
+    return out;
+  }
+
+  /**
+   * Keeps each seat's pieces when its turn ends and, when its turn comes back, what rivals took or destroyed
+   * meanwhile (the note shows until closed or until the seat acts).
+   */
+  function trackAway(v: TableView): void {
+    const now = myTurn() && state.phase.type !== 'gameOver' ? local() : null;
+    if (now === wasMine) return;
+    if (wasMine !== null) awaySnaps.set(wasMine, awaySnap(v, wasMine));
+    if (now !== null) {
+      const before = awaySnaps.get(now);
+      awayNote = before ? awayLines(before, awaySnap(v, now)) : [];
+    } else awayNote = [];
+    wasMine = now;
+  }
+
+  /** The "while you were waiting" note, at the waiting box's place (free on the local turn). */
+  function awayHtml(): string {
+    if (!awayNote.length || !myTurn()) return '';
+    const items = awayNote.map((l) => `<li>${esc(l)}</li>`).join('');
+    return `<div class="region away-note glass" data-region="away" role="status" style="${placeDown(REGIONS.waiting)}"><div class="away-head"><span>${esc(t('away.title'))}</span>${button('away-close', '', { cls: 'icon x', title: t('away.close'), html: icon('close') })}</div><ul>${items}</ul></div>`;
   }
 
   /** What the defender should know while the attacker places the hits: what is coming, and what a city costs. */
@@ -2372,6 +2431,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     stage.classList.toggle('my-turn', myTurn());
     stage.classList.toggle('bar-on', myTurn() && state.phase.type !== 'gameOver');
     const v = withSay(tableView(ix, state, me, lang));
+    trackAway(v);
     const valid = validSystems(v);
     const chosen = new Set<string>();
     if (intent.step === 'to' || intent.step === 'move') {
@@ -2421,6 +2481,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       `<div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>`,
       `<div class="region mine${mineOpen ? ' open' : ''}" data-region="mine"${zone('mine')} style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 50, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen, (card) => heldSlots(v, card))}</div>`,
       `<div class="region hand" data-region="hand"${zone('hand')} style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>`,
+      awayHtml(),
       bar ? `<div class="region actions cmd-bar${barNow?.bare ? ' bare' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)};width:${REGIONS.actions.w}px">${bar}</div>` : ctx ? `<div class="region actions waiting" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${othersTurn(state, 3) ? placeDown(REGIONS.waiting) : placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : '',
       `<div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>`,
       modalHtml(v),
@@ -3069,6 +3130,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         break;
       case 'close-modal':
         modal = null;
+        break;
+      case 'away-close':
+        awayNote = [];
         break;
       default:
         return;

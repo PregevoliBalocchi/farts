@@ -567,5 +567,20 @@
   "battle.defend.ships": "{n} colpi alle tue navi",
   "battle.defend.buildings": "{n} ai tuoi edifici",
   "battle.defend.keys": "{n} chiavi per razziare",
-  "battle.defend.nothing": "nessun dado ti colpisce"
+  "battle.defend.nothing": "nessun dado ti colpisce",
+  "turn.phase.draft": "sceglie leader e lore",
+  "turn.phase.campaignSetup": "piazza i pezzi",
+  "turn.phase.lead": "apre il round",
+  "turn.phase.follow": "risponde",
+  "turn.phase.actions": "fa le azioni",
+  "turn.phase.allocate": "combattimento",
+  "turn.phase.decide": "scelta di una carta",
+  "turn.lead": "guida: {card}",
+  "away.title": "Mentre aspettavi",
+  "away.close": "Chiudi",
+  "away.ships": "Navi distrutte: {n}",
+  "away.buildings": "Edifici distrutti: {n}",
+  "away.resource": "Ti hanno preso {n} {res}",
+  "away.card": "Ti hanno preso {card}",
+  "away.captured": "Agenti catturati: {n}"
 }

@@ -70,3 +70,34 @@ test.describe('battle window', () => {
     await expect(page.locator('.battle-win [data-act="allocate"]')).toHaveCount(0);
   });
 });
+
+test.describe('while you were waiting', () => {
+  test('when the turn comes back, a note says what rivals took meanwhile', async ({ page }) => {
+    await open(page, 2);
+    /** Loads the current state with the initiative at `seat`; `take` also removes a resource of seat 2 and captures one of its agents. */
+    const load = (seat: number, take = false) =>
+      page.evaluate(({ seat, take }) => {
+        const s = structuredClone(window.game!.state) as unknown as { initiative: number; players: { resources: (string | null)[]; captives: number[] }[] };
+        s.initiative = seat;
+        if (take) {
+          s.players[2].resources[s.players[2].resources.findIndex((r) => r)] = null;
+          s.players[0].captives.push(2);
+        }
+        window.game!.load(s as never);
+      }, { seat, take });
+    // Seat 2 leads (its turn), then the turn passes (its pieces are counted), then a rival takes a resource and
+    // captures an agent of seat 2, then seat 2 leads again.
+    await load(2);
+    await expect(page.locator('.away-note')).toHaveCount(0);
+    await load(0);
+    await load(0, true);
+    await load(2);
+    const note = page.locator('.away-note');
+    await expect(note).toContainText('Mentre aspettavi');
+    await expect(note.locator('li')).toHaveCount(2);
+    await expect(note.locator('li').nth(0)).toHaveText(/^Ti hanno preso 1 /);
+    await expect(note.locator('li').nth(1)).toHaveText('Agenti catturati: 1');
+    await note.locator('[data-act="away-close"]').click();
+    await expect(note).toHaveCount(0);
+  });
+});

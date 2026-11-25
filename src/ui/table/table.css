@@ -2167,3 +2167,16 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .b-defend p { margin: 0; }
 .tbl-stage .b-defend p + p { margin-top: 4px; color: var(--vellum-muted); }
 .tbl-stage .b-outrage { color: #ffcf8a; }
+/* The turn banner over the prompt: the active seat in its colour and symbol, the phase, the lead (piano PR 6). */
+.tbl-stage .hd.prompt .turn-banner { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 3px; padding: 2px 10px 2px 4px; border-radius: 999px; background: rgba(12, 9, 6, .82); border: 1px solid var(--seat); box-shadow: inset 4px 0 0 var(--seat); font-size: var(--fs-label); white-space: nowrap; }
+.tbl-stage .hd.prompt .tb-seat { display: inline-flex; align-items: center; gap: 5px; padding-left: 6px; font-weight: 700; color: var(--seat); }
+.tbl-stage .hd.prompt .tb-seat .tb-ic { width: 16px; height: 16px; color: var(--seat); }
+.tbl-stage .hd.prompt .tb-phase { color: var(--dg-text); }
+/* The banner and the instruction share the prompt's line: the instruction shrinks (fitPrompt) to leave it room. */
+.tbl-stage .hd.prompt .pr-line { display: flex; align-items: center; justify-content: center; gap: 12px; max-width: var(--pr-w); min-width: 0; }
+.tbl-stage.tbl-stage .hd.prompt .pr-line .pr-text { flex: 0 1 auto; min-width: 0; max-width: none; }
+.tbl-stage .hd.prompt .pr-line .turn-banner { flex: none; margin: 0; }
+/* "While you were waiting": what rivals took or destroyed since the seat's last turn (piano PR 6). */
+.tbl-stage .away-note { width: 340px; padding: 10px 14px 12px; border-radius: 8px; border: 1px solid var(--gilt-highlight); font-size: var(--fs-label); color: var(--dg-text); pointer-events: auto; }
+.tbl-stage .away-note .away-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 700 var(--fs-body) var(--font-ui, inherit); color: var(--vellum-title); }
+.tbl-stage .away-note ul { margin: 6px 0 0; padding-left: 18px; line-height: 1.45; }
