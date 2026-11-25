@@ -27,6 +27,7 @@ export const CATEGORIES = {
   pageerror: 'Errore JavaScript nella pagina',
   console: 'Errore in console',
   ledger: 'Cambia un totale che le regole tengono fisso',
+  rule: 'Una regola del regolamento non rispettata',
   covered: 'Bersaglio acceso coperto da un altro elemento',
   partly: 'Bersaglio acceso coperto in parte',
   offscreen: 'Bersaglio acceso non del tutto nello schermo',
@@ -250,7 +251,7 @@ export async function scan(page, lang) {
  * finding)` is told of each new observation (to save a screenshot). Returns the findings, the moves
  * and the final state.
  */
-export async function runGame({ browser, players, variant = 'base', seed = 7, steps = 500, w = 1920, h = 1080, lang = 'it', ledger, onFinding = async () => {}, log: say = () => {} }) {
+export async function runGame({ browser, players, variant = 'base', seed = 7, steps = 500, w = 1920, h = 1080, lang = 'it', ledger, rules, onFinding = async () => {}, log: say = () => {} }) {
   const rand = mulberry32(seed * 9973 + players * 31 + (variant === 'leaders' ? 7 : 0));
   const findings = new Map();
   const moves = [];
@@ -308,6 +309,8 @@ export async function runGame({ browser, players, variant = 'base', seed = 7, st
       }
     }
     lastTotals = t;
+    // The rulebook's checks between the state before and after this move (src/game/engine/rulecheck.ts).
+    if (rules) for (const b of rules(JSON.parse(shared), s)) await note(from, 'rule', `${b.rule}: ${b.detail.slice(0, 70)}`, b.detail);
     shared = next;
     for (const p of pages) if (p !== from) await p.evaluate((x) => window.game.load(JSON.parse(x)), next);
     for (const p of pages) if (p !== from) await settle(p);
