@@ -165,7 +165,7 @@ function candidates(ix: ContentIndex, s: GameState, me: PlayerId, powers = true)
  * The legal, distinct answers to the Decision `s` waits on for player `me`, from the answers the
  * engine declares for it (decisions.ts). Two answers that leave the game in the same state are one
  * option (the simpler is kept). The empty answer (no parts) comes first when it declines; when it takes
- * the rules' default it is offered only if no answer is legal (the default is among the answers).
+ * the rules' default it comes last, merged into the answer it equals (keep the Policy, make no Outlaw).
  * Empty when no Decision is pending for `me`.
  */
 export function decisionOptions(ix: ContentIndex, s: GameState, me: PlayerId): DecisionOption[] {
@@ -193,7 +193,7 @@ export function decisionOptions(ix: ContentIndex, s: GameState, me: PlayerId): D
     if (trials++ >= MAX_TRIALS) break;
     offer(parts);
   }
-  if (empty === 'default' && !out.length) offer([]);
+  if (empty === 'default') offer([]);
   return out;
 }
 

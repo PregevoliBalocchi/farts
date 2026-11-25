@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { dispatch, eventCardIds, indexContent, newCampaignGame, openSlots, runEvent } from '../../../src/game/engine';
 import type { ContentIndex, EventStep, GameContent, GameState } from '../../../src/game/engine';
+import { decisionOptions } from '../../../src/ui/table/decide';
 
 const PATH = 'data/content.json';
 
@@ -225,6 +226,16 @@ describe.skipIf(!existsSync(PATH))('campaign event phase', () => {
       for (const p of s.players) p.resources = p.resources.map(() => null);
       return s;
     }
+
+    it('the table offers keeping the Policy beside each change (the empty answer enforces it)', () => {
+      let s = govern('edict-04');
+      run(s, [{ kind: 'edicts' }]);
+      const decision = s.pendingDecisions!.shift()!;
+      s = { ...s, phase: { type: 'decide', decision, resume: { type: 'lead' } } };
+      const options = decisionOptions(ix, s, decision.player);
+      expect(options.filter((o) => o.args.change).map((o) => o.args.change)).toEqual(['edict-03', 'edict-05']);
+      expect(options.some((o) => !o.parts.length)).toBe(true);
+    });
 
     it('changing the Policy puts another Govern card on top', () => {
       let s = govern('edict-04');

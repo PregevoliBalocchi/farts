@@ -120,25 +120,30 @@ export function promoteDecision(ix: ContentIndex, s: GameState): void {
     const d = s.pendingDecisions?.shift();
     if (!d) return;
     s.phase = { type: 'decide', decision: d, resume: s.phase };
-    if (!nothingToChoose(ix, s, d)) return;
+    if (!nothingToChoose(ix, s, d) || !legal(ix, s, d.player, {})) return;
+    const at = s.log.length;
     apply(ix, s, { type: 'decide', player: d.player, args: {} });
-    const last = s.log[s.log.length - 1];
-    if (last) last.text += ' (no possible choice)';
+    replacePlaceholders(s);
+    // The note goes on the line the answer wrote (the first after it).
+    if (s.log[at]) s.log[at].text += ' (no possible choice)';
   }
 }
 
 /** True when `d` may be declined and none of its answers is legal in `s` (which waits on `d`). */
 function nothingToChoose(ix: ContentIndex, s: GameState, d: Decision): boolean {
   if (decisionAsk(ix, d)?.empty !== 'decline') return false;
-  for (const parts of decisionCandidates(ix, s, d)) {
-    try {
-      apply(ix, structuredClone(s), { type: 'decide', player: d.player, args: argsOf(parts) });
-      return false;
-    } catch {
-      // not legal: try the next answer
-    }
+  return !decisionCandidates(ix, s, d).some((parts) => legal(ix, s, d.player, argsOf(parts)));
+}
+
+/** Whether answering the Decision `s` waits on with `args` is legal (tried on a copy). Only a RuleError means no. */
+function legal(ix: ContentIndex, s: GameState, player: PlayerId, args: Record<string, unknown>): boolean {
+  try {
+    apply(ix, structuredClone(s), { type: 'decide', player, args });
+    return true;
+  } catch (e) {
+    if (e instanceof RuleError) return false;
+    throw e;
   }
-  return true;
 }
 
 function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
