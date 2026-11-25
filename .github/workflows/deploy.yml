@@ -60,7 +60,9 @@ jobs:
           CI: 'true'
       - name: Seeded game
         if: matrix.part != 'table'
-        run: npx playwright test tests/integration/playthrough.spec.ts --workers=1 --reporter=line --grep "${{ matrix.part }}: a seeded game"
+        # A block, not a plain line: the test title holds ": ", which YAML reads as a key.
+        run: |
+          npx playwright test tests/integration/playthrough.spec.ts --workers=1 --reporter=line --grep "${{ matrix.part }}: a seeded game"
         env:
           CI: 'true'
       - name: Keep the failures' screenshots and traces
