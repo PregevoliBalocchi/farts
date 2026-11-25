@@ -398,7 +398,11 @@ export class Board3D {
   private placePlanets(): void {
     const cam = this.camera.position;
     for (const p of this.planets) {
-      const { gx, gz, depth } = p.holder.userData as { gx: number; gz: number; depth: number };
+      const { gx, gz, top } = p.holder.userData as { gx: number; gz: number; top: number };
+      // Sunk `depth` and grown by t = (cam.y + depth) / cam.y to look the same size: its highest point (a rock,
+      // a ring) must stay PLANET_CLEAR under the glass once grown, or it pokes up over the pieces standing there
+      // (production/base-fixes.md #33): depth - top * t >= PLANET_CLEAR.
+      const depth = (top + PLANET_CLEAR) / Math.max(0.2, 1 - top / cam.y);
       const t = (cam.y + depth) / cam.y;
       p.holder.position.set(cam.x + (gx - cam.x) * t, -depth, cam.z + (gz - cam.z) * t);
       p.holder.scale.setScalar(t);
@@ -790,10 +794,9 @@ export class Board3D {
       if (s.kind !== 'planet' || !disc) continue;
       const p = buildPlanet(s.id, s.resource, disc.r * unit, roomAround(s.id, discs));
       const top = new THREE.Box3().setFromObject(p.holder).max.y;
-      const depth = top + 0.06;
       const at = pictureToWorld(c, disc.x, disc.y);
-      p.holder.userData = { gx: at.x, gz: at.z, depth };
-      p.holder.position.set(at.x, -depth, at.z);
+      p.holder.userData = { gx: at.x, gz: at.z, top };
+      p.holder.position.set(at.x, -(top + PLANET_CLEAR), at.z);
       this.planetGroup.add(p.holder);
       this.planets.push(p);
     }
@@ -1435,6 +1438,8 @@ function countTag(n: number, x: number, z: number, size: 'large' | 'small' = 'la
 
 /** The ink of a fleet's damaged ships on its count tag (black, outlined in white). */
 const DAMAGED_INK = '#0d0b09';
+/** How far (world units) a planet's highest point stays under the map's glass. */
+const PLANET_CLEAR = 0.06;
 /** Orbit line opacity, normally and with its system under the pointer. */
 const ORBIT_DIM = 0.5;
 const ORBIT_LIT = 1;

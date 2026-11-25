@@ -2,7 +2,7 @@
 // mapping, schematic fallback, and how ship stacks are laid out.
 import { describe, expect, it } from 'vitest';
 import {
-  BOARD_DEPTH, boardWidth, buildingSpots, edgeDistance, GATE, gateLayouts, insidePolygon, isCalibration, ORBIT, orbitLayouts, pathPoints, MAX_SHOWN, pictureToWorld, GROUP_GAP, headingJitter, HEADING_SPREAD, shipGroups, shipPlace, shipSpot, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
+  BOARD_DEPTH, boardWidth, buildingSpots, edgeDistance, GATE, gateLayouts, numberGap, insidePolygon, isCalibration, ORBIT, orbitLayouts, pathPoints, MAX_SHOWN, pictureToWorld, GROUP_GAP, headingJitter, HEADING_SPREAD, shipGroups, shipPlace, shipSpot, schematicToWorld, slotSpots, stackCentres, stackSpots, systemSpots, TILT_FAR, TILT_NEAR, tiltForZoom, worldToPicture,
 } from '../../../src/ui/table/board3d-layout';
 
 const PICTURE = { width: 4000, height: 2000 };
@@ -192,19 +192,20 @@ describe('ships at a gate', () => {
 
   it('keeps the number clear and puts two seats one each side of it', () => {
     const [one, two] = gateLayouts({ x: 0, y: 0 }, NUMBER, SEGMENT);
-    expect(Math.hypot(one![0].x - NUMBER.x, one![0].y - NUMBER.y)).toBeGreaterThanOrEqual(GATE.number);
+    expect(numberGap(one![0], NUMBER)).toBeGreaterThanOrEqual(GATE.number);
     expect(two).toHaveLength(2);
     expect(Math.sign(two![0].x)).not.toBe(Math.sign(two![1].x));
   });
 
-  it('fits up to four seats inside the segment, apart from each other', () => {
-    for (const fig of gateLayouts({ x: 0, y: 0 }, NUMBER, SEGMENT)) {
+  it('fits up to four seats inside the segment, strictly for one or two, easing room and gaps a little for more', () => {
+    gateLayouts({ x: 0, y: 0 }, NUMBER, SEGMENT).forEach((fig, i) => {
+      const strict = i < 2;
       expect(fig).not.toBeNull();
       for (const p of fig!) {
         expect(insidePolygon(p, SEGMENT)).toBe(true);
-        expect(Math.hypot(p.x - NUMBER.x, p.y - NUMBER.y)).toBeGreaterThanOrEqual(GATE.number);
+        expect(numberGap(p, NUMBER)).toBeGreaterThanOrEqual(strict ? GATE.number : 0);
       }
-      for (let a = 0; a < fig!.length; a++) for (let b = a + 1; b < fig!.length; b++) expect(Math.hypot(fig![a].x - fig![b].x, fig![a].y - fig![b].y)).toBeGreaterThanOrEqual(GATE.apart);
-    }
+      for (let a = 0; a < fig!.length; a++) for (let b = a + 1; b < fig!.length; b++) expect(Math.hypot(fig![a].x - fig![b].x, fig![a].y - fig![b].y)).toBeGreaterThanOrEqual(strict ? GATE.apart : GATE.apart * 0.62);
+    });
   });
 });

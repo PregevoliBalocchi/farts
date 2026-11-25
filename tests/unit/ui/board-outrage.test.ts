@@ -93,7 +93,8 @@ describe('own Court panel', () => {
     const data = (id: string) => ({ card: id, kind: 'guild', resource: null, keys: 0, name: id, text: '' });
     const html = ownCourtPanel(p, t, 'kind', data, 400);
     expect(count(html, 'class="mine-card ')).toBe(3);
-    expect(count(html, 'data-act="court-sort"')).toBe(3);
+    expect(count(html, 'data-act="court-sort"')).toBe(2);
+    expect(html).not.toContain('data-sort="got"');
     expect(html).toContain('data-sort="kind" aria-pressed="true"');
     expect(ownCourtPanel({ ...p, court: [], lore: [] }, t, 'got', data, 400)).toContain('mine-empty');
   });
@@ -113,14 +114,17 @@ describe('own Court panel', () => {
     expect(open).toContain('--gap:8px');
   });
 
-  it('keeps guild cards and lore cards in two groups, each card with its resource above it, parted by a shadow when they overlap', () => {
+  it('keeps guild cards and lore cards in two groups, each card over the next (its right side in sight) with its keys above it', () => {
     const v = tableView(ix, game(ix, 3, 7, 0), 0);
-    const data = (id: string) => ({ card: id, kind: id.startsWith('l') ? 'lore' : 'guild', resource: id.startsWith('l') ? null : 'fuel', keys: 0, name: id, text: '' });
+    const data = (id: string) => ({ card: id, kind: id.startsWith('l') ? 'lore' : 'guild', resource: id.startsWith('l') ? null : 'fuel', keys: id.startsWith('l') ? 0 : 2, name: id, text: '' });
     const p = { ...v.players[0], court: ['g1', 'g2', 'g3', 'g4', 'g5', 'g6'], lore: ['l1'] };
     const html = ownCourtPanel(p, t, 'got', data as never, 454);
     expect(count(html, 'class="mine-group')).toBe(2);
     expect(html.indexOf('mine-group lore')).toBeGreaterThan(html.lastIndexOf('data-zoom="g6"'));
-    expect(count(html, 'class="r-fuel')).toBe(6);
+    expect(count(html, 'class="mine-keys" aria-label="2"')).toBe(6);
     expect(html).toContain('mine-cards stacked');
+    // The first card lies on top: z-index falls from left to right.
+    const z = [...html.matchAll(/mine-item" style="z-index:(\d+)/g)].map((m) => Number(m[1]));
+    expect(z).toEqual([...z].sort((a, b) => b - a));
   });
 });
