@@ -52,3 +52,28 @@ test.describe('chapter scoring', () => {
     await expect(page.locator('.modal .sc-total').nth(1).locator('.sc-why')).toHaveText('Generale: non ne hai');
   });
 });
+
+test.describe("end screen (decision G)", () => {
+  test("shows the winner, the Power after every chapter and how a tie was broken", async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto(build("view=table&lang=it&motion=off&players=3&seed=11&seat=0"));
+    await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe("function");
+    await page.evaluate(() => {
+      const s = structuredClone(window.game!.state) as unknown as { players: { power: number }[]; initiative: number; chapter: number; powerByChapter: number[][]; phase: unknown };
+      // Seats 0 and 1 tie at 30; seat 1 has the initiative, so it is earlier in turn order and wins (rulebook 6.2.3).
+      [30, 30, 22].forEach((n, i) => (s.players[i].power = n));
+      s.initiative = 1;
+      s.chapter = 2;
+      s.powerByChapter = [[12, 15, 9], [30, 30, 22]];
+      s.phase = { type: "gameOver", winners: [1] };
+      window.game!.load(s as never);
+    });
+    const end = page.locator(".modal");
+    await expect(end.locator("#modal-title")).toHaveText("Vince Giocatore 2");
+    await expect(end.locator(".end-why")).toContainText("Pari a 30 Potere: vince Giocatore 2, che viene prima nell'ordine di turno.");
+    const rows = end.locator(".end-table tr");
+    await expect(rows).toHaveCount(4);
+    await expect(rows.nth(1)).toHaveText(/^Vince\s*Giocatore 2\s*15\s*30\s*30$/);
+    await expect(rows.nth(3)).toHaveText(/^3\s*Giocatore 3\s*9\s*22\s*22$/);
+  });
+});

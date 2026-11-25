@@ -541,5 +541,18 @@
   "scoring.why.zero": "non ne hai",
   "scoring.why.tieSecond": "pari per il 2°, nessuno lo prende",
   "scoring.why.behind": "dopo il 2° posto",
-  "scoring.why.worthZero": "piazzato, vale 0"
+  "scoring.why.worthZero": "piazzato, vale 0",
+  "end.title": "Vince {names}",
+  "end.titleMany": "Vincono insieme {names}",
+  "end.why.power": "{names} ha raggiunto {n} Potere, la soglia della vittoria.",
+  "end.why.chapters": "Il capitolo {n} era l'ultimo.",
+  "end.tie.order": "Pari a {n} Potere: vince {name}, che viene prima nell'ordine di turno.",
+  "end.tie.shared": "Pari a {n} Potere: la vittoria è condivisa.",
+  "end.rank": "Posto",
+  "end.player": "Giocatore",
+  "end.chapter": "Cap. {n}",
+  "end.total": "Potere",
+  "end.winner": "Vince",
+  "end.look": "Guarda il tavolo",
+  "end.why.powerMany": "{names} hanno raggiunto {n} Potere, la soglia della vittoria."
 }

@@ -46,7 +46,7 @@ import type { HandCardView, TableView } from './view';
 
 /** The windows that still dim the table: the settings and a card's choice. */
 /** `gift`: which Guild card to give, and to whom, to declare `ambition` (the Feastbringer, leader-07; base-fixes #48). */
-type Modal = { type: 'settings' } | { type: 'confirm-pass' } | { type: 'scoring' } | { type: 'decide'; options: DecisionOption[]; chosen?: string[] } | { type: 'gift'; ambition?: AmbitionId; gifts: DeclareGift[] };
+type Modal = { type: 'settings' } | { type: 'confirm-pass' } | { type: 'scoring' } | { type: 'end' } | { type: 'decide'; options: DecisionOption[]; chosen?: string[] } | { type: 'gift'; ambition?: AmbitionId; gifts: DeclareGift[] };
 
 /** A drop-down under its header button: the log or the map help. */
 type Drop = 'log' | 'help' | 'piles';
@@ -211,6 +211,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let mapKey: string | null = null;
   /** The chapter whose scoring window was already shown here (a reload does not show it again). */
   let scoringSeen = state.lastScoring?.chapter ?? 0;
+  /** The end screen was shown for this game (it opens once, after the last scoring window). */
+  let endSeen = false;
   let findMineTimer = 0;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
   let controlLayer = false;
@@ -2051,6 +2053,37 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       });
   }
 
+  /**
+   * The end screen (piano decision G): why the game ended, the ranking with each seat's Power after every
+   * chapter, and how a tie for the most Power was broken (rulebook 6.2.3: earliest in turn order).
+   */
+  function endHtml(winners: PlayerId[]): string {
+    const n = state.playerCount;
+    const target = content.powerToWin[n];
+    const byChapter = state.powerByChapter ?? [];
+    const top = Math.max(...state.players.map((p) => p.power));
+    const reached = state.players.filter((p) => p.power >= target);
+    const why = reached.length ? t(reached.length > 1 ? 'end.why.powerMany' : 'end.why.power', { names: reached.map((p) => playerName(t, p.id)).join(', '), n: target }) : t('end.why.chapters', { n: state.chapter });
+    const tied = state.players.filter((p) => p.power === top).map((p) => p.id);
+    const tie = tied.length > 1 ? (winners.length > 1 ? t('end.tie.shared', { n: top }) : t('end.tie.order', { n: top, name: playerName(t, winners[0]) })) : '';
+    // Winners first, then by Power; a tie keeps the turn order from the initiative (the rule that broke it).
+    const order = (p: PlayerId) => (p - state.initiative + n) % n;
+    const ranked = [...state.players].sort((a, b) => Number(winners.includes(b.id)) - Number(winners.includes(a.id)) || b.power - a.power || order(a.id) - order(b.id));
+    const head = `<tr><th scope="col">${esc(t('end.rank'))}</th><th scope="col">${esc(t('end.player'))}</th>${byChapter.map((_, i) => `<th scope="col" class="num">${esc(t('end.chapter', { n: i + 1 }))}</th>`).join('')}<th scope="col" class="num">${esc(t('end.total'))}</th></tr>`;
+    const rows = ranked
+      .map((p, i) => {
+        const win = winners.includes(p.id);
+        const cells = byChapter.map((row) => `<td class="num">${row[p.id] ?? ''}</td>`).join('');
+        return `<tr class="${win ? 'win' : ''}"><td class="num">${win ? `<span class="end-crown">${esc(t('end.winner'))}</span>` : i + 1}</td><td><span class="sc-who s-${seatColor(p.id)}"><i class="dot"></i>${esc(playerName(t, p.id))}</span></td>${cells}<td class="num end-total">${p.power}</td></tr>`;
+      })
+      .join('');
+    const names = winners.map((w) => playerName(t, w)).join(', ');
+    return `<h2 id="modal-title">${esc(t(winners.length > 1 ? 'end.titleMany' : 'end.title', { names }))}</h2>
+      <p class="end-why">${esc(why)}${tie ? ` ${esc(tie)}` : ''}</p>
+      <table class="end-table">${head}${rows}</table>
+      <div class="modal-foot">${button('close-modal', t('end.look'))}${online ? '' : button('new-game', t('settings.newGame'), { cls: 'primary' })}</div>`;
+  }
+
   function scoringHtml(sc: ChapterScoring): string {
     const n = state.playerCount;
     const who = (p: number) => (p >= n ? `<span class="sc-who box">${esc(t('scoring.box'))}</span>` : `<span class="sc-who s-${seatColor(p)}"><i class="dot"></i>${esc(playerName(t, p))}</span>`);
@@ -2115,6 +2148,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         <div class="modal-foot">${button('close-modal', t('btn.back'))}${button('new-game', t('settings.newGame'), { cls: 'primary' })}</div>`;
     } else if (modal.type === 'scoring' && state.lastScoring) {
       inner = scoringHtml(state.lastScoring);
+      size = 'l';
+    } else if (modal.type === 'end' && state.phase.type === 'gameOver') {
+      inner = endHtml(state.phase.winners);
       size = 'l';
     } else if (modal.type === 'gift') {
       // The Guild cards that can pay for declaring, each with the Rival it goes to.
@@ -2278,6 +2314,12 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       scoringSeen = state.lastScoring.chapter;
       if (!modal) modal = { type: 'scoring' };
     }
+    // The game is over: the end screen opens once, after the last chapter's scoring is closed (decision G).
+    if (state.phase.type === 'gameOver' && !endSeen && !modal) {
+      endSeen = true;
+      modal = { type: 'end' };
+    }
+    if (state.phase.type !== 'gameOver') endSeen = false;
     stage.classList.toggle('my-turn', myTurn());
     stage.classList.toggle('bar-on', myTurn() && state.phase.type !== 'gameOver');
     const v = withSay(tableView(ix, state, me, lang));

@@ -67,3 +67,12 @@ describe('2-player mulligan every chapter', () => {
   });
 });
 
+describe('power by chapter', () => {
+  it('keeps the Power totals of every seat after each chapter, for the end screen', () => {
+    const s = game(ix, 3, 7, 0);
+    s.players[0].trophies = [{ owner: 1, piece: 'ship' }];
+    const after = endChapter(s, 'trophies');
+    expect(after.powerByChapter).toEqual([after.players.map((p) => p.power)]);
+    expect(after.powerByChapter![0][0]).toBeGreaterThan(0);
+  });
+});

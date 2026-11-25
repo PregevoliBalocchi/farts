@@ -541,5 +541,18 @@
   "scoring.why.zero": "none of it",
   "scoring.why.tieSecond": "tied for 2nd, nobody takes it",
   "scoring.why.behind": "behind 2nd place",
-  "scoring.why.worthZero": "placed, worth 0"
+  "scoring.why.worthZero": "placed, worth 0",
+  "end.title": "{names} wins",
+  "end.titleMany": "{names} win together",
+  "end.why.power": "{names} reached {n} Power, the winning threshold.",
+  "end.why.chapters": "Chapter {n} was the last one.",
+  "end.tie.order": "Tied at {n} Power: {name} wins, earliest in turn order.",
+  "end.tie.shared": "Tied at {n} Power: the victory is shared.",
+  "end.rank": "Place",
+  "end.player": "Player",
+  "end.chapter": "Ch. {n}",
+  "end.total": "Power",
+  "end.winner": "Winner",
+  "end.look": "Look at the table",
+  "end.why.powerMany": "{names} reached {n} Power, the winning threshold."
 }
