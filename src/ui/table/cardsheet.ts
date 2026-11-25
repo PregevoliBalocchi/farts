@@ -9,13 +9,16 @@ import type { ActionKind } from '../../game/engine/types';
 import { pickLang, translator } from '../../i18n';
 import { loadContent } from '../content';
 import { icon } from './assets';
+import { courtCardFace, faceOf, fitCardText } from './cardface';
+import { loadCardFonts } from './cardfonts';
 import { actionCard, declareGlyphs, esc, suitClass, suitName } from './render';
 import type { ActionCardView } from './view';
 import './table.css';
 
 /** Mounts the check sheet into `root`. */
 export function mountCards(root: HTMLElement): void {
-  const t = translator(pickLang(location.search, navigator.language));
+  const lang = pickLang(location.search, navigator.language);
+  const t = translator(lang);
   const ix = indexContent(loadContent().content, BASE_EFFECTS);
   const { suits, actionCards, declareByNumber } = ix.content;
 
@@ -60,5 +63,20 @@ export function mountCards(root: HTMLElement): void {
     .join('');
   const icons = `<h2>${esc(t('cards.ambitionIcons'))}</h2><div class="row glyphs">${ambs}</div>`;
 
-  root.innerHTML = `<div class="tbl card-sheet"><h1>${esc(t('cards.title'))}</h1><p>${esc(t('cards.intro'))}</p>${icons}${rows}${special}</div>`;
+  // Every Court, Lore and Leader face in the page's language, as the table draws it (the faces test reads them).
+  const ids = [...ix.content.courtCards.map((c) => c.id), ...(ix.content.loreCards ?? []).map((c) => c.id), ...(ix.content.leaders ?? []).map((c) => c.id)];
+  const faces = ids
+    .map((id) => {
+      const f = faceOf(ix, id, lang);
+      return `<figure class="face${f.kind === 'leader' ? ' tall' : ''}" data-card="${esc(id)}">${courtCardFace(f)}<figcaption>${esc(f.name ?? id)}</figcaption></figure>`;
+    })
+    .join('');
+  const faceRow = `<h2>${esc(t('cards.faces'))}</h2><div class="row faces">${faces}</div>`;
+
+  root.innerHTML = `<div class="tbl card-sheet"><h1>${esc(t('cards.title'))}</h1><p>${esc(t('cards.intro'))}</p>${icons}${rows}${special}${faceRow}</div>`;
+  const sheet = root.querySelector<HTMLElement>('.card-sheet')!;
+  void loadCardFonts().then(() => {
+    fitCardText(sheet, true);
+    sheet.dataset.fitted = 'true';
+  });
 }
