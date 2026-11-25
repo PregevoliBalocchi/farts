@@ -1,0 +1,700 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-25T11:53:37+00:00",
+  "title": "Design System: Arcs Table",
+  "extensions": {
+    "colorMeta": {
+      "gilt-gold": {
+        "role": "primary",
+        "displayName": "Gilt Gold",
+        "canonical": "#d6a344",
+        "tonalRamp": [
+          "#342b18",
+          "#5c4823",
+          "#88672a",
+          "#b8882e",
+          "#d2a756",
+          "#d8be8d",
+          "#e3d7bf",
+          "#f6f3ee"
+        ]
+      },
+      "gilt-highlight": {
+        "role": "primary",
+        "displayName": "Gilt Highlight",
+        "canonical": "#f3c463",
+        "tonalRamp": [
+          "#392d13",
+          "#664d1a",
+          "#986f1b",
+          "#cf9316",
+          "#e7b141",
+          "#e4c481",
+          "#e9dab9",
+          "#f7f4ed"
+        ]
+      },
+      "gilt-deep": {
+        "role": "primary",
+        "displayName": "Gilt Deep",
+        "canonical": "#c8892a",
+        "tonalRamp": [
+          "#352918",
+          "#5d4623",
+          "#896329",
+          "#b9812c",
+          "#d3a155",
+          "#d8ba8d",
+          "#e4d5bf",
+          "#f6f3ee"
+        ]
+      },
+      "gilt-pale": {
+        "role": "primary",
+        "displayName": "Gilt Pale",
+        "canonical": "#ffd27a",
+        "tonalRamp": [
+          "#3c2d10",
+          "#6c4e13",
+          "#a27110",
+          "#df9607",
+          "#f5b333",
+          "#edc578",
+          "#eddab5",
+          "#f8f4ec"
+        ]
+      },
+      "bronze-dim": {
+        "role": "secondary",
+        "displayName": "Bronze Dim",
+        "canonical": "#7d5d27",
+        "tonalRamp": [
+          "#32291b",
+          "#574628",
+          "#806333",
+          "#ab813a",
+          "#c7a161",
+          "#d1ba94",
+          "#e0d5c2",
+          "#f5f3ef"
+        ]
+      },
+      "bronze-edge": {
+        "role": "secondary",
+        "displayName": "Bronze Edge",
+        "canonical": "#6b4a14",
+        "tonalRamp": [
+          "#352a17",
+          "#5e4721",
+          "#8b6527",
+          "#bd8529",
+          "#d6a452",
+          "#dabc8b",
+          "#e4d6be",
+          "#f6f3ee"
+        ]
+      },
+      "ember-orange": {
+        "role": "tertiary",
+        "displayName": "Ember Orange",
+        "canonical": "#e0711f",
+        "tonalRamp": [
+          "#372415",
+          "#623b1e",
+          "#915122",
+          "#c46621",
+          "#dd894b",
+          "#dfac86",
+          "#e6cebc",
+          "#f7f2ee"
+        ]
+      },
+      "void-black": {
+        "role": "neutral",
+        "displayName": "Void Black",
+        "canonical": "#0b0806",
+        "tonalRamp": [
+          "#2d2520",
+          "#4d3d33",
+          "#6f5544",
+          "#926c53",
+          "#b08e77",
+          "#c4afa1",
+          "#d9cfc9",
+          "#f4f2f1"
+        ]
+      },
+      "frame-umber": {
+        "role": "neutral",
+        "displayName": "Frame Umber",
+        "canonical": "#16110b",
+        "tonalRamp": [
+          "#2e271f",
+          "#4f4131",
+          "#725b41",
+          "#97764f",
+          "#b49774",
+          "#c6b49f",
+          "#dbd2c8",
+          "#f4f2f0"
+        ]
+      },
+      "frame-brown": {
+        "role": "neutral",
+        "displayName": "Frame Brown",
+        "canonical": "#2b2015",
+        "tonalRamp": [
+          "#2e261f",
+          "#4f4030",
+          "#725940",
+          "#98734e",
+          "#b59473",
+          "#c6b29f",
+          "#dbd1c7",
+          "#f4f2f0"
+        ]
+      },
+      "table-soot": {
+        "role": "neutral",
+        "displayName": "Table Soot",
+        "canonical": "#15100b",
+        "tonalRamp": [
+          "#2d261f",
+          "#4e4032",
+          "#705942",
+          "#947351",
+          "#b29476",
+          "#c5b2a0",
+          "#dad1c8",
+          "#f4f2f0"
+        ]
+      },
+      "parchment-text": {
+        "role": "neutral",
+        "displayName": "Parchment Text",
+        "canonical": "#ece4d2",
+        "tonalRamp": [
+          "#2f2a1d",
+          "#52472e",
+          "#77653c",
+          "#9f8447",
+          "#bba36d",
+          "#cabc9b",
+          "#ddd6c6",
+          "#f5f3f0"
+        ]
+      },
+      "vellum-title": {
+        "role": "neutral",
+        "displayName": "Vellum Title",
+        "canonical": "#efe3c4",
+        "tonalRamp": [
+          "#332c1a",
+          "#594b26",
+          "#836c2f",
+          "#b18e35",
+          "#cbac5c",
+          "#d4c191",
+          "#e1d8c1",
+          "#f6f4ef"
+        ]
+      },
+      "vellum-muted": {
+        "role": "neutral",
+        "displayName": "Vellum Muted",
+        "canonical": "#c7b896",
+        "tonalRamp": [
+          "#2d291f",
+          "#4d4532",
+          "#706243",
+          "#947f52",
+          "#b19f76",
+          "#c4b9a1",
+          "#dad4c8",
+          "#f4f3f0"
+        ]
+      },
+      "card-ink": {
+        "role": "neutral",
+        "displayName": "Card Ink",
+        "canonical": "#1d150d",
+        "tonalRamp": [
+          "#2f261e",
+          "#51402f",
+          "#75593d",
+          "#9c734a",
+          "#b9946f",
+          "#c9b29c",
+          "#dcd1c6",
+          "#f4f2f0"
+        ]
+      },
+      "card-cream": {
+        "role": "neutral",
+        "displayName": "Card Cream",
+        "canonical": "#fbf7ee",
+        "tonalRamp": [
+          "#342c19",
+          "#5b4a24",
+          "#876b2c",
+          "#b68c30",
+          "#d0ab58",
+          "#d6c08f",
+          "#e3d8c0",
+          "#f6f4ef"
+        ]
+      },
+      "seat-gold": {
+        "role": "game",
+        "displayName": "Seat Gold",
+        "canonical": "#f8b010",
+        "tonalRamp": [
+          "#3b2e11",
+          "#6a5016",
+          "#9e7314",
+          "#d8990d",
+          "#efb739",
+          "#e9c77c",
+          "#ecdbb6",
+          "#f8f4ed"
+        ]
+      },
+      "seat-teal": {
+        "role": "game",
+        "displayName": "Seat Teal",
+        "canonical": "#1ba3bd",
+        "tonalRamp": [
+          "#163237",
+          "#1e5661",
+          "#227f90",
+          "#22aac4",
+          "#4bc5dd",
+          "#87d0de",
+          "#bcdfe6",
+          "#eef5f7"
+        ]
+      },
+      "seat-red": {
+        "role": "game",
+        "displayName": "Seat Red",
+        "canonical": "#e8573f",
+        "tonalRamp": [
+          "#381a15",
+          "#63271d",
+          "#933020",
+          "#c8361e",
+          "#e05d48",
+          "#e09285",
+          "#e7c1bb",
+          "#f7efee"
+        ]
+      },
+      "seat-white": {
+        "role": "game",
+        "displayName": "Seat White",
+        "canonical": "#f1f0ea",
+        "tonalRamp": [
+          "#2b2922",
+          "#494637",
+          "#68644b",
+          "#88825d",
+          "#a7a281",
+          "#bebba7",
+          "#d7d5cb",
+          "#f3f3f1"
+        ]
+      },
+      "suit-construction": {
+        "role": "game",
+        "displayName": "Suit Construction",
+        "canonical": "#e0773c",
+        "tonalRamp": [
+          "#362216",
+          "#60371f",
+          "#8e4a24",
+          "#c15d24",
+          "#da804e",
+          "#dda788",
+          "#e6cbbd",
+          "#f7f1ee"
+        ]
+      },
+      "suit-administration": {
+        "role": "game",
+        "displayName": "Suit Administration",
+        "canonical": "#3a8fd8",
+        "tonalRamp": [
+          "#172735",
+          "#22425e",
+          "#285d8a",
+          "#2b78bb",
+          "#5399d5",
+          "#8cb5d9",
+          "#bed3e4",
+          "#eef3f6"
+        ]
+      },
+      "suit-mobilization": {
+        "role": "game",
+        "displayName": "Suit Mobilization",
+        "canonical": "#3fae6a",
+        "tonalRamp": [
+          "#1c3124",
+          "#2b553b",
+          "#377c52",
+          "#40a567",
+          "#67c18a",
+          "#97ceac",
+          "#c4dece",
+          "#f0f5f2"
+        ]
+      },
+      "suit-aggression": {
+        "role": "game",
+        "displayName": "Suit Aggression",
+        "canonical": "#b05ad0",
+        "tonalRamp": [
+          "#2c1a33",
+          "#4b2759",
+          "#6c3182",
+          "#8e37af",
+          "#ad5eca",
+          "#c192d3",
+          "#d8c1e1",
+          "#f4eff6"
+        ]
+      },
+      "res-material": {
+        "role": "game",
+        "displayName": "Res Material",
+        "canonical": "#c9a27a",
+        "tonalRamp": [
+          "#30261d",
+          "#53402d",
+          "#785a3a",
+          "#a07345",
+          "#bd946b",
+          "#cbb39a",
+          "#ddd1c5",
+          "#f5f2f0"
+        ]
+      },
+      "res-fuel": {
+        "role": "game",
+        "displayName": "Res Fuel",
+        "canonical": "#f0c24b",
+        "tonalRamp": [
+          "#392f13",
+          "#66501a",
+          "#97751b",
+          "#ce9b17",
+          "#e6b842",
+          "#e4c881",
+          "#e9dcb9",
+          "#f7f4ed"
+        ]
+      },
+      "res-weapons": {
+        "role": "game",
+        "displayName": "Res Weapons",
+        "canonical": "#ff7a5c",
+        "tonalRamp": [
+          "#3c1810",
+          "#6c2413",
+          "#a22b10",
+          "#df2f07",
+          "#f55733",
+          "#ed8e78",
+          "#edbfb5",
+          "#f8efec"
+        ]
+      },
+      "res-relic": {
+        "role": "game",
+        "displayName": "Res Relic",
+        "canonical": "#59d0a8",
+        "tonalRamp": [
+          "#1a332a",
+          "#275948",
+          "#308267",
+          "#36af86",
+          "#5ecaa6",
+          "#92d3bd",
+          "#c1e1d6",
+          "#eff6f3"
+        ]
+      },
+      "res-psionic": {
+        "role": "game",
+        "displayName": "Res Psionic",
+        "canonical": "#c38bff",
+        "tonalRamp": [
+          "#25103c",
+          "#3e136c",
+          "#5710a2",
+          "#6f07df",
+          "#9133f5",
+          "#b078ed",
+          "#d0b5ed",
+          "#f2ecf8"
+        ]
+      },
+      "state-ok": {
+        "role": "game",
+        "displayName": "State Ok",
+        "canonical": "#6fe3a5",
+        "tonalRamp": [
+          "#173525",
+          "#225e3e",
+          "#288b56",
+          "#2abb6e",
+          "#53d58f",
+          "#8bdab0",
+          "#bee4d0",
+          "#eef6f2"
+        ]
+      },
+      "state-warn": {
+        "role": "game",
+        "displayName": "State Warn",
+        "canonical": "#ffcc66",
+        "tonalRamp": [
+          "#3c2e10",
+          "#6c4f13",
+          "#a27210",
+          "#df9707",
+          "#f5b433",
+          "#edc678",
+          "#eddbb5",
+          "#f8f4ec"
+        ]
+      },
+      "state-danger": {
+        "role": "game",
+        "displayName": "State Danger",
+        "canonical": "#ff6b6b",
+        "tonalRamp": [
+          "#3c1010",
+          "#6c1313",
+          "#a21010",
+          "#df0707",
+          "#f53333",
+          "#ed7878",
+          "#edb5b5",
+          "#f8ecec"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Column titles (Ambitions), uppercase serif."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Names of ambitions, cards and sections, uppercase serif."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "The turn instruction under the hand."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Button labels and window text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Pile names and small uppercase captions."
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "Counts, pips and scores."
+      },
+      "card-title": {
+        "displayName": "Card Title",
+        "purpose": "Names on card faces only."
+      },
+      "card-text": {
+        "displayName": "Card Text",
+        "purpose": "Rules text on card faces only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "plate",
+        "value": "inset 0 0 0 1px #000d, inset 0 0 0 3px rgba(226,178,92,.22), inset 0 14px 28px rgba(255,205,130,.06), 0 0 0 1px #000, 0 10px 26px #000d",
+        "purpose": "Every framed panel and board."
+      },
+      {
+        "name": "card-lift",
+        "value": "0 4px 12px #000c",
+        "purpose": "Cards in the hand and on the table."
+      },
+      {
+        "name": "state-glow",
+        "value": "0 0 12px rgba(255,196,100,.45)",
+        "purpose": "Hover on a command, a lit target, a toggled switch. Never at rest."
+      },
+      {
+        "name": "ready-pulse",
+        "value": "0 0 0 2px #ffd27a, 0 0 22px rgba(255,196,100,.8)",
+        "purpose": "Mid-cycle of the End turn pulse when no action is left."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-change",
+        "value": ".15s ease",
+        "purpose": "Hover, glow and border changes."
+      },
+      {
+        "name": "card-raise",
+        "value": "transform .15s ease",
+        "purpose": "A hovered or picked hand card rises."
+      },
+      {
+        "name": "ready-pulse",
+        "value": "1.6s ease-in-out infinite",
+        "purpose": "End turn ready. Off under prefers-reduced-motion or ?motion=off."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stage-min",
+        "value": "1920x1080 stage px, scaled uniformly to the window"
+      },
+      {
+        "name": "laptop",
+        "value": "1366x768 window: the stage shows at 71%"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one gold action of a group (Lead, End turn, Confirm).",
+      "html": "<button class=\"ds-btn-primary\">Lead</button>",
+      "css": ".ds-btn-primary{height:48px;min-width:132px;padding:0 10px;border-radius:6px;border:1px solid #6b4a14;background:linear-gradient(180deg,#f3c463,#c58a2a);color:#1d150d;font:700 16px 'Segoe UI',Inter,system-ui,sans-serif;cursor:pointer}.ds-btn-primary:hover{background:linear-gradient(180deg,#f8d27c,#d39a36)}.ds-btn-primary:focus-visible{outline:3px solid #ffcc66;outline-offset:2px}.ds-btn-primary:disabled{opacity:.45;cursor:default}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Every other command: actions, Undo, Pass.",
+      "html": "<button class=\"ds-btn-secondary\">Pass</button>",
+      "css": ".ds-btn-secondary{height:48px;min-width:124px;padding:0 10px;border-radius:6px;border:2px solid #7d5d27;background:linear-gradient(180deg,#2a2016,#120d08);color:#ece4d2;font:600 16px 'Segoe UI',Inter,system-ui,sans-serif;cursor:pointer}.ds-btn-secondary:hover{border-color:#d6a344;background:linear-gradient(180deg,#3a2c1c,#1a130b);box-shadow:0 0 12px rgba(255,196,100,.45)}.ds-btn-secondary:focus-visible{outline:3px solid #ffcc66;outline-offset:2px}"
+    },
+    {
+      "name": "Menu Square",
+      "kind": "nav",
+      "refersTo": "button-menu-square",
+      "description": "Top-right navigation squares (menu, objectives, map layers, help, settings).",
+      "html": "<button class=\"ds-sq\" aria-label=\"Help\"><svg viewBox=\"0 0 24 24\" width=\"28\" height=\"28\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14\"/><circle cx=\"12\" cy=\"17\" r=\".6\" fill=\"currentColor\"/></svg></button>",
+      "css": ".ds-sq{width:52px;height:52px;padding:0;display:grid;place-items:center;border-radius:6px;border:2px solid #d6a344;background:linear-gradient(180deg,#1d160e,#0b0806);color:#d6a344;box-shadow:0 2px 8px #000a;cursor:pointer}.ds-sq:hover,.ds-sq:focus-visible{color:#ffe09a;box-shadow:0 0 0 1px #000,0 0 16px rgba(255,176,64,.55)}.ds-sq[aria-pressed=true]{color:#1a1208;background:linear-gradient(180deg,#ffd98a,#c8913a)}"
+    },
+    {
+      "name": "Framed Plate",
+      "kind": "card",
+      "refersTo": "panel-frame",
+      "description": "Every board, column and window: an umber plate in a bevelled gold frame.",
+      "html": "<section class=\"ds-plate\"><h3 class=\"ds-plate-title\">Ambitions</h3><p class=\"ds-plate-text\">One row per ambition, spread over the height.</p></section>",
+      "css": ".ds-plate{border:3px solid transparent;border-radius:8px;background:radial-gradient(120% 80% at 50% 0%,#2b2015 0%,#16110b 55%,#0e0a07 100%) padding-box,linear-gradient(180deg,#fbe3a2 0%,#d3a24a 18%,#7a5219 46%,#4a300c 54%,#a8772d 78%,#f1cf80 100%) border-box;box-shadow:inset 0 0 0 1px #000d,inset 0 0 0 3px rgba(226,178,92,.22),inset 0 14px 28px rgba(255,205,130,.06),0 0 0 1px #000,0 10px 26px #000d;padding:14px 16px;color:#ece4d2;width:260px}.ds-plate-title{margin:0 0 6px;text-align:center;font:700 24px Georgia,'Times New Roman',serif;letter-spacing:.08em;text-transform:uppercase;color:#efe3c4}.ds-plate-text{margin:0;font:600 14px 'Segoe UI',Inter,system-ui,sans-serif;color:#c7b896}"
+    },
+    {
+      "name": "Declare Tag",
+      "kind": "chip",
+      "refersTo": "chip-tag",
+      "description": "Small gold tag on a lit target (Declare on an ambition).",
+      "html": "<span class=\"ds-tag\">Declare</span>",
+      "css": ".ds-tag{display:inline-block;padding:1px 6px;border-radius:4px;background:#f3c463;color:#1d150d;font:800 11px 'Segoe UI',Inter,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase}"
+    },
+    {
+      "name": "Action Card",
+      "kind": "custom",
+      "refersTo": "action-card",
+      "description": "An action card at hand size, 372:519, with the suit colour border.",
+      "html": "<div class=\"ds-acard\" style=\"--suit:#3fae6a\"><span class=\"ds-acard-n\">5</span><span class=\"ds-acard-pips\">&#10022;&#10022;</span><span class=\"ds-acard-kinds\">Influence<br>Move</span></div>",
+      "css": ".ds-acard{width:100px;aspect-ratio:372/519;box-sizing:border-box;display:grid;grid-template-rows:auto auto 1fr;justify-items:start;padding:6px 8px;border-radius:8px;border:4px solid var(--suit);background:linear-gradient(180deg,#fbf7ee,#ece5d6);color:#1d150d;box-shadow:0 4px 12px #000c;transition:transform .15s}.ds-acard:hover{transform:translateY(-12px)}.ds-acard-n{font:800 34px/1 'Segoe UI',Inter,system-ui,sans-serif;color:var(--suit)}.ds-acard-pips{color:var(--suit);font-size:13px}.ds-acard-kinds{align-self:end;font:700 10px/1.2 'Segoe UI',Inter,system-ui,sans-serif;text-transform:uppercase;color:#1d150d}"
+    },
+    {
+      "name": "Turn Instruction",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "The line under the hand: centred, underlined in gold, glowing while it is your turn.",
+      "html": "<div class=\"ds-prompt\"><span>Lead with a card, or pass the initiative.</span></div>",
+      "css": ".ds-prompt{display:grid;justify-items:center;gap:3px;background:#15100b;padding:10px}.ds-prompt span{font:600 21px 'Segoe UI',Inter,system-ui,sans-serif;color:#f6e7c4;text-shadow:0 0 14px rgba(255,196,100,.8),0 2px 6px #000}.ds-prompt::after{content:'';width:420px;height:2px;background:linear-gradient(90deg,transparent,#d6a344 20%,#d6a344 80%,transparent);box-shadow:0 0 10px rgba(255,196,100,.8)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Gilt in the Void",
+    "overview": "The table is a set of precious objects hung over deep space. Every panel, board and window is a dark, warm-brown plate in a bevelled gold frame with small corner ornaments. The 3D map shows through the space between them. The look follows the official digital edition of the game: player boards, cards, card backs and pieces come from the official material and are never redrawn or invented. Interface chrome exists only to hold them.\n\nThe system is dense and stays still. A full four-player table shows on one 1920×1080 stage, scaled to the window, so every millimetre is spoken for and nothing scrolls. Gold carries authority: frames, titles, the primary action. Full colour is reserved for game information that the physical game also colours: the seats, the resources, the card suits. Light is a signal: a glow means \"you can use this now\" or \"this is active\", never decoration.\n\nThe old blue-teal interface (blue panels, cyan selection ring, `--panel`, `--rule-hi`, `--select`) is superseded. It survives in early rules of `src/ui/table/table.css` and is to be removed, not extended.",
+    "keyCharacteristics": [
+      "Warm umber plates in bevelled gold frames with corner ornaments, floating over the starfield and the 3D map.",
+      "Official art only: boards, cards, backs and pieces from the game's material; the interface never invents imagery.",
+      "Gold for structure and the primary action; saturated colour only for seats, resources and suits.",
+      "Glow is a state, not an ornament.",
+      "One fixed 1920×1080 stage, scaled to fit: dense, no scrolling, regions computed in one place (`src/ui/table/layout.ts`)."
+    ],
+    "rules": [
+      {
+        "name": "The Gold-Is-Structure Rule",
+        "body": "Gold draws frames, titles and the single primary action of a group. It never fills a large area, and a group never has two gold-filled buttons.",
+        "section": "colors"
+      },
+      {
+        "name": "The Game-Colour Rule",
+        "body": "Saturated colour on the table always means something in the game: a seat, a resource, a suit, a state. If it means nothing, it is gold, bronze or neutral.",
+        "section": "colors"
+      },
+      {
+        "name": "The No-Teal Rule",
+        "body": "The old blue-teal palette is retired. New rules never use `--panel`, `--rule`, `--rule-hi`, `--select` or the `#0d1326`-family blues; existing uses are migrated to the gold tokens.",
+        "section": "colors"
+      },
+      {
+        "name": "The Engraved-Name Rule",
+        "body": "Names of things (ambitions, cards, players, columns) are serif and uppercase; instructions and buttons are sans in sentence case.",
+        "section": "typography"
+      },
+      {
+        "name": "The Caption-Floor Rule",
+        "body": "No functional text below the caption token (13 stage px); only card faces go lower, because the whole card shows large on hover. Check every size at 1366×768 too, where the stage shows at 71%.",
+        "section": "typography"
+      },
+      {
+        "name": "The One-Source Rule",
+        "body": "A region's position and size are set only in `layout.ts`. CSS sizes the contents of a region, never the region itself.",
+        "section": "layout"
+      },
+      {
+        "name": "The Reserved-Band Rule",
+        "body": "Keep the band above the local board free in the base game; it belongs to the campaign's flagship board and Fate card.",
+        "section": "layout"
+      },
+      {
+        "name": "The Glow-Means-Now Rule",
+        "body": "A glow says \"usable now\" or \"active\". Nothing glows at rest, and a glow never stays on after its state ends.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** use the official boards, cards, card backs and pieces; when one is missing, ask for it instead of drawing a stand-in.",
+      "**Do** keep one gold primary button per group, at 48px, with every button of the group the same height.",
+      "**Do** keep every button inside its window; `tests/integration/command-bar.spec.ts` checks it.",
+      "**Do** use a glow only for \"usable now\" or \"active\", and remove it when the state ends.",
+      "**Do** set region geometry in `src/ui/table/layout.ts` and keep the band above the local board free for the campaign.",
+      "**Do** keep cards at 372:519 everywhere.",
+      "**Do** add new colours as tokens in this file first, Blighted Reach factions included."
+    ],
+    "donts": [
+      "**Don't** invent art, icons or card faces that imitate the game's material.",
+      "**Don't** use the retired blue-teal palette (`--panel`, `--rule`, `--rule-hi`, `--select`).",
+      "**Don't** add sub-menus, hidden information or duplicate controls on the table.",
+      "**Don't** fix a style by appending a more specific override (`.tbl-stage.tbl-stage …`, `!important`); change the component's own rule.",
+      "**Don't** put a glow on a frame, a title or anything at rest.",
+      "**Don't** use bounce or elastic easing; motion settles."
+    ]
+  }
+}
