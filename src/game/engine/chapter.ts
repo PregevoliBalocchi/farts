@@ -672,6 +672,7 @@ export function endChapter(ix: ContentIndex, s: GameState): void {
     gains,
     power: s.players.map((p) => p.power),
   };
+  (s.powerByChapter ??= []).push(s.players.map((p) => p.power));
   afterScoring(ix, s);
   cleanUp(ix, s);
   for (const p of s.players) {

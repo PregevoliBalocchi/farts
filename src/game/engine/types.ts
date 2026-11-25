@@ -641,6 +641,8 @@ export interface GameState {
   loreDiscard?: string[];
   /** The last chapter's scoring, for the table's end-of-chapter window (production/base-fixes.md #15). */
   lastScoring?: ChapterScoring;
+  /** Every seat's Power total after each chapter's scoring, chapter 1 first (the table's end screen). */
+  powerByChapter?: number[][];
   /** Campaign games only (design/campaign-plan.md). */
   campaign?: CampaignState;
   log: LogEntry[];

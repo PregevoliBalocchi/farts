@@ -99,6 +99,17 @@ export function systemTag(s: { id: string; cluster?: string; kind?: string; reso
  * layer); `open`: the drop-down open under its button (log or help);
  * `flat`: whether the planets are drawn in 2D as on the board (null: no such pictures).
  */
+/**
+ * The turn banner over the prompt (piano PR 6): whose turn it is in that seat's colour (with the seat's
+ * symbol, not the colour alone), the phase, and the card led this round. Empty when nobody is acting.
+ */
+export function turnBanner(v: TableView, t: Translate): string {
+  if (v.active === null || v.phase === 'gameOver') return '';
+  const lead = v.lead && (v.phase === 'follow' || v.phase === 'actions' || v.phase === 'allocate' || v.phase === 'decide') ? t('turn.lead', { card: cardLabel(t, v.lead) }) : '';
+  const parts = [t(`turn.phase.${v.phase}`), lead].filter(Boolean).join(' · ');
+  return `<span class="turn-banner s-${seatColor(v.active)}" role="status"><span class="tb-seat">${icon(seatIcon(v.active), 'tb-ic')}${esc(playerName(t, v.active))}</span>${parts ? `<span class="tb-phase">${esc(parts)}</span>` : ''}</span>`;
+}
+
 export function header(v: TableView, t: Translate, exampleContent: boolean, promptText: string, control: boolean | null = null, open: 'log' | 'help' | 'piles' | null = null, flat: boolean | null = null): string {
   const supply = v.supply.map((s) => `<span title="${esc(t(`resource.${s.resource}`))}">${resIcon(s.resource, t)}<b class="num">${s.count}</b></span>`).join('');
   const declared = v.ambitions.filter((a) => a.markers.length).map((a) => t(`ambition.${a.id}`));
@@ -112,7 +123,7 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, prom
   const round = `${t('chapter', { n: v.chapter })} · ${t('header.deck', { deck: v.deck, discard: v.discard })}`;
   return `<div class="hd round-c" title="${esc(round)}" aria-label="${esc(round)}"><span class="num">${v.chapter}</span></div>
     <div class="hd supply" role="group" aria-label="${esc(t('supply'))}">${supply}</div>
-    <div class="hd prompt"><span class="pr-text" title="${esc(promptText)}">${esc(promptText)}</span>${notes.length ? `<span class="pr-notes">${esc(notes.join(' · '))}</span>` : ''}</div>
+    <div class="hd prompt"><span class="pr-line">${turnBanner(v, t)}<span class="pr-text" title="${esc(promptText)}">${esc(promptText)}</span></span>${notes.length ? `<span class="pr-notes">${esc(notes.join(' · '))}</span>` : ''}</div>
     <div class="hd tools">
       ${exampleContent ? `<span class="content-note">${esc(t('content.example'))}</span>` : ''}
       <span data-region="recent">${button('log', '', { cls: `icon sq${open === 'log' ? ' on' : ''}`, title: `${t('btn.log')} · ${t('recent.last')} ${last}`, html: icon('log') })}</span>

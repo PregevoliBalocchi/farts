@@ -39,14 +39,23 @@ import { place, placeDown, REGIONS, setSideShut, setStage, STAGE, placeUp } from
 import { mapSvg } from './mapview';
 import { patchChildren } from './patch';
 import {
-  actionCard, button, cardLabel, slotHtml, sizeAvatars, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon,
+  actionCard, button, cardLabel, slotHtml, sizeAvatars, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon, suitName,
 } from './render';
 import { actionCardView, legal, othersTurn, tableView, whyNot } from './view';
-import type { TableView } from './view';
+import type { HandCardView, TableView } from './view';
 
 /** The windows that still dim the table: the settings and a card's choice. */
 /** `gift`: which Guild card to give, and to whom, to declare `ambition` (the Feastbringer, leader-07; base-fixes #48). */
-type Modal = { type: 'settings' } | { type: 'confirm-pass' } | { type: 'scoring' } | { type: 'decide'; options: DecisionOption[]; chosen?: string[] } | { type: 'gift'; ambition?: AmbitionId; gifts: DeclareGift[] };
+/** One seat's pieces that rivals can take or destroy, as counted when its turn ends ("while you were waiting"). */
+interface AwaySnap {
+  ships: number;
+  buildings: number;
+  resources: Record<string, number>;
+  guild: string[];
+  captured: number;
+}
+
+type Modal = { type: 'settings' } | { type: 'confirm-pass' } | { type: 'scoring' } | { type: 'end' } | { type: 'decide'; options: DecisionOption[]; chosen?: string[] } | { type: 'gift'; ambition?: AmbitionId; gifts: DeclareGift[] };
 
 /** A drop-down under its header button: the log or the map help. */
 type Drop = 'log' | 'help' | 'piles';
@@ -211,6 +220,14 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let mapKey: string | null = null;
   /** The chapter whose scoring window was already shown here (a reload does not show it again). */
   let scoringSeen = state.lastScoring?.chapter ?? 0;
+  /** The end screen was shown for this game (it opens once, after the last scoring window). */
+  let endSeen = false;
+  /** "While you were waiting" (piano PR 6): each seat's pieces when its turn ended, and what changed since. */
+  const awaySnaps = new Map<PlayerId, AwaySnap>();
+  let awayNote: string[] = [];
+  /** The rule reminder open now (its keys joined), or null. */
+  let ruleOpen: string | null = null;
+  let wasMine: PlayerId | null = null;
   let findMineTimer = 0;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
   let controlLayer = false;
@@ -448,6 +465,27 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** The follow command for the selected card, with the seize card when one is chosen. */
   function followCmd(card: string, mode: 'surpass' | 'pivot' | 'copy'): Command {
     return { type: 'follow', player: local(), card, mode, ...(seizeWith && seizeWith !== card ? { seizeWith } : {}) };
+  }
+
+  /**
+   * What following with `card` this way gives (rulebook 5.2.2), short for under the button; `long` adds the
+   * suit and, for a Surpass while nobody seized, the initiative rule (5.3.1) for its tooltip.
+   */
+  function followGives(v: TableView, card: HandCardView, mode: 'surpass' | 'pivot' | 'copy', long = false): string {
+    const lead = v.lead;
+    if (mode === 'copy') return `${t('follow.gives.copy')}${long && lead ? ` (${suitName(t, lead.suit)})` : ''}`;
+    if (mode === 'pivot') return `${t('follow.gives.pivot')}${long ? ` (${suitName(t, card.suit)})` : ''}`;
+    const acts = t(card.pips === 1 ? 'follow.gives.one' : 'follow.gives.many', { n: card.pips });
+    return long && v.seizedBy === null ? `${acts} · ${t('follow.gives.initiative')}` : acts;
+  }
+
+  /** Why following with `card` this way is not possible now, in a short phrase. */
+  function followWhyNot(v: TableView, card: HandCardView, mode: 'surpass' | 'pivot' | 'copy'): string {
+    const lead = v.lead;
+    if (lead && mode === 'surpass' && card.suit !== lead.suit) return t('follow.why.suit', { suit: suitName(t, lead.suit) });
+    if (lead && mode === 'surpass' && card.number <= lead.number) return t('follow.why.higher', { n: lead.number });
+    if (lead && mode === 'pivot' && card.suit === lead.suit) return t('follow.why.sameSuit');
+    return t('follow.why.other');
   }
 
   /** Identity of the pending battle's roll: a new battle or a reroll changes it (and throws the dice again). */
@@ -1177,17 +1215,112 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const counts = `${chip('battle.left.hits', left.hits, b.totals.hit)}${chip('battle.left.building', left.buildingHits, b.totals.buildingHit)}${chip('battle.left.self', left.selfHits, b.totals.selfHit + b.interceptHits)}`;
     const controls = mine
       ? `<div class="b-foot">${ask ? '' : raidChoices(b)}<div class="b-btns">${ask ? `<span class="hint small">${esc(t('reroll.first'))}</span>` : ''}${button('battle-auto', t('battle.auto'), { cls: 'b-btn', disabled: !!ask })}${button('battle-reset', t('battle.reset'), { cls: 'b-btn', disabled: !!ask })}${button('allocate', t('battle.confirm'), { cls: 'primary b-btn', disabled: !ok })}</div></div>`
-      : `<div class="b-foot"><div class="hint">${esc(t('battle.watching', { who: playerName(t, b.attacker) }))}</div></div>`;
+      : `<div class="b-foot">${defenderNote(v, b)}<div class="hint">${esc(t('battle.watching', { who: playerName(t, b.attacker) }))}</div></div>`;
     const title = t('battle.title', { system: systemName(ix.content.map.systems.find((s) => s.id === b.system), t, b.system), a: playerName(t, b.attacker), d: defenderName(b.target) });
     return `<div class="battle-win glass" role="dialog" aria-label="${esc(title)}">
-      <div class="b-head"><span class="ctx-title">${esc(title)}</span><span class="b-counts">${counts || esc(t('battle.noHits'))}</span></div>
+      <div class="b-head"><span class="ctx-title">${esc(title)}</span>${ruleHelp(['battle', 'intercept', 'raid'])}<span class="b-counts">${counts || esc(t('battle.noHits'))}</span></div>
       ${steps}
       ${diceStrip(b, ask)}
+      ${ask ? '' : battleOrder(b)}
       ${ask ? rerollBox(ask) : ''}
       <div class="battle-slot${ask ? ' short' : ''}" style="width:${BATTLE_VIEW.w}px"></div>
-      ${mine && !ask ? `<div class="hint small">${esc(t('battle.howTo'))}</div>` : ''}
+      ${mine && !ask ? `<div class="hint small">${esc(t('battle.howTo'))}</div>${outrageNote(v, b)}` : ''}
       ${controls}
     </div>`;
+  }
+
+  /**
+   * The rolled dice grouped by symbol, in the order the rulebook resolves them (7.7.1 step 4): hits on the
+   * attacker's ships, the interception, hits on the defender's ships, on its buildings, then the raid. A step
+   * with nothing rolled is left out.
+   */
+  function battleOrder(b: BattleRef): string {
+    const steps: [string, string, number][] = [
+      ['selfhit', 'battle.order.self', b.totals.selfHit],
+      ['intercept', 'battle.order.intercept', b.interceptHits],
+      ['hit', 'battle.order.hit', b.totals.hit],
+      ['buildinghit', 'battle.order.building', b.totals.buildingHit],
+      ['key', 'battle.order.raid', b.totals.key],
+    ];
+    const items = steps
+      .filter(([, , n]) => n > 0)
+      .map(([pic, key, n], k) => {
+        const url = assetUrl(`icon.${pic}`);
+        const img = url ? `<img class="bo-ic" src="${esc(url)}" alt="">` : '';
+        return `<li><i class="num">${k + 1}</i>${img}<span>${esc(t(key, { n, a: playerName(t, b.attacker), d: defenderName(b.target) }))}</span></li>`;
+      });
+    return items.length ? `<ol class="b-order" aria-label="${esc(t('battle.order.title'))}">${items.join('')}</ol>` : '';
+  }
+
+  /** Seat `p`'s pieces that rivals can take or destroy: ships and buildings on the map, resources, Guild cards, captured agents. */
+  function awaySnap(v: TableView, p: PlayerId): AwaySnap {
+    const resources: Record<string, number> = {};
+    for (const r of state.players[p].resources) if (r) resources[r] = (resources[r] ?? 0) + 1;
+    return {
+      ships: v.systems.reduce((n, s) => n + s.ships.filter((x) => x.player === p).reduce((m, x) => m + x.fresh + x.damaged, 0), 0),
+      buildings: v.systems.reduce((n, s) => n + s.buildings.filter((b) => b.owner === p).length, 0),
+      resources,
+      guild: state.players[p].court.filter((c) => ix.courtCards.get(c)?.kind === 'faction'),
+      captured: state.players.reduce((n, o) => n + (o.id === p ? 0 : o.captives.filter((c) => c === p).length), 0),
+    };
+  }
+
+  /** What rivals did to a seat between two of its turns, as short lines ("while you were waiting"). */
+  function awayLines(a: AwaySnap, b: AwaySnap): string[] {
+    const out: string[] = [];
+    if (b.ships < a.ships) out.push(t('away.ships', { n: a.ships - b.ships }));
+    if (b.buildings < a.buildings) out.push(t('away.buildings', { n: a.buildings - b.buildings }));
+    for (const [r, n] of Object.entries(a.resources)) if ((b.resources[r] ?? 0) < n) out.push(t('away.resource', { n: n - (b.resources[r] ?? 0), res: t(`resource.${r}`) }));
+    for (const c of a.guild) if (!b.guild.includes(c)) out.push(t('away.card', { card: cardName(c) }));
+    if (b.captured > a.captured) out.push(t('away.captured', { n: b.captured - a.captured }));
+    return out;
+  }
+
+  /**
+   * Keeps each seat's pieces when its turn ends and, when its turn comes back, what rivals took or destroyed
+   * meanwhile (the note shows until closed or until the seat acts).
+   */
+  function trackAway(v: TableView): void {
+    const now = myTurn() && state.phase.type !== 'gameOver' ? local() : null;
+    if (now === wasMine) return;
+    if (wasMine !== null) awaySnaps.set(wasMine, awaySnap(v, wasMine));
+    if (now !== null) {
+      const before = awaySnaps.get(now);
+      awayNote = before ? awayLines(before, awaySnap(v, now)) : [];
+    } else awayNote = [];
+    wasMine = now;
+  }
+
+  /** The "while you were waiting" note, at the waiting box's place (free on the local turn). */
+  function awayHtml(): string {
+    if (!awayNote.length || !myTurn()) return '';
+    const items = awayNote.map((l) => `<li>${esc(l)}</li>`).join('');
+    return `<div class="region away-note glass" data-region="away" role="status" style="${placeDown(REGIONS.waiting)}"><div class="away-head"><span>${esc(t('away.title'))}</span>${button('away-close', '', { cls: 'icon x', title: t('away.close'), html: icon('close') })}</div><ul>${items}</ul></div>`;
+  }
+
+  /** What the defender should know while the attacker places the hits: what is coming, and what a city costs. */
+  function defenderNote(v: TableView, b: BattleRef): string {
+    const me = local();
+    if (b.target !== me) return '';
+    const sys = v.systems.find((s) => s.id === b.system);
+    const city = sys?.buildings.some((x) => x.owner === me && x.type === 'city');
+    const parts = [
+      b.totals.hit > 0 ? t('battle.defend.ships', { n: b.totals.hit }) : '',
+      b.totals.buildingHit > 0 ? t('battle.defend.buildings', { n: b.totals.buildingHit }) : '',
+      b.totals.key > 0 ? t('battle.defend.keys', { n: b.totals.key }) : '',
+    ].filter(Boolean);
+    const lines = [t('battle.defend.what', { who: playerName(t, b.attacker), list: parts.length ? parts.join(', ') : t('battle.defend.nothing') })];
+    if (city && b.totals.hit + b.totals.buildingHit > 0) lines.push(t('battle.defend.city'));
+    return `<div class="b-defend">${lines.map((l) => `<p>${esc(l)}</p>`).join('')}</div>`;
+  }
+
+  /** For the attacker: destroying a city provokes Outrage (rulebook 7.7.4), said before the hits are confirmed. */
+  function outrageNote(v: TableView, b: BattleRef): string {
+    if (typeof b.target !== 'number' || b.totals.hit + b.totals.buildingHit <= 0) return '';
+    const sys = v.systems.find((s) => s.id === b.system);
+    if (!sys?.buildings.some((x) => x.owner === b.target && x.type === 'city')) return '';
+    const res = sys.resource ? t(`resource.${sys.resource}`) : '';
+    return `<div class="hint small b-outrage">${esc(t('battle.outrage', { res }))}</div>`;
   }
 
   /** The battle's steps in a row, `now` lit, the earlier ones ticked, the ones that do not apply here dimmed. */
@@ -1339,7 +1472,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       preHit = `<div class="opt-row b-prehit"><span class="hint small">${esc(t('battle.preHitAsk'))}</span>${(['fresh', 'damaged'] as const).map((h) => button('pre-hit', t(`battle.preHit.${h}`), { args: { hit: h }, cls: on === h ? 'on' : '' })).join('')}</div>`;
     }
     return `<div class="battle-win glass setup" role="dialog" aria-label="${esc(title)}">
-      <div class="b-head"><span class="ctx-title">${esc(title)}</span></div>
+      <div class="b-head"><span class="ctx-title">${esc(title)}</span>${ruleHelp(['dice', 'raidLimit'])}</div>
       ${battleSteps(0, { powers: !holdsReroll(), raid: false })}
       ${targets}
       <div class="b-types">${tiles}</div>
@@ -1693,6 +1826,51 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     turn: [string, string];
     /** No card picked yet: no bar, only the turn's buttons in their places (base-fixes #37). */
     bare?: boolean;
+    /** The rule reminders of this moment (keys under `rule.`), behind a "?" in the head (piano PR 6). */
+    rules?: string[];
+  }
+
+  /**
+   * A "?" that opens the reminders of the rules that apply now (piano PR 6, Fase 4.10), written for a new
+   * player; `keys` are under `rule.`. Open, the reminder shows as a box next to the button.
+   */
+  function ruleHelp(keys: string[]): string {
+    const id = keys.join(',');
+    const open = ruleOpen === id;
+    return `<span class="rule-help">${button('rule-help', '?', { args: { keys: id }, cls: `icon rule-q${open ? ' on' : ''}`, title: t('rule.help') })}</span>`;
+  }
+
+  /**
+   * The open reminder, drawn over the stage (the bar and the windows clip what leaves them); placed next to its
+   * "?" by placeRuleBox() once laid out.
+   */
+  function ruleBoxHtml(): string {
+    if (!ruleOpen) return '';
+    return `<div class="rule-pop" role="note" id="rule-pop">${ruleOpen
+      .split(',')
+      .map((k) => `<p>${esc(t(`rule.${k}`))}</p>`)
+      .join('')}</div>`;
+  }
+
+  /** Puts the open reminder above its "?" (below when there is no room); closes it when its "?" is gone. */
+  function placeRuleBox(): void {
+    const box = stage.querySelector<HTMLElement>('#rule-pop');
+    if (!box) return;
+    const q = stage.querySelector<HTMLElement>('.rule-q.on');
+    if (!q) {
+      ruleOpen = null;
+      box.remove();
+      return;
+    }
+    const s = stage.getBoundingClientRect();
+    const r = q.getBoundingClientRect();
+    const x = (r.left - s.left + r.width / 2) / scale;
+    const top = (r.top - s.top) / scale;
+    const bottom = (r.bottom - s.top) / scale;
+    const w = box.offsetWidth;
+    const h = box.offsetHeight;
+    box.style.left = `${Math.max(8, Math.min(STAGE.w - w - 8, x - w / 2))}px`;
+    box.style.top = `${top - h - 10 >= 8 ? top - h - 10 : Math.min(STAGE.h - h - 8, bottom + 10)}px`;
   }
 
   /**
@@ -1704,7 +1882,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (!b) return '';
     const stars = b.pips ? `<span class="cmd-pips" aria-hidden="true">${Array.from({ length: b.pips }, () => icon('pip')).join('')}</span>` : '';
     const close = b.close ? button('deselect', '', { cls: 'icon x cmd-x', title: t('btn.cancel'), html: icon('close') }) : '';
-    const head = b.title || close ? `<div class="cmd-head">${b.title ? `<span class="cmd-title">${esc(b.title)}</span>` : ''}${stars}${close}</div>` : '';
+    const help = b.rules?.length ? ruleHelp(b.rules) : '';
+    const head = b.title || close || help ? `<div class="cmd-head">${b.title ? `<span class="cmd-title">${esc(b.title)}</span>` : ''}${stars}${help}${close}</div>` : '';
     const main = `<div class="cmd-main" style="--n:${Math.max(3, b.main.length)}">${b.main.join('')}</div>`;
     const powers = `<div class="cmd-pow">${b.powers.join('')}</div>`;
     const turn = `<div class="cmd-turn">${b.turn[0] || '<span></span>'}${b.turn[1] || '<span></span>'}</div>`;
@@ -1777,15 +1956,26 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           main: [button('lead', t('play.lead'), { cls: 'cmd-btn primary', disabled: !can({ type: 'lead', player: me, card: card.card }) }), ...mull],
           powers: [],
           turn: [undoOrCancel(false), pass],
+          rules: state.playerCount === 2 ? ['declare', 'pass', 'twoPlayer'] : ['declare', 'pass'],
         };
       }
-      const main = (['surpass', 'copy', 'pivot'] as const).map((mode) => button('follow', t(`play.${mode}`), { args: { mode }, cls: `cmd-btn${mode === 'surpass' ? ' primary' : ''}`, disabled: !can(followCmd(card.card, mode)) }));
-      // Seizing: discard a second card. Offered while nobody has seized this round.
-      if (v.seizedBy === null && v.hand.length > 1) {
+      // Each way to follow says what it gives, or why it is not possible (piano PR 6, previews).
+      const main = (['surpass', 'copy', 'pivot'] as const).map((mode) => {
+        const on = can(followCmd(card.card, mode));
+        const sub = on ? followGives(v, card, mode) : followWhyNot(v, card, mode);
+        const full = on ? followGives(v, card, mode, true) : sub;
+        return button('follow', t(`play.${mode}`), { args: { mode }, cls: `cmd-btn two-line${mode === 'surpass' ? ' primary' : ''}`, disabled: !on, title: `${t(`play.${mode}`)}: ${full}`, html: `<span>${esc(t(`play.${mode}`))}</span><small class="cmd-sub">${esc(sub)}</small>` });
+      });
+      // Seizing: discard a second card. Offered while nobody has seized this round; else the reason it is not.
+      const me0 = v.players.find((p) => p.id === me);
+      const noSeize = v.seizedBy !== null ? t('seize.why.taken') : me0?.hasInitiative ? t('seize.why.holder') : v.hand.length < 2 ? t('seize.why.noCard') : null;
+      if (noSeize === null) {
         const label = seizePick ? t('play.seizePick') : seizeWith ? t('play.seizeWith', { card: seizeWith }) : t('play.seize');
-        main.push(button('seize', label, { cls: `cmd-btn${seizeWith || seizePick ? ' on' : ''}` }));
+        main.push(button('seize', label, { cls: `cmd-btn two-line${seizeWith || seizePick ? ' on' : ''}`, title: `${label}: ${t('seize.gives')}`, html: `<span>${esc(label)}</span><small class="cmd-sub">${esc(t('seize.gives'))}</small>` }));
+      } else {
+        main.push(button('seize', t('play.seize'), { cls: 'cmd-btn two-line', disabled: true, title: `${t('play.seize')}: ${noSeize}`, html: `<span>${esc(t('play.seize'))}</span><small class="cmd-sub">${esc(noSeize)}</small>` }));
       }
-      return { title: cardLabel(t, card), pips: card.pips, text: declareTargets(v).length ? `${kinds} · ${t('bar.declareHint')}` : kinds, close: true, main, powers: [], turn: [undoOrCancel(false), ''] };
+      return { title: cardLabel(t, card), pips: card.pips, text: declareTargets(v).length ? `${kinds} · ${t('bar.declareHint')}` : kinds, close: true, main, powers: [], turn: [undoOrCancel(false), ''], rules: ['follow', 'seize', 'initiative'] };
     }
 
     if (v.phase === 'allocate' && v.battle && board3d) return null;
@@ -1827,7 +2017,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         const spend = spendableSlots(v).size > 0;
         const text = b.remaining === 0 ? t('play.actionsDone') : [t(b.remaining === 1 ? 'bar.actionsOne' : 'bar.actions', { n: b.remaining }), spend ? t('bar.spend') : ''].filter(Boolean).join(' · ');
         const main = b.remaining > 0 ? b.kinds.map((k) => kindButtons(v, [k], undefined, true)) : [];
-        return { title, pips: b.remaining, text, main, powers: powerButtons(), turn: [undoOrCancel(false), endTurnButton(v, false)] };
+        return { title, pips: b.remaining, text, main, powers: powerButtons(), turn: [undoOrCancel(false), endTurnButton(v, false)], rules: b.kinds.includes('secure') ? ['actions', 'secure'] : ['actions'] };
       }
       case 'choose': {
         // With a Loyal Guild card: spend it as its own type or as another (base-fixes #49).
@@ -1912,15 +2102,24 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const list = declareTargets(v);
     if (!list.length) return;
     stage.classList.add('table-pick');
+    // The marker a declaration takes: the highest available (rulebook 6.2); the stake is it plus the markers already there.
+    const next = [...v.markersLeft].sort((x, y) => y.first - x.first)[0];
     for (const a of list) {
       const el = stage.querySelector<HTMLElement>(`.abox[data-tip="amb:${CSS.escape(a)}"]`);
       if (!el) continue;
+      const row = v.ambitions.find((r) => r.id === a);
+      const first = (next?.first ?? 0) + (row?.markers.reduce((n, m) => n + m.first, 0) ?? 0);
+      const second = (next?.second ?? 0) + (row?.markers.reduce((n, m) => n + m.second, 0) ?? 0);
+      const names = (ps: PlayerId[] | undefined) => (ps?.length ? ps.map((p) => playerName(t, p)).join(', ') : t('declare.nobody'));
+      const stake = t('declare.stake', { first, second });
+      const now = t('declare.now', { first: names(row?.first), second: names(row?.second) });
       el.classList.add('tpick', 'declare');
       el.dataset.act = 'lead-declare';
       el.dataset.ambition = a;
-      el.insertAdjacentHTML('beforeend', `<span class="ab-declare">${esc(t('bar.declareTag'))}</span>`);
+      el.insertAdjacentHTML('beforeend', `<span class="ab-declare">${esc(t('bar.declareTag'))} · ${esc(stake)}</span>`);
       el.setAttribute('role', 'button');
-      el.setAttribute('aria-label', `${t('play.leadDeclare')}: ${t(`ambition.${a}`)}`);
+      el.title = `${stake}. ${now}`;
+      el.setAttribute('aria-label', `${t('play.leadDeclare')}: ${t(`ambition.${a}`)}. ${stake}. ${now}`);
     }
   }
 
@@ -1995,12 +2194,62 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
    * (the 2-player ambition box among them, as the count to beat), then each
    * seat's Power gained and its new total.
    */
+  /**
+   * Why seat `p` gained no Power this chapter, in words, per declared ambition (rulebook 6.2.1): none of what it
+   * counts (Qualifying), tied for second (Ties), or behind the second place.
+   */
+  function zeroWhy(sc: ChapterScoring, p: number): string[] {
+    if (!sc.ambitions.length) return [t('scoring.why.none')];
+    return sc.ambitions
+      .map((a) => {
+        const c = a.counts[p] ?? 0;
+        // Placed but worth nothing (a second place on a 2/0 marker); else none of it; else a tie for second
+        // (nobody took it while someone was first); else behind the second place.
+        const reason = a.first.includes(p) || a.second.includes(p) ? 'worthZero' : c === 0 ? 'zero' : !a.second.length && a.first.length > 0 ? 'tieSecond' : 'behind';
+        return `${t(`ambition.${a.ambition}`)}: ${t(`scoring.why.${reason}`)}`;
+      });
+  }
+
+  /**
+   * The end screen (piano decision G): why the game ended, the ranking with each seat's Power after every
+   * chapter, and how a tie for the most Power was broken (rulebook 6.2.3: earliest in turn order).
+   */
+  function endHtml(winners: PlayerId[]): string {
+    const n = state.playerCount;
+    const target = content.powerToWin[n];
+    const byChapter = state.powerByChapter ?? [];
+    const top = Math.max(...state.players.map((p) => p.power));
+    const reached = state.players.filter((p) => p.power >= target);
+    const why = reached.length ? t(reached.length > 1 ? 'end.why.powerMany' : 'end.why.power', { names: reached.map((p) => playerName(t, p.id)).join(', '), n: target }) : t('end.why.chapters', { n: state.chapter });
+    const tied = state.players.filter((p) => p.power === top).map((p) => p.id);
+    const tie = tied.length > 1 ? (winners.length > 1 ? t('end.tie.shared', { n: top }) : t('end.tie.order', { n: top, name: playerName(t, winners[0]) })) : '';
+    // Winners first, then by Power; a tie keeps the turn order from the initiative (the rule that broke it).
+    const order = (p: PlayerId) => (p - state.initiative + n) % n;
+    const ranked = [...state.players].sort((a, b) => Number(winners.includes(b.id)) - Number(winners.includes(a.id)) || b.power - a.power || order(a.id) - order(b.id));
+    const head = `<tr><th scope="col">${esc(t('end.rank'))}</th><th scope="col">${esc(t('end.player'))}</th>${byChapter.map((_, i) => `<th scope="col" class="num">${esc(t('end.chapter', { n: i + 1 }))}</th>`).join('')}<th scope="col" class="num">${esc(t('end.total'))}</th></tr>`;
+    const rows = ranked
+      .map((p, i) => {
+        const win = winners.includes(p.id);
+        const cells = byChapter.map((row) => `<td class="num">${row[p.id] ?? ''}</td>`).join('');
+        return `<tr class="${win ? 'win' : ''}"><td class="num">${win ? `<span class="end-crown">${esc(t('end.winner'))}</span>` : i + 1}</td><td><span class="sc-who s-${seatColor(p.id)}"><i class="dot"></i>${esc(playerName(t, p.id))}</span></td>${cells}<td class="num end-total">${p.power}</td></tr>`;
+      })
+      .join('');
+    const names = winners.map((w) => playerName(t, w)).join(', ');
+    return `<h2 id="modal-title">${esc(t(winners.length > 1 ? 'end.titleMany' : 'end.title', { names }))}</h2>
+      <p class="end-why">${esc(why)}${tie ? ` ${esc(tie)}` : ''}</p>
+      <table class="end-table">${head}${rows}</table>
+      <div class="modal-foot">${button('close-modal', t('end.look'))}${online ? '' : button('new-game', t('settings.newGame'), { cls: 'primary' })}</div>`;
+  }
+
   function scoringHtml(sc: ChapterScoring): string {
     const n = state.playerCount;
     const who = (p: number) => (p >= n ? `<span class="sc-who box">${esc(t('scoring.box'))}</span>` : `<span class="sc-who s-${seatColor(p)}"><i class="dot"></i>${esc(playerName(t, p))}</span>`);
     const rows = sc.ambitions
       .map((a) => {
-        const markers = a.markers.map((m) => `<span class="sc-mk"><b class="num">${m.first}</b>/<i class="num">${m.second}</i></span>`).join('');
+        // What the ambition was worth, in words: the sum of its markers (rulebook 6.2.1), not the marker chips.
+        const first = a.markers.reduce((s, m) => s + m.first, 0);
+        const second = a.markers.reduce((s, m) => s + m.second, 0);
+        const markers = `<span class="sc-mk">${esc(t('scoring.worth', { first, second }))}</span>`;
         const counts = a.counts
           .map((c, p) => ({ c, p }))
           .filter((x) => x.c > 0)
@@ -2011,10 +2260,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       })
       .join('');
     const totals = sc.gains
-      .map((g, p) => `<div class="sc-total s-${seatColor(p)}">${who(p)}<span class="sc-gain num">+${g}</span><span class="sc-power num">${esc(t('scoring.power', { n: sc.power[p] }))}</span></div>`)
+      .map((g, p) => {
+        const why = g === 0 ? `<span class="sc-why">${zeroWhy(sc, p).map(esc).join('<br>')}</span>` : '';
+        return `<div class="sc-total s-${seatColor(p)}">${who(p)}<span class="sc-gain num">+${g}</span><span class="sc-power num">${esc(t('scoring.power', { n: sc.power[p] }))}</span>${why}</div>`;
+      })
       .join('');
-    const note = n === 2 ? `<p class="hint small">${esc(t('scoring.boxNote'))}</p>` : '';
-    return `<h2 id="modal-title">${esc(t('scoring.title', { n: sc.chapter }))}</h2>
+    const note = n === 2 ? `<p class="sc-note">${esc(t('scoring.boxNote'))}</p>` : '';
+    return `<h2 id="modal-title">${esc(t('scoring.title', { n: sc.chapter }))}${ruleHelp(n === 2 ? ['chapterEnd', 'scoring', 'twoPlayer'] : ['chapterEnd', 'scoring'])}</h2>
       <div class="sc-ambs">${rows || `<p class="hint">${esc(t('scoring.none'))}</p>`}</div>
       ${note}
       <div class="sc-totals">${totals}</div>
@@ -2053,6 +2305,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         <div class="modal-foot">${button('close-modal', t('btn.back'))}${button('new-game', t('settings.newGame'), { cls: 'primary' })}</div>`;
     } else if (modal.type === 'scoring' && state.lastScoring) {
       inner = scoringHtml(state.lastScoring);
+      size = 'l';
+    } else if (modal.type === 'end' && state.phase.type === 'gameOver') {
+      inner = endHtml(state.phase.winners);
       size = 'l';
     } else if (modal.type === 'gift') {
       // The Guild cards that can pay for declaring, each with the Rival it goes to.
@@ -2216,9 +2471,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       scoringSeen = state.lastScoring.chapter;
       if (!modal) modal = { type: 'scoring' };
     }
+    // The game is over: the end screen opens once, after the last chapter's scoring is closed (decision G).
+    if (state.phase.type === 'gameOver' && !endSeen && !modal) {
+      endSeen = true;
+      modal = { type: 'end' };
+    }
+    if (state.phase.type !== 'gameOver') endSeen = false;
     stage.classList.toggle('my-turn', myTurn());
     stage.classList.toggle('bar-on', myTurn() && state.phase.type !== 'gameOver');
     const v = withSay(tableView(ix, state, me, lang));
+    trackAway(v);
     const valid = validSystems(v);
     const chosen = new Set<string>();
     if (intent.step === 'to' || intent.step === 'move') {
@@ -2268,7 +2530,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       `<div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>`,
       `<div class="region mine${mineOpen ? ' open' : ''}" data-region="mine"${zone('mine')} style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 50, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen, (card) => heldSlots(v, card))}</div>`,
       `<div class="region hand" data-region="hand"${zone('hand')} style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>`,
-      bar ? `<div class="region actions cmd-bar${barNow?.bare ? ' bare' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)};width:${REGIONS.actions.w}px">${bar}</div>` : ctx ? `<div class="region actions waiting" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${othersTurn(state, 3) ? placeDown(REGIONS.waiting) : placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : '',
+      awayHtml(),
+      ruleBoxHtml(),
+      bar ?`<div class="region actions cmd-bar${barNow?.bare ? ' bare' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)};width:${REGIONS.actions.w}px">${bar}</div>` : ctx ? `<div class="region actions waiting" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${othersTurn(state, 3) ? placeDown(REGIONS.waiting) : placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : '',
       `<div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>`,
       modalHtml(v),
       dropHtml(),
@@ -2317,6 +2581,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     keepTips(openTips);
     fitPrompt();
     fitSide();
+    placeRuleBox();
     sizeAvatars(stage);
     restoreFocus(key);
     const dialog = stage.querySelector('.modal');
@@ -2917,6 +3182,14 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'close-modal':
         modal = null;
         break;
+      case 'away-close':
+        awayNote = [];
+        break;
+      case 'rule-help': {
+        const keys = el.dataset.keys ?? '';
+        ruleOpen = ruleOpen === keys ? null : keys;
+        break;
+      }
       default:
         return;
     }
