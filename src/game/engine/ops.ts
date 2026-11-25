@@ -7,7 +7,7 @@ import { gainResource, heldResources, onCityReturned, returnToSupply, takeResour
 import { hasPassive, isDeclared, ownedEffects } from './effects';
 import { declareAmbition } from './ambitions';
 import type { ContentIndex } from './setup';
-import type { AmbitionId, GameState, Owner, PlayerId, Resource, ShipStack, SystemState, Trophy } from './types';
+import type { AmbitionId, GameState, Owner, PlayerId, PlayerState, Resource, ShipStack, SystemState, Trophy } from './types';
 
 /** True for a player's piece (not the campaign's Empire, Free States or Blight). */
 export function isPlayer(owner: Owner | Trophy['owner']): owner is PlayerId {
@@ -158,19 +158,34 @@ export function provokeOutrage(ix: ContentIndex, s: GameState, p: PlayerId, type
   });
   d.court = d.court.filter((id) => !lost.includes(id));
   s.courtDiscard.push(...lost);
-  if (!d.outraged.includes(type)) {
-    // Cover the icon with an agent (a placeholder if none is left: still Outraged).
-    if (d.supply.agents > 0) d.supply.agents -= 1;
-    d.outraged.push(type);
-  }
+  if (!d.outraged.includes(type)) coverOutrage(d, type);
 }
 
-/** Clears an Outrage: the covering agent returns to its owner. */
+/** Covers an Outrage icon with an agent from the supply, or a placeholder when none is left. */
+export function coverOutrage(pl: PlayerState, type: Resource): void {
+  if (pl.supply.agents > 0) pl.supply.agents -= 1;
+  else (pl.outragePlaceholders ??= []).push(type);
+  pl.outraged.push(type);
+}
+
+/** Clears an Outrage: the covering agent returns to its owner (a placeholder just goes). */
 export function clearOutrage(s: GameState, p: PlayerId, type: Resource): void {
   const pl = s.players[p];
   if (!pl.outraged.includes(type)) fail(`${type} is not Outraged`);
   pl.outraged = pl.outraged.filter((x) => x !== type);
-  pl.supply.agents += 1;
+  const k = pl.outragePlaceholders?.indexOf(type) ?? -1;
+  if (k >= 0) pl.outragePlaceholders!.splice(k, 1);
+  else pl.supply.agents += 1;
+}
+
+/** Agents that entered a supply replace that player's Outrage placeholders, oldest first. */
+export function replacePlaceholders(s: GameState): void {
+  for (const pl of s.players) {
+    while (pl.outragePlaceholders?.length && pl.supply.agents > 0) {
+      pl.outragePlaceholders.shift();
+      pl.supply.agents -= 1;
+    }
+  }
 }
 
 /** Seizes the initiative, unless the player holds it or it is already seized this round. */

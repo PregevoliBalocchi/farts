@@ -1,0 +1,251 @@
+<title>Rapporto playtest al tavolo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a single reading column like a captain's log of the table, each finding a framed "plate" with the screenshot and the players' words beside it. */
+:root {
+  --ground: #15110c;
+  --panel: #211a12;
+  --panel-2: #2b2217;
+  --rule: #5a4628;
+  --gilt: #e2b65c;
+  --gilt-pale: #f3d99a;
+  --text: #eadfca;
+  --muted: #b3a387;
+  --red: #ef5b4c;
+  --amber: #f0a43a;
+  --blue: #6fb6d9;
+  --green: #8fc47a;
+  --display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --ground: #f6f0e4; --panel: #fffaf0; --panel-2: #f0e6d2; --rule: #cdb68a;
+    --gilt: #8a5f12; --gilt-pale: #5e3f08; --text: #2a2016; --muted: #6b5a40;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --ground: #f6f0e4; --panel: #fffaf0; --panel-2: #f0e6d2; --rule: #cdb68a;
+  --gilt: #8a5f12; --gilt-pale: #5e3f08; --text: #2a2016; --muted: #6b5a40;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--text); font: 400 17px/1.6 var(--body); margin: 0; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); color: var(--gilt-pale); text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(30px, 5vw, 46px); letter-spacing: .02em; }
+h2 { font-size: 26px; letter-spacing: .03em; border-bottom: 1px solid var(--rule); padding-bottom: 10px; }
+h3 { font-size: 19px; font-family: var(--body); font-weight: 700; color: var(--text); }
+p { margin: 0; max-width: 68ch; }
+.lead { color: var(--muted); font-size: 18px; }
+header { display: grid; gap: 14px; }
+.eyebrow { font: 600 13px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--gilt); }
+.stats { display: flex; flex-wrap: wrap; gap: 12px; }
+.stat { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 16px; min-width: 120px; }
+.stat b { display: block; font: 700 26px/1.1 var(--display); color: var(--gilt-pale); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 14px; color: var(--muted); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+.tbl { overflow-x: auto; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { color: var(--gilt); font-weight: 600; }
+section { display: grid; gap: 22px; }
+.finding { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 22px; display: grid; gap: 14px; }
+.finding .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; }
+.sev { font: 700 12px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; padding: 5px 9px; border-radius: 4px; color: #1a120a; }
+.sev.high { background: var(--red); }
+.sev.mid { background: var(--amber); }
+.sev.low { background: var(--blue); }
+.tag { font: 600 12px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--gilt); border: 1px solid var(--rule); padding: 4px 8px; border-radius: 4px; }
+.seen { font-size: 14px; color: var(--muted); }
+blockquote { margin: 0; padding: 12px 18px; border-left: 3px solid var(--gilt); background: var(--panel-2); font-style: italic; max-width: 72ch; }
+blockquote cite { display: block; margin-top: 6px; font-style: normal; font-size: 14px; color: var(--muted); }
+figure { margin: 0; display: grid; gap: 6px; }
+figure img { width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--rule); background: #000; display: block; }
+figure.narrow img { width: auto; max-width: 100%; }
+figcaption { font-size: 14px; color: var(--muted); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; align-items: start; }
+.what { display: grid; gap: 6px; }
+.what p { font-size: 16px; }
+.what strong { color: var(--gilt-pale); }
+code { font: 500 14px var(--mono); color: var(--gilt-pale); background: var(--panel-2); padding: 1px 5px; border-radius: 3px; }
+ul, ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; max-width: 72ch; }
+.ok { border-left: 3px solid var(--green); padding-left: 16px; display: grid; gap: 8px; }
+.plan { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.plan > div { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 20px; display: grid; gap: 12px; align-content: start; }
+.plan h3 { color: var(--gilt-pale); }
+a { color: var(--gilt-pale); }
+:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Arcs · playtest simulato del 25 novembre 2026</span>
+  <h1>Cosa hanno trovato i giocatori al tavolo</h1>
+  <p class="lead">Quattordici partite online simulate, da 2, 3 e 4 giocatori, sia base sia con Leader e Lore. Ogni giocatore ha usato solo il mouse, cliccando quello che il suo schermo mostrava acceso. Qui sotto raccontano cosa li ha messi in difficoltà. Ogni problema ha la schermata con il punto evidenziato in rosso.</p>
+  <div class="stats">
+    <div class="stat"><b>14</b><span>partite giocate</span></div>
+    <div class="stat"><b>13</b><span>arrivate alla fine</span></div>
+    <div class="stat"><b>4.419</b><span>mosse inviate</span></div>
+    <div class="stat"><b>0</b><span>errori JavaScript</span></div>
+    <div class="stat"><b>10</b><span>problemi confermati</span></div>
+  </div>
+</header>
+
+<section>
+  <h2>Come si è giocato</h2>
+  <p>L'online vero passa da Firebase con accesso Google su invito, e i giocatori simulati non hanno account. Ogni giocatore aveva quindi la sua finestra, bloccata sul proprio posto (<code>?seat=N</code>). Uno script faceva da server e, dopo ogni mossa, passava lo stato nuovo agli altri schermi, come fa il gioco online. Il giocatore simulato sceglie a caso tra le cose accese: una carta della mano, Guida/Supera/Copia/Pivot, un'azione, un sistema illuminato sulla mappa, una voce di menu, i dadi, i colpi, le scelte delle carte, la fine del turno. A volte dichiara, spende risorse o usa i poteri delle carte. Lo strumento è <code>tools/playtest/sim.mjs</code> e si può rilanciare.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Partita</th><th>Schermo</th><th>Mosse</th><th>Fine</th><th>Potere finale</th></tr></thead>
+    <tbody>
+      <tr><td>2 giocatori, base</td><td>1920×1080</td><td>232</td><td>capitolo 5, partita finita</td><td>20 · 29</td></tr>
+      <tr><td>2 giocatori, Leader e Lore</td><td>1920×1080</td><td>263</td><td>capitolo 5, partita finita</td><td>13 · 37</td></tr>
+      <tr><td>3 giocatori, base</td><td>1920×1080</td><td>266</td><td>capitolo 4, partita finita</td><td>16 · 12 · 30</td></tr>
+      <tr><td>3 giocatori, Leader e Lore</td><td>1920×1080</td><td>346</td><td>capitolo 5, partita finita</td><td>19 · 29 · 12</td></tr>
+      <tr><td>4 giocatori, base</td><td>1920×1080</td><td>435</td><td>capitolo 5, partita finita</td><td>12 · 10 · 19 · 13</td></tr>
+      <tr><td>4 giocatori, Leader e Lore</td><td>1920×1080</td><td>426</td><td>capitolo 5, partita finita</td><td>11 · 5 · 9 · 6</td></tr>
+      <tr><td>4 giocatori, Leader e Lore</td><td>1366×768</td><td>415</td><td>capitolo 5, partita finita</td><td>9 · 3 · 31 · 4</td></tr>
+    </tbody>
+  </table></div>
+  <p class="seen">Sono le partite del secondo giro. Il primo giro (altre 7 partite, 2.036 mosse) ha trovato gli stessi problemi, più alcuni falsi blocchi dovuti al simulatore, ora corretto. Una partita del primo giro, a 4 giocatori su 1366×768, si è fermata al capitolo 3 proprio per uno di quei falsi blocchi.</p>
+</section>
+
+<section>
+  <h2>Problemi che fermano o confondono il gioco</h2>
+
+  <article class="finding">
+    <div class="head"><span class="sev high">Grave</span><h3>Dopo la reazione del difensore la battaglia si ferma su "battle"</h3><span class="tag">Motore + interfaccia</span></div>
+    <blockquote>«Ho attaccato in un portale. L'avversario ha spostato le sue navi coi Sensori Predittivi, e poi in basso è comparso "battle · dadi Combattimento" con due pulsanti, Scegli e Rinuncia. Ho premuto Scegli: niente da scegliere. Alla fine ho premuto Rinuncia, pensando di rinunciare alla battaglia, e invece ha tirato i dadi.»<cite>Giocatore 2, partita a 2 con Leader e Lore (successo 3 volte nella stessa partita)</cite></blockquote>
+    <figure><img src="collect-dice.jpg" alt="Barra dei comandi con Scegli e Rinuncia e la scritta battle · dadi Combattimento"><figcaption>La scelta "raccogli i dadi" dell'attaccante, mostrata come una scelta di carta qualsiasi.</figcaption></figure>
+    <div class="what"><p><strong>Cosa succede.</strong> Quando il difensore ha una reazione prima dei dadi (Sensori Predittivi, lore-15), il motore mette in pausa la battaglia e chiede all'attaccante di raccogliere i dadi (<code>collectDice</code>). Il tavolo non la tratta come battaglia. Mostra il nome interno "battle", non riapre la finestra dei dadi e affida il tiro a "Rinuncia".</p>
+    <p><strong>Come correggerlo.</strong> Riaprire la finestra della battaglia, con i dadi scelti prima e la situazione aggiornata dopo la reazione, e il pulsante "Tira i dadi". Nessuna voce "Scegli" o "Rinuncia".</p></div>
+  </article>
+
+  <article class="finding">
+    <div class="head"><span class="sev high">Grave</span><h3>"Scegli" acceso anche quando non c'è niente da scegliere</h3><span class="tag">Interfaccia</span></div>
+    <blockquote>«Ho preso Canto di Libertà. La barra diceva solo "Canto di Libertà · quando la acquisisci", con Scegli e Rinuncia. Ho premuto Scegli più volte senza trovare nulla da scegliere. Nessuno mi ha detto che non avevo città da restituire.»<cite>Giocatore 4, partita a 4 con Leader e Lore, schermo 1366×768</cite></blockquote>
+    <figure><img src="empty-choice.jpg" alt="Barra con Scegli e Rinuncia per Canto di Libertà"><figcaption>La carta chiede una cosa che il giocatore non può fare, e la barra non lo dice.</figcaption></figure>
+    <div class="what"><p><strong>Cosa succede.</strong> Quando una carta chiede una scelta facoltativa ma non esiste nessuna risposta possibile, il tavolo mostra lo stesso "Scegli". Non dice cosa chiede la carta né perché non si può fare.</p>
+    <p><strong>Come correggerlo.</strong> Se l'unica risposta possibile è rinunciare: una riga che spiega il perché ("Non controlli città da restituire") e un solo pulsante "Continua". Quando ci sono risposte, la barra deve descrivere la domanda della carta con parole sue, non solo il nome della carta.</p></div>
+  </article>
+
+  <article class="finding">
+    <div class="head"><span class="sev high">Grave</span><h3>Veggenti: carte scritte come codici, lista che esce dallo schermo</h3><span class="tag">Interfaccia</span></div>
+    <blockquote>«Ho dichiarato con i Veggenti per guardare la mano di un rivale. Mi è comparsa una griglia di riquadri con scritto "constructi aggressio 1 3", "administr constructi 2 6"… Passando sopra, la carta ingrandita era un rettangolo blu con scritto "administration-1". Le opzioni continuavano sotto il bordo dello schermo e non riuscivo a vederle tutte.»<cite>Giocatore 2, partita a 4 con Leader e Lore</cite></blockquote>
+    <figure class="narrow"><img src="farseers.jpg" alt="Finestra di scelta dei Veggenti con nomi di carte troncati e una carta vuota"><figcaption>Sopra, testo al posto delle carte azione. Al centro, la carta ingrandita senza faccia. In basso, la lista tagliata dal bordo.</figcaption></figure>
+    <div class="what"><p><strong>Cosa succede.</strong> Lo scambio dei Veggenti (court-17) elenca ogni combinazione rivale × carta da dare × carta da prendere come riquadro di testo. Le carte azione non vengono disegnate come carte, e l'ingrandimento non trova la loro faccia. La mano del rivale non si vede mai: si intuisce solo dalle opzioni.</p>
+    <p><strong>Come correggerlo.</strong> Una finestra in due passi: prima la mano del rivale mostrata come carte vere, poi la carta da prendere e quella da dare, scelte cliccando sulle carte. Più "Non scambiare". La finestra deve stare nello schermo.</p></div>
+  </article>
+
+  <article class="finding">
+    <div class="head"><span class="sev high">Grave</span><h3>Una zona invisibile sopra la mappa blocca i clic</h3><span class="tag">Interfaccia (Impeccable)</span></div>
+    <blockquote>«Volevo costruire su un pianeta acceso in alto a sinistra. Si illuminava, ma cliccandoci sopra non succedeva niente. Ci sono riuscito solo da tastiera.»<cite>Giocatore 2, partita a 2 base (97 volte in tutte le partite)</cite></blockquote>
+    <figure><img src="rivals-region.jpg" alt="Mappa con la banda del rivale in alto e un pianeta acceso sotto una zona vuota"><figcaption>Il riquadro grande è la zona riservata ai rivali: con 2 giocatori c'è una sola banda, ma la zona resta alta come per 3 rivali. Il pianeta acceso (riquadro piccolo) è sotto di lei.</figcaption></figure>
+    <div class="what"><p><strong>Cosa succede.</strong> La regione dei rivali ha sempre l'altezza di tre bande e cattura i clic anche dove è vuota. Lo stesso accade, meno spesso, con l'ingrandimento di una carta della Corte rimasto aperto sopra la mappa.</p>
+    <p><strong>Come correggerlo.</strong> La regione dei rivali deve lasciar passare i clic dove non c'è nulla (<code>pointer-events</code> solo sulle bande), oppure prendere l'altezza delle bande che ha davvero.</p></div>
+  </article>
+
+  <article class="finding">
+    <div class="head"><span class="sev mid">Importante</span><h3>Sistemi accesi sotto la mano, la barra o la Corte</h3><span class="tag">Interfaccia (Impeccable)</span></div>
+    <blockquote>«Il gioco mi chiedeva "Scegli un sistema sulla mappa", ma il pianeta giusto era mezzo nascosto dietro le mie carte della Corte, in basso a destra. Su un portatile era peggio: un sistema acceso stava sotto la mano e non lo vedevo proprio.»<cite>Giocatori di tutte le partite (111 volte); a 1366×768, una volta fuori dallo schermo</cite></blockquote>
+    <div class="two">
+      <figure><img src="map-under-hand.jpg" alt="Pianeta acceso sotto il pannello della Corte in basso a destra"><figcaption>1920×1080: pianeta acceso sotto le carte della mano e il pannello della Corte.</figcaption></figure>
+      <figure><img src="map-1366.jpg" alt="Mappa a 1366 con la parte bassa sotto la mano"><figcaption>1366×768: tutta la parte bassa della mappa sta sotto la mano mentre si scelgono le destinazioni.</figcaption></figure>
+    </div>
+    <div class="what"><p><strong>Cosa succede.</strong> La mappa 3D continua sotto i pannelli. Quando un passo chiede di scegliere un sistema, il tavolo non porta i sistemi accesi nella zona libera. Esiste già la funzione che lo fa (<code>ensureVisible</code>), ma serve solo per i menu.</p>
+    <p><strong>Come correggerlo.</strong> Quando si accendono dei sistemi, inquadrarli tutti nella parte libera della mappa. In alternativa, una piccola etichetta cliccabile ai bordi per quelli nascosti.</p></div>
+  </article>
+
+  <article class="finding">
+    <div class="head"><span class="sev mid">Importante</span><h3>La carta della Corte ingrandita copre le carte vicine e il suo menu</h3><span class="tag">Interfaccia (Impeccable)</span></div>
+    <blockquote>«Volevo influenzare la carta accanto a quella che stavo guardando. Muovendo il mouse sono finito sull'ingrandimento della prima, che non si chiudeva, e la seconda non riuscivo a cliccarla. E quando si apre il menu "Influenza · poi influenza…", gli agenti 3D ingranditi coprono metà dei pulsanti.»<cite>Giocatori di tutte le partite (centinaia di volte)</cite></blockquote>
+    <div class="two">
+      <figure><img src="court-zoom.jpg" alt="Carta della Corte ingrandita che copre la carta accanto"><figcaption>L'ingrandimento scende sopra la riga della Corte: la carta a destra resta coperta.</figcaption></figure>
+      <figure><img src="court-menu-agents.jpg" alt="Menu della Corte coperto dalla carta ingrandita e dagli agenti 3D"><figcaption>Il menu della carta, sotto l'ingrandimento e gli agenti 3D.</figcaption></figure>
+    </div>
+    <div class="what"><p><strong>Cosa succede.</strong> L'ingrandimento compare sopra la carta stessa, accetta il mouse e resta aperto finché il puntatore ci sta sopra. Il menu della Corte si apre sotto l'ingrandimento.</p>
+    <p><strong>Come correggerlo.</strong> Ingrandimento sotto la riga della Corte (non sopra le carte), che non cattura il mouse e si chiude appena si apre un menu o si passa a un'altra carta.</p></div>
+  </article>
+
+  <article class="finding">
+    <div class="head"><span class="sev mid">Importante</span><h3>La finestra del Banchettatore nasconde la seconda carta</h3><span class="tag">Interfaccia</span></div>
+    <blockquote>«Dovevo scegliere quale carta Gilda cedere per dichiarare. Appena aperta la finestra, la prima carta si è ingrandita da sola e copriva l'altra. Ho dovuto spostare il mouse altrove per vedere le due scelte.»<cite>Giocatori delle partite con Leader e Lore (3 volte)</cite></blockquote>
+    <figure><img src="gift-zoom.jpg" alt="Finestra Cedi una carta Gilda con la prima carta ingrandita sopra la seconda"><figcaption>L'ingrandimento parte quando la prima carta riceve il focus della tastiera all'apertura.</figcaption></figure>
+    <div class="what"><p><strong>Cosa succede.</strong> Lo stesso succede nella finestra "Tieni N carte". Dentro le finestre di scelta le carte sono già grandi: l'ingrandimento automatico al focus non serve e nasconde le alternative.</p>
+    <p><strong>Come correggerlo.</strong> Niente ingrandimento automatico dentro le finestre di scelta. Se serve, va mostrato a lato, senza coprire le altre carte.</p></div>
+  </article>
+
+  <article class="finding">
+    <div class="head"><span class="sev mid">Importante</span><h3>Antichi Possedimenti: lo spazio risorsa finisce sotto la carta giocata</h3><span class="tag">Interfaccia</span></div>
+    <blockquote>«Avevo una Reliquia sulla carta Antichi Possedimenti e volevo spenderla nel Prelude. Il suo spazio era coperto dalla carta che avevo appena guidato.»<cite>Giocatore 3, partita a 4 con Leader e Lore</cite></blockquote>
+    <div class="two">
+      <figure class="narrow"><img src="holdings-slot.jpg" alt="Spazio risorsa con tre chiavi sotto la carta Guida"><figcaption>Lo spazio da 4 chiavi esce dalla plancia, a destra, sotto la carta giocata.</figcaption></figure>
+    </div>
+    <div class="what"><p><strong>Cosa succede.</strong> L'ho introdotto io nella PR 63: lo spazio della carta viene aggiunto in coda agli spazi della plancia e sborda.</p>
+    <p><strong>Come correggerlo.</strong> Disegnarlo sulla carta stessa, nel pannello della Corte propria, oppure in una casella della plancia fatta apposta.</p></div>
+  </article>
+
+  <article class="finding">
+    <div class="head"><span class="sev mid">Importante</span><h3>Testo italiano sopra il testo inglese della carta</h3><span class="tag">Interfaccia</span></div>
+    <blockquote>«Nell'ingrandimento di Canto di Libertà l'ultima frase si leggeva due volte, in italiano e in inglese, una sopra l'altra.»<cite>Giocatore 3, partita a 4 con Leader e Lore</cite></blockquote>
+    <figure class="narrow"><img src="card-text-overlap.jpg" alt="Carta Canto di Libertà con due righe sovrapposte"><figcaption>La riga in corsivo inglese resta visibile sotto la traduzione.</figcaption></figure>
+    <div class="what"><p><strong>Cosa succede.</strong> Nella faccia della carta la nota in corsivo non viene sostituita dalla traduzione: le due righe si sovrappongono. Va controllato su tutte le carte con una nota in corsivo.</p>
+    <p><strong>Come correggerlo.</strong> La traduzione deve sostituire la nota, non sovrapporsi. Aggiungere un controllo automatico su tutte le facce in italiano.</p></div>
+  </article>
+</section>
+
+<section>
+  <h2>Fastidi minori</h2>
+  <article class="finding">
+    <div class="head"><span class="sev low">Minore</span><h3>Comandi troppo piccoli da colpire</h3><span class="tag">Impeccable</span></div>
+    <blockquote>«Sul portatile i pulsanti "Tipo" e "Risorsa" della Corte e la linguetta per aprire tutta la Corte erano difficili da prendere. Anche "I miei pezzi" è una striscia sottile.»<cite>Giocatori della partita a 1366×768; "I miei pezzi" e la linguetta delle ambizioni in tutte le partite</cite></blockquote>
+    <div class="two">
+      <figure class="narrow"><img src="tiny-1366.jpg" alt="Pannello Corte a 1366 con i pulsanti Tipo e Risorsa e la linguetta laterale"><figcaption>1366×768: Tipo 39×20 px, Risorsa 53×20 px, "Mostra tutta la Corte" 17 px di larghezza.</figcaption></figure>
+      <figure class="narrow"><img src="tiny-1920.jpg" alt="Pulsante I miei pezzi"><figcaption>"I miei pezzi": 100×20 px. Linguetta delle ambizioni: 22×76 px.</figcaption></figure>
+    </div>
+    <div class="what"><p><strong>Come correggerlo.</strong> Area di clic di almeno 24 px, senza cambiare l'aspetto (lo stesso metodo della correzione #42).</p></div>
+  </article>
+</section>
+
+<section>
+  <h2>Regole e sincronia</h2>
+  <div class="ok">
+    <p><strong>Nessuna violazione delle regole trovata.</strong> Dopo ogni mossa lo script ha contato navi, agenti, città, spazioporti e risorse di ogni giocatore. Tutti i cambi trovati hanno una spiegazione nelle regole: un agente sull'icona dell'Oltraggio (L'Oltraggio Dilaga), i pezzi scartati dai Leader all'inizio (Sorvegliante: 2 navi e 3 agenti; Anarchico: 2 città; Mistico e Quartiermastro: agenti sull'Oltraggio).</p>
+    <p><strong>Gli schermi restano allineati.</strong> In nessuna partita gli schermi dei giocatori hanno mostrato stati diversi.</p>
+    <p><strong>Nessun errore nella pagina.</strong> In tutte le partite: nessun errore JavaScript, nessuna immagine rotta, nessun testo tagliato nei pulsanti.</p>
+    <p class="seen">Cosa il controllo automatico non può dire: se una scelta strategica era sensata, o se un effetto di carta raro è stato applicato bene in ogni dettaglio. Per quello servono i test per carta che abbiamo già, o una partita giocata da te.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Piano delle correzioni</h2>
+  <div class="plan">
+    <div>
+      <h3>Passaggio motore e flussi di gioco</h3>
+      <ol>
+        <li>La battaglia in pausa dopo la reazione del difensore riapre la finestra dei dadi con "Tira i dadi" (<code>collectDice</code>). Va tolto il "battle" grezzo.</li>
+        <li>Scelte di carta senza risposte possibili: una riga che spiega perché, e un solo "Continua". La domanda della carta va scritta per esteso nella barra.</li>
+        <li>Veggenti: la mano del rivale mostrata come carte, poi lo scambio scelto sulle carte. La finestra resta nello schermo.</li>
+        <li>Test end-to-end per ognuno dei tre casi, da veder fallire prima della correzione.</li>
+        <li>Il simulatore diventa un controllo da lanciare prima di ogni pubblicazione importante.</li>
+      </ol>
+    </div>
+    <div>
+      <h3>Passaggio Impeccable (layout e visibilità)</h3>
+      <ol>
+        <li>La regione dei rivali lascia passare i clic dove è vuota.</li>
+        <li>I sistemi accesi vengono inquadrati nella parte libera della mappa (tutte le risoluzioni, 1366×768 compresa).</li>
+        <li>Ingrandimento della Corte: non copre le altre carte, non cattura il mouse, si chiude quando si apre un menu. Lo stesso per gli agenti 3D.</li>
+        <li>Niente ingrandimento automatico dentro le finestre di scelta (Gilda da cedere, Tieni N carte).</li>
+        <li>Lo spazio di Antichi Possedimenti va disegnato sulla carta, non in coda alla plancia.</li>
+        <li>Facce delle carte: la traduzione sostituisce la nota in corsivo; controllo automatico su tutte le carte.</li>
+        <li>Aree di clic di almeno 24 px per Tipo, Risorsa, la linguetta della Corte, "I miei pezzi" e la linguetta delle ambizioni.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+</div>

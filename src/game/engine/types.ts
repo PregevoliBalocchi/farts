@@ -429,6 +429,13 @@ export interface PlayerState {
   /** Outraged resource types: they cannot be spent for their prelude action. */
   outraged: Resource[];
   /**
+   * Outraged types whose icon a placeholder covers: no agent was in the supply when it was
+   * covered. The next agent that enters the supply replaces it (rulebook "Pieces & Piece Limits").
+   */
+  outragePlaceholders?: Resource[];
+  /** Pieces removed from the game (a leader's setup scraps them), counted by the piece ledger. */
+  removed?: { ships?: number; agents?: number; cities?: number; starports?: number };
+  /**
    * Set when the player took or was given a resource, or a returning city
    * covered a slot: until their next other command they may rearrange their
    * tokens among the open slots (the `arrange` command).

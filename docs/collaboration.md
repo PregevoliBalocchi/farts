@@ -86,8 +86,14 @@ sites. Code, tests and other docs still summarise rules in our own words.
 - Start from an up-to-date `main` (`git switch main && git pull`), push the
   branch, open a **pull request**; the other person reviews and merges.
   GitHub runs the type check and unit tests on every push and pull request
-  (`.github/workflows/tests.yml`); run the browser tests (`npm run test:e2e`)
-  locally when you change the UI.
+  (`.github/workflows/tests.yml`), and the browser tests on every pull
+  request and push to `main` (`.github/workflows/deploy.yml`, job `e2e`):
+  nothing is deployed unless they pass. They include short seeded games
+  played with the mouse by every seat (`tests/integration/playthrough.spec.ts`);
+  a problem they find fails the build unless
+  `tests/integration/playthrough/known.json` lists it with the step that will
+  fix it. Run them locally too (`npm run test:e2e`) when you change the UI;
+  long simulated games for a person to read: `node tools/playtest/sim.mjs`.
 - Split work by area so two branches rarely touch the same files. Typical
   areas: engine rules (`src/game/engine/`), card effects
   (`src/game/cards/`), UI (`src/ui/`, `prototypes/`), design docs

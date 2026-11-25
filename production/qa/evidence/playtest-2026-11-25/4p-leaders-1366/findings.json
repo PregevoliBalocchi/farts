@@ -1,0 +1,233 @@
+{
+  "players": 4,
+  "variant": "leaders",
+  "seed": 27,
+  "steps": 425,
+  "moves": 415,
+  "chapter": 5,
+  "phase": "gameOver",
+  "power": [
+    9,
+    3,
+    31,
+    4
+  ],
+  "findings": [
+    {
+      "key": "totale:P1 agenti:10>9",
+      "what": "Cambia un totale che le regole tengono fisso: P1 agenti 10 → 9",
+      "detail": "dopo: P1 drafts lore-06 | P1 applies leader-16 setup | Chapter 1 begins; P1 has initiative",
+      "count": 1,
+      "step": 8,
+      "seat": 1,
+      "shot": "f01-totale-P1-agenti-10-9.png"
+    },
+    {
+      "key": "tiny:ambitions: amb-toggle \"Chiudi le ambizioni\"",
+      "what": "Bersaglio cliccabile sotto 24 px",
+      "detail": "ambitions: amb-toggle \"Chiudi le ambizioni\" 16×54",
+      "count": 281,
+      "step": 8,
+      "seat": 1,
+      "shot": "f02-tiny-ambitions-amb-toggle-Chiudi-le-ambizioni-.png"
+    },
+    {
+      "key": "tiny:local: find-mine \"Evidenzia per qualche secondo \"",
+      "what": "Bersaglio cliccabile sotto 24 px",
+      "detail": "local: find-mine \"Evidenzia per qualche secondo \" 71×14",
+      "count": 281,
+      "step": 8,
+      "seat": 1,
+      "shot": "f03-tiny-local-find-mine-Evidenzia-per-qualche-secondo.png"
+    },
+    {
+      "key": "tiny:mine: mine-open \"Mostra tutta la corte\"",
+      "what": "Bersaglio cliccabile sotto 24 px",
+      "detail": "mine: mine-open \"Mostra tutta la corte\" 17×165",
+      "count": 281,
+      "step": 8,
+      "seat": 1,
+      "shot": "f04-tiny-mine-mine-open-Mostra-tutta-la-corte-.png"
+    },
+    {
+      "key": "tiny:mine: court-sort \"Tipo\"",
+      "what": "Bersaglio cliccabile sotto 24 px",
+      "detail": "mine: court-sort \"Tipo\" 39×20",
+      "count": 281,
+      "step": 8,
+      "seat": 1,
+      "shot": "f05-tiny-mine-court-sort-Tipo-.png"
+    },
+    {
+      "key": "tiny:mine: court-sort \"Risorsa\"",
+      "what": "Bersaglio cliccabile sotto 24 px",
+      "detail": "mine: court-sort \"Risorsa\" 53×20",
+      "count": 281,
+      "step": 8,
+      "seat": 1,
+      "shot": "f06-tiny-mine-court-sort-Risorsa-.png"
+    },
+    {
+      "key": "covered:map:c4-p3",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c4-p3\" a 451,655, sotto span.n",
+      "count": 2,
+      "step": 13,
+      "seat": 2,
+      "shot": "f07-covered-map-c4-p3.png"
+    },
+    {
+      "key": "covered:court:Veggenti",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Veggenti\" a 614,44, sotto img.cf-art",
+      "count": 1,
+      "step": 15,
+      "seat": 2,
+      "shot": "f08-covered-court-Veggenti.png"
+    },
+    {
+      "key": "covered:court:Guardiani Giurati",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Guardiani Giurati\" a 725,44, sotto img.cf-art",
+      "count": 1,
+      "step": 29,
+      "seat": 0,
+      "shot": "f09-covered-court-Guardiani-Giurati.png"
+    },
+    {
+      "key": "covered:map:c4-p1",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c4-p1\" a 795,655, sotto span.kw",
+      "count": 6,
+      "step": 33,
+      "seat": 1,
+      "shot": "f10-covered-map-c4-p1.png"
+    },
+    {
+      "key": "covered:map:c4-p2",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c4-p2\" a 609,692, sotto div.hand-cards",
+      "count": 3,
+      "step": 33,
+      "seat": 1,
+      "shot": "f11-covered-map-c4-p2.png"
+    },
+    {
+      "key": "covered:gift-pick:Dai Marines Leali a ",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "gift-pick \"Dai Marines Leali a Giocatore 3\" a 683,382, sotto img.cf-art",
+      "count": 1,
+      "step": 54,
+      "seat": 0,
+      "shot": "f12-covered-gift-pick-Dai-Marines-Leali-a-.png"
+    },
+    {
+      "key": "covered:map:c6-p2",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c6-p2\" a 323,268, sotto div.board.rband",
+      "count": 1,
+      "step": 85,
+      "seat": 0,
+      "shot": "f13-covered-map-c6-p2.png"
+    },
+    {
+      "key": "covered:map:c5-p1",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c5-p1\" a 189,719, sotto span.pl-chip.none",
+      "count": 2,
+      "step": 109,
+      "seat": 3,
+      "shot": "f14-covered-map-c5-p1.png"
+    },
+    {
+      "key": "covered:map:c6-p3",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c6-p3\" a 476,41, sotto span.facedown",
+      "count": 2,
+      "step": 149,
+      "seat": 1,
+      "shot": "f15-covered-map-c6-p3.png"
+    },
+    {
+      "key": "covered:court:Ingegneri Leali",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Ingegneri Leali\" a 614,44, sotto img.cf-art",
+      "count": 1,
+      "step": 157,
+      "seat": 3,
+      "shot": "f16-covered-court-Ingegneri-Leali.png"
+    },
+    {
+      "key": "covered:court-do:Acquisisci",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court-do \"Acquisisci\" a 865,174, sotto div.cf-title.t-2",
+      "count": 1,
+      "step": 173,
+      "seat": 0,
+      "shot": "f17-covered-court-do-Acquisisci.png"
+    },
+    {
+      "key": "covered:court:Canto di Libertà",
+      "what": "Comando coperto da un altro elemento",
+      "detail": "court \"Canto di Libertà\" a 614,44, sotto img.cf-art",
+      "count": 1,
+      "step": 200,
+      "seat": 2,
+      "shot": "f18-covered-court-Canto-di-Libert-.png"
+    },
+    {
+      "key": "totale:P0 agenti:10>9",
+      "what": "Cambia un totale che le regole tengono fisso: P0 agenti 10 → 9",
+      "detail": "dopo: P1 copies with a card face down | P1 secures court-28; court-28 waits for P1's choice | P1 resolves court-28: every player Provokes weapons Outrage",
+      "count": 1,
+      "step": 304,
+      "seat": 1,
+      "shot": "f19-totale-P0-agenti-10-9.png"
+    },
+    {
+      "key": "totale:P1 agenti:9>8",
+      "what": "Cambia un totale che le regole tengono fisso: P1 agenti 9 → 8",
+      "detail": "dopo: P1 copies with a card face down | P1 secures court-28; court-28 waits for P1's choice | P1 resolves court-28: every player Provokes weapons Outrage",
+      "count": 1,
+      "step": 304,
+      "seat": 1,
+      "shot": "f20-totale-P1-agenti-9-8.png"
+    },
+    {
+      "key": "totale:P2 agenti:10>9",
+      "what": "Cambia un totale che le regole tengono fisso: P2 agenti 10 → 9",
+      "detail": "dopo: P1 copies with a card face down | P1 secures court-28; court-28 waits for P1's choice | P1 resolves court-28: every player Provokes weapons Outrage",
+      "count": 1,
+      "step": 304,
+      "seat": 1,
+      "shot": "f21-totale-P2-agenti-10-9.png"
+    },
+    {
+      "key": "totale:P3 agenti:10>9",
+      "what": "Cambia un totale che le regole tengono fisso: P3 agenti 10 → 9",
+      "detail": "dopo: P1 copies with a card face down | P1 secures court-28; court-28 waits for P1's choice | P1 resolves court-28: every player Provokes weapons Outrage",
+      "count": 1,
+      "step": 304,
+      "seat": 1,
+      "shot": "f22-totale-P3-agenti-10-9.png"
+    },
+    {
+      "key": "covered:map:c1-p2",
+      "what": "Sistema acceso coperto da un pannello",
+      "detail": "map \"c1-p2\" a 810,59, sotto span.cb-title.t-2",
+      "count": 1,
+      "step": 351,
+      "seat": 1,
+      "shot": "f23-covered-map-c1-p2.png"
+    },
+    {
+      "key": "stuck:decide:court,decide-open,decline,hand",
+      "what": "Il giocatore di turno non trova come andare avanti",
+      "detail": "fase decide, giocatore 3; comandi accesi: court, hand, decide-open, decline",
+      "count": 1,
+      "step": 361,
+      "seat": 3,
+      "shot": "f24-stuck-decide-court-decide-open-decline-hand.png"
+    }
+  ]
+}

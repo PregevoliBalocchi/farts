@@ -20,7 +20,7 @@ import type { DeclareGift } from './declare';
 import { HANDLERS } from './actions';
 import type { MovePayload } from './actions';
 import { effectOf, hasPassive, isDeclared, ownedEffects } from './effects';
-import { cartelSupply, returnPiece, toDiscard } from './ops';
+import { cartelSupply, replacePlaceholders, returnPiece, toDiscard } from './ops';
 import { returnCouncil } from './campaign';
 import { decideEvent, isEventDecision, runEvent, startEvent } from './events';
 import { isEventCard, placeStartingPieces } from './campaign-setup';
@@ -83,6 +83,7 @@ export type Command =
 export function dispatch(ix: ContentIndex, state: GameState, cmd: Command): GameState {
   const s = structuredClone(state);
   apply(ix, s, cmd);
+  replacePlaceholders(s);
   promoteDecision(s);
   return s;
 }
