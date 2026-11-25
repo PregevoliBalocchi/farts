@@ -183,6 +183,9 @@ A narrow metallic range of gold and bronze over near-black browns, with the game
 The colours are CSS variables on `.tbl-stage` in `src/ui/table/table.css`, and new rules use them instead of hex values:
 - Gilt Gold is `--dg-gold`, Bronze Dim is `--dg-gold-dim`, Card Ink is `--dg-ink`, Parchment Text is `--dg-text`, Ember Orange is `--dg-orange` and Table Soot is `--dg-bg`.
 - The others carry their token name: `--gilt-highlight`, `--gilt-deep`, `--gilt-pale`, `--bronze-edge`, `--void-black`, `--frame-umber`, `--frame-brown`, `--vellum-title`, `--vellum-muted` and `--card-cream`.
+- Three support tones without a frontmatter entry: `--bronze-rule` (#4a3a22, thin dividers), `--vellum-faint` (#8a7a58, the faintest caption) and `--frame-raise` (#2a2016, a raised plate inside a frame).
+- The retired teal names (`--text`, `--text-dim`, `--text-faint`, `--rule`, `--rule-hi`, `--select`, `--panel`, `--panel-solid`, `--panel-raise`) now resolve to these gold tones, so old rules read gold; new rules still use the token names.
+- Font sizes use the `--fs-*` scale and radii are 4, 6 or 8 px; card faces keep their own sizes.
 
 ### Named Rules
 **The Gold-Is-Structure Rule.** Gold draws frames, titles and the single primary action of a group. It never fills a large area, and a group never has two gold-filled buttons.
