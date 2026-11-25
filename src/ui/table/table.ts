@@ -39,10 +39,10 @@ import { place, placeDown, REGIONS, setSideShut, setStage, STAGE, placeUp } from
 import { mapSvg } from './mapview';
 import { patchChildren } from './patch';
 import {
-  actionCard, button, cardLabel, slotHtml, sizeAvatars, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon,
+  actionCard, button, cardLabel, slotHtml, sizeAvatars, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon, suitName,
 } from './render';
 import { actionCardView, legal, othersTurn, tableView, whyNot } from './view';
-import type { TableView } from './view';
+import type { HandCardView, TableView } from './view';
 
 /** The windows that still dim the table: the settings and a card's choice. */
 /** `gift`: which Guild card to give, and to whom, to declare `ambition` (the Feastbringer, leader-07; base-fixes #48). */
@@ -448,6 +448,27 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** The follow command for the selected card, with the seize card when one is chosen. */
   function followCmd(card: string, mode: 'surpass' | 'pivot' | 'copy'): Command {
     return { type: 'follow', player: local(), card, mode, ...(seizeWith && seizeWith !== card ? { seizeWith } : {}) };
+  }
+
+  /**
+   * What following with `card` this way gives (rulebook 5.2.2), short for under the button; `long` adds the
+   * suit and, for a Surpass while nobody seized, the initiative rule (5.3.1) for its tooltip.
+   */
+  function followGives(v: TableView, card: HandCardView, mode: 'surpass' | 'pivot' | 'copy', long = false): string {
+    const lead = v.lead;
+    if (mode === 'copy') return `${t('follow.gives.copy')}${long && lead ? ` (${suitName(t, lead.suit)})` : ''}`;
+    if (mode === 'pivot') return `${t('follow.gives.pivot')}${long ? ` (${suitName(t, card.suit)})` : ''}`;
+    const acts = t(card.pips === 1 ? 'follow.gives.one' : 'follow.gives.many', { n: card.pips });
+    return long && v.seizedBy === null ? `${acts} · ${t('follow.gives.initiative')}` : acts;
+  }
+
+  /** Why following with `card` this way is not possible now, in a short phrase. */
+  function followWhyNot(v: TableView, card: HandCardView, mode: 'surpass' | 'pivot' | 'copy'): string {
+    const lead = v.lead;
+    if (lead && mode === 'surpass' && card.suit !== lead.suit) return t('follow.why.suit', { suit: suitName(t, lead.suit) });
+    if (lead && mode === 'surpass' && card.number <= lead.number) return t('follow.why.higher', { n: lead.number });
+    if (lead && mode === 'pivot' && card.suit === lead.suit) return t('follow.why.sameSuit');
+    return t('follow.why.other');
   }
 
   /** Identity of the pending battle's roll: a new battle or a reroll changes it (and throws the dice again). */
@@ -1779,11 +1800,21 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           turn: [undoOrCancel(false), pass],
         };
       }
-      const main = (['surpass', 'copy', 'pivot'] as const).map((mode) => button('follow', t(`play.${mode}`), { args: { mode }, cls: `cmd-btn${mode === 'surpass' ? ' primary' : ''}`, disabled: !can(followCmd(card.card, mode)) }));
-      // Seizing: discard a second card. Offered while nobody has seized this round.
-      if (v.seizedBy === null && v.hand.length > 1) {
+      // Each way to follow says what it gives, or why it is not possible (piano PR 6, previews).
+      const main = (['surpass', 'copy', 'pivot'] as const).map((mode) => {
+        const on = can(followCmd(card.card, mode));
+        const sub = on ? followGives(v, card, mode) : followWhyNot(v, card, mode);
+        const full = on ? followGives(v, card, mode, true) : sub;
+        return button('follow', t(`play.${mode}`), { args: { mode }, cls: `cmd-btn two-line${mode === 'surpass' ? ' primary' : ''}`, disabled: !on, title: `${t(`play.${mode}`)}: ${full}`, html: `<span>${esc(t(`play.${mode}`))}</span><small class="cmd-sub">${esc(sub)}</small>` });
+      });
+      // Seizing: discard a second card. Offered while nobody has seized this round; else the reason it is not.
+      const me0 = v.players.find((p) => p.id === me);
+      const noSeize = v.seizedBy !== null ? t('seize.why.taken') : me0?.hasInitiative ? t('seize.why.holder') : v.hand.length < 2 ? t('seize.why.noCard') : null;
+      if (noSeize === null) {
         const label = seizePick ? t('play.seizePick') : seizeWith ? t('play.seizeWith', { card: seizeWith }) : t('play.seize');
-        main.push(button('seize', label, { cls: `cmd-btn${seizeWith || seizePick ? ' on' : ''}` }));
+        main.push(button('seize', label, { cls: `cmd-btn two-line${seizeWith || seizePick ? ' on' : ''}`, title: `${label}: ${t('seize.gives')}`, html: `<span>${esc(label)}</span><small class="cmd-sub">${esc(t('seize.gives'))}</small>` }));
+      } else {
+        main.push(button('seize', t('play.seize'), { cls: 'cmd-btn two-line', disabled: true, title: `${t('play.seize')}: ${noSeize}`, html: `<span>${esc(t('play.seize'))}</span><small class="cmd-sub">${esc(noSeize)}</small>` }));
       }
       return { title: cardLabel(t, card), pips: card.pips, text: declareTargets(v).length ? `${kinds} · ${t('bar.declareHint')}` : kinds, close: true, main, powers: [], turn: [undoOrCancel(false), ''] };
     }
@@ -1912,15 +1943,24 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const list = declareTargets(v);
     if (!list.length) return;
     stage.classList.add('table-pick');
+    // The marker a declaration takes: the highest available (rulebook 6.2); the stake is it plus the markers already there.
+    const next = [...v.markersLeft].sort((x, y) => y.first - x.first)[0];
     for (const a of list) {
       const el = stage.querySelector<HTMLElement>(`.abox[data-tip="amb:${CSS.escape(a)}"]`);
       if (!el) continue;
+      const row = v.ambitions.find((r) => r.id === a);
+      const first = (next?.first ?? 0) + (row?.markers.reduce((n, m) => n + m.first, 0) ?? 0);
+      const second = (next?.second ?? 0) + (row?.markers.reduce((n, m) => n + m.second, 0) ?? 0);
+      const names = (ps: PlayerId[] | undefined) => (ps?.length ? ps.map((p) => playerName(t, p)).join(', ') : t('declare.nobody'));
+      const stake = t('declare.stake', { first, second });
+      const now = t('declare.now', { first: names(row?.first), second: names(row?.second) });
       el.classList.add('tpick', 'declare');
       el.dataset.act = 'lead-declare';
       el.dataset.ambition = a;
-      el.insertAdjacentHTML('beforeend', `<span class="ab-declare">${esc(t('bar.declareTag'))}</span>`);
+      el.insertAdjacentHTML('beforeend', `<span class="ab-declare">${esc(t('bar.declareTag'))} · ${esc(stake)}</span>`);
       el.setAttribute('role', 'button');
-      el.setAttribute('aria-label', `${t('play.leadDeclare')}: ${t(`ambition.${a}`)}`);
+      el.title = `${stake}. ${now}`;
+      el.setAttribute('aria-label', `${t('play.leadDeclare')}: ${t(`ambition.${a}`)}. ${stake}. ${now}`);
     }
   }
 

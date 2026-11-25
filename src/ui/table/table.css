@@ -2141,3 +2141,8 @@ button.supply:hover { border-color: var(--rule-hi); }
 /* ?view=cards: the Court, Lore and Leader faces at the zoom's size (the faces test measures them). */
 .card-sheet .faces figure.face { width: 220px; }
 .card-sheet .faces figure.face.tall { width: 190px; }
+/* A command with what it gives (or why not) under its name (piano PR 6, previews). */
+.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.two-line { flex-direction: column; gap: 2px; line-height: 1.1; }
+.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.two-line .cmd-sub { font: 500 var(--fs-caption) var(--font-ui, inherit); opacity: .85; white-space: nowrap; }
+.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.two-line:disabled .cmd-sub { opacity: 1; color: var(--vellum-muted); }
+.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.two-line.primary:disabled .cmd-sub { color: var(--dg-ink); }

@@ -519,5 +519,21 @@
   "piles.courtDeckShort": "Court deck",
   "piles.actionDiscardShort": "Action discard",
   "amb.shut": "Fold the ambitions",
-  "amb.open": "Open the ambitions"
+  "amb.open": "Open the ambitions",
+  "follow.gives.copy": "1 action of the lead",
+  "follow.gives.pivot": "1 action of the card",
+  "follow.gives.one": "1 action",
+  "follow.gives.many": "{n} actions",
+  "follow.gives.initiative": "the highest takes the initiative",
+  "follow.why.suit": "needs {suit}",
+  "follow.why.higher": "needs a number above {n}",
+  "follow.why.sameSuit": "same suit as the lead",
+  "follow.why.other": "not possible now",
+  "seize.gives": "discard 1 more card",
+  "seize.why.holder": "you have the initiative",
+  "seize.why.taken": "already seized this round",
+  "seize.why.noCard": "needs a second card",
+  "declare.stake": "1st {first} · 2nd {second}",
+  "declare.now": "If it ended now: 1st {first}, 2nd {second}",
+  "declare.nobody": "nobody"
 }

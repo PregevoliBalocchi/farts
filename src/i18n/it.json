@@ -519,5 +519,21 @@
   "piles.courtDeckShort": "Mazzo Corte",
   "piles.actionDiscardShort": "Scarti azioni",
   "amb.shut": "Chiudi le ambizioni",
-  "amb.open": "Apri le ambizioni"
+  "amb.open": "Apri le ambizioni",
+  "follow.gives.copy": "1 azione della guida",
+  "follow.gives.pivot": "1 azione della carta",
+  "follow.gives.one": "1 azione",
+  "follow.gives.many": "{n} azioni",
+  "follow.gives.initiative": "il più alto prende l'iniziativa",
+  "follow.why.suit": "serve {suit}",
+  "follow.why.higher": "serve un numero sopra {n}",
+  "follow.why.sameSuit": "stesso seme della guida",
+  "follow.why.other": "non possibile ora",
+  "seize.gives": "scarti 1 carta in più",
+  "seize.why.holder": "hai già l'iniziativa",
+  "seize.why.taken": "già sottratta in questo round",
+  "seize.why.noCard": "serve una seconda carta",
+  "declare.stake": "1° {first} · 2° {second}",
+  "declare.now": "Se finisse ora: 1° {first}, 2° {second}",
+  "declare.nobody": "nessuno"
 }
