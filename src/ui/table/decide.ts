@@ -4,12 +4,13 @@
 // trial-dispatches each one, and keeps the legal ones that lead to different
 // outcomes. Declining (empty answer) is always offered first when legal.
 
-import { AMBITIONS, dispatch, RESOURCES } from '../../game/engine';
+import { adjacent, AMBITIONS, dispatch, RESOURCES } from '../../game/engine';
 import { effectOf } from '../../game/engine';
 import type { Command, ContentIndex, GameState, PlayerId } from '../../game/engine';
 
 /** How a part of an answer is shown. */
-export type DecisionPartKind = 'player' | 'card' | 'system' | 'cluster' | 'resource' | 'ambition' | 'court' | 'index' | 'flag' | 'ships' | 'cards' | 'slot' | 'number' | 'resources' | 'dice';
+/** `fleet`: ships of several players moved together, as { [player]: { fresh, damaged } }; `slots`: own resource slots. */
+export type DecisionPartKind = 'player' | 'card' | 'system' | 'cluster' | 'resource' | 'ambition' | 'court' | 'index' | 'flag' | 'ships' | 'cards' | 'slot' | 'slots' | 'number' | 'resources' | 'dice' | 'fleet';
 
 /** One named choice inside an answer, e.g. { key: 'rival', kind: 'player', value: 2 }. */
 export interface DecisionPart {
@@ -40,6 +41,17 @@ function subsets<T>(xs: T[], max: number): T[][] {
   return out.sort((a, b) => a.length - b.length);
 }
 
+/** Every multiset of `n` items of `xs` (order ignored), e.g. 2 of [a, b]: [a, a], [a, b], [b, b]. */
+function multisets<T>(xs: readonly T[], n: number): T[][] {
+  if (n === 0) return [[]];
+  return xs.flatMap((x, i) => multisets(xs.slice(i), n - 1).map((rest) => [x, ...rest]));
+}
+
+/** Most Captives returned at once among the Ransom candidates (court-12: any mix of resources). */
+const MAX_RANSOM = 4;
+/** Most resources exchanged at once among the Tycoon's Charm candidates (lore-28). */
+const MAX_EXCHANGE = 3;
+
 /** Candidate answers for the Decision `s` is waiting on (or, with `powers`, for a card ability), simplest first. */
 function candidates(ix: ContentIndex, s: GameState, me: PlayerId, powers = false): Candidate[] {
   if (s.phase.type !== 'decide' && !powers) return [];
@@ -67,10 +79,47 @@ function candidates(ix: ContentIndex, s: GameState, me: PlayerId, powers = false
         if (res) out.push([{ key: 'from', kind: 'player', value: r }, { key: 'slot', kind: 'slot', value: i }]);
       });
     }
-    for (const set of subsets(pl.hand, 3)) out.push([{ key: 'cards', kind: 'cards', value: set }]);
+    // Cards from the hand: any number of them (Farseers redraws as many as you like, court-17).
+    for (const set of subsets(pl.hand, pl.hand.length)) out.push([{ key: 'cards', kind: 'cards', value: set }]);
+    // Captives returned, each for any resource (Prison Wardens, court-12): every mix.
     for (let n = 1; n <= pl.captives.length; n++) {
       out.push([{ key: 'count', kind: 'number', value: n }]);
-      for (const r of RESOURCES) out.push([{ key: 'resources', kind: 'resources', value: Array(n).fill(r) }]);
+      if (n <= MAX_RANSOM) for (const set of multisets(RESOURCES, n)) out.push([{ key: 'resources', kind: 'resources', value: set }]);
+    }
+    // Material and Fuel exchanged for any resources (Tycoon's Charm, lore-28).
+    const mf = pl.resources.map((r, i) => (r === 'material' || r === 'fuel' ? i : -1)).filter((i) => i >= 0);
+    for (const slots of subsets(mf, MAX_EXCHANGE)) {
+      for (const gain of multisets(RESOURCES, slots.length)) late.push([{ key: 'slots', kind: 'slots', value: slots }, { key: 'gain', kind: 'resources', value: gain }]);
+    }
+    const present = (id: string, p: PlayerId) => (s.map[id].ships[p]?.fresh ?? 0) + (s.map[id].ships[p]?.damaged ?? 0) > 0;
+    for (const id of systems) {
+      const fresh = s.map[id].ships[me]?.fresh ?? 0;
+      const near = systems.filter((x) => x !== id && adjacent(ix, s, id, x));
+      // Firing at an adjacent system (Galactic Rifles, lore-02): from where, at where, at whom.
+      if (fresh > 0) {
+        for (const at of near) {
+          for (const r of rivals) {
+            if (present(at, r) || s.map[at].buildings.some((b) => b.owner === r)) out.push([{ key: 'system', kind: 'system', value: id }, { key: 'at', kind: 'system', value: at }, { key: 'target', kind: 'player', value: r }]);
+          }
+        }
+        // A ship sacrificed to destroy a Rival's there (Survival Overrides, lore-18): fresh or damaged.
+        for (const r of rivals) {
+          if ((s.map[id].ships[r]?.fresh ?? 0) > 0) out.push([{ key: 'system', kind: 'system', value: id }, { key: 'target', kind: 'player', value: r }]);
+          if ((s.map[id].ships[r]?.damaged ?? 0) > 0) out.push([{ key: 'system', kind: 'system', value: id }, { key: 'target', kind: 'player', value: r }, { key: 'damaged', kind: 'flag', value: true }]);
+        }
+      }
+      // Ships of any player guided to an adjacent system (Force Beams, lore-16): one player's, or everyone's.
+      const here = s.players.map((p) => p.id).filter((p) => present(id, p));
+      if (!here.length) continue;
+      const fleets: Record<string, { fresh?: number; damaged?: number }>[] = [Object.fromEntries(here.map((p) => [p, { fresh: s.map[id].ships[p]?.fresh ?? 0, damaged: s.map[id].ships[p]?.damaged ?? 0 }]))];
+      for (const p of here) {
+        const f = s.map[id].ships[p]?.fresh ?? 0;
+        const d = s.map[id].ships[p]?.damaged ?? 0;
+        for (let n = 1; n <= f; n++) fleets.push({ [p]: { fresh: n } });
+        for (let n = 1; n <= d; n++) fleets.push({ [p]: { damaged: n } });
+        if (f && d && here.length > 1) fleets.push({ [p]: { fresh: f, damaged: d } });
+      }
+      for (const to of near) for (const ships of fleets) late.push([{ key: 'from', kind: 'system', value: id }, { key: 'to', kind: 'system', value: to }, { key: 'ships', kind: 'fleet', value: ships }]);
     }
     for (const id of systems) {
       for (const r of rivals) {
@@ -104,6 +153,12 @@ function candidates(ix: ContentIndex, s: GameState, me: PlayerId, powers = false
     // Fresh ships moved in from one neighbouring system (a reaction before dice).
     const fresh = s.map[id].ships[me]?.fresh ?? 0;
     for (let ships = 1; ships <= fresh; ships++) out.push([{ key: 'moves', kind: 'ships', value: [{ from: id, ships }] }]);
+  }
+  // ...or from several (Predictive Sensors, lore-15): every fresh ship of each neighbouring system.
+  const at = s.battleSetup?.system;
+  if (at) {
+    const sources = systems.filter((id) => id !== at && (s.map[id].ships[me]?.fresh ?? 0) > 0 && adjacent(ix, s, id, at));
+    for (const set of subsets(sources, sources.length)) if (set.length > 1) out.push([{ key: 'moves', kind: 'ships', value: set.map((from) => ({ from, ships: s.map[from].ships[me]?.fresh ?? 0 })) }]);
   }
   // Swapping a card with a rival after looking at their hand: the largest group, last.
   for (const r of rivals) {

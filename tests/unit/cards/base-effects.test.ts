@@ -1,6 +1,6 @@
 // Card effects and their timing (design/gdd/card-effects.md, "Effect system").
 import { describe, expect, it } from 'vitest';
-import { dispatch, heldResources } from '../../../src/game/engine';
+import { allSlotKeys, dispatch, gainResource, heldResources, openSlots, slotKeys } from '../../../src/game/engine';
 import type { Command, GameState } from '../../../src/game/engine';
 import { cardsIndex, runAll, start as startWith } from './fixture';
 
@@ -346,5 +346,35 @@ describe('lore abilities', () => {
     expect(s.players[0].outraged).toEqual([]);
     expect(s.players[0].supply.agents).toBe(agents + 1);
     expect(s.loreDiscard).toEqual(['l:lore-19']);
+  });
+});
+
+describe('Ancient Holdings (lore-13)', () => {
+  const ix13 = cardsIndex((c) => {
+    const l = c.loreCards!.find((x) => x.effect === 'lore-13')!;
+    l.holds = { resourceSlots: 1, keys: 4 };
+  });
+
+  it('adds a slot after the board slots, with a raid cost of 4', () => {
+    const s = startWith(ix13);
+    const pl = s.players[0];
+    const board = ix13.content.playerBoard.slotKeys.length;
+    pl.lore = ['l:lore-13'];
+    expect(allSlotKeys(ix13.content, pl)).toHaveLength(board + 1);
+    expect(slotKeys(ix13.content, board, pl)).toBe(4);
+    expect(openSlots(ix13.content, pl)).toContain(board);
+    pl.lore = [];
+    expect(openSlots(ix13.content, pl)).not.toContain(board);
+  });
+
+  it('takes a gained resource once the open board slots are full', () => {
+    const s = startWith(ix13);
+    const pl = s.players[0];
+    pl.lore = ['l:lore-13'];
+    const open = openSlots(ix13.content, pl).filter((i) => i < ix13.content.playerBoard.slotKeys.length);
+    for (const i of open) pl.resources[i] = 'relic';
+    gainResource(ix13.content, pl, 'fuel');
+    expect(pl.resources[ix13.content.playerBoard.slotKeys.length]).toBe('fuel');
+    expect(pl.overflow ?? []).toEqual([]);
   });
 });

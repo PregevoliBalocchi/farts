@@ -423,7 +423,17 @@ function apply(ix: ContentIndex, s: GameState, cmd: Command): void {
       if (budget.afterBattleMove) {
         const move = budget.afterBattleMove as unknown as MovePayload;
         budget.afterBattleMove = undefined;
-        log(s, performAction(ix, s, p.id, move).text + ' (after the battle)');
+        // Chosen before the dice: the battle may have left it impossible (ships lost). Then it is not made,
+        // and the battle's outcome still stands (tried on a copy first: a refused move changes nothing).
+        let ok = true;
+        try {
+          performAction(ix, structuredClone(s), p.id, move);
+        } catch (e) {
+          if (!(e instanceof RuleError)) throw e;
+          ok = false;
+          log(s, `P${p.id} cannot make the move chosen for after the battle (${e.message})`);
+        }
+        if (ok) log(s, performAction(ix, s, p.id, move).text + ' (after the battle)');
       }
       return;
     }

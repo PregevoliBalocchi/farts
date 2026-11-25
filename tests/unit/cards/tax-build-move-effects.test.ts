@@ -218,6 +218,19 @@ describe('move', () => {
     expect(t.players[0].supply.agents).toBe(s.players[0].supply.agents - 1);
   });
 
+  it('ships guided into a guarded gate by Force Beams cost their owner an agent too', () => {
+    const s = lead('suitB-2', (s) => {
+      s.players[0].lore = ['l:lore-16'];
+      s.players[1].lore = ['l:lore-08'];
+      s.map['c1-gate'].ships = { 1: { fresh: 2, damaged: 0 } };
+      s.map['c1-gate'].buildings = [{ owner: 1, type: 'starport', damaged: false }];
+      s.map['c1-p1'].ships = { 0: { fresh: 1, damaged: 0 } };
+      s.map['c1-p1'].buildings = [{ owner: 0, type: 'starport', damaged: false }];
+    });
+    const t = act(s, { kind: 'card', card: 'l:lore-16', name: 'guide', args: { from: 'c1-p1', to: 'c1-gate', ships: { 0: { fresh: 1 } } } });
+    expect(t.players[1].captives).toEqual([0]);
+  });
+
   it('a leader Catapults only from gates', () => {
     const s = lead('suitB-2', (s) => {
       s.players[0].leader = 'leader-14';
@@ -252,6 +265,25 @@ describe('rulings from the FAQ', () => {
       s.map['c1-p1'].buildings = [{ owner: 0, type: 'city', damaged: false, outside: true }];
     });
     expect(() => act(s, { kind: 'card', card: 'l:lore-10', name: 'prune', args: { system: 'c1-p1', index: 0 } })).toThrow(/in a slot/);
+  });
+
+  it('Prune keeps a gate to its cards: no city there without the card that allows gate cities', () => {
+    const s = lead('suitC-2', (s) => {
+      s.players[0].lore = ['l:lore-10', 'l:lore-08'];
+      s.map['c1-gate'].buildings = [{ owner: 0, type: 'starport', damaged: false }];
+    });
+    expect(() => act(s, { kind: 'card', card: 'l:lore-10', name: 'prune', args: { system: 'c1-gate', index: 0 } })).toThrow(/city on a gate/);
+  });
+
+  it('Annex keeps a city outside the slots outside them', () => {
+    const s = lead('suitC-2', (s) => {
+      s.players[0].lore = ['l:lore-26'];
+      s.ambitions.declared.captives = ['m'];
+      s.map['c1-p1'].ships = { 0: { fresh: 2, damaged: 0 } };
+      s.map['c1-p1'].buildings = [{ owner: 1, type: 'city', damaged: false, outside: true }];
+    });
+    const t = act(s, { kind: 'card', card: 'l:lore-26', name: 'annex', args: { system: 'c1-p1', index: 0 } });
+    expect(t.map['c1-p1'].buildings).toEqual([{ owner: 0, type: 'city', damaged: false, outside: true }]);
   });
 
   it('the lore Martyr action may destroy only your own ship', () => {

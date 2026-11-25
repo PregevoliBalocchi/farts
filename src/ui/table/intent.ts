@@ -2,7 +2,7 @@
 // options), and how that choice becomes an engine Command. Pure: table.ts keeps
 // the current Intent and sends the Command; the engine decides if it is legal.
 
-import type { ActionKind, ActionPayload, Command, DieType, PlayerId, Resource } from '../../game/engine';
+import type { ActionKind, ActionPayload, Command, DieType, MovePayload, PlayerId, Resource } from '../../game/engine';
 
 /** Dice counts asked for a battle. */
 export type Dice = Record<DieType, number>;
@@ -20,8 +20,14 @@ export type Intent =
    * A planned route: `from`, through `via` (a Catapult), to `to`. `ships` and `damaged` leave `from`;
    * `drop` / `dropDamaged`: fresh / damaged ships left behind on the way, by system passed through.
    */
-  | { step: 'move'; from: string; via: string[]; to: string; ships: number; damaged: number; drop: Record<string, number>; dropDamaged?: Record<string, number>; prelude?: Resource }
-  | { step: 'battle'; system: string; target: PlayerId | null; dice: Dice; prelude?: Resource };
+  /**
+   * `then`: fresh ships that arrived at `to` moving one more time (Sprinter Drives, lore-03; base-fixes #50);
+   * `thenPick`: that further system is being picked on the map.
+   */
+  | { step: 'move'; from: string; via: string[]; to: string; ships: number; damaged: number; drop: Record<string, number>; dropDamaged?: Record<string, number>; then?: { to: string; ships: number }; thenPick?: boolean; prelude?: Resource }
+  /** `tactical`: a move made before or after the battle (the Warrior, leader-06, on a Copy or Pivot; base-fixes #51). */
+  /** `preHit`: the own ship that takes the hit the defender deals before the dice (Railgun Arrays, lore-12). */
+  | { step: 'battle'; system: string; target: PlayerId | null; dice: Dice; tactical?: { when: 'before' | 'after'; move: MovePayload }; preHit?: 'fresh' | 'damaged'; prelude?: Resource };
 
 export const IDLE: Intent = { step: 'idle' };
 
@@ -38,9 +44,12 @@ export function startAction(kind: ActionKind, prelude?: Resource): Intent {
   }
 }
 
-/** Wraps an action payload as a card action, or as a prelude spend of `prelude`. */
-export function actionCommand(player: PlayerId, action: ActionPayload, prelude?: Resource): Command {
-  return prelude ? { type: 'prelude', player, resource: prelude, action } : { type: 'action', player, action };
+/**
+ * Wraps an action payload as a card action, or as a prelude spend of `prelude`
+ * (`as`: spent as that type, with a card that allows it; base-fixes #49).
+ */
+export function actionCommand(player: PlayerId, action: ActionPayload, prelude?: Resource, as?: Resource): Command {
+  return prelude ? { type: 'prelude', player, resource: prelude, ...(as && as !== prelude ? { as } : {}), action } : { type: 'action', player, action };
 }
 
 /**
@@ -61,7 +70,13 @@ export function movePayload(i: Extract<Intent, { step: 'move' }>): ActionPayload
     ...(i.damaged ? { damaged: i.damaged } : {}),
     ...(i.via.length ? { via: [...i.via] } : {}),
     ...(drop.length ? { drop } : {}),
+    ...(i.then && i.then.ships > 0 ? { then: [{ from: i.to, to: i.then.to, ships: i.then.ships }] } : {}),
   };
+}
+
+/** Fresh ships of a planned move that reach its end (those left on the way do not). */
+export function arrivedFresh(i: Extract<Intent, { step: 'move' }>): number {
+  return i.ships - i.via.reduce((n, at) => n + (i.drop[at] ?? 0), 0);
 }
 
 /** A planned move. */
@@ -143,7 +158,7 @@ export function fitDrops(i: MoveIntent): MoveIntent {
 /** The battle payload of a 'battle' intent, or null until a defender is chosen. */
 export function battlePayload(i: Extract<Intent, { step: 'battle' }>): ActionPayload | null {
   if (i.target === null) return null;
-  return { kind: 'battle', system: i.system, target: i.target, dice: { ...i.dice } };
+  return { kind: 'battle', system: i.system, target: i.target, dice: { ...i.dice }, ...(i.tactical ? { tactical: i.tactical } : {}), ...(i.preHit ? { preHit: i.preHit } : {}) };
 }
 
 /** Most dice of one type a battle stepper offers (also the most the battle probe tries). */

@@ -11,11 +11,25 @@ export function citiesBuilt(c: GameContent, p: PlayerState): number {
   return c.citiesPerPlayer - p.supply.cities;
 }
 
-/** Slot indices currently usable: the base ones plus those freed by built cities. */
+/**
+ * The raid cost of every slot the player has: the board's, then those on the lore cards they hold
+ * (Ancient Holdings, lore-13: "one resource slot with a raid cost of 4"; content `holds`), in card order.
+ * Card slots come after the board's, so `resources[i]` past the board is a token on a card.
+ */
+export function allSlotKeys(c: GameContent, p: PlayerState): number[] {
+  const onCards = (p.lore ?? []).flatMap((id) => {
+    const h = c.loreCards?.find((l) => l.id === id)?.holds;
+    return h ? Array.from({ length: h.resourceSlots }, () => h.keys) : [];
+  });
+  return [...c.playerBoard.slotKeys, ...onCards];
+}
+
+/** Slot indices currently usable: the base ones, those freed by built cities, and those on held cards. */
 export function openSlots(c: GameContent, p: PlayerState): number[] {
   const b = c.playerBoard;
   const open = new Set(b.baseSlots);
   b.cityUnlocks.slice(0, citiesBuilt(c, p)).forEach((slots) => slots.forEach((i) => open.add(i)));
+  for (let i = b.slotKeys.length; i < allSlotKeys(c, p).length; i++) open.add(i);
   return [...open].sort((x, y) => x - y);
 }
 
@@ -62,7 +76,7 @@ export function arrangeResources(c: GameContent, p: PlayerState, slots: readonly
     placed++;
   }
   if (placed < Math.min(pool.length, open.size)) return 'Every resource must be on a slot while one is free';
-  p.resources = c.playerBoard.slotKeys.map((_, i) => slots[i] ?? null);
+  p.resources = allSlotKeys(c, p).map((_, i) => slots[i] ?? null);
   if (left.length) p.overflow = left;
   else delete p.overflow;
   return null;
@@ -96,9 +110,9 @@ export function takeResourceAt(p: PlayerState, i: number): Resource {
   return r;
 }
 
-/** Keys a raider pays for the token on slot `i`. */
-export function slotKeys(c: GameContent, i: number): number {
-  return c.playerBoard.slotKeys[i] ?? 1;
+/** Keys a raider pays for the token on slot `i` (of player `p`, for a slot on a card they hold). */
+export function slotKeys(c: GameContent, i: number, p?: PlayerState): number {
+  return (p ? allSlotKeys(c, p) : c.playerBoard.slotKeys)[i] ?? 1;
 }
 
 /** Power bonus per won ambition from the bonus spaces this player's built cities uncovered. */

@@ -12,6 +12,8 @@ import {
   payDeclareCost,
   receiveCourtCard,
   adjacent,
+  captureAtGates,
+  gateGuardsAt,
   ownedEffects,
   rollDice,
   RuleError,
@@ -542,6 +544,8 @@ export const BASE_EFFECTS: EffectRegistry = {
         const setup = s.battleSetup ?? fail('No battle is waiting');
         const moves = (ctx.args.moves as { from: string; ships: number }[] | undefined) ?? [];
         let n = 0;
+        // Moving into a gate a Rival guards (Gate Ports, lore-08) costs an agent, as any move does.
+        const guards = moves.length ? gateGuardsAt(ctx.ix, s, [setup.system], ctx.player) : [];
         for (const m of moves) {
           if (!adjacent(ctx.ix, s, m.from, setup.system)) fail(`${m.from} is not adjacent to ${setup.system}`);
           const src = stackOf(inPlaySystem(s, m.from), ctx.player);
@@ -553,7 +557,7 @@ export const BASE_EFFECTS: EffectRegistry = {
           stackOf(s.map[setup.system], ctx.player).fresh += m.ships;
           n += m.ships;
         }
-        return n ? `moves ${n} fresh ships into ${setup.system}` : 'moves no ships';
+        return n ? `moves ${n} fresh ships into ${setup.system}${captureAtGates(s, ctx.player, guards)}` : 'moves no ships';
       },
     },
     triggerWhen: {
@@ -580,6 +584,13 @@ export const BASE_EFFECTS: EffectRegistry = {
           const b = sys.buildings[argNum(ctx, 'index')];
           if (!b || b.owner !== ctx.player) fail('Choose one of your buildings');
           if (b.outside) fail('Only a building in a slot can be replaced');
+          // On a gate, each building type needs its card and stays at most 1 per gate (lore-08, lore-11).
+          if (ctx.ix.content.map.systems.find((x) => x.id === id)?.kind === 'gate') {
+            const to = b.type === 'starport' ? 'city' : 'starport';
+            const fx = ownedEffects(ctx.ix, ctx.state, ctx.player).map((f) => f.effect);
+            if (!fx.some((e) => (to === 'city' ? e.gateCities : e.gateStarports))) fail(`You cannot have a ${to} on a gate`);
+            if (sys.buildings.some((x) => x.type === to)) fail(`At most 1 ${to} per gate`);
+          }
           const sup = ctx.state.players[ctx.player].supply;
           if (b.type === 'starport') {
             if (sup.cities < 1) fail('No city in supply');
@@ -615,6 +626,9 @@ export const BASE_EFFECTS: EffectRegistry = {
           if (!port(a) && !port(b)) fail('One of the two systems needs your fresh starport');
           const ships = (ctx.args.ships as Record<string, { fresh?: number; damaged?: number }>) ?? fail("Missing choice 'ships'");
           let moved = 0;
+          // A Rival guarding the gate they enter captures an agent (Gate Ports, lore-08): worked out before moving.
+          const guards = Object.fromEntries(Object.keys(ships).map((k) => [k, gateGuardsAt(ctx.ix, s, [to], Number(k))]));
+          let caught = '';
           for (const [k, v] of Object.entries(ships)) {
             const src = stackOf(a, Number(k));
             const f = v.fresh ?? 0, d = v.damaged ?? 0;
@@ -625,9 +639,10 @@ export const BASE_EFFECTS: EffectRegistry = {
             dst.fresh += f;
             dst.damaged += d;
             moved += f + d;
+            if (f + d > 0) caught += captureAtGates(s, Number(k), guards[k]);
           }
           if (!moved) fail('Move at least one ship');
-          return `guides ${moved} ships ${from}→${to}`;
+          return `guides ${moved} ships ${from}→${to}${caught}`;
         },
       },
     },
@@ -727,7 +742,8 @@ export const BASE_EFFECTS: EffectRegistry = {
             returnPiece(ctx.ix, s, old, 'starport');
           }
           sup[key] -= 1;
-          sys.buildings.splice(i, 0, { owner: ctx.player, type: b.type, damaged: false });
+          // The new piece takes the old one's place: a city outside the slots stays outside them (lore-09).
+          sys.buildings.splice(i, 0, { owner: ctx.player, type: b.type, damaged: false, ...(b.outside ? { outside: true } : {}) });
           return `replaces P${old}'s ${b.type} at ${id} with its own`;
         },
       },

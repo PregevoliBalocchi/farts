@@ -7,6 +7,7 @@
 import { cardWords } from './cardface';
 import {
   activePlayer,
+  allSlotKeys,
   AMBITIONS,
   citiesBuilt,
   ambitionMetric,
@@ -40,6 +41,8 @@ export interface SlotView {
   locked: boolean;
   /** Keys printed above the slot (raid cost). */
   keys: number;
+  /** The slot is on a held lore card (Ancient Holdings, lore-13), not on the board. */
+  onCard?: boolean;
 }
 
 /** One seat as everyone at the table sees it (the hand only as a count). */
@@ -260,11 +263,13 @@ function playerView(ix: ContentIndex, s: GameState, id: PlayerId): PlayerView {
     initiativeSeized: s.round.seizedBy === id,
     isActive: activePlayer(s) === id,
     handCount: p.hand.length,
-    slots: ix.content.playerBoard.slotKeys.map((keys, index) => ({
+    // The board's slots, then those on held lore cards (Ancient Holdings, lore-13; `onCard`).
+    slots: allSlotKeys(ix.content, p).map((keys, index) => ({
       index,
       resource: p.resources[index] ?? null,
       locked: !open.has(index),
       keys,
+      ...(index >= ix.content.playerBoard.slotKeys.length ? { onCard: true } : {}),
     })),
     arranging: !!p.arranging,
     overflow: [...(p.overflow ?? [])],
