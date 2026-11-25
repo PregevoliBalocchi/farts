@@ -83,6 +83,7 @@
   "cards.ambitionIcons": "Ambition symbols · gold in the ambitions box, ink on the cards",
   "cards.title": "Action cards — check sheet",
   "cards.intro": "Every card with its number, actions available (stars), the actions of its suit and the ambition it can declare. The data comes from the content file.",
+  "cards.faces": "Court, Lore and Leader cards",
   "cards.caption": "{n} actions",
   "cards.only4": "4 players only",
   "cards.noAmbition": "no ambition",

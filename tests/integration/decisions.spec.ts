@@ -49,3 +49,23 @@ test.describe('Farseers (court-17) in two steps', () => {
     expect(await page.evaluate(() => (window.game!.state as unknown as { players: { hand: string[] }[] }).players[0].hand)).toEqual(mine);
   });
 });
+
+test.describe('Ancient Holdings (lore-13): its resource slot on the card (decision D)', () => {
+  test('the slot and its token are drawn on the card in the own Court, not on the board', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto(build('view=table&lang=it&motion=off&players=2&seed=3&seat=0'));
+    await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
+    await page.evaluate(() => {
+      const s = structuredClone(window.game!.state) as unknown as { players: { lore: string[]; resources: (string | null)[] }[] };
+      s.players[0].lore = ['lore-13'];
+      // The board's 6 slots, then the card's: a relic on it.
+      while (s.players[0].resources.length < 6) s.players[0].resources.push(null);
+      s.players[0].resources[6] = 'relic';
+      window.game!.load(s as never);
+    });
+    const held = page.locator('[data-region="mine"] .mine-item .card-held .slot');
+    await expect(held).toHaveCount(1);
+    await expect(held.locator('.well .r-relic')).toHaveCount(1);
+    await expect(page.locator('[data-region="local"] .card-slot')).toHaveCount(0);
+  });
+});

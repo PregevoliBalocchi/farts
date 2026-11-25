@@ -1,4 +1,1 @@
-[
-  { "category": "covered", "match": "^covered:map:", "fix": "Fase 2.3 (PR 5): sistemi accesi inquadrati nella parte libera della mappa" },
-  { "category": "rawlabel", "match": "^rawlabel:", "fix": "Fase 3.1-3.2 e A1: nomi delle carte, non id, nelle etichette e nel registro" }
-]
+[]

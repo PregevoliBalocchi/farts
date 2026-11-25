@@ -39,7 +39,7 @@ import { place, placeDown, REGIONS, setSideShut, setStage, STAGE, placeUp } from
 import { mapSvg } from './mapview';
 import { patchChildren } from './patch';
 import {
-  actionCard, button, cardLabel, sizeAvatars, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon,
+  actionCard, button, cardLabel, slotHtml, sizeAvatars, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon,
 } from './render';
 import { actionCardView, legal, othersTurn, tableView, whyNot } from './view';
 import type { TableView } from './view';
@@ -135,6 +135,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         if (court) return cardWords(court, lang).name;
         const action = ix.actionCards.get(w);
         if (action) return cardLabel(t, action);
+        // Lore and leader cards by their printed name too (piano A1: never an id in the log or its labels).
+        if (/^(lore|leader)-\d+$/.test(w)) {
+          const name = faceOf(ix, w, lang).name;
+          if (name) return name;
+        }
         for (const k of ['resource', 'ambition', 'suit', 'action', 'piece', 'battle.dice', 'word']) {
           const v = t(`${k}.${w}`);
           if (v !== `${k}.${w}`) return v;
@@ -189,6 +194,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let courtMenu: { slot: number; only?: ActionKind[]; prelude?: Resource } | null = null;
   /** The system the map was last panned to show, so it is not pulled back while the player looks elsewhere. */
   let shownSystem: string | null = null;
+  /** The lit systems last brought into view (sorted ids), so the map moves only when they change. */
+  let shownLit = '';
   let modal: Modal | null = null;
   /** The drop-down open under the header (log or help), and the choices of a card power open over its card. */
   let drop: Drop | null = null;
@@ -1406,6 +1413,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   }
 
   /** A card's printed name in the table's language (its id when the content has none). */
+  /** The resource slots printed on a held card of the local player (Ancient Holdings), drawn on that card. */
+  function heldSlots(v: TableView, card: string): string {
+    const p = v.players[local()];
+    const on = p.slots.filter((s) => s.card === card);
+    return on.map((s) => slotHtml(p, s.index, t, spendableSlots(v), null, v.phase !== 'gameOver' && p.arranging)).join('');
+  }
+
   function cardName(id: string): string {
     // An action card by its suit and number ("Costruzione 2"), never its id.
     const action = actionCardView(ix, id);
@@ -1435,7 +1449,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       const ok = mine && can({ type: 'draft', player: me, card: id });
       const { face, kind } = drawnCard(id);
       return ok
-        ? `<button type="button" class="dr-card pickable k-${kind}" data-act="draft-pick" data-card="${esc(id)}" data-zoom="${esc(id)}" aria-label="${esc(t('draft.take', { card: id }))}">${face}</button>`
+        ? `<button type="button" class="dr-card pickable k-${kind}" data-act="draft-pick" data-card="${esc(id)}" data-zoom="${esc(id)}" aria-label="${esc(t('draft.take', { card: cardName(id) }))}">${face}</button>`
         : `<span class="dr-card k-${kind}" data-zoom="${esc(id)}">${face}</span>`;
     };
     const order = d.order
@@ -2252,7 +2266,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       handZone(),
       `<div class="region" data-region="local"${zone('local')} style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, [], true, v.phase !== 'gameOver')}${button('find-mine', t('btn.findMine'), { cls: `find-mine${Date.now() < findMineUntil ? ' on' : ''}`, title: t('btn.findMineTip') })}</div>`,
       `<div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>`,
-      `<div class="region mine${mineOpen ? ' open' : ''}" data-region="mine"${zone('mine')} style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 50, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen)}</div>`,
+      `<div class="region mine${mineOpen ? ' open' : ''}" data-region="mine"${zone('mine')} style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 50, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen, (card) => heldSlots(v, card))}</div>`,
       `<div class="region hand" data-region="hand"${zone('hand')} style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>`,
       bar ? `<div class="region actions cmd-bar${barNow?.bare ? ' bare' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)};width:${REGIONS.actions.w}px">${bar}</div>` : ctx ? `<div class="region actions waiting" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${othersTurn(state, 3) ? placeDown(REGIONS.waiting) : placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : '',
       `<div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>`,
@@ -2276,6 +2290,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     if (focus !== shownSystem) {
       shownSystem = focus;
       if (focus) board3d?.ensureVisible(focus);
+    }
+    // The lit systems of a choice come into the free part of the screen, all of them (piano 2.3): only when the
+    // set changes, so a map moved by hand is left alone.
+    const litKey = focus ? '' : [...valid].sort().join(',');
+    if (litKey !== shownLit) {
+      shownLit = litKey;
+      if (litKey) board3d?.ensureVisibleSet([...valid], stage.querySelector('.cmd-bar')?.getBoundingClientRect().top || Infinity);
     }
     placeMenu();
     const powers = powerMenuHtml();

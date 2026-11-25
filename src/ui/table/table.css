@@ -465,7 +465,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 /* ---- ?view=cards: every action card, to check them ---- */
 .card-sheet { position: fixed; inset: 0; overflow: auto; background: #0b0e18; color: var(--text); padding: 20px 28px; font-family: var(--font-ui); }
 .card-sheet h1 { font-size: 20px; margin: 0 0 4px; }
-.card-sheet p { margin: 0 0 14px; color: var(--text-dim); font-size: 13px; }
+.card-sheet > p { margin: 0 0 14px; color: var(--text-dim); font-size: 13px; }
 .card-sheet h2 { font-size: 15px; margin: 14px 0 8px; display: flex; align-items: center; gap: 10px; }
 .card-sheet h2 .ic { width: 18px; height: 18px; }
 .card-sheet h2 small { font-weight: 400; color: var(--text-dim); display: inline-flex; align-items: center; gap: 4px; }
@@ -1034,7 +1034,8 @@ button.supply:hover { border-color: var(--rule-hi); }
 /* Every card's illustration is cut out of the owner's picture (tools/cards/extract-art.mjs) and placed
    where the printed card has it, in card fractions. */
 .cface.guild .cf-art { left: 3.5%; top: 3%; width: 93%; height: 53.5%; object-fit: cover; }
-.cface.vox .cf-sketch { left: 2%; top: 33%; width: 96%; height: 58.5%; mix-blend-mode: normal; filter: none;
+/* contain + bottom: a sketch cut lower (tools/cards/extract-art.mjs CARD_REGIONS) starts lower, never stretched. */
+.cface.vox .cf-sketch { left: 2%; top: 33%; width: 96%; height: 58.5%; mix-blend-mode: normal; filter: none; object-fit: contain; object-position: bottom;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 90%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 90%, transparent 100%); }
 .cface.vox.with-crisis .cf-sketch { -webkit-mask-image: linear-gradient(to bottom, transparent 39%, #000 53%, #000 90%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 39%, #000 53%, #000 90%, transparent 100%); }
 /* Lore cards: the illustration above the kit's Lore frame's gold band, the title between the band and
@@ -2131,3 +2132,12 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .side-amb.tight .abox .ab-g .ic { width: 24px; height: 24px; }
 .tbl-stage .side-amb.tight .abox .ab-m .amk { height: 28px; }
 .tbl-stage .side-amb.tighter .abox .ab-rule { display: none; }
+
+/* Ancient Holdings (lore-13): its resource slot drawn on the card in the own Court, as at the table (decision D of
+   production/piano-blindatura-tavolo-2026-11-25.md); tokens are spent and rearranged there like the board's. */
+.tbl-stage .mine-item { position: relative; }
+.tbl-stage .mine-item .card-held { position: absolute; left: 50%; bottom: 12%; transform: translateX(-50%); z-index: 2; display: flex; gap: 4px; padding: 3px; border-radius: 8px; background: #000a; box-shadow: 0 0 0 1px var(--bronze-rule); }
+.tbl-stage .mine-item .card-held .slot { width: 40px; height: 40px; font-size: 26px; }
+/* ?view=cards: the Court, Lore and Leader faces at the zoom's size (the faces test measures them). */
+.card-sheet .faces figure.face { width: 220px; }
+.card-sheet .faces figure.face.tall { width: 190px; }
