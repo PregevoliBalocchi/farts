@@ -34,6 +34,17 @@ const REGIONS = {
   leaderLarge: [0.03, 0.097, 0.97, 0.507],
 };
 
+/**
+ * Cards whose sketch starts lower than their kind's region: the cut starts under the last printed line
+ * (Song of Freedom prints an English note under its text). Same form as REGIONS.
+ */
+const CARD_REGIONS = {
+  'court-29': [0.02, 0.43, 0.98, 0.915],
+};
+
+// `ONLY=court-29,court-30 npm run assets:art` cuts just those cards; the others keep their files.
+const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
+
 function kitDir() {
   if (process.argv[2]) return process.argv[2];
   const hit = readdirSync(tmpdir()).filter((d) => d.startsWith('kit-')).map((d) => join(tmpdir(), d, 'kit')).find((d) => existsSync(join(d, 'CardAssets-Tarot-Leader.png')));
@@ -46,9 +57,10 @@ for (const group of ['court', 'lore', 'leaders']) {
   if (!existsSync(dir)) continue;
   for (const f of readdirSync(dir).filter((x) => /\.(png|jpe?g|webp)$/i.test(x))) {
     const id = f.replace(/\.[a-z]+$/i, '');
+    if (ONLY && !ONLY.has(id)) continue;
     const kind = group === 'lore' ? 'lore' : group === 'leaders' ? 'leader' : kinds.get(id) === 'decree' ? 'vox' : 'guild';
     const mime = /\.png$/i.test(f) ? 'image/png' : /\.webp$/i.test(f) ? 'image/webp' : 'image/jpeg';
-    jobs.push({ id, kind, data: `data:${mime};base64,${readFileSync(join(dir, f)).toString('base64')}` });
+    jobs.push({ id, kind, region: CARD_REGIONS[id], data: `data:${mime};base64,${readFileSync(join(dir, f)).toString('base64')}` });
   }
 }
 
@@ -69,7 +81,7 @@ const results = await page.evaluate(
     const out = {};
     for (const j of jobs) {
       const im = await load(j.data);
-      const [l, t, r, b] = REGIONS[j.kind === 'leader' && im.width >= 400 ? 'leaderLarge' : j.kind];
+      const [l, t, r, b] = j.region ?? REGIONS[j.kind === 'leader' && im.width >= 400 ? 'leaderLarge' : j.kind];
       const sx = Math.round(l * im.width), sy = Math.round(t * im.height);
       const sw = Math.round((r - l) * im.width), sh = Math.round((b - t) * im.height);
       // Small scans are doubled; large pictures keep their own pixels.
@@ -93,6 +105,12 @@ const results = await page.evaluate(
         for (let i = 0; i < d.length; i += 4) {
           const a = Math.max(0, Math.min(1, (paper - lum(i)) / (paper * 0.55)));
           d[i + 3] = Math.round(255 * Math.pow(a, 0.85));
+        }
+        // The top edge fades in, so no cut stroke or stray printed mark ends on a hard line.
+        const edge = H * 0.12;
+        for (let y = 0; y < edge; y++) {
+          const k = y / edge, f = k * k * (3 - 2 * k);
+          for (let x = 0; x < W; x++) d[(y * W + x) * 4 + 3] = Math.round(d[(y * W + x) * 4 + 3] * f);
         }
       }
       if (j.kind === 'leader') {
