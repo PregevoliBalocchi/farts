@@ -116,3 +116,47 @@ test('the Leaders and Lore draft gives every player a leader and a lore card', a
   expect(players.every((p) => !!p.leader && p.lore.length === 1)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('the keyboard reaches the hand first and crosses the map as one stop (base-fixes #41)', async ({ page }) => {
+  const errors = await open(page, '&players=4&seed=3');
+  // The table's parts are named landmarks.
+  for (const name of ['Your hand', 'Map', 'Court', 'Ambitions', 'Your board', 'Rivals']) {
+    await expect(page.getByRole('region', { name, exact: true })).toBeAttached();
+  }
+  // The first Tab lands on the skip links; "Your hand" moves the focus onto a hand card.
+  await page.locator('body').focus();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('.skip-link').first()).toBeFocused();
+  await expect(page.locator('.skip-nav')).toBeVisible();
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(() => !!document.activeElement?.closest('[data-region="hand"]'))).toBe(true);
+  // The 3D map's systems: one tab stop, the arrow keys move along them.
+  const keys = page.locator('.sys-key');
+  if (await keys.count()) {
+    expect(await page.locator('.sys-key[tabindex="0"]').count()).toBe(1);
+    await page.locator('.sys-key[tabindex="0"]').focus();
+    const before = await page.evaluate(() => (document.activeElement as HTMLElement).dataset.sys);
+    await page.keyboard.press('ArrowRight');
+    const after = await page.evaluate(() => (document.activeElement as HTMLElement).dataset.sys);
+    expect(after).toBeTruthy();
+    expect(after).not.toBe(before);
+    expect(await page.locator('.sys-key[tabindex="0"]').count()).toBe(1);
+  }
+  expect(errors).toEqual([]);
+});
+
+test('the text size setting grows the table type, automatic on a small window (base-fixes #44)', async ({ page }) => {
+  const errors = await open(page, '&players=4&seed=3');
+  const size = () => page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.tbl-stage .hd.prompt .pr-text')!).fontSize));
+  // 1280×720 shows the stage at 67%: automatic is large.
+  await expect(page.locator('.tbl.large-text')).toHaveCount(1);
+  const large = await size();
+  await page.locator('[data-act="settings"]').click();
+  await page.locator('#set-text').selectOption('normal');
+  await expect(page.locator('.tbl.large-text')).toHaveCount(0);
+  expect(await size()).toBeLessThan(large);
+  await page.locator('#set-text').selectOption('large');
+  await expect(page.locator('.tbl.large-text')).toHaveCount(1);
+  expect(await size()).toBe(large);
+  expect(errors).toEqual([]);
+});
