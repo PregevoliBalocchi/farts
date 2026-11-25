@@ -554,5 +554,18 @@
   "end.total": "Power",
   "end.winner": "Winner",
   "end.look": "Look at the table",
-  "end.why.powerMany": "{names} reached {n} Power, the winning threshold."
+  "end.why.powerMany": "{names} reached {n} Power, the winning threshold.",
+  "battle.order.title": "The dice, in the order they are resolved",
+  "battle.order.self": "{n} hits on {a}'s ships",
+  "battle.order.intercept": "interception: {n} hits on {a}'s ships",
+  "battle.order.hit": "{n} hits on {d}'s ships",
+  "battle.order.building": "{n} hits on {d}'s buildings",
+  "battle.order.raid": "{n} keys to raid",
+  "battle.defend.what": "{who} attacks you: {list}.",
+  "battle.defend.city": "If a city of yours is destroyed, the attacker provokes Outrage and ransacks the Court.",
+  "battle.outrage": "Destroying a city provokes Outrage ({res}): you discard your {res} resources and Guild cards of that type, and you ransack the Court.",
+  "battle.defend.ships": "{n} hits on your ships",
+  "battle.defend.buildings": "{n} on your buildings",
+  "battle.defend.keys": "{n} keys to raid",
+  "battle.defend.nothing": "nothing rolled hits you"
 }

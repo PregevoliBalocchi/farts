@@ -1200,17 +1200,66 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const counts = `${chip('battle.left.hits', left.hits, b.totals.hit)}${chip('battle.left.building', left.buildingHits, b.totals.buildingHit)}${chip('battle.left.self', left.selfHits, b.totals.selfHit + b.interceptHits)}`;
     const controls = mine
       ? `<div class="b-foot">${ask ? '' : raidChoices(b)}<div class="b-btns">${ask ? `<span class="hint small">${esc(t('reroll.first'))}</span>` : ''}${button('battle-auto', t('battle.auto'), { cls: 'b-btn', disabled: !!ask })}${button('battle-reset', t('battle.reset'), { cls: 'b-btn', disabled: !!ask })}${button('allocate', t('battle.confirm'), { cls: 'primary b-btn', disabled: !ok })}</div></div>`
-      : `<div class="b-foot"><div class="hint">${esc(t('battle.watching', { who: playerName(t, b.attacker) }))}</div></div>`;
+      : `<div class="b-foot">${defenderNote(v, b)}<div class="hint">${esc(t('battle.watching', { who: playerName(t, b.attacker) }))}</div></div>`;
     const title = t('battle.title', { system: systemName(ix.content.map.systems.find((s) => s.id === b.system), t, b.system), a: playerName(t, b.attacker), d: defenderName(b.target) });
     return `<div class="battle-win glass" role="dialog" aria-label="${esc(title)}">
       <div class="b-head"><span class="ctx-title">${esc(title)}</span><span class="b-counts">${counts || esc(t('battle.noHits'))}</span></div>
       ${steps}
       ${diceStrip(b, ask)}
+      ${ask ? '' : battleOrder(b)}
       ${ask ? rerollBox(ask) : ''}
       <div class="battle-slot${ask ? ' short' : ''}" style="width:${BATTLE_VIEW.w}px"></div>
-      ${mine && !ask ? `<div class="hint small">${esc(t('battle.howTo'))}</div>` : ''}
+      ${mine && !ask ? `<div class="hint small">${esc(t('battle.howTo'))}</div>${outrageNote(v, b)}` : ''}
       ${controls}
     </div>`;
+  }
+
+  /**
+   * The rolled dice grouped by symbol, in the order the rulebook resolves them (7.7.1 step 4): hits on the
+   * attacker's ships, the interception, hits on the defender's ships, on its buildings, then the raid. A step
+   * with nothing rolled is left out.
+   */
+  function battleOrder(b: BattleRef): string {
+    const steps: [string, string, number][] = [
+      ['selfhit', 'battle.order.self', b.totals.selfHit],
+      ['intercept', 'battle.order.intercept', b.interceptHits],
+      ['hit', 'battle.order.hit', b.totals.hit],
+      ['buildinghit', 'battle.order.building', b.totals.buildingHit],
+      ['key', 'battle.order.raid', b.totals.key],
+    ];
+    const items = steps
+      .filter(([, , n]) => n > 0)
+      .map(([pic, key, n], k) => {
+        const url = assetUrl(`icon.${pic}`);
+        const img = url ? `<img class="bo-ic" src="${esc(url)}" alt="">` : '';
+        return `<li><i class="num">${k + 1}</i>${img}<span>${esc(t(key, { n, a: playerName(t, b.attacker), d: defenderName(b.target) }))}</span></li>`;
+      });
+    return items.length ? `<ol class="b-order" aria-label="${esc(t('battle.order.title'))}">${items.join('')}</ol>` : '';
+  }
+
+  /** What the defender should know while the attacker places the hits: what is coming, and what a city costs. */
+  function defenderNote(v: TableView, b: BattleRef): string {
+    const me = local();
+    if (b.target !== me) return '';
+    const sys = v.systems.find((s) => s.id === b.system);
+    const city = sys?.buildings.some((x) => x.owner === me && x.type === 'city');
+    const parts = [
+      b.totals.hit > 0 ? t('battle.defend.ships', { n: b.totals.hit }) : '',
+      b.totals.buildingHit > 0 ? t('battle.defend.buildings', { n: b.totals.buildingHit }) : '',
+      b.totals.key > 0 ? t('battle.defend.keys', { n: b.totals.key }) : '',
+    ].filter(Boolean);
+    const lines = [t('battle.defend.what', { who: playerName(t, b.attacker), list: parts.length ? parts.join(', ') : t('battle.defend.nothing') })];
+    if (city && b.totals.hit + b.totals.buildingHit > 0) lines.push(t('battle.defend.city'));
+    return `<div class="b-defend">${lines.map((l) => `<p>${esc(l)}</p>`).join('')}</div>`;
+  }
+
+  /** For the attacker: destroying a city provokes Outrage (rulebook 7.7.4), said before the hits are confirmed. */
+  function outrageNote(v: TableView, b: BattleRef): string {
+    if (typeof b.target !== 'number' || b.totals.hit + b.totals.buildingHit <= 0) return '';
+    const sys = v.systems.find((s) => s.id === b.system);
+    if (!sys?.buildings.some((x) => x.owner === b.target && x.type === 'city')) return '';
+    const res = sys.resource ? t(`resource.${sys.resource}`) : '';
+    return `<div class="hint small b-outrage">${esc(t('battle.outrage', { res }))}</div>`;
   }
 
   /** The battle's steps in a row, `now` lit, the earlier ones ticked, the ones that do not apply here dimmed. */

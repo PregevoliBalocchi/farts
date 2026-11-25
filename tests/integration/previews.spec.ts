@@ -1,6 +1,7 @@
 // Playwright: the command bar says what each choice gives before it is made, and why one is not possible
 // (production/piano-blindatura-tavolo-2026-11-25.md, PR 6 "Anteprime").
 import { expect, test, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -41,5 +42,31 @@ test.describe('previews in the command bar', () => {
     await expect(lit).toHaveCount(1);
     await expect(lit.locator('.ab-declare')).toHaveText('Dichiara · 1° 5 · 2° 3');
     await expect(lit).toHaveAttribute('title', '1° 5 · 2° 3. Se finisse ora: 1° Giocatore 2, 2° nessuno');
+  });
+});
+
+test.describe('battle window', () => {
+  test('the rolled dice are grouped in the order they resolve, and the defender is told what is coming', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    const url = build('view=table&lang=it&motion=off&players=2&variant=leaders&seat=1');
+    await page.goto(url);
+    await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
+    // Seat 1 attacks seat 0 at the 4th gate (the D1 fixture) and rolls.
+    await page.evaluate((s) => window.game!.load(s as never), JSON.parse(readFileSync(resolve('tests/integration/fixtures/collect-dice.json'), 'utf8')));
+    const summary = page.locator('.modal button.primary');
+    if (await summary.count()) await summary.first().click();
+    await page.locator('[data-act="do-battle"]').click();
+    await expect.poll(() => page.evaluate(() => window.game!.state.phase.type)).toBe('allocate');
+    const order = page.locator('.battle-win .b-order li');
+    await expect(order.first()).toContainText('colpi alle navi di Giocatore 1');
+    await expect(page.locator('.battle-win .b-defend')).toHaveCount(0);
+    // The same battle at the defender's seat: what is coming, no controls.
+    const state = await page.evaluate(() => structuredClone(window.game!.state));
+    await page.goto(url.replace('seat=1', 'seat=0'));
+    await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
+    await page.evaluate((s) => window.game!.load(s as never), state);
+    if (await summary.count()) await summary.first().click();
+    await expect(page.locator('.battle-win .b-defend')).toContainText(/^Giocatore 2 ti attacca: \d+ colpi alle tue navi/);
+    await expect(page.locator('.battle-win [data-act="allocate"]')).toHaveCount(0);
   });
 });

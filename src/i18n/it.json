@@ -554,5 +554,18 @@
   "end.total": "Potere",
   "end.winner": "Vince",
   "end.look": "Guarda il tavolo",
-  "end.why.powerMany": "{names} hanno raggiunto {n} Potere, la soglia della vittoria."
+  "end.why.powerMany": "{names} hanno raggiunto {n} Potere, la soglia della vittoria.",
+  "battle.order.title": "I dadi, nell'ordine in cui si risolvono",
+  "battle.order.self": "{n} colpi alle navi di {a}",
+  "battle.order.intercept": "intercettazione: {n} colpi alle navi di {a}",
+  "battle.order.hit": "{n} colpi alle navi di {d}",
+  "battle.order.building": "{n} colpi agli edifici di {d}",
+  "battle.order.raid": "{n} chiavi per razziare",
+  "battle.defend.what": "{who} ti attacca: {list}.",
+  "battle.defend.city": "Se una tua città viene distrutta, chi attacca provoca l'Oltraggio e saccheggia la Corte.",
+  "battle.outrage": "Distruggere una città provoca l'Oltraggio ({res}): scarti le tue risorse {res} e le carte Gilda di quel tipo, e saccheggi la Corte.",
+  "battle.defend.ships": "{n} colpi alle tue navi",
+  "battle.defend.buildings": "{n} ai tuoi edifici",
+  "battle.defend.keys": "{n} chiavi per razziare",
+  "battle.defend.nothing": "nessun dado ti colpisce"
 }
