@@ -39,13 +39,18 @@ describe('elastic stage', () => {
     expect(mine.x + mine.w).toBe(bar.x + bar.w);
   });
 
-  it('lays the bar out left to right without overlaps: card played, hand, buttons, own Court', () => {
-    const parts = [REGIONS.local, REGIONS.played, REGIONS.hand, REGIONS.confirm, REGIONS.mine];
+  it('lays the bar out left to right without overlaps: card played, hand, own Court', () => {
+    const parts = [REGIONS.local, REGIONS.played, REGIONS.hand, REGIONS.mine];
     for (let i = 1; i < parts.length; i++) expect(parts[i].x).toBeGreaterThanOrEqual(parts[i - 1].x + parts[i - 1].w);
-    // The action box sits over the hand, centred on it.
-    const a = REGIONS.actions;
-    const h = REGIONS.hand;
-    expect(a.x + a.w / 2).toBeCloseTo(h.x + h.w / 2, 0);
-    expect(a.y + a.h).toBeLessThanOrEqual(h.y);
+  });
+
+  it('puts the command bar over the hand, from the local board to the ambitions column', () => {
+    for (const [w, h] of [[1920, 1080], [2560, 1080], [1280, 1024]]) {
+      setStage(w, h);
+      const a = REGIONS.actions;
+      expect(a.x).toBeGreaterThanOrEqual(REGIONS.local.x + REGIONS.local.w);
+      expect(a.x + a.w).toBeLessThanOrEqual(REGIONS.side.x);
+      expect(a.y + a.h).toBeLessThanOrEqual(REGIONS.hand.y);
+    }
   });
 });
