@@ -117,9 +117,10 @@ test.describe('accessibility: colours', () => {
       return (window.game!.state as unknown as { players: { hand: string[] }[] }).players.map((p) => p.hand.length);
     });
     await page.locator('[data-act="settings"]').click();
-    await Promise.all([page.waitForEvent('load'), page.locator('#set-palette').selectOption('clear')]);
-    await expect.poll(() => page.evaluate(() => document.querySelector('.tbl')?.classList.contains('pal-clear'))).toBe(true);
-    await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
+    await page.locator('#set-palette').selectOption('clear');
+    // The page reloads (slowly on CI): read it once the new page is up, ignoring the moment it is replaced.
+    const ready = () => page.evaluate(() => !!document.querySelector('.tbl')?.classList.contains('pal-clear') && typeof window.game?.send === 'function').catch(() => false);
+    await expect.poll(ready, { timeout: 90_000 }).toBe(true);
     const seat2 = await page.evaluate(() => getComputedStyle(document.querySelector('.tbl')!).getPropertyValue('--seat-2').trim());
     expect(seat2).toBe('#cc79a7');
     const after = await page.evaluate(() => (window.game!.state as unknown as { players: { hand: string[] }[] }).players.map((p) => p.hand.length));
