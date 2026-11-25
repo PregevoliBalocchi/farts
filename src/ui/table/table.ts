@@ -730,7 +730,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       .map((o) => button('court-do', o.label, { args: { kind: o.kind, slot, x: o.x }, cls: 'menu-opt', title: o.label, html: `<span class="mo-pic">${actionIcon(o.kind)}</span><span class="mo-name">${esc(o.label)}</span>` }))
       .join('');
     const close = button('court-close', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
-    return `<div class="sys-menu court-menu s-${seatColor(local())}" role="dialog" aria-label="${esc(cardName(state.court[slot]?.card ?? ''))}"><div class="menu-head"><span>${esc(cardName(state.court[slot]?.card ?? ''))}</span>${close}</div><div class="menu-opts">${opts}</div></div>`;
+    return `<div class="sys-menu court-menu s-${seatColor(local())}" role="dialog" aria-modal="true" aria-label="${esc(cardName(state.court[slot]?.card ?? ''))}"><div class="menu-head"><span>${esc(cardName(state.court[slot]?.card ?? ''))}</span>${close}</div><div class="menu-opts">${opts}</div></div>`;
   }
 
   /** Puts the Court menu under its card. */
@@ -1149,7 +1149,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       })
       .join('');
     const close = button('menu-close', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
-    return `<div class="sys-menu s-${seatColor(local())}" role="dialog" aria-label="${esc(systemName(s, t, m.system))}"><div class="menu-head">${systemTag(s, t)}${close}</div>${body}</div>`;
+    return `<div class="sys-menu s-${seatColor(local())}" role="dialog" aria-modal="true" aria-label="${esc(systemName(s, t, m.system))}"><div class="menu-head">${systemTag(s, t)}${close}</div>${body}</div>`;
   }
 
   /** Puts the map menu beside its system, following the view (called after each render and when the map moves). */
@@ -1604,7 +1604,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       .join('');
     const now = d.order[0];
     const head = mine ? t('draft.yours', { n: d.lorePerPlayer }) : t('draft.waiting', { name: playerName(t, now) });
-    return `<div class="draft-win" role="dialog" aria-labelledby="draft-title">
+    return `<div class="draft-win" role="dialog" aria-modal="true" aria-labelledby="draft-title">
       <div class="dr-head"><h2 id="draft-title">${esc(t('draft.title'))}</h2><span class="dr-order" aria-label="${esc(t('draft.order'))}">${order}</span></div>
       <p class="dr-hint">${esc(head)}</p>
       <div class="dr-label">${esc(t('draft.leaders'))}</div>
@@ -2168,7 +2168,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       })
       .join('');
     const close = button('power-close', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
-    return `<div class="sys-menu power-menu" role="dialog" aria-label="${esc(name)}"><div class="menu-head"><span>${esc(name)}</span>${close}</div><div class="menu-lines">${opts}</div></div>`;
+    return `<div class="sys-menu power-menu" role="dialog" aria-modal="true" aria-label="${esc(name)}"><div class="menu-head"><span>${esc(name)}</span>${close}</div><div class="menu-lines">${opts}</div></div>`;
   }
 
   /** Puts the power menu over the card it belongs to. */
@@ -2609,10 +2609,19 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     // A2: the key that shows a focused card large.
     for (const z of stage.querySelectorAll('[data-zoom]')) z.setAttribute('aria-keyshortcuts', 'Z');
     restoreFocus(back ?? key);
-    const dialog = stage.querySelector('.modal');
-    if (dialog && !dialog.contains(document.activeElement)) {
-      dialog.querySelector<HTMLElement>('button:not(:disabled), select, input, textarea')?.focus();
-    }
+    // A6: the open window holds the keyboard; it starts on its first control.
+    const dialog = trapRoot();
+    if (dialog && !dialog.contains(document.activeElement)) focusables(dialog)[0]?.focus();
+  }
+
+  /** The open window that holds the keyboard (A6): a modal window, else a map or Court menu, else the draft. */
+  function trapRoot(): HTMLElement | null {
+    return stage.querySelector<HTMLElement>('.modal') ?? stage.querySelector<HTMLElement>('.sys-menu') ?? stage.querySelector<HTMLElement>('.draft-win');
+  }
+
+  /** The controls inside a window that the keyboard can reach, in order. */
+  function focusables(root: HTMLElement): HTMLElement[] {
+    return [...root.querySelectorAll<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')].filter((el) => el.getClientRects().length > 0);
   }
 
   // ---- input ----
@@ -3552,6 +3561,18 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   stage.addEventListener('keydown', (e) => {
     const el = e.target as HTMLElement;
+    // A6: Tab and Shift+Tab go round the controls of the open window and do not leave it.
+    if (e.key === 'Tab') {
+      const root = trapRoot();
+      const list = root ? focusables(root) : [];
+      if (root && list.length) {
+        const i = list.indexOf(document.activeElement as HTMLElement);
+        const next = e.shiftKey ? (i <= 0 ? list.length - 1 : i - 1) : i < 0 || i === list.length - 1 ? 0 : i + 1;
+        e.preventDefault();
+        list[next].focus();
+      }
+      return;
+    }
     // The map is one tab stop: the arrow keys (and Home, End) move between its systems; while some can be picked,
     // between those (A3), and with Ctrl between all of them.
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1, Home: -Infinity, End: Infinity }[e.key];

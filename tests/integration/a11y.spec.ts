@@ -85,3 +85,22 @@ test.describe('accessibility: zoom, Escape and focus', () => {
     await expect(opener).toBeFocused();
   });
 });
+
+test.describe('accessibility: windows', () => {
+  test('a window is modal and Tab goes round its controls without leaving it (A6)', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto(build('view=table&lang=it&motion=off&players=3&seed=3&seat=0'));
+    await expect.poll(() => page.evaluate(() => typeof window.game?.send)).toBe('function');
+    await page.locator('[data-act="settings"]').focus();
+    await page.keyboard.press('Enter');
+    const dialog = page.locator('.modal[role="dialog"][aria-modal="true"]');
+    await expect(dialog).toBeVisible();
+    const n = await dialog.evaluate((d) => [...d.querySelectorAll('button:not(:disabled), select:not(:disabled), input:not(:disabled)')].filter((x) => x.getClientRects().length).length);
+    // Starts inside, and after a full round of Tab (and one more) it is still inside.
+    expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+    for (let i = 0; i <= n; i++) await page.keyboard.press('Tab');
+    expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+    for (let i = 0; i <= n; i++) await page.keyboard.press('Shift+Tab');
+    expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+  });
+});
