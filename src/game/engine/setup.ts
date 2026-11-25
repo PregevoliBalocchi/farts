@@ -2,7 +2,7 @@
 // court reveal, asymmetric setup card, initiative, first chapter.
 
 import { nextInt, shuffle } from './rng';
-import { startChapter } from './chapter';
+import { promoteDecision, startChapter } from './chapter';
 import { emptyAmbitionBoard } from './ambitions';
 import { gainResource } from './board';
 import type { EffectRegistry } from './effects';
@@ -303,8 +303,7 @@ export function finishSetup(ix: ContentIndex, s: GameState): void {
   s.draft = null;
   startChapter(ix, s);
   // Choices left by setup effects come before the first lead.
-  const d = s.pendingDecisions?.shift();
-  if (d) s.phase = { type: 'decide', decision: d, resume: s.phase };
+  promoteDecision(ix, s);
 }
 
 /**

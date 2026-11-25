@@ -40,8 +40,12 @@ import {
   gainResource,
   toDiscard,
   weaponIcons,
+  AMBITIONS,
+  RESOURCES,
+  choose,
+  subsets,
 } from '../engine';
-import type { AmbitionId, CardEffect, DeclareGift, EffectContext, EffectRegistry, GameState, PlayerId, PreludeAbility, Resource } from '../engine';
+import type { AmbitionId, AskContext, CardEffect, DecisionAnswer, DecisionPartKind, DeclareGift, EffectContext, EffectRegistry, GameState, PlayerId, PreludeAbility, Resource } from '../engine';
 
 // ---------------------------------------------------------------- helpers ---
 
@@ -201,7 +205,51 @@ const justScoring = (a: AmbitionId): CardEffect => ({ scoringSecondOnFirst: [a] 
 
 // ---------------------------------------------------------------- registry ---
 
-/** Base-game Court, lore and leader effects (status per card: design/gdd/card-effects.md). */
+/** Base-game Court, lore and leader effects (status per card: design/gdd/card-effects.md). */
+// ------------------------------------------- how each Decision is answered ---
+// Every card that asks a Decision declares the answers to try (engine decisions.ts): the table offers the
+// legal ones, and a choice that may be declined with none legal is not asked (piano D2).
+
+/** One answer per value, each a single part. */
+function each(key: string, kind: DecisionPartKind, values: readonly unknown[]): DecisionAnswer[] {
+  return values.map((value) => [{ key, kind, value }]);
+}
+
+/** The other seats. */
+function rivalsOf(s: GameState, p: PlayerId): PlayerId[] {
+  return s.players.map((x) => x.id).filter((x) => x !== p);
+}
+
+/** Court slot indices. */
+function courtSlots(s: GameState): number[] {
+  return s.court.map((_, i) => i);
+}
+
+/** Most answers offered for moving ships in from several systems (lore-15). */
+const MAX_MOVE_ANSWERS = 200;
+
+/** Fresh ships moved into the battle from the neighbouring systems: every mix of amounts, fewest first. */
+function sensorMoves({ ix, state: s, player }: AskContext): DecisionAnswer[] {
+  const at = s.battleSetup?.system;
+  if (!at) return [];
+  const cap = Math.min(...ownedEffects(ix, s, player).map((f) => f.effect.maxShipsPerMove ?? Infinity));
+  const sources = Object.values(s.map)
+    .filter((x) => x.inPlay && x.id !== at && (x.ships[player]?.fresh ?? 0) > 0 && adjacent(ix, s, x.id, at))
+    .map((x) => ({ from: x.id, max: Math.min(x.ships[player]?.fresh ?? 0, cap) }));
+  const out: { from: string; ships: number }[][] = [];
+  const walk = (i: number, acc: { from: string; ships: number }[]) => {
+    if (out.length >= MAX_MOVE_ANSWERS) return;
+    if (i === sources.length) {
+      if (acc.length) out.push(acc);
+      return;
+    }
+    for (let n = 0; n <= sources[i].max; n++) walk(i + 1, n ? [...acc, { from: sources[i].from, ships: n }] : acc);
+  };
+  walk(0, []);
+  const total = (m: { ships: number }[]) => m.reduce((t, x) => t + x.ships, 0);
+  return out.sort((a, b) => total(a) - total(b)).map((moves) => [{ key: 'moves', kind: 'ships', value: moves }]);
+}
+
 export const BASE_EFFECTS: EffectRegistry = {
   // ---- Guild ----
   'court-01': loyalGuild('material'),
@@ -289,6 +337,23 @@ export const BASE_EFFECTS: EffectRegistry = {
     },
   },
   'court-17': {
+    asks: {
+      // Look at a Rival's hand, then maybe swap a card with them (D3 splits it in two steps).
+      onDeclare: {
+        empty: 'decline',
+        answers: ({ state, player }) =>
+          rivalsOf(state, player).flatMap((r): DecisionAnswer[] => [
+            [{ key: 'rival', kind: 'player', value: r }],
+            ...state.players[player].hand.flatMap((give) =>
+              state.players[r].hand.map((take): DecisionAnswer => [
+                { key: 'rival', kind: 'player', value: r },
+                { key: 'give', kind: 'card', value: give },
+                { key: 'take', kind: 'card', value: take },
+              ]),
+            ),
+          ]),
+      },
+    },
     prelude: {
       redraw: {
         discardSelf: true,
@@ -406,6 +471,9 @@ export const BASE_EFFECTS: EffectRegistry = {
 
   // ---- Vox (when secured) ----
   'court-26': {
+    asks: {
+      whenSecured: { empty: 'none', answers: ({ ix, state }) => each('cluster', 'cluster', [...new Set(ix.content.map.systems.filter((x) => state.map[x.id]?.inPlay).map((x) => x.cluster))]) },
+    },
     whenSecured: {
       choice: true,
       run: (ctx) => {
@@ -418,6 +486,22 @@ export const BASE_EFFECTS: EffectRegistry = {
     },
   },
   'court-27': {
+    asks: {
+      whenSecured: {
+        empty: 'decline',
+        answers: ({ ix, state, player }) => {
+          const plain = each('ambition', 'ambition', AMBITIONS);
+          // The Feastbringer (leader-07) gives a Guild card to declare: which one, and to whom on a tie.
+          if (!ownedEffects(ix, state, player).some((f) => f.effect.declareCostGuildToWeakest)) return plain;
+          return AMBITIONS.flatMap((ambition) =>
+            state.players[player].court.flatMap((card) => [undefined, ...rivalsOf(state, player)].map((to) => [
+              { key: 'ambition', kind: 'ambition' as const, value: ambition },
+              { key: 'give', kind: 'gift' as const, value: to === undefined ? { card } : { card, to } },
+            ])),
+          );
+        },
+      },
+    },
     whenSecured: {
       choice: true,
       run: (ctx) => {
@@ -427,6 +511,7 @@ export const BASE_EFFECTS: EffectRegistry = {
     },
   },
   'court-28': {
+    asks: { whenSecured: { empty: 'decline', answers: () => each('type', 'resource', RESOURCES) } },
     whenSecured: {
       choice: true,
       run: (ctx) => {
@@ -438,6 +523,21 @@ export const BASE_EFFECTS: EffectRegistry = {
     },
   },
   'court-29': {
+    asks: {
+      whenSecured: {
+        empty: 'decline',
+        answers: ({ state }) =>
+          Object.values(state.map)
+            .filter((x) => x.inPlay)
+            .flatMap((x) =>
+              x.buildings.flatMap((b, index): DecisionAnswer[] => {
+                if (b.type !== 'city') return [];
+                const at: DecisionAnswer = [{ key: 'system', kind: 'system', value: x.id }, { key: 'index', kind: 'index', value: index }];
+                return [at, [...at, { key: 'seize', kind: 'flag', value: true }]];
+              }),
+            ),
+      },
+    },
     afterSecured: 'shuffleIntoDeck',
     whenSecured: {
       choice: true,
@@ -457,6 +557,13 @@ export const BASE_EFFECTS: EffectRegistry = {
     },
   },
   'court-30': {
+    asks: {
+      whenSecured: {
+        empty: 'decline',
+        answers: ({ state, player }) =>
+          rivalsOf(state, player).flatMap((from) => state.players[from].court.map((card): DecisionAnswer => [{ key: 'card', kind: 'card', value: card }, { key: 'from', kind: 'player', value: from }])),
+      },
+    },
     whenSecured: {
       choice: true,
       run: (ctx) => {
@@ -538,6 +645,7 @@ export const BASE_EFFECTS: EffectRegistry = {
   'lore-12': { hitAttackerIfFresh: true },
   'lore-14': { reroll: { die: 'assault', limit: 'freshAttackers' } },
   'lore-15': {
+    asks: { beforeDice: { empty: 'decline', answers: sensorMoves } },
     triggers: {
       beforeDice: (ctx) => {
         const s = ctx.state;
@@ -796,6 +904,7 @@ export const BASE_EFFECTS: EffectRegistry = {
 
   // ---- Leaders (battle abilities; other abilities follow in later batches) ----
   'leader-01': {
+    asks: { afterDefending: { empty: 'decline', answers: ({ state }) => each('courtSlot', 'court', courtSlots(state)) } },
     ...justScoring('captives'),
     noRansackWhenBattled: true,
     triggers: {
@@ -809,6 +918,7 @@ export const BASE_EFFECTS: EffectRegistry = {
   'leader-02': { taxBonusOnCopyPivot: 'psionic', setup: { outrage: ['material', 'fuel'] } },
   'leader-03': { taxBonusOnCopyPivot: 'fuel', afterScoringDiscard: { resource: 'fuel', ifScored: 'wealth' } },
   'leader-04': {
+    asks: { onDeclare: { empty: 'decline', answers: () => each('resource', 'resource', RESOURCES) } },
     taxNeedsControl: true, // errata: no city without control
     triggers: {
       // When you declare: may gain any resource.
@@ -822,6 +932,9 @@ export const BASE_EFFECTS: EffectRegistry = {
   'leader-06': { ...justScoring('psionics'), moveWithBattleOnCopyPivot: true },
   'leader-07': { declareCostGuildToWeakest: true, influenceWithSecureOnCopyPivot: true },
   'leader-08': {
+    asks: {
+      onDeclare: { empty: 'decline', answers: ({ state, player }) => each('courtSlots', 'court', subsets(courtSlots(state), state.players[player].supply.agents)) },
+    },
     noSecureGuildWithOneAgent: true,
     triggers: {
       // When you declare: influence any number of Court cards, at most once each.
@@ -834,6 +947,16 @@ export const BASE_EFFECTS: EffectRegistry = {
     },
   },
   'leader-09': {
+    asks: {
+      setupLore: {
+        empty: 'none',
+        answers: ({ data }) => {
+          const offer = (data?.cards as string[] | undefined) ?? [];
+          const keep = Math.min((data?.keep as number | undefined) ?? 2, offer.length);
+          return each('keep', 'cards', choose(offer, keep));
+        },
+      },
+    },
     ...justScoring('wealth'),
     setup: { extraLore: { draw: 5, keep: 2 } },
     triggers: {

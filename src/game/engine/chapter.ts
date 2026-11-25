@@ -23,6 +23,7 @@ import { effectOf, hasPassive, isDeclared, ownedEffects } from './effects';
 import { cartelSupply, replacePlaceholders, returnPiece, toDiscard } from './ops';
 import { returnCouncil } from './campaign';
 import { decideEvent, isEventDecision, runEvent, startEvent } from './events';
+import { argsOf, decisionAsk, decisionCandidates } from './decisions';
 import { isEventCard, placeStartingPieces } from './campaign-setup';
 import type { ActionPayload, ActionResult, Allocation } from './actions';
 import { shuffle } from './rng';
@@ -30,7 +31,7 @@ import { arrangeResources, endArranging, gainFromSupply, onCityReturned, returnT
 import { finishSetup } from './setup';
 import type { ContentIndex } from './setup';
 import { AMBITIONS } from './types';
-import type { ActionKind, AmbitionId, GameState, Play, PlayerId, Resource, TurnBudget } from './types';
+import type { ActionKind, AmbitionId, Decision, GameState, Play, PlayerId, Resource, TurnBudget } from './types';
 
 /** Everything a player (or AI, or network peer) can do. */
 export type Command =
@@ -84,7 +85,7 @@ export function dispatch(ix: ContentIndex, state: GameState, cmd: Command): Game
   const s = structuredClone(state);
   apply(ix, s, cmd);
   replacePlaceholders(s);
-  promoteDecision(s);
+  promoteDecision(ix, s);
   return s;
 }
 
@@ -109,11 +110,40 @@ export function activePlayer(s: GameState): PlayerId | null {
   }
 }
 
-/** Interrupts the current phase with the next queued Decision, if any. */
-function promoteDecision(s: GameState): void {
-  if (s.phase.type === 'decide' || s.phase.type === 'gameOver') return;
-  const d = s.pendingDecisions?.shift();
-  if (d) s.phase = { type: 'decide', decision: d, resume: s.phase };
+/**
+ * Interrupts the current phase with the next queued Decision, if any. A choice the player may decline
+ * with no legal answer is not asked: it resolves at once as declined (piano D2: Song of Freedom with no
+ * city to return, Guild Struggle with no Guild card to steal), and the next Decision comes up.
+ */
+export function promoteDecision(ix: ContentIndex, s: GameState): void {
+  while (s.phase.type !== 'decide' && s.phase.type !== 'gameOver') {
+    const d = s.pendingDecisions?.shift();
+    if (!d) return;
+    s.phase = { type: 'decide', decision: d, resume: s.phase };
+    if (!nothingToChoose(ix, s, d) || !legal(ix, s, d.player, {})) return;
+    const at = s.log.length;
+    apply(ix, s, { type: 'decide', player: d.player, args: {} });
+    replacePlaceholders(s);
+    // The note goes on the line the answer wrote (the first after it).
+    if (s.log[at]) s.log[at].text += ' (no possible choice)';
+  }
+}
+
+/** True when `d` may be declined and none of its answers is legal in `s` (which waits on `d`). */
+function nothingToChoose(ix: ContentIndex, s: GameState, d: Decision): boolean {
+  if (decisionAsk(ix, d)?.empty !== 'decline') return false;
+  return !decisionCandidates(ix, s, d).some((parts) => legal(ix, s, d.player, argsOf(parts)));
+}
+
+/** Whether answering the Decision `s` waits on with `args` is legal (tried on a copy). Only a RuleError means no. */
+function legal(ix: ContentIndex, s: GameState, player: PlayerId, args: Record<string, unknown>): boolean {
+  try {
+    apply(ix, structuredClone(s), { type: 'decide', player, args });
+    return true;
+  } catch (e) {
+    if (e instanceof RuleError) return false;
+    throw e;
+  }
 }
 
 function apply(ix: ContentIndex, s: GameState, cmd: Command): void {

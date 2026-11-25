@@ -15,6 +15,8 @@ import { markerValues } from './ambitions';
 import { cityBonusPower, gainResource, heldResources, openSlots, takeResourceAt } from './board';
 import { edictsInOrder, empireControls, IMPERIAL_COUNCIL } from './campaign';
 import { campaignContent } from './campaign-setup';
+import { choose, EVENT_ASKS, subMultisets } from './decisions';
+import type { DecisionAnswer, DecisionPart } from './decisions';
 import { RuleError } from './errors';
 import { isPlayer, isProtected, returnPiece } from './ops';
 import { nextInt } from './rng';
@@ -609,3 +611,63 @@ function log(s: GameState, text: string, data?: unknown): void {
 function fail(msg: string): never {
   throw new RuleError(msg);
 }
+
+// ---- how each event Decision is answered (decisions.ts): the empty answer takes the rules' default ----
+
+/** Most answers offered for collecting the Demand (each Rival Regent's piece, the own resource, Outlaws). */
+const MAX_DEMAND_ANSWERS = 64;
+
+/** Every way to collect the Demand that leaves a choice: what to take from each Rival Regent, the own resource, the Outlaws. */
+function demandAnswers(s: GameState, fr: PlayerId, policy: Policy): DecisionAnswer[] {
+  const c = s.campaign;
+  if (!c) return [];
+  const rivals = regents(s, c, fr).filter((p) => p !== fr);
+  const takes = rivals.map((p) => ({ p, opts: demandOptions(s, c, p, policy) })).filter((x) => x.opts.length > 1);
+  const own = DEMAND[policy] !== 'trophies' ? demandOptions(s, c, fr, policy) : [];
+  const outlawable = rivals.filter((p) => !demandOptions(s, c, p, policy).length && s.players[p].supply.agents < 1);
+  const out: DecisionAnswer[] = [];
+  const walk = (i: number, take: Record<string, string>) => {
+    if (out.length >= MAX_DEMAND_ANSWERS) return;
+    if (i < takes.length) {
+      for (const o of takes[i].opts) walk(i + 1, { ...take, [takes[i].p]: o });
+      return;
+    }
+    for (const r of own.length > 1 ? own : [undefined]) {
+      for (const outlaw of [[], ...choose(outlawable, 1), ...(outlawable.length > 1 ? [outlawable] : [])]) {
+        const parts: DecisionPart[] = [];
+        if (takes.length) parts.push({ key: 'take', kind: 'take', value: take });
+        if (r !== undefined) parts.push({ key: 'own', kind: 'resource', value: r });
+        if (outlaw.length) parts.push({ key: 'outlaw', kind: 'players', value: outlaw });
+        if (parts.length) out.push(parts);
+      }
+    }
+  };
+  walk(0, {});
+  return out;
+}
+
+Object.assign(EVENT_ASKS, {
+  'event:steal': { empty: 'default', answers: ({ state, data }) => subMultisets(state.campaign?.trust ?? [], (data?.max as number) ?? 0).map((resources) => [{ key: 'resources', kind: 'resources', value: resources }]) },
+  'event:choice': { empty: 'default', answers: () => ['crises', 'edicts'].map((value) => [{ key: 'resolve', kind: 'word', value }]) },
+  'event:govern': {
+    empty: 'default',
+    answers: ({ state, data }) => {
+      const stack = state.campaign?.booklet.edicts[data?.slot as number] ?? [];
+      return [...new Set(stack.slice(1))].filter((x) => x !== stack[0]).map((value) => [{ key: 'change', kind: 'card', value }]);
+    },
+  },
+  'event:demand': { empty: 'default', answers: ({ state, player, data }) => demandAnswers(state, player, data?.policy as Policy) },
+  'event:escalation': { empty: 'default', answers: ({ data }) => ((data?.options as string[]) ?? []).map((value) => [{ key: 'system', kind: 'system', value }]) },
+  'event:weapons': {
+    empty: 'default',
+    answers: ({ data }) => choose((data?.regents as PlayerId[]) ?? [], (data?.count as number) ?? 0).map((value) => [{ key: 'players', kind: 'players', value }]),
+  },
+  'event:fiasco': {
+    empty: 'default',
+    answers: ({ ix, state, player, data }) => {
+      const free = state.players[player].court.filter((x) => isGuild(ix, x) && !isProtected(ix, x));
+      return choose(free, (data?.discard as number) ?? 0).map((value) => [{ key: 'cards', kind: 'cards', value }]);
+    },
+  },
+  'event:freedom': { empty: 'default', answers: ({ data }) => ((data?.cities as string[]) ?? []).map((value) => [{ key: 'system', kind: 'system', value }]) },
+} satisfies typeof EVENT_ASKS);

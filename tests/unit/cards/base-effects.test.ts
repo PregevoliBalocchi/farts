@@ -204,11 +204,13 @@ describe('Vox cards wait for a choice', () => {
   it('a Vox that shuffles itself back goes into the Court deck', () => {
     let s = start([['suitB-2'], ['suitB-4']]);
     s.court[0] = { card: 'v:court-29', agents: { 0: 1 } };
+    // No city to return: the choice is not asked (piano D2), the card still goes back into the deck.
     s = run(s, [
       { type: 'lead', player: 0, card: 'suitB-2' },
       { type: 'action', player: 0, action: { kind: 'secure', courtSlot: 0 } },
-      { type: 'decide', player: 0, args: {} },
     ]);
+    expect(s.phase.type).toBe('actions');
+    expect(s.log.at(-1)?.text).toContain('returns no city (no possible choice)');
     expect(s.courtDeck).toContain('v:court-29');
     expect(s.courtDiscard).not.toContain('v:court-29');
   });

@@ -5,7 +5,7 @@
 // exists the game runs locally and the view can follow the active seat.
 
 import './table.css';
-import { actionKindOf, activePlayer, adjacent, allSlotKeys, AMBITIONS, dispatch, effectOf, hasPassive, indexContent, newGame, ownedEffects, RESOURCES, slotKeys } from '../../game/engine';
+import { actionKindOf, activePlayer, adjacent, allSlotKeys, AMBITIONS, decisionAsk, dispatch, effectOf, hasPassive, indexContent, newGame, ownedEffects, RESOURCES, slotKeys } from '../../game/engine';
 import type { ActionKind, ActionPayload, AmbitionId, Command, DeclareGift, MovePayload, GameContent, GameState, PlayerCount, PlayerId, RaidTake, Resource } from '../../game/engine';
 import { BASE_EFFECTS } from '../../game/cards/base';
 import { LANGS, pickLang, translator } from '../../i18n';
@@ -492,6 +492,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       .map((card) => ({ card, lit: usable.has(card) }));
   }
 
+  /** A Guild card given to declare, and to whom when named. */
+  function giftText(g: DeclareGift): string {
+    return g.to === undefined ? cardName(g.card) : t('decide.gift', { card: cardName(g.card), name: playerName(t, g.to) });
+  }
+
+  /** What the Imperial Demand takes from a seat: a resource type, a trophy or a captive. */
+  function takenText(what: string): string {
+    return what.startsWith('trophy:') ? t('decide.trophy') : what.startsWith('captive:') ? t('decide.captive') : t(`resource.${what}`);
+  }
+
   function partText(p: DecisionPart): string {
     const label = t(`decide.key.${p.key}`);
     const v = p.value;
@@ -511,6 +521,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       : p.kind === 'fleet' ? Object.entries(v as Record<string, { fresh?: number; damaged?: number }>).map(([k, x]) => t('decide.fleet', { name: playerName(t, Number(k)), fresh: x.fresh ?? 0, damaged: x.damaged ?? 0 })).join(', ')
       : p.kind === 'resources' ? (v as string[]).map((r) => t(`resource.${r}`)).join(', ')
       : p.kind === 'dice' ? t('powers.dice', { n: (v as number[]).length })
+      : p.kind === 'players' ? (v as number[]).map((x) => playerName(t, x)).join(', ')
+      : p.kind === 'word' ? t(`decide.word.${v}`)
+      : p.kind === 'gift' ? giftText(v as DeclareGift)
+      : p.kind === 'take' ? Object.entries(v as Record<string, string>).map(([seat, what]) => t('decide.takeFrom', { what: takenText(what), name: playerName(t, Number(seat)) })).join(', ')
       : String(v);
     return value ? `${label}: ${value}` : label;
   }
@@ -539,6 +553,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       else if (x.kind === 'resources') pics.push(...(v as string[]).map(token));
       else if (x.kind === 'card') pics.push(card(v as string));
       else if (x.kind === 'cards') pics.push(...(v as string[]).map(card));
+      else if (x.kind === 'gift') {
+        pics.push(card((v as DeclareGift).card));
+        if ((v as DeclareGift).to !== undefined) words.push(partText(x));
+      }
       else if (x.kind === 'court') pics.push(...(Array.isArray(v) ? v : [v]).map((i) => state.court[i as number]?.card).filter((c): c is string => !!c).map(card));
       else if (x.kind === 'player' && x !== who) pics.push(seatOf(v as number));
       else if (x !== who && x.kind !== 'flag') words.push(partText(x));
@@ -680,12 +698,19 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
    * Null when the answers are of another sort (the list window stays).
    */
   let decideCache: { key: string; options: DecisionOption[] } | null = null;
+  /** The local player's answers to the Decision now pending (cached until the game moves on). */
+  function localOptions(): DecisionOption[] {
+    if (state.phase.type !== 'decide') return [];
+    const d = state.phase.decision;
+    const key = `${state.log.length}|${d.card}|${d.effect}`;
+    if (decideCache?.key !== key) decideCache = { key, options: decisionOptions(ix, state, local()) };
+    return decideCache.options;
+  }
+
   function tablePick(v: TableView): { kind: 'ambition' | 'court' | 'system' | 'player'; by: Map<string, number>; options: DecisionOption[] } | null {
     if (v.phase !== 'decide' || !v.decision || state.phase.type !== 'decide' || state.phase.decision.player !== local()) return null;
     if (keepChoice(state.phase.decision)) return null;
-    const key = `${state.log.length}|${v.decision.card}|${v.decision.effect}`;
-    if (decideCache?.key !== key) decideCache = { key, options: decisionOptions(ix, state, local()) };
-    const options = decideCache.options;
+    const options = localOptions();
     const answers = options.map((o, i) => ({ o, i })).filter((x) => x.o.parts.length);
     if (!answers.length || answers.some((x) => x.o.parts.length !== 1)) return null;
     const kind = answers[0].o.parts[0].kind;
@@ -1728,7 +1753,11 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
 
     if (v.phase === 'decide' && v.decision) {
-      const declinable = can({ type: 'decide', player: me, args: {} });
+      // Decline only when the empty answer declines (a campaign event's empty answer takes the rules' default).
+      const declinable = decisionAsk(ix, v.decision)?.empty === 'decline' && can({ type: 'decide', player: me, args: {} });
+      // Nothing to choose (a saved game, or a choice the engine left open): one Continue, no empty list (piano D2).
+      if (state.phase.type === 'decide' && state.phase.decision.player === me && !keepChoice(v.decision) && localOptions().every((o) => !o.parts.length) && can({ type: 'decide', player: me, args: {} }))
+        return { text: t('decide.what', { card: cardName(v.decision.card), effect: t('decide.none') }), main: [button('decline', t('decide.default'), { cls: 'cmd-btn primary' })], powers: [], turn: [undoOrCancel(false), ''] };
       const tp = tablePick(v);
       const decline = declinable ? button('decline', t('decide.decline'), { cls: 'cmd-btn' }) : '';
       if (tp) return { text: t(`decide.onTable.${tp.kind}`, { card: cardName(v.decision.card) }), main: [button('decide-open', t('decide.list'), { cls: 'cmd-btn' }), decline].filter(Boolean), powers: [], turn: [undoOrCancel(false), ''] };
@@ -2014,14 +2043,14 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       const opts = modal.options
         .map((o, i) => (o.parts.length ? button('decide-pick', o.parts.map(partText).join(' · '), { args: { i }, cls: 'pp-opt', title: o.parts.map(partText).join(' · '), html: optionHtml(o.parts) }) : ''))
         .join('');
-      const declinable = modal.options.some((o) => !o.parts.length);
+      const empty = modal.options.some((o) => !o.parts.length) ? (decisionAsk(ix, v.decision)?.empty ?? 'decline') : null;
       size = 'm';
       inner = `<h2 id="modal-title">${esc(t('decide.title'))}</h2>
         <div class="modal-body">
           <p class="hint">${esc(t('decide.what', { card: cardName(v.decision.card), effect: t(`decide.effect.${v.decision.effect}`) }))}</p>
           <div class="decide-list">${opts || `<p class="hint">${esc(t('decide.none'))}</p>`}</div>
         </div>
-        <div class="modal-foot">${button('close-modal', t('btn.back'))}${declinable ? button('decline', t('decide.decline')) : ''}</div>`;
+        <div class="modal-foot">${button('close-modal', t('btn.back'))}${empty ? button('decline', t(empty === 'default' ? 'decide.default' : 'decide.decline'), { cls: empty === 'default' ? 'primary' : '' }) : ''}</div>`;
     } else {
       modal = null;
       return '';

@@ -1,6 +1,4 @@
 [
   { "category": "covered", "match": "^covered:map:", "fix": "Fase 2.3 (PR 5): sistemi accesi inquadrati nella parte libera della mappa" },
-  { "category": "rawlabel", "match": "^rawlabel:", "fix": "Fase 3.1-3.2 e A1: nomi delle carte, non id, nelle etichette e nel registro" },
-  { "category": "empty", "match": "^empty:", "fix": "Fase 1 D2: una scelta senza risposte non mostra Scegli" },
-  { "category": "stuck", "match": "^stuck:decide:", "fix": "Fase 1 D1-D2: decisioni descritte dal motore" }
+  { "category": "rawlabel", "match": "^rawlabel:", "fix": "Fase 3.1-3.2 e A1: nomi delle carte, non id, nelle etichette e nel registro" }
 ]
