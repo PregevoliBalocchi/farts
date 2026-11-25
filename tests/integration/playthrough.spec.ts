@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 import { BASE_EFFECTS } from '../../src/game/cards/base';
 import { indexContent, type GameContent, type GameState } from '../../src/game/engine';
 import { pieceLedger } from '../../src/game/engine/ledger';
-import { ruleChecks } from '../../src/game/engine/rulecheck';
+import { ruleChecks } from '../../tools/playtest/rulecheck';
 import { runGame } from '../../tools/playtest/lib.mjs';
 
 interface Config {

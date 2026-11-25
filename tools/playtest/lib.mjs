@@ -309,7 +309,7 @@ export async function runGame({ browser, players, variant = 'base', seed = 7, st
       }
     }
     lastTotals = t;
-    // The rulebook's checks between the state before and after this move (src/game/engine/rulecheck.ts).
+    // The rulebook's checks between the state before and after this move (tools/playtest/rulecheck.ts).
     if (rules) for (const b of rules(JSON.parse(shared), s)) await note(from, 'rule', `${b.rule}: ${b.detail.slice(0, 70)}`, b.detail);
     shared = next;
     for (const p of pages) if (p !== from) await p.evaluate((x) => window.game.load(JSON.parse(x)), next);

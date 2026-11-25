@@ -1,9 +1,9 @@
-// The rule checks the playtest simulator runs after every move (src/game/engine/rulecheck.ts): quiet on
+// The rule checks the playtest simulator runs after every move (tools/playtest/rulecheck.ts): quiet on
 // legal play, and each one speaks up when its rule is broken (rulebook: docs/rules/arcs-rules-library.txt).
 import { describe, expect, it } from 'vitest';
 import { dispatch } from '../../../src/game/engine';
 import type { Command, GameState } from '../../../src/game/engine';
-import { ruleChecks } from '../../../src/game/engine/rulecheck';
+import { ruleChecks } from '../../../tools/playtest/rulecheck';
 import { game, index, setHands } from './fixture';
 
 const ix = index();

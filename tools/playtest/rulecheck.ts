@@ -4,9 +4,9 @@
 // They only observe: the playtest simulator records what they say and a test gives the verdict.
 // Campaign games follow their own rulebook and are not checked here.
 
-import { emptyAmbitionBoard } from './ambitions';
-import type { ContentIndex } from './setup';
-import { AMBITIONS, type GameState, type PlayerId } from './types';
+import { emptyAmbitionBoard } from '../../src/game/engine/ambitions';
+import type { ContentIndex } from '../../src/game/engine/setup';
+import { AMBITIONS, type GameState, type PlayerId } from '../../src/game/engine/types';
 
 /** One broken rule: a short key (for grouping) and what was seen. */
 export interface RuleBreak {
