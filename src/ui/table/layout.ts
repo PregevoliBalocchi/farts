@@ -52,7 +52,18 @@ const BAR_H = 236; // the bottom bar beside the local board
 const PLAY_W = 96; // the card played this turn, at its left end
 const MINE_W = 480; // the local player's own Court cards, at its right end
 const WAIT_W = 380; // the box shown while another seat plays
-const ACT_GAP = 44; // between the command bar and the bottom bar: a hand card raised on hover stays under it
+const ACT_GAP = 4; // between the command bar and the bottom bar (base-fixes #36: no empty band)
+const SIDE_TOP = 12; // the ambitions column starts this far under the top strip, apart from the menu buttons
+const SIDE_SHUT = 40; // the ambitions column folded: its tab only
+
+/** The ambitions column folded to its tab (production/base-fixes.md #36); set by the table. */
+let sideShut = false;
+/** Folds or opens the ambitions column. */
+export function setSideShut(shut: boolean): void {
+  sideShut = shut;
+}
+/** The width the ambitions column takes now. */
+const sideW = (): number => (sideShut ? SIDE_SHUT : SIDE_R);
 
 /** Region ids and rectangles, read from the current STAGE (left column on the left edge, right column on the right edge, bottom row on the bottom edge). */
 export const REGIONS = {
@@ -63,9 +74,9 @@ export const REGIONS = {
   /** Rival seats as compact bands, stacked, each with its played card (hovering one shows the whole board). */
   get rivals(): Rect { return { x: G, y: TOP + 8, w: RIVALS_W, h: RIVAL_H * 3 + 16 }; },
   /** The ambitions: declared markers on top, then one row per ambition. */
-  get side(): Rect { return { x: STAGE.w - SIDE_R - G, y: TOP - 6, w: SIDE_R, h: STAGE.h - TOP - BAR_H - 30 }; },
+  get side(): Rect { const y = TOP + SIDE_TOP; return { x: STAGE.w - sideW() - G, y, w: sideW(), h: bot() - BAR_H - G - y }; },
   /** The free middle of the screen: the 2D map and the 3D map's keyboard stand-ins. */
-  get map(): Rect { return { x: RIVALS_W + G * 2, y: COURT_H + 44, w: STAGE.w - RIVALS_W - SIDE_R - G * 5, h: STAGE.h - COURT_H - 44 - BAR_H - 40 }; },
+  get map(): Rect { return { x: RIVALS_W + G * 2, y: COURT_H + 44, w: STAGE.w - RIVALS_W - sideW() - G * 5, h: STAGE.h - COURT_H - 44 - BAR_H - 40 }; },
   /** Local seat board. */
   get local(): Rect { return { x: G, y: bot() - LOCAL_H, w: LOCAL_W, h: LOCAL_H }; },
   /** The bottom bar: from the local board to the right edge. */

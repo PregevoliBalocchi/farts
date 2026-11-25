@@ -101,9 +101,9 @@ export function systemTag(s: { id: string; cluster?: string; kind?: string; reso
 export function header(v: TableView, t: Translate, exampleContent: boolean, promptText: string, control: boolean | null = null, open: 'log' | 'help' | 'piles' | null = null, flat: boolean | null = null): string {
   const supply = v.supply.map((s) => `<span title="${esc(t(`resource.${s.resource}`))}">${resIcon(s.resource, t)}<b class="num">${s.count}</b></span>`).join('');
   const declared = v.ambitions.filter((a) => a.markers.length).map((a) => t(`ambition.${a.id}`));
-  const lead = v.lead ? t('header.lead', { card: cardLabel(t, v.lead) }) : '';
+  // The lead card lies on the table: the line under the hand does not repeat it (production/base-fixes.md #36).
   const notes = [
-    lead && declared.length ? `${lead} · ${t('header.declared', { amb: declared.join(', ') })}` : lead,
+    declared.length ? t('header.declared', { amb: declared.join(', ') }) : '',
     v.lead?.kept ? t('header.kept', { n: v.lead.number }) : '',
     v.seizedBy !== null ? t('header.seize', { name: playerName(t, v.seizedBy) }) : '',
   ].filter(Boolean);
@@ -111,10 +111,9 @@ export function header(v: TableView, t: Translate, exampleContent: boolean, prom
   const round = `${t('chapter', { n: v.chapter })} · ${t('header.deck', { deck: v.deck, discard: v.discard })}`;
   return `<div class="hd round-c" title="${esc(round)}" aria-label="${esc(round)}"><span class="num">${v.chapter}</span></div>
     <div class="hd supply" role="group" aria-label="${esc(t('supply'))}">${supply}</div>
-    <div class="hd prompt"><span class="pr-text">${esc(promptText)}</span>${notes.length ? `<span class="pr-notes">${esc(notes.join(' · '))}</span>` : ''}</div>
+    <div class="hd prompt"><span class="pr-text" title="${esc(promptText)}">${esc(promptText)}</span>${notes.length ? `<span class="pr-notes">${esc(notes.join(' · '))}</span>` : ''}</div>
     <div class="hd tools">
       ${exampleContent ? `<span class="content-note">${esc(t('content.example'))}</span>` : ''}
-      ${button('piles', '', { cls: `icon sq${open === 'piles' ? ' on' : ''}`, title: t('btn.piles'), html: icon('cards') })}
       <span data-region="recent">${button('log', '', { cls: `icon sq${open === 'log' ? ' on' : ''}`, title: `${t('btn.log')} · ${t('recent.last')} ${last}`, html: icon('log') })}</span>
       ${control !== null ? `<button type="button" class="btn icon sq${control ? ' on' : ''}" data-act="map-control" title="${esc(t('btn.control'))}" aria-label="${esc(t('btn.control'))}" aria-pressed="${control}">${icon('control')}</button>` : ''}
       ${flat !== null ? `<button type="button" class="btn icon sq${flat ? ' on' : ''}" data-act="map-planets" title="${esc(t('btn.planets2d'))}" aria-label="${esc(t('btn.planets2d'))}" aria-pressed="${flat}">${icon('planet')}</button>` : ''}
@@ -293,6 +292,7 @@ function seatBoard(p: PlayerView, t: Translate, o: { spendable: ReadonlySet<numb
     <div class="pb-body${o.legend ? ' with-legend' : ''}">
       <div class="pb-face">${o.head}</div>
       ${slotsHtml(p, t, o.spendable, o.chosen, o.arrange)}
+      <div class="pb-rule" aria-hidden="true"></div>
       ${o.legend ? preludeLegend(p, t, spentTypes(p, o.spendable)) : ''}
       ${spoils(p, t)}
       ${o.maxCards > 0 ? `<div class="pb-guild">${miniCards([...p.court, ...p.lore], o.maxCards)}</div>` : ''}
@@ -599,7 +599,7 @@ export function courtFace(c: CourtFaceData, t: Translate): string {
  * a strip, with the agents on it per seat under it; `pickable` cards glow and
  * pick on click.
  */
-export function courtPanel(v: TableView, t: Translate, pickable: ReadonlySet<number>): string {
+export function courtPanel(v: TableView, t: Translate, pickable: ReadonlySet<number>, ix?: ContentIndex): string {
   const cards = v.court
     .map((c) => {
       // Agents beside the card, outside it: the seat's agent piece and how many, one row per seat.
@@ -613,15 +613,27 @@ export function courtPanel(v: TableView, t: Translate, pickable: ReadonlySet<num
       return `<div class="court-slot"><button type="button" class="court-tile banner k-${esc(c.kind ?? 'none')}${pickable.has(c.slot) ? ' pickable' : ''}" data-act="court" data-slot="${c.slot}" data-zoom="${esc(c.card)}" data-agents="${esc(c.agents.map((a) => `${a.player}:${a.count}`).join(','))}" aria-label="${esc(label)}">${courtBanner(c)}</button><span class="cb-agents">${agents}</span></div>`;
     })
     .join('');
-  const deck = `<button type="button" class="cpile deck" data-act="piles" title="${esc(`${t('piles.courtDeck')}: ${v.courtDeck}`)}"><span class="cp-stack"><i></i><i></i><i></i></span><span class="cp-n">${esc(t('piles.deckShort'))} <b class="num">${v.courtDeck}</b></span></button>`;
+  // The Court deck shows the back of its top card (production/base-fixes.md #36): the base and campaign Court cards
+  // share one back; a card with its own back (an expansion's) would show that one.
+  const back = assetUrl('back.court');
+  const backFace = back ? `<img class="cp-back" src="${esc(back)}" alt="">` : '';
+  const deck = `<button type="button" class="cpile deck" data-act="piles" title="${esc(`${t('piles.courtDeck')}: ${v.courtDeck}`)}"><span class="cp-stack">${v.courtDeck ? `<i></i><i></i><i>${backFace}</i>` : '<i class="empty"></i>'}</span><span class="cp-n">${esc(t('piles.courtDeckShort'))} <b class="num">${v.courtDeck}</b></span></button>`;
+  // The action cards' discard pile, left of the Court deck: the last card discarded, or a card back when it went
+  // face down (production/base-fixes.md #36).
+  const lastAction = v.piles.discard[0];
+  const actionTop = !lastAction ? '<i class="empty"></i>' : lastAction.card && !lastAction.faceDown && ix ? `<span class="cp-face act">${actionCard(ix, lastAction.card, t)}</span>` : '<span class="cp-face act"><span class="facedown"></span></span>';
+  const actions = `<button type="button" class="cpile adiscard" data-act="piles" title="${esc(`${t('piles.discard')}: ${v.discard}`)}"><span class="cp-stack">${actionTop}</span><span class="cp-n">${esc(t('piles.actionDiscardShort'))} <b class="num">${v.discard}</b></span></button>`;
   const top = v.piles.courtDiscard[0];
   const discard = `<button type="button" class="cpile discard" data-act="piles" title="${esc(`${t('piles.courtDiscard')}: ${v.piles.courtDiscard.length}`)}"><span class="cp-stack">${top ? `<span class="cp-face">${cardFaceById(top)}</span>` : '<i class="empty"></i>'}</span><span class="cp-n">${esc(t('piles.discardShort'))} <b class="num">${v.piles.courtDiscard.length}</b></span></button>`;
-  return `<div class="court-row">${deck}${cards}${discard}</div>`;
+  return `<div class="court-row">${actions}${deck}${cards}${discard}</div>`;
 }
 
 /** The right column: the ambitions. */
-export function sidePanel(ix: ContentIndex, v: TableView, t: Translate): string {
-  return `<div class="side-amb" data-region="ambitions">${ambitionsStrip(ix, v, t)}</div>`;
+export function sidePanel(ix: ContentIndex, v: TableView, t: Translate, shut = false): string {
+  // The tab on its left edge folds the column away or opens it again (production/base-fixes.md #36).
+  const tip = esc(t(shut ? 'amb.open' : 'amb.shut'));
+  const tab = `<button type="button" class="amb-tab" data-act="amb-toggle" aria-expanded="${!shut}" title="${tip}" aria-label="${tip}"><span aria-hidden="true">${shut ? '&#x25C0;' : '&#x25B6;'}</span>${shut ? `<span class="amb-tab-name">${esc(t('ambitions'))}</span>` : ''}</button>`;
+  return `<div class="side-amb${shut ? ' shut' : ''}" data-region="ambitions">${tab}${shut ? '' : ambitionsStrip(ix, v, t)}</div>`;
 }
 
 /** The local hand with its caption; `selected` is raised. */

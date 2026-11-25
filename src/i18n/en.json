@@ -429,5 +429,9 @@
   "reroll.go": "Reroll {n}",
   "reroll.skip": "Don't use",
   "reroll.next": "Then: {cards}",
-  "reroll.first": "Decide the card powers first, then place the hits."
+  "reroll.first": "Decide the card powers first, then place the hits.",
+  "piles.courtDeckShort": "Court deck",
+  "piles.actionDiscardShort": "Action discard",
+  "amb.shut": "Fold the ambitions",
+  "amb.open": "Open the ambitions"
 }

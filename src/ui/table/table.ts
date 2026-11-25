@@ -33,7 +33,7 @@ import type { DecisionOption, DecisionPart } from './decide';
 import { parseTip, tipHtml } from './tips';
 import { actionCommand, battlePayload, battleProbe, clamp, cutRoute, extendRoute, fitDrops, IDLE, MAX_STEPPER_DICE, movePayload, routeOf, routeStops, setDrop, startAction } from './intent';
 import type { Intent, MoveIntent } from './intent';
-import { place, placeDown, REGIONS, setStage, STAGE, placeUp } from './layout';
+import { place, placeDown, REGIONS, setSideShut, setStage, STAGE, placeUp } from './layout';
 import { mapSvg } from './mapview';
 import {
   actionCard, button, cardLabel, sizeAvatars, playedCard, playedText, courtPanel, pilesPanel, COURT_SORTS, type CourtSort, type PreludeCard, esc, handPanel, header, largeCard, localPanel, ownCourtPanel, playerName, rivalPanel, setSeatNames, sidePanel, systemName, systemTag, actionIcon, resIcon,
@@ -49,9 +49,8 @@ type Drop = 'log' | 'help' | 'piles';
 
 /** Lines of the log the drop-down shows (the latest; it fits under the header with no scroll bar). */
 const LOG_LINES = 14;
-/** How long the "My pieces" button lights the own pieces, and its width. */
+/** How long the "My pieces" button lights the own pieces. */
 const FIND_MINE_MS = 6000;
-const FIND_W = 150;
 /** The prompt line's height, under the hand (production/base-fixes.md #17). */
 const PROMPT_H = 34;
 /** How long a system's card, opened by a click, stays open. */
@@ -198,6 +197,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let graphics: Graphics = 'auto';
   /** How the local player's own Court cards are ordered in the bar. */
   let courtSort: CourtSort = 'kind';
+  /** The ambitions column folded to its tab (production/base-fixes.md #36); remembered in this browser. */
+  let sideShut = false;
   /** The own Court opened leftwards over the bar, to see all of it. */
   let mineOpen = false;
   /** Battle rerolls (production/base-fixes.md #35): the cards the attacker chose not to use, and the dice picked. */
@@ -209,6 +210,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let dropsOpen = '';
   try {
     controlLayer = localStorage.getItem('arcs.controlLayer') === '1';
+    sideShut = localStorage.getItem('arcs.ambShut') === '1';
     flatPlanets = localStorage.getItem('arcs.planets2d') === '1';
     const g = localStorage.getItem('arcs.graphics');
     if (g === 'lite' || g === 'still') graphics = g;
@@ -1344,29 +1346,20 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     turn: [string, string];
   }
 
-  /** The command bar's HTML ('' when there is none: off the local turn the waiting box shows instead). */
-  function commandBar(v: TableView): string {
-    const b = barFor(v);
+  /**
+   * The command bar's HTML ('' when there is none: off the local turn the waiting box shows instead). Its
+   * instruction is the line under the hand (production/base-fixes.md #36); the head keeps the card, its pips and
+   * the X that puts it back.
+   */
+  function commandBar(b: CommandBar | null): string {
     if (!b) return '';
     const stars = b.pips ? `<span class="cmd-pips" aria-hidden="true">${Array.from({ length: b.pips }, () => icon('pip')).join('')}</span>` : '';
     const close = b.close ? button('deselect', '', { cls: 'icon x cmd-x', title: t('btn.cancel'), html: icon('close') }) : '';
-    const notes = headNotes(v);
-    const head = `<div class="cmd-head">${b.title ? `<span class="cmd-title">${esc(b.title)}</span>` : ''}${stars}<span class="cmd-text">${esc(b.text)}</span>${notes ? `<span class="cmd-note">${esc(notes)}</span>` : ''}${close}</div>`;
+    const head = b.title || close ? `<div class="cmd-head">${b.title ? `<span class="cmd-title">${esc(b.title)}</span>` : ''}${stars}${close}</div>` : '';
     const main = `<div class="cmd-main" style="--n:${Math.max(3, b.main.length)}">${b.main.join('')}</div>`;
     const powers = `<div class="cmd-pow">${b.powers.join('')}</div>`;
     const turn = `<div class="cmd-turn">${b.turn[0] || '<span></span>'}${b.turn[1] || '<span></span>'}</div>`;
     return `${head}${b.body ? `<div class="cmd-body">${b.body}</div>` : ''}<div class="cmd-row">${main}${powers}${turn}</div>`;
-  }
-
-  /** The table's notes the bar keeps from the old prompt line: the lead (when not the local card), a kept number, seizing. */
-  function headNotes(v: TableView): string {
-    const mine = v.plays.find((p) => p.player === local())?.card;
-    const lead = v.lead && (!mine || mine.card !== v.lead.card) && v.phase !== 'lead' ? t('header.lead', { card: cardLabel(t, v.lead) }) : '';
-    return [
-      lead,
-      v.lead?.kept ? t('header.kept', { n: v.lead.number }) : '',
-      v.seizedBy !== null ? t('header.seize', { name: playerName(t, v.seizedBy) }) : '',
-    ].filter(Boolean).join(' · ');
   }
 
   /** The turn's left button: Cancel while a step is open, else Undo. */
@@ -1805,8 +1798,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const handW = REGIONS.hand.w - 60;
     const nCards = v.hand.length;
     const handGap = nCards > 1 ? Math.min(-22, (handW - nCards * 100) / (nCards - 1)) : 0;
-    // The command bar on the local turn; the live box of the seat playing otherwise.
-    const bar = commandBar(v);
+    // The command bar on the local turn; the live box of the seat playing otherwise. Its instruction is the line
+    // under the hand.
+    const barNow = barFor(v);
+    const bar = commandBar(barNow);
     const ctx = bar || (myTurn() ? '' : othersPanel(v));
     // Hotseat: when the screen turns to another seat, hide it until that player is ready.
     if (hotseat && v.phase !== 'gameOver' && me !== shownSeat) curtainFor = me;
@@ -1823,15 +1818,14 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     // An open hover card outlives the redraw (a state echo or a timer redraws while the pointer rests on it).
     const openTips = [...stage.querySelectorAll<HTMLElement>('.hover-tip')].filter((x) => !x.hidden);
     stage.innerHTML = `<div class="tbl-stars"></div>
-      <div class="region header" data-region="header" style="${place(REGIONS.header)};--pr-x:${REGIONS.hand.x + REGIONS.hand.w / 2}px;--pr-y:${REGIONS.hand.y + REGIONS.hand.h - PROMPT_H}px">${header(v, t, source === 'example', prompt(v), board3d?.hasInfoLayer ? controlLayer : null, drop, board3d?.hasFlatPlanets ? flatPlanets : null)}</div>
+      <div class="region header" data-region="header" style="${place(REGIONS.header)};--pr-x:${REGIONS.hand.x + REGIONS.hand.w / 2}px;--pr-w:${REGIONS.hand.w - 20}px;--pr-y:${REGIONS.hand.y + REGIONS.hand.h - PROMPT_H}px">${header(v, t, source === 'example', barNow?.text ?? prompt(v), board3d?.hasInfoLayer ? controlLayer : null, drop, board3d?.hasFlatPlanets ? flatPlanets : null)}</div>
       <div class="map-area${board3d ? '' : ' glass'}" data-region="map" style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>
       <div class="region rivals" data-region="rivals" style="${place(REGIONS.rivals)}">${rivals}</div>
-      <div class="region court" data-region="court" style="${place(REGIONS.court)}">${courtPanel(v, t, courtPickable(intent))}</div>
-      <div class="region side" data-region="side" style="${place(REGIONS.side)}">${sidePanel(ix, v, t)}</div>
+      <div class="region court" data-region="court" style="${place(REGIONS.court)}">${courtPanel(v, t, courtPickable(intent), ix)}</div>
+      <div class="region side${sideShut ? ' shut' : ''}" data-region="side" style="${place(REGIONS.side)}">${sidePanel(ix, v, t, sideShut)}</div>
       <div class="region bar" aria-hidden="true" style="${place(REGIONS.bar)}"></div>
       ${handZone()}
-      <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, [], true, v.phase !== 'gameOver')}</div>
-      ${button('find-mine', t('btn.findMine'), { cls: `find-mine${Date.now() < findMineUntil ? ' on' : ''}`, title: t('btn.findMineTip'), html: `${icon('ship')}<span>${esc(t('btn.findMine'))}</span>` }).replace('<button ', `<button style="left:${REGIONS.local.x + REGIONS.local.w - FIND_W}px;top:${REGIONS.local.y - 36}px;width:${FIND_W}px" `)}
+      <div class="region" data-region="local" style="${place(REGIONS.local)}">${localPanel(v.players[me], t, spendableSlots(v), null, [], true, v.phase !== 'gameOver')}${button('find-mine', t('btn.findMine'), { cls: `find-mine${Date.now() < findMineUntil ? ' on' : ''}`, title: t('btn.findMineTip') })}</div>
       <div class="region played" data-region="played" style="${place(REGIONS.played)}">${ownPlay}</div>
       <div class="region mine${mineOpen ? ' open' : ''}" data-region="mine" style="${mineOpen ? `${placeUp(REGIONS.mineOpen)};width:${REGIONS.mineOpen.w}px` : place(REGIONS.mine)}">${ownCourtPanel(v.players[me], t, courtSort, (id) => faceOf(ix, id, lang), REGIONS.mine.w - 50, new Set(preludes.filter((c) => c.lit).map((c) => c.card)), mineOpen)}</div>
       <div class="region hand" data-region="hand" style="${place(REGIONS.hand)};--gap:${handGap.toFixed(1)}px">${handPanel(ix, v, t, selected, choosing, seizeWith, '')}</div>
@@ -2309,6 +2303,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         break;
       case 'court-sort':
         courtSort = COURT_SORTS.includes(el.dataset.sort as CourtSort) ? (el.dataset.sort as CourtSort) : 'kind';
+        break;
+      case 'amb-toggle':
+        sideShut = !sideShut;
+        try {
+          localStorage.setItem('arcs.ambShut', sideShut ? '1' : '0');
+        } catch {
+          /* not remembered */
+        }
+        setSideShut(sideShut);
+        fit();
         break;
       case 'mine-open':
         mineOpen = !mineOpen;
