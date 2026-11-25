@@ -25,9 +25,11 @@ permissions:
   contents: read
   pull-requests: write
 
+# One queue per kind of run: a newer push to main replaces an older one, a newer commit on a pull request
+# replaces its older preview; the hand-run cleanup and a closed pull request never cancel the live deploy.
 concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+  group: deploy-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
   deploy:
