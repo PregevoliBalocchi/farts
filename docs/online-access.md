@@ -77,8 +77,13 @@ there out of the box (Hosting domains are authorized automatically).
 
 - **Merge into `main`** → the live site is rebuilt and published.
 - **Pull request** → a preview site with its own address; the link appears
-  as a comment on the pull request (it expires after 7 days). Test there
-  before merging.
+  as a comment on the pull request. Test there before merging. The preview is
+  deleted when the pull request is merged or closed (and expires after 2 days
+  anyway). A pull request that changes only `.claude/`, `.github/`, `docs/`,
+  `design/`, `tools/`, `production/`, `tests/` or Markdown files gets none.
+- **Firebase refuses a preview with "channel quota reached"** → too many
+  previews are open. In GitHub, Actions → deploy → *Run workflow* deletes every
+  preview channel (the live site stays).
 
 Nobody needs to run `git pull`, `npm` or `deploy:online` for the site any
 more. Firestore rules are not deployed automatically: after changing
