@@ -47,10 +47,9 @@ function countBy<T>(items: readonly T[]): Map<T, number> {
   return m;
 }
 
-/** A rival: their whole board (trophies and captives show whose they are when pointed at). */
+/** A rival: their whole board, drawn like the local one (its name bar names them). */
 function seatTip(p: PlayerView, t: Translate): string {
-  return `<div class="tip-head">${seatTag(t, p.id)}</div>
-    ${seatBoardCard(p, t)}`;
+  return seatBoardCard(p, t);
 }
 
 /** A seat's trophies or captives: the pieces, grouped by whose they were. */

@@ -10,6 +10,7 @@ import { assetUrl, cardArt, cardAvatar, cardCut, icon, seatColor, seatIcon } fro
 import type { IconName } from './assets';
 import { cardFaceById, courtBanner, courtCardFace, hasKitFace } from './cardface';
 import type { CourtFaceData } from './cardface';
+import { REGIONS } from './layout';
 import { roundedTriangle } from './model-fx';
 import type { ActionCardView, CourtCardView, PlayerView, TableView } from './view';
 
@@ -327,9 +328,16 @@ function preludeLegend(p: PlayerView, t: Translate, live: ReadonlySet<Resource>)
   return `<div class="pl-legend" aria-label="${esc(t('prelude.row'))}">${chips}</div>`;
 }
 
-/** A seat's whole board (the hover card of a rival's band). */
+/**
+ * A rival's whole board (the card a click on their band opens): drawn exactly
+ * like the local board, at its size, and nothing on it can be used; the Court
+ * cards they hold in a row under it.
+ */
 export function seatBoardCard(p: PlayerView, t: Translate): string {
-  return `<div class="board pb tipboard s-${seatColor(p.id)}">${seatBoard(p, t, { spendable: new Set(), chosen: null, preludes: [], maxCards: 9, head: leaderPortrait(p), legend: true })}</div>`;
+  const { w, h } = REGIONS.local;
+  const cards = [...p.court, ...p.lore];
+  const row = cards.length ? `<div class="tip-guild">${miniCards(cards, 12)}</div>` : '';
+  return `<div class="tipboard" style="width:${w}px;height:${h}px">${localPanel(p, t, new Set(), null, [], true, false)}</div>${row}`;
 }
 
 function miniCards(cards: string[], max: number): string {
