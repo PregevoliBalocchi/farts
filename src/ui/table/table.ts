@@ -13,6 +13,7 @@ import { messageTranslator } from '../../i18n/messages';
 import type { Lang } from '../../i18n';
 import { loadContent } from '../content';
 import { assetUrl, cardArt, icon, seatColor, seatIcon, setSeatColors } from './assets';
+import { useSeatPalette, type SeatPalette } from './pieces3d';
 import { cardFaceById, cardWords, courtCardFace, faceOf, fitCardText, hasKitFace, setActionFaceSource, setFaceSource } from './cardface';
 import { loadCardFonts } from './cardfonts';
 import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, faceIndex, faceKey, facePicture, hitsLeft } from './battle';
@@ -123,6 +124,8 @@ const AUTO_LARGE_BELOW = 0.85;
 /** Mounts the table into `root`. */
 export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle {
   const params = new URLSearchParams(location.search);
+  // Motion (piano A7): off with ?motion=off or when the system asks to reduce motion, for the 3D views too.
+  const motionOn = params.get('motion') !== 'off' && !(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
   let lang: Lang = pickLang(location.search, navigator.language);
   let t = translator(lang);
   const { content, source } = online ? { content: online.content, source: 'owner' as const } : loadContent();
@@ -169,10 +172,21 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let seed = Number(params.get('seed') ?? 1) || 1;
   /** Locally, ?variant=leaders starts the Leaders & Lore variant (with its draft). */
   const variant = params.get('variant') === 'leaders' ? 'leaders' : 'base';
-  let state: GameState = online ? online.state : newGame(ix, { playerCount: players, seed, variant });
+  // A9: a local game survives the reload that repaints the seats in the colours chosen in the settings.
+  let resumed: GameState | null = null;
+  if (!online) {
+    try {
+      const r = sessionStorage.getItem('arcs.resume');
+      sessionStorage.removeItem('arcs.resume');
+      if (r) resumed = JSON.parse(r) as GameState;
+    } catch {
+      /* no storage or a broken copy: a new game */
+    }
+  }
+  let state: GameState = online ? online.state : (resumed ?? newGame(ix, { playerCount: players, seed, variant }));
   /** Locally, ?scenario=battle sets up a battle for the first seat to lead (applied once per game). */
   const scenario = online ? null : params.get('scenario');
-  let scenarioDone = false;
+  let scenarioDone = resumed !== null;
   let history: GameState[] = [];
   // Online the seat is fixed; locally the view follows the active seat unless ?seat= pins it.
   // Hotseat: a shared game whose seat is null, or locally ?hotseat=1 (to try the hand-over screen).
@@ -227,6 +241,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   let awayNote: string[] = [];
   /** The rule reminder open now (its keys joined), or null. */
   let ruleOpen: string | null = null;
+  /** The focus key of the control that opened the open menu or window, and whether one was open (A5). */
+  let opener: string | null = null;
+  let overlayWas = false;
   let wasMine: PlayerId | null = null;
   let findMineTimer = 0;
   /** The map's control layer (who controls each sector) is on; remembered in this browser. */
@@ -265,7 +282,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   const shell = document.createElement('div');
   shell.className = 'tbl';
   if (params.get('debug') === 'layout') shell.classList.add('debug-layout');
-  if (params.get('motion') === 'off') shell.classList.add('no-motion');
+  if (!motionOn) shell.classList.add('no-motion');
   // Text size (base-fixes #44): large, normal, or automatic (large when the stage shows below 85%, as on a
   // 1366×768 laptop); chosen in the settings and remembered, `?text=large` forces it.
   let textSize: TextSize = 'auto';
@@ -276,6 +293,17 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     /* no storage: automatic */
   }
   if (params.get('text') === 'large') textSize = 'large';
+  // Seat colours (A9): the official ones, or a set easier to tell apart with colour blindness; chosen in the
+  // settings and remembered, `?palette=clear` forces it. The pieces keep their paint, so it is set before the map.
+  let palette: SeatPalette = 'official';
+  try {
+    if (localStorage.getItem('arcs.palette') === 'clear') palette = 'clear';
+  } catch {
+    /* no storage: official */
+  }
+  if (params.get('palette') === 'clear') palette = 'clear';
+  useSeatPalette(palette);
+  shell.classList.toggle('pal-clear', palette === 'clear');
   const stage = document.createElement('div');
   stage.className = 'tbl-stage';
   const bg = assetUrl('map.background');
@@ -331,7 +359,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   const board3d = params.get('map') === '2d'
     ? null
     : createBoard3D(ix, {
-        motion: params.get('motion') !== 'off',
+        motion: motionOn,
         picture: params.get('map') === 'picture',
         showSpots: params.get('debug') === 'spots',
         // A system's card opens on a click (production/base-fixes.md #8), not on hover.
@@ -725,7 +753,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       .map((o) => button('court-do', o.label, { args: { kind: o.kind, slot, x: o.x }, cls: 'menu-opt', title: o.label, html: `<span class="mo-pic">${actionIcon(o.kind)}</span><span class="mo-name">${esc(o.label)}</span>` }))
       .join('');
     const close = button('court-close', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
-    return `<div class="sys-menu court-menu s-${seatColor(local())}" role="dialog" aria-label="${esc(cardName(state.court[slot]?.card ?? ''))}"><div class="menu-head"><span>${esc(cardName(state.court[slot]?.card ?? ''))}</span>${close}</div><div class="menu-opts">${opts}</div></div>`;
+    return `<div class="sys-menu court-menu s-${seatColor(local())}" role="dialog" aria-modal="true" aria-label="${esc(cardName(state.court[slot]?.card ?? ''))}"><div class="menu-head"><span>${esc(cardName(state.court[slot]?.card ?? ''))}</span>${close}</div><div class="menu-opts">${opts}</div></div>`;
   }
 
   /** Puts the Court menu under its card. */
@@ -1144,7 +1172,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       })
       .join('');
     const close = button('menu-close', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
-    return `<div class="sys-menu s-${seatColor(local())}" role="dialog" aria-label="${esc(systemName(s, t, m.system))}"><div class="menu-head">${systemTag(s, t)}${close}</div>${body}</div>`;
+    return `<div class="sys-menu s-${seatColor(local())}" role="dialog" aria-modal="true" aria-label="${esc(systemName(s, t, m.system))}"><div class="menu-head">${systemTag(s, t)}${close}</div>${body}</div>`;
   }
 
   /** Puts the map menu beside its system, following the view (called after each render and when the map moves). */
@@ -1514,7 +1542,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const faces = b.faces ?? [];
     if (!faces.length) return '';
     const key = rollKeyOf(b);
-    const roll = key !== diceShown && params.get('motion') !== 'off';
+    const roll = key !== diceShown && motionOn;
     diceShown = key;
     // Each die a cube with its six printed faces (production/base-fixes.md #14): it tumbles in and lands with the
     // rolled face towards the player.
@@ -1599,7 +1627,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       .join('');
     const now = d.order[0];
     const head = mine ? t('draft.yours', { n: d.lorePerPlayer }) : t('draft.waiting', { name: playerName(t, now) });
-    return `<div class="draft-win" role="dialog" aria-labelledby="draft-title">
+    return `<div class="draft-win" role="dialog" aria-modal="true" aria-labelledby="draft-title">
       <div class="dr-head"><h2 id="draft-title">${esc(t('draft.title'))}</h2><span class="dr-order" aria-label="${esc(t('draft.order'))}">${order}</span></div>
       <p class="dr-hint">${esc(head)}</p>
       <div class="dr-label">${esc(t('draft.leaders'))}</div>
@@ -1626,7 +1654,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     }
     if (battle3d === undefined) {
       try {
-        battle3d = new BattleView3D(params.get('motion') !== 'off');
+        battle3d = new BattleView3D(motionOn);
       } catch {
         battle3d = null;
       }
@@ -2163,7 +2191,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       })
       .join('');
     const close = button('power-close', '', { cls: 'icon x', title: t('btn.cancel'), html: icon('close') });
-    return `<div class="sys-menu power-menu" role="dialog" aria-label="${esc(name)}"><div class="menu-head"><span>${esc(name)}</span>${close}</div><div class="menu-lines">${opts}</div></div>`;
+    return `<div class="sys-menu power-menu" role="dialog" aria-modal="true" aria-label="${esc(name)}"><div class="menu-head"><span>${esc(name)}</span>${close}</div><div class="menu-lines">${opts}</div></div>`;
   }
 
   /** Puts the power menu over the card it belongs to. */
@@ -2287,6 +2315,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         <div class="settings-grid">
           <label for="set-lang">${esc(t('settings.lang'))}</label><select id="set-lang" data-set="lang">${langOpts}</select>
           <label for="set-text">${esc(t('settings.text'))}</label><select id="set-text" data-set="text">${(['auto', 'normal', 'large'] as const).map((x) => `<option value="${x}"${textSize === x ? ' selected' : ''}>${esc(t(`settings.text.${x}`))}</option>`).join('')}</select>
+          <label for="set-palette">${esc(t('settings.palette'))}</label><select id="set-palette" data-set="palette">${(['official', 'clear'] as const).map((x) => `<option value="${x}"${palette === x ? ' selected' : ''}>${esc(t(`settings.palette.${x}`))}</option>`).join('')}</select>
           ${board3d ? `<label for="set-graphics">${esc(t('settings.graphics'))}</label><select id="set-graphics" data-set="graphics">${(['auto', 'lite', 'still'] as const).map((g) => `<option value="${g}"${graphics === g ? ' selected' : ''}>${esc(t(`settings.graphics.${g}`))}</option>`).join('')}</select>` : ''}
         </div>
         ${exitRow()}
@@ -2297,6 +2326,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
           <label for="set-seat">${esc(t('settings.view'))}</label><select id="set-seat" data-set="seat"${follow ? ' disabled' : ''}>${seatOpts}</select>
           <label for="set-lang">${esc(t('settings.lang'))}</label><select id="set-lang" data-set="lang">${langOpts}</select>
           <label for="set-text">${esc(t('settings.text'))}</label><select id="set-text" data-set="text">${(['auto', 'normal', 'large'] as const).map((x) => `<option value="${x}"${textSize === x ? ' selected' : ''}>${esc(t(`settings.text.${x}`))}</option>`).join('')}</select>
+          <label for="set-palette">${esc(t('settings.palette'))}</label><select id="set-palette" data-set="palette">${(['official', 'clear'] as const).map((x) => `<option value="${x}"${palette === x ? ' selected' : ''}>${esc(t(`settings.palette.${x}`))}</option>`).join('')}</select>
           <label for="set-players">${esc(t('settings.players'))}</label><select id="set-players" data-set="players">${countOpts}</select>
           <label for="set-seed">${esc(t('settings.seed'))}</label><input id="set-seed" type="number" min="1" value="${seed}" data-set="seed">
           ${board3d ? `<label for="set-graphics">${esc(t('settings.graphics'))}</label><select id="set-graphics" data-set="graphics">${(['auto', 'lite', 'still'] as const).map((g) => `<option value="${g}"${graphics === g ? ' selected' : ''}>${esc(t(`settings.graphics.${g}`))}</option>`).join('')}</select>` : ''}
@@ -2385,6 +2415,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
    * systems (the canvas itself is not focusable), the camera hint, and in
    * calibration mode the system to click next.
    */
+  /** For a screen reader: how many systems can be picked now, and the first ones by name (A3). */
+  function litAnnounce(v: TableView, valid: ReadonlySet<string>): string {
+    const names = v.systems.filter((s) => valid.has(s.id)).map((s) => systemName(s, t));
+    const shown = names.slice(0, 5).join(', ');
+    return t(names.length === 1 ? 'map.litOne' : 'map.litMany', { n: names.length, names: names.length > 5 ? `${shown}…` : shown });
+  }
+
   function map3dOverlay(v: TableView, valid: ReadonlySet<string>): string {
     const shown = v.systems.filter((s) => s.inPlay);
     // One tab stop for the whole map (the arrow keys move between systems): the system last
@@ -2392,8 +2429,10 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const stop = shown.find((s) => s.id === mapKey)?.id ?? shown.find((s) => valid.has(s.id))?.id ?? shown[0]?.id;
     const keys = shown
       .map((s) => {
-        const label = systemName(s, t);
-        return `<span role="button" tabindex="${s.id === stop ? 0 : -1}" class="sys-key${valid.has(s.id) ? ' valid' : ''}" data-sys="${esc(s.id)}" data-tip="sys:${esc(s.id)}" aria-label="${esc(label)}">${esc(s.id)}</span>`;
+        // Its name, never the id (A12); a system that can be picked now says so (A3), not by colour alone (A9).
+        const name = systemName(s, t);
+        const label = valid.has(s.id) ? t('map.pickable', { name }) : name;
+        return `<span role="button" tabindex="${s.id === stop ? 0 : -1}" class="sys-key${valid.has(s.id) ? ' valid' : ''}" data-sys="${esc(s.id)}" data-tip="sys:${esc(s.id)}" aria-label="${esc(label)}">${valid.has(s.id) ? '✓ ' : ''}${esc(name)}</span>`;
       })
       .join('');
     let cal = '';
@@ -2460,6 +2499,15 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       scenarioDone = true;
     }
     const key = focusKey();
+    // A5: the control that opened a menu, a drop-down or a window gets the focus back when it closes.
+    const overlay = !!(modal || sysMenu || courtMenu || powerMenu || drop);
+    let back: string | null = null;
+    if (overlay && !overlayWas) opener = key;
+    if (!overlay && overlayWas) {
+      back = opener;
+      opener = null;
+    }
+    overlayWas = overlay;
     const me = local();
     if (state.phase.type !== 'allocate') {
       rerollSkip = new Set();
@@ -2533,7 +2581,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       awayHtml(),
       ruleBoxHtml(),
       bar ?`<div class="region actions cmd-bar${barNow?.bare ? ' bare' : ''}${handMoved ? ' slide-up' : ''}" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${placeUp(REGIONS.actions)};width:${REGIONS.actions.w}px">${bar}</div>` : ctx ? `<div class="region actions waiting" data-region="actions" role="group" aria-label="${esc(prompt(v))}" style="${othersTurn(state, 3) ? placeDown(REGIONS.waiting) : placeUp(REGIONS.actions)}"><div class="actions-body">${ctx}</div></div>` : '',
-      `<div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}</div>`,
+      `<div class="sr-only" role="status" aria-live="polite">${esc(prompt(v))}${valid.size ? ` ${esc(litAnnounce(v, valid))}` : ''}</div>`,
       modalHtml(v),
       dropHtml(),
       curtainFor !== null ? handOver(curtainFor) : '',
@@ -2583,11 +2631,22 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     fitSide();
     placeRuleBox();
     sizeAvatars(stage);
-    restoreFocus(key);
-    const dialog = stage.querySelector('.modal');
-    if (dialog && !dialog.contains(document.activeElement)) {
-      dialog.querySelector<HTMLElement>('button:not(:disabled), select, input, textarea')?.focus();
-    }
+    // A2: the key that shows a focused card large.
+    for (const z of stage.querySelectorAll('[data-zoom]')) z.setAttribute('aria-keyshortcuts', 'Z');
+    restoreFocus(back ?? key);
+    // A6: the open window holds the keyboard; it starts on its first control.
+    const dialog = trapRoot();
+    if (dialog && !dialog.contains(document.activeElement)) focusables(dialog)[0]?.focus();
+  }
+
+  /** The open window that holds the keyboard (A6): a modal window, else a map or Court menu, else the draft. */
+  function trapRoot(): HTMLElement | null {
+    return stage.querySelector<HTMLElement>('.modal') ?? stage.querySelector<HTMLElement>('.sys-menu') ?? stage.querySelector<HTMLElement>('.draft-win');
+  }
+
+  /** The controls inside a window that the keyboard can reach, in order. */
+  function focusables(root: HTMLElement): HTMLElement[] {
+    return [...root.querySelectorAll<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')].filter((el) => el.getClientRects().length > 0);
   }
 
   // ---- input ----
@@ -3228,7 +3287,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   function agentsView(): CourtAgents3D | null {
     if (agents3d === undefined) {
       try {
-        agents3d = new CourtAgents3D(params.get('motion') !== 'off');
+        agents3d = new CourtAgents3D(motionOn);
       } catch {
         agents3d = null;
       }
@@ -3307,11 +3366,16 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   stage.addEventListener('mouseout', (e) => {
     if (zoomTarget(e)) hideZoom();
   });
-  // From the keyboard only: the focus a window gives its first card when it opens after a click, or the
-  // focus the table gives back after a redraw, is not the player asking to see the card.
-  stage.addEventListener('focusin', (e) => {
-    const el = zoomTarget(e);
-    if (el && el.matches(':focus-visible')) showZoom(el);
+  // From the keyboard, with a key (A2): Z (or +) on a focused card shows it large, again to close it. Focus alone
+  // never opens it: the focus a window gives its first card, or a redraw gives back, is not a request to see it.
+  stage.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || !(e.key === 'z' || e.key === 'Z' || e.key === '+')) return;
+    const el = (e.target as Element).closest<HTMLElement>('[data-zoom]');
+    if (!el) return;
+    e.preventDefault();
+    const zoom = stage.querySelector<HTMLElement>('.card-zoom');
+    if (zoom && !zoom.hidden) hideZoom();
+    else showZoom(el);
   });
   stage.addEventListener('focusout', (e) => {
     if (zoomTarget(e)) hideZoom();
@@ -3522,18 +3586,36 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
 
   stage.addEventListener('keydown', (e) => {
     const el = e.target as HTMLElement;
-    // The map is one tab stop: the arrow keys (and Home, End) move between its systems.
+    // A6: Tab and Shift+Tab go round the controls of the open window and do not leave it.
+    if (e.key === 'Tab') {
+      const root = trapRoot();
+      const list = root ? focusables(root) : [];
+      if (root && list.length) {
+        const i = list.indexOf(document.activeElement as HTMLElement);
+        const next = e.shiftKey ? (i <= 0 ? list.length - 1 : i - 1) : i < 0 || i === list.length - 1 ? 0 : i + 1;
+        e.preventDefault();
+        list[next].focus();
+      }
+      return;
+    }
+    // The map is one tab stop: the arrow keys (and Home, End) move between its systems; while some can be picked,
+    // between those (A3), and with Ctrl between all of them.
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1, Home: -Infinity, End: Infinity }[e.key];
     if (step !== undefined && el.dataset.sys) {
-      const all = [...stage.querySelectorAll<HTMLElement>('.sys-key')];
+      const keys = [...stage.querySelectorAll<HTMLElement>('.sys-key')];
+      const lit = keys.filter((k) => k.classList.contains('valid'));
+      const all = lit.length && !e.ctrlKey ? lit : keys;
       const i = all.indexOf(el);
-      const next = all[step === -Infinity ? 0 : step === Infinity ? all.length - 1 : (i + step + all.length) % all.length];
+      const from = i < 0 ? (step > 0 ? -1 : 0) : i;
+      const next = all[step === -Infinity ? 0 : step === Infinity ? all.length - 1 : (from + step + all.length) % all.length];
       if (next && next !== el) {
         e.preventDefault();
         el.tabIndex = -1;
         next.tabIndex = 0;
         mapKey = next.dataset.sys ?? null;
         next.focus();
+        // The map brings the system reached into view (A3).
+        if (next.dataset.sys) board3d?.ensureVisible(next.dataset.sys);
       }
       return;
     }
@@ -3577,6 +3659,17 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
         }
         applyTextSize();
         break;
+      case 'palette':
+        // The pieces keep their paint: save the choice and the local game, and reload.
+        try {
+          localStorage.setItem('arcs.palette', el.value);
+          if (!online) sessionStorage.setItem('arcs.resume', JSON.stringify(state));
+        } catch {
+          /* no storage: the choice cannot outlive the reload */
+          return;
+        }
+        location.reload();
+        return;
       case 'graphics':
         graphics = el.value as Graphics;
         board3d?.setGraphics(graphics);
@@ -3600,7 +3693,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       return;
     }
     if (e.key === 'Escape') {
-      if (powerPick) powerPick = null;
+      // A5: first what only shows (the card zoom, a hover card or a rival's board, a rule reminder), with no
+      // redraw, then the menus and windows, one per press.
+      const zoom = stage.querySelector<HTMLElement>('.card-zoom');
+      if (zoom && !zoom.hidden) return hideZoom();
+      if ([...stage.querySelectorAll<HTMLElement>('.hover-tip')].some((x) => !x.hidden)) return hideTip();
+      if (ruleOpen) ruleOpen = null;
+      else if (powerPick) powerPick = null;
       else if (courtMenu) courtMenu = null;
       else if (powerMenu) powerMenu = null;
       else if (drop) drop = null;

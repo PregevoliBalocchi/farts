@@ -598,5 +598,11 @@
   "rule.intercept": "Interception: if you rolled any intercept symbol, each fresh defending ship hits one of your ships. Only once per battle.",
   "rule.raid": "Raiding: with ships left after the hits, spend the keys you rolled to steal resources and Guild cards, each for the keys printed above it.",
   "rule.chapterEnd": "A chapter ends when everyone has played all their cards, or when everyone with cards has passed in a row.",
-  "rule.scoring": "Scoring: for each declared ambition, the most gets the higher Power of all its markers, the second the lower. A tie for first: those tied are all second. A tie for second: nobody. Having none of it gives nothing."
+  "rule.scoring": "Scoring: for each declared ambition, the most gets the higher Power of all its markers, the second the lower. A tie for first: those tied are all second. A tie for second: nobody. Having none of it gives nothing.",
+  "map.pickable": "{name}, can be picked",
+  "map.litOne": "1 system can be picked: {names}.",
+  "map.litMany": "{n} systems can be picked: {names}. Arrow keys move between them, Ctrl+arrows between all systems.",
+  "settings.palette": "Player colours",
+  "settings.palette.official": "Official",
+  "settings.palette.clear": "Easier to tell apart (colour blindness)"
 }

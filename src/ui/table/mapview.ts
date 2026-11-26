@@ -7,6 +7,7 @@ import type { ContentIndex, Resource } from '../../game/engine';
 import type { Translate } from '../../i18n';
 import { layout } from '../map';
 import { assetUrl, seatColor, svgGlyph } from './assets';
+import { systemName } from './render';
 import type { TableView } from './view';
 
 const SIZE = 640;
@@ -164,7 +165,8 @@ export function mapSvg(ix: ContentIndex, v: TableView, valid: ReadonlySet<string
     if (!p) continue;
     const cls = ['m-sys', s.inPlay ? '' : 'out', valid.has(s.id) ? 'valid' : '', chosen.has(s.id) ? 'chosen' : ''].filter(Boolean).join(' ');
     const name = s.kind === 'gate' ? `${s.cluster} ◇` : s.id.split('-').pop()!;
-    const label = `${s.id}${s.resource ? ' · ' + t(`resource.${s.resource}`) : ''}`;
+    // Its name, never the id (A12); a system that can be picked now says so (A3).
+    const label = valid.has(s.id) ? t('map.pickable', { name: systemName(s, t) }) : systemName(s, t);
     h += `<g class="${cls}" data-sys="${esc(s.id)}" tabindex="${s.inPlay ? 0 : -1}" role="button" aria-label="${esc(label)}">`;
     h += `<title>${esc(label)}</title>`;
     if (s.kind === 'gate') {

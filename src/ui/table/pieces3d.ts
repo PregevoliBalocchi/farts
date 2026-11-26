@@ -9,8 +9,25 @@ import * as THREE from 'three';
 /** Kinds of piece this module builds. */
 export type PieceKind = 'ship' | 'flagship' | 'agent' | 'city' | 'starport';
 
-/** Seat paint colours (same hues as the table's --seat-N tokens). */
-export const SEAT_PAINT = ['#f8b010', '#1090a8', '#e05038', '#f4f4f0'] as const;
+/**
+ * The seat colour sets (A9): the official ones, and one easier to tell apart with colour blindness
+ * (Okabe-Ito orange, sky blue and reddish purple, with the white). Same hues as the table's --seat-N
+ * tokens and its `.pal-clear` class.
+ */
+export const SEAT_PALETTES = {
+  official: ['#f8b010', '#1090a8', '#e05038', '#f4f4f0'],
+  clear: ['#e69f00', '#56b4e9', '#cc79a7', '#f4f4f0'],
+} as const;
+/** The seat colour set names. */
+export type SeatPalette = keyof typeof SEAT_PALETTES;
+
+/** Seat paint colours, from the set chosen with `useSeatPalette` (official by default). */
+export const SEAT_PAINT: string[] = [...SEAT_PALETTES.official];
+
+/** Paints the seats with `name`'s colours; call it before any piece or map is built, as the pieces keep their paint. */
+export function useSeatPalette(name: SeatPalette): void {
+  SEAT_PAINT.splice(0, SEAT_PAINT.length, ...SEAT_PALETTES[name]);
+}
 
 // ---- wood ----
 

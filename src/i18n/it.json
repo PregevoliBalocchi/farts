@@ -598,5 +598,11 @@
   "rule.intercept": "Intercettazione: se hai tirato almeno un simbolo di intercettazione, ogni nave integra di chi difende colpisce una tua nave. Una sola volta per combattimento.",
   "rule.raid": "Razziare: se ti restano navi dopo i colpi, spendi le chiavi tirate per rubare risorse e carte Gilda, ognuna per le chiavi stampate sopra.",
   "rule.chapterEnd": "Un capitolo finisce quando tutti hanno giocato tutte le carte, o quando tutti quelli con carte hanno passato di fila.",
-  "rule.scoring": "Punteggio: per ogni ambizione dichiarata chi ne ha di più prende il Potere più alto di tutti i suoi segnalini, il secondo quello più basso. Pari per il primo: tutti i pari sono secondi. Pari per il secondo: nessuno. Chi non ne ha non prende nulla."
+  "rule.scoring": "Punteggio: per ogni ambizione dichiarata chi ne ha di più prende il Potere più alto di tutti i suoi segnalini, il secondo quello più basso. Pari per il primo: tutti i pari sono secondi. Pari per il secondo: nessuno. Chi non ne ha non prende nulla.",
+  "map.pickable": "{name}, selezionabile",
+  "map.litOne": "1 sistema selezionabile: {names}.",
+  "map.litMany": "{n} sistemi selezionabili: {names}. Le frecce passano dall'uno all'altro, Ctrl+frecce tra tutti i sistemi.",
+  "settings.palette": "Colori dei giocatori",
+  "settings.palette.official": "Ufficiali",
+  "settings.palette.clear": "Più distinguibili (daltonismo)"
 }
