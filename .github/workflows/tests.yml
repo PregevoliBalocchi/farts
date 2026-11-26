@@ -8,9 +8,14 @@ on:
   push:
   pull_request:
 
+# Steps are bash scripts: on the self-hosted Windows runner, Git Bash (docs/ci-runner.md).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER || 'self-hosted' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
