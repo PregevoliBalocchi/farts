@@ -1934,7 +1934,9 @@ button.supply:hover { border-color: var(--rule-hi); }
   font: 600 var(--fs-body) var(--font-ui, inherit); color: var(--dg-text); background: linear-gradient(180deg, var(--frame-raise), var(--dg-bg)); border: 2px solid var(--dg-gold-dim); box-shadow: none; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-btn:hover:not(:disabled), .tbl-stage.tbl-stage .region.actions.cmd-bar .btn.kind-btn:hover:not(:disabled), .tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-power:hover:not(:disabled) {
   background: linear-gradient(180deg, var(--frame-brown), var(--dg-ink)); border-color: var(--dg-gold); box-shadow: 0 0 12px rgba(255, 196, 100, .45); }
-.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.primary { background: linear-gradient(180deg, var(--gilt-highlight), var(--gilt-deep)); color: var(--dg-ink); border-color: var(--gilt-pale); font-weight: 700; }
+/* Gold only while it can be pressed: off, the primary is drawn like the others (critique 2026-11-27: a dimmed
+   gold "Fine turno" still read as usable during a step). */
+.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.primary:not(:disabled) { background: linear-gradient(180deg, var(--gilt-highlight), var(--gilt-deep)); color: var(--dg-ink); border-color: var(--gilt-pale); font-weight: 700; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.primary:hover:not(:disabled) { background: linear-gradient(180deg, var(--gilt-pale), var(--dg-gold)); }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.primary.ready { animation: bar-ready 1.6s ease-in-out infinite; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .btn.cmd-btn.on { border-color: var(--gilt-pale); box-shadow: 0 0 0 1px var(--gilt-pale), 0 0 12px rgba(255, 196, 100, .5); }
