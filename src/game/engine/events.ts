@@ -15,6 +15,7 @@ import { markerValues } from './ambitions';
 import { cityBonusPower, gainResource, heldResources, openSlots, takeResourceAt } from './board';
 import { edictsInOrder, empireControls, IMPERIAL_COUNCIL } from './campaign';
 import { campaignContent } from './campaign-setup';
+import { anyRollRerolls } from './actions';
 import { choose, EVENT_ASKS, subMultisets } from './decisions';
 import type { DecisionAnswer, DecisionPart } from './decisions';
 import { RuleError } from './errors';
@@ -112,6 +113,9 @@ function runStep(ix: ContentIndex, s: GameState, c: CampaignState, step: EventSt
       const number = cc.eventDice.number[nextInt(s, cc.eventDice.number.length)];
       c.rolled = { kind: face.kind, symbol: face.symbol, number };
       log(s, `Event dice: ${face.kind} ${face.symbol}, number ${number}`, { rolled: c.rolled });
+      // p. 13 and 18: the player with initiative rolls. A card of theirs that rerolls any dice (lore-19, "even
+      // outside battle") may reroll them once before they resolve: one question per such card.
+      for (const card of anyRollRerolls(ix, s, s.initiative)) ask(s, { player: s.initiative, card, effect: 'event:reroll' });
       return;
     }
 
@@ -174,6 +178,25 @@ export function decideEvent(ix: ContentIndex, s: GameState, p: PlayerId, d: Deci
         pool.splice(i, 1);
       }
       return stealTrust(ix, s, p, want);
+    }
+
+    case 'event:reroll': {
+      // lore-19: reroll the event die, the number die or both, once; the empty answer keeps the roll.
+      const which = args.dice as string | undefined;
+      if (which === undefined) return 'keeps the event dice';
+      if (which !== 'event' && which !== 'number' && which !== 'both') fail('Reroll the event die, the number die or both');
+      const cc = campaignContent(ix);
+      const rolled = c.rolled ?? fail('No event dice to reroll');
+      if (which !== 'number') {
+        const face = cc.eventDice.event[nextInt(s, cc.eventDice.event.length)];
+        rolled.kind = face.kind;
+        rolled.symbol = face.symbol;
+      }
+      if (which !== 'event') rolled.number = cc.eventDice.number[nextInt(s, cc.eventDice.number.length)];
+      const now = `${rolled.kind} ${rolled.symbol}, number ${rolled.number}`;
+      if (which === 'event') return `rerolls the event die with ${d.card}: ${now}`;
+      if (which === 'number') return `rerolls the number die with ${d.card}: ${now}`;
+      return `rerolls the event and number dice with ${d.card}: ${now}`;
     }
 
     case 'event:choice': {
@@ -649,6 +672,7 @@ function demandAnswers(s: GameState, fr: PlayerId, policy: Policy): DecisionAnsw
 Object.assign(EVENT_ASKS, {
   'event:steal': { empty: 'default', answers: ({ state, data }) => subMultisets(state.campaign?.trust ?? [], (data?.max as number) ?? 0).map((resources) => [{ key: 'resources', kind: 'resources', value: resources }]) },
   'event:choice': { empty: 'default', answers: () => ['crises', 'edicts'].map((value) => [{ key: 'resolve', kind: 'word', value }]) },
+  'event:reroll': { empty: 'default', answers: () => ['event', 'number', 'both'].map((value) => [{ key: 'dice', kind: 'word', value }]) },
   'event:govern': {
     empty: 'default',
     answers: ({ state, data }) => {

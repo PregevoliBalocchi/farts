@@ -6,7 +6,7 @@ export { dispatch, activePlayer, roundWinner, gameWinners } from './chapter';
 export { effectOf, hasPassive, isDeclared, ownedEffects } from './effects';
 export type { CardAction, CardEffect, EffectContext, EffectHandler, EffectRegistry, PreludeAbility, RerollAbility } from './effects';
 export * from './ops';
-export { HANDLERS, actionKindOf, captureAtGates, currentBudget, gateGuardsAt, takeCourtCard, collectAndRoll, finalizeBattle, rerollDice } from './actions';
+export { HANDLERS, actionKindOf, captureAtGates, currentBudget, gateGuardsAt, takeCourtCard, collectAndRoll, finalizeBattle, rerollDice, anyRollRerolls } from './actions';
 export { discardOwnCard, cartelMetric, endChapter } from './chapter';
 export { afterDeclare, payDeclareCost } from './declare';
 export type { DeclareGift } from './declare';

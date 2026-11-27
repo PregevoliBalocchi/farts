@@ -128,6 +128,23 @@ describe('tax', () => {
 });
 
 describe('build', () => {
+  // leader-10 "you may hit the building to take that action again with it": the starport the player picks.
+  it('a leader hits the starport the player picks to build again, the damaged one being destroyed', () => {
+    const port = (damaged: boolean) => ({ owner: 0, type: 'starport' as const, damaged });
+    const ready = () =>
+      lead('suitC-2', (s) => {
+        s.players[0].leader = 'leader-10';
+        s.map['c1-p2'].buildings = [port(false), port(true)];
+      });
+    let s = act(ready(), { kind: 'build', system: 'c1-p2', what: 'ship', again: {}, port: 1 });
+    expect(s.map['c1-p2'].buildings).toEqual([port(false)]);
+    expect(s.map['c1-p2'].ships[0]).toEqual({ fresh: 2, damaged: 0 });
+    // Picking the fresh one damages it and keeps the other.
+    s = act(ready(), { kind: 'build', system: 'c1-p2', what: 'ship', again: {}, port: 0 });
+    expect(s.map['c1-p2'].buildings).toEqual([port(true), port(true)]);
+    expect(() => act(ready(), { kind: 'build', system: 'c1-p2', what: 'ship', again: {}, port: 2 })).toThrow(/No such starport/);
+  });
+
   it('a card builds a city on a gate; it has every city type of its cluster', () => {
     let s = lead('suitC-2', (s) => {
       s.players[0].lore = ['l:lore-11'];

@@ -38,6 +38,20 @@ describe('actionVariants', () => {
     expect(() => dispatch(ix, s, { type: 'action', player: 0, action: { kind: 'tax', system: 'c1-p2', ...vs[0].extra } as ActionPayload })).not.toThrow();
   });
 
+  it('offers the Overseer a second ship hitting either starport when one is fresh and one damaged', () => {
+    const port = (damaged: boolean) => ({ owner: 0, type: 'starport' as const, damaged });
+    const build = (ports: { owner: number; type: 'starport'; damaged: boolean }[]) => {
+      const s = start(ix, [['suitC-2', 'suitA-3'], ['suitA-5', 'suitA-6']]);
+      s.players[0].leader = 'leader-10';
+      s.map['c1-p2'].buildings = ports;
+      return actionVariants(ix, dispatch(ix, s, { type: 'lead', player: 0, card: 'suitC-2' }), 0, { kind: 'build', system: 'c1-p2', what: 'ship' });
+    };
+    // Two alike starports: which one is hit does not matter, one option.
+    expect(build([port(false), port(false)]).map((v) => v.parts)).toEqual([[{ key: 'again' }]]);
+    // One fresh, one damaged: an option for each, saying which.
+    expect(build([port(false), port(true)]).map((v) => v.parts)).toEqual([[{ key: 'again', port: 'fresh' }], [{ key: 'again', port: 'damaged' }]]);
+  });
+
   it('offers the Shaper a planet change with each resource held', () => {
     const s = leading('leader-14', (x) => {
       x.players[0].resources = ['fuel', 'material'];

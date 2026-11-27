@@ -646,7 +646,7 @@ export const BASE_EFFECTS: EffectRegistry = {
           return {
             text: `fires ${n} skirmish dice from ${from} at P${target} in ${at}`,
             roll,
-            pendingBattle: { attacker: ctx.player, target, system: at, totals, interceptHits: 0, like: true },
+            pendingBattle: { attacker: ctx.player, target, system: at, faces: roll.faces, rerolls: [], totals, interceptHits: 0, like: true },
           };
         },
       },
@@ -801,7 +801,7 @@ export const BASE_EFFECTS: EffectRegistry = {
       },
     },
   },
-  'lore-19': { reroll: { limit: 'any', whileDeclared: 'psionics' }, prelude: { clear: clearsOutrage('psionic') } },
+  'lore-19': { reroll: { limit: 'any', whileDeclared: 'psionics', anyRoll: true }, prelude: { clear: clearsOutrage('psionic') } },
   'lore-21': { guardResourcesWhile: 'relics', prelude: { clear: clearsOutrage('relic') } },
   'lore-22': { guardGuildWhile: 'relics' },
   'lore-23': { retaxWhile: 'trophies', prelude: { clear: clearsOutrage('weapons') } },
