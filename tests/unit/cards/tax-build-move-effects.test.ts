@@ -1,6 +1,6 @@
 // Tax, build and move effects (design/gdd/card-effects.md, "Tax, build, move").
 import { describe, expect, it } from 'vitest';
-import { dispatch, heldResources } from '../../../src/game/engine';
+import { dispatch, heldResources, pieceLedger } from '../../../src/game/engine';
 import type { ActionPayload, GameState } from '../../../src/game/engine';
 import { cardsIndex, runAll, start } from './fixture';
 
@@ -96,8 +96,11 @@ describe('tax', () => {
       s.players[0].resources = ['fuel'];
       s.map['c1-p2'].buildings = [city(0), city(0)];
     });
+    const tokens = pieceLedger(s).resources;
     s = act(s, { kind: 'tax', system: 'c1-p2', shape: 0 });
     expect(s.planetTypes).toEqual({ 'c1-p2': 'fuel' });
+    // The placed resource stays on the planet: the piece ledger still counts it (Fase 6 playtest, 4p seed 12).
+    expect(pieceLedger(s).resources).toBe(tokens);
     expect(heldResources(s.players[0])).toEqual(['relic']);
     expect(() => act(s, { kind: 'tax', system: 'c1-p2', shape: 0 })).toThrow(/already changed/);
     s = act(s, { kind: 'tax', system: 'c1-p2' });

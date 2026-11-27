@@ -448,6 +448,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       // Online, a screen only plays its own seat.
       if (online && online.seat !== null && cmd.player !== online.seat) throw new Error(t('online.notYours'));
       const next = dispatch(ix, state, cmd);
+      // The seat acts: the "while you were waiting" note has been read and makes room on the map.
+      awayNote = [];
       // Online, a command that rolled dice, shuffled or drew a hidden card cannot be undone (it would show
       // what was hidden, or let a roll be retried): the history before it is dropped.
       if (online && !hotseat && revealsHidden(state, next)) history = [];
@@ -2211,8 +2213,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     const r = stage.getBoundingClientRect();
     const c = card?.getBoundingClientRect();
     const x = c ? (c.left + c.width / 2 - r.left) / scale : STAGE.w / 2;
-    // Over the card, and never down over the bar.
+    // Over the card, and never down over the bar; a long list scrolls inside, the window stays on the stage.
     const y = Math.min(c ? (c.top - r.top) / scale : REGIONS.bar.y, REGIONS.bar.y);
+    el.style.maxHeight = `${Math.max(160, y - 20)}px`;
     el.style.left = `${Math.max(8, Math.min(STAGE.w - el.offsetWidth - 8, x - el.offsetWidth / 2))}px`;
     el.style.top = `${Math.max(8, y - el.offsetHeight - 12)}px`;
   }

@@ -73,17 +73,31 @@ export function clickables(page) {
       if (r.width < 2 || r.height < 2) continue;
       const cs = getComputedStyle(el);
       if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.05) continue;
+      // In a list that scrolls inside its window, a target out of the list's view is reached by scrolling it,
+      // as a person does: on screen and whole, clicked after `click` scrolls it into view.
+      let box = el.parentElement;
+      while (box && !(/(auto|scroll)/.test(getComputedStyle(box).overflowY) && box.scrollHeight > box.clientHeight + 1)) box = box.parentElement;
+      const view = box?.getBoundingClientRect();
+      if (view && (r.top < view.top - 1 || r.bottom > view.bottom + 1)) {
+        out.push({ act: el.dataset.act, data: { ...el.dataset, pressed: el.getAttribute('aria-pressed') ?? '' }, label: (el.getAttribute('aria-label') || el.title || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60), x: -1, y: -1, covered: false, partly: false, coveredBy: '', onScreen: true, whole: true, scroll: true, foot: !!el.closest('.modal-foot') });
+        continue;
+      }
       if (r.right <= 0 || r.bottom <= 0 || r.left >= innerWidth || r.top >= innerHeight) {
         out.push({ act: el.dataset.act, data: { ...el.dataset }, label: '', x: -1, y: -1, covered: false, partly: false, coveredBy: '', onScreen: false, whole: false });
         continue;
       }
-      const x = Math.min(Math.max(r.left + r.width / 2, 1), innerWidth - 2);
-      const y = Math.min(Math.max(r.top + r.height / 2, 1), innerHeight - 2);
-      const top = document.elementFromPoint(x, y);
-      const covered = !inside(top, el);
+      let x = Math.min(Math.max(r.left + r.width / 2, 1), innerWidth - 2);
+      let y = Math.min(Math.max(r.top + r.height / 2, 1), innerHeight - 2);
+      let top = document.elementFromPoint(x, y);
       // Four more points, 20% in from the corners: a target half under a panel is half usable.
       const pts = [[0.2, 0.2], [0.8, 0.2], [0.2, 0.8], [0.8, 0.8]].map(([fx, fy]) => [r.left + r.width * fx, r.top + r.height * fy]);
-      const partly = !covered && pts.some(([px, py]) => px >= 0 && py >= 0 && px < innerWidth && py < innerHeight && !inside(document.elementFromPoint(px, py), el));
+      const shows = ([px, py]) => px >= 0 && py >= 0 && px < innerWidth && py < innerHeight && inside(document.elementFromPoint(px, py), el);
+      // Its middle under something but a part of it in view (a card fanned under the next): a person clicks that part.
+      const seen = !inside(top, el) ? pts.find(shows) : undefined;
+      if (seen) [x, y] = seen;
+      if (seen) top = el;
+      const covered = !inside(top, el);
+      const partly = !covered && (!!seen || pts.some((p) => p[0] >= 0 && p[1] >= 0 && p[0] < innerWidth && p[1] < innerHeight && !shows(p)));
       out.push({
         act: el.dataset.act,
         data: { ...el.dataset, pressed: el.getAttribute('aria-pressed') ?? '' },
@@ -124,6 +138,16 @@ export function choose(cs, s, rand) {
   }
   for (const a of ['gift-pick', 'draft-pick', 'decide-pick', 'power-pick']) if (by(a).length) return pick(by(a));
   if (by('pass-confirm').length) return by('pass-confirm')[0];
+  // Farseers' swap window (court-17): a card of the Rival's hand, one of yours, then Swap; at times no swap.
+  if (by('swap-take').length || by('swap-give').length) {
+    const no = by('decline').find((c) => c.foot);
+    if (by('swap-confirm').length) return rand() < 0.85 || !no ? by('swap-confirm')[0] : no;
+    const take = by('swap-take');
+    const give = by('swap-give');
+    if (take.length && !take.some((c) => c.data.pressed === 'true')) return pick(take);
+    if (give.length && !give.some((c) => c.data.pressed === 'true')) return pick(give);
+    if (no) return no;
+  }
   // The window's own button (its backdrop also closes it, but a person clicks the button).
   if (by('close-modal').length) return by('close-modal').find((c) => c.foot) ?? by('close-modal')[0];
   if (s.phase.type === 'decide') {
@@ -320,6 +344,19 @@ export async function runGame({ browser, players, variant = 'base', seed = 7, st
 
   /** One click, as a person: the mouse moves there and clicks; what hides a target is noted. */
   async function click(page, c) {
+    if (c.scroll) {
+      // Scrolls the list to the target, then takes where it is now.
+      const at = await page.evaluate((d) => {
+        const sel = Object.entries(d).filter(([k]) => k !== 'pressed').map(([k, v]) => `[data-${k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}="${CSS.escape(String(v))}"]`).join('');
+        const el = document.querySelector(sel);
+        if (!el) return null;
+        el.scrollIntoView({ block: 'nearest' });
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }, c.data);
+      if (!at) return;
+      Object.assign(c, at);
+    }
     if (!c.onScreen) await note(page, 'offscreen', `${c.act}:${c.label.slice(0, 20)}`, 'del tutto fuori');
     else if (!c.whole) await note(page, 'offscreen', `${c.act}:${c.label.slice(0, 20)}`, 'in parte fuori');
     if (c.partly) await note(page, 'partly', `${c.act}:${c.label.slice(0, 20)}`);
@@ -364,7 +401,7 @@ export async function runGame({ browser, players, variant = 'base', seed = 7, st
           break;
         }
         const now = await live(page);
-        if (opened && !now.some((x) => x.act === 'decide-pick' || x.act === 'keep-toggle')) await note(page, 'empty', `${s.phase.decision?.card}:${s.phase.decision?.effect}`, 'Scegli apre una scelta senza opzioni');
+        if (opened && !now.some((x) => ['decide-pick', 'keep-toggle', 'swap-take', 'swap-give'].includes(x.act))) await note(page, 'empty', `${s.phase.decision?.card}:${s.phase.decision?.effect}`, 'Scegli apre una scelta senza opzioni');
         c = choose(now, s, rand);
       }
       if (moved) break;

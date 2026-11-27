@@ -99,6 +99,16 @@ test.describe('while you were waiting', () => {
     await expect(note.locator('li').nth(1)).toHaveText('Agenti catturati: 1');
     await note.locator('[data-act="away-close"]').click();
     await expect(note).toHaveCount(0);
+    // Acting also closes it, so it never covers the systems a choice lights (Fase 6 playtest, 4p seed 11).
+    await load(0);
+    await load(0, true);
+    await load(2);
+    await expect(note).toHaveCount(1);
+    await page.evaluate(() => {
+      const s = window.game!.state as unknown as { players: { hand: string[] }[] };
+      window.game!.send!({ type: 'lead', player: 2, card: s.players[2].hand[0] });
+    });
+    await expect(note).toHaveCount(0);
   });
 });
 
