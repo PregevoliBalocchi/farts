@@ -311,7 +311,7 @@ export class BattleView3D {
     this.pieces = noPieces();
     const can = scene.canPick;
     const ring = (x: number, y: number, z: number, size: number, pick: BattlePick) => {
-      const m = new THREE.Mesh(new THREE.RingGeometry(size, size + 0.07, 40), new THREE.MeshBasicMaterial({ color: '#5fd4e6', transparent: true, opacity: 0.9, depthWrite: false }));
+      const m = new THREE.Mesh(new THREE.RingGeometry(size, size + 0.07, 40), new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0.9, depthWrite: false })); // gilt-pale: what can be picked (No-Teal Rule)
       m.rotation.x = -Math.PI / 2;
       m.position.set(x, y, z);
       m.userData.pulse = true;

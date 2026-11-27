@@ -610,5 +610,8 @@
   "decide.word.number": "il dado numero",
   "decide.word.both": "entrambi i dadi",
   "menu.port.fresh": "colpisci quello integro",
-  "menu.port.damaged": "colpisci quello danneggiato (si distrugge)"
+  "menu.port.damaged": "colpisci quello danneggiato (si distrugge)",
+  "btn.cancelStep": "Annulla la scelta",
+  "btn.putBack": "Rimetti in mano",
+  "play.endTurnStep": "Prima finisci o annulla la scelta in corso"
 }
