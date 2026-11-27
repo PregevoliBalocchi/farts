@@ -1921,7 +1921,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .region.actions.cmd-bar .cmd-pips .ic { width: 16px; height: 16px; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-text { min-width: 0; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-note { flex: none; margin-left: auto; font-size: 14px; color: #a8977a; white-space: nowrap; }
-.tbl-stage .region.actions.cmd-bar .cmd-x { position: relative; flex: none; width: 34px; height: 34px; margin-left: auto; }
+.tbl-stage .region.actions.cmd-bar .cmd-x { flex: none; width: 36px; height: 36px; margin-left: auto; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-note + .cmd-x { margin-left: 0; }
 .tbl-stage.tbl-stage .region.actions.cmd-bar .cmd-body { display: grid; gap: 6px; min-width: 0; }
 .tbl-stage .region.actions.cmd-bar .cmd-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; }
@@ -2081,11 +2081,10 @@ button.supply:hover { border-color: var(--rule-hi); }
    1280×720 screen, where the stage shows at 67%), drawn by an invisible ::after so the look does not change. */
 .tbl-stage .cs-btn, .tbl-stage .board .sp-block { position: relative; }
 .tbl-stage .cs-btn::after, .tbl-stage .board .sp-block::after, .tbl-stage .btn.find-mine::after, .tbl-stage .amb-tab::after,
-.tbl-stage .region.mine > .mine-open::after, .tbl-stage .btn.rule-q::after, .tbl-stage .region.actions.cmd-bar .cmd-x::after { content: ''; position: absolute; }
+.tbl-stage .region.mine > .mine-open::after { content: ''; position: absolute; }
 /* The own Court's side tab (24 px wide): its hit area reaches into the hand's gap. The step's cancel cross and
-   the "?" are drawn at 34 px and reach 2 px further. */
+   the "?" are drawn at 36 px. */
 .tbl-stage .region.mine > .mine-open::after { inset: 0 0 0 -12px; }
-.tbl-stage .btn.rule-q::after, .tbl-stage .region.actions.cmd-bar .cmd-x::after { inset: -2px; }
 .tbl-stage .cs-btn::after { inset: -5px 0; }
 .tbl-stage [data-region="local"] .btn.find-mine::after { inset: -8px 0; }
 .tbl-stage .board.rband .sp-block::after { inset: -7px -2px; }
@@ -2187,7 +2186,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .away-note ul { margin: 6px 0 0; padding-left: 18px; line-height: 1.45; }
 /* "?" rule reminders (piano PR 6, Fase 4.10): a round button; open, the reminder as a box above it. */
 .tbl-stage .rule-help { position: relative; display: inline-flex; margin-left: 8px; }
-.tbl-stage.tbl-stage.tbl-stage .btn.rule-q { width: 34px; height: 34px; min-width: 0; min-height: 0; padding: 0; border-radius: 50%; display: inline-grid; place-items: center; font: 800 19px/1 var(--font-ui, inherit); color: var(--dg-ink); background: var(--gilt-highlight); border: 1px solid var(--gilt-pale); position: relative; }
+.tbl-stage.tbl-stage.tbl-stage .btn.rule-q { width: 36px; height: 36px; min-width: 0; min-height: 0; padding: 0; border-radius: 50%; display: inline-grid; place-items: center; font: 800 19px/1 var(--font-ui, inherit); color: var(--dg-ink); background: var(--gilt-highlight); border: 1px solid var(--gilt-pale); position: relative; }
 .tbl-stage.tbl-stage.tbl-stage .btn.rule-q.on { background: var(--gilt-pale); box-shadow: 0 0 0 2px #000, 0 0 0 3px var(--gilt-pale); }
 .tbl-stage .rule-pop { position: absolute; z-index: 120; width: 420px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--gilt-highlight); background: rgba(16, 12, 8, .97); box-shadow: 0 8px 24px #000c; font: 400 var(--fs-label)/1.45 var(--font-ui, inherit); color: var(--dg-text); text-align: left; white-space: normal; text-transform: none; letter-spacing: 0; }
 .tbl-stage .rule-pop p { margin: 0; }
