@@ -102,8 +102,12 @@ const KIT_SHIP_SCALE = 1.15;
 const ZONE_SHIP_SCALE = 0.85;
 /** Default heading of a ship model: three-quarters to the viewer. */
 const SHIP_HEADING = -0.55;
-const VALID = new THREE.Color('#5fd4e6');
-const CHOSEN = new THREE.Color('#ffcc66');
+/**
+ * What can be picked: a single ring that pulses, in gilt-pale (DESIGN.md, The No-Teal Rule: the old cyan read as
+ * the teal seat). What is chosen: a steady double ring in deeper gold, so the two differ by shape, not only colour.
+ */
+const VALID = new THREE.Color('#ffd27a');
+const CHOSEN = new THREE.Color('#e9a93a');
 const SURROUND = '#0b0a0c';
 
 /** A seat's ship groups to light up: those in `systems`, the one in `chosen` as picked. */

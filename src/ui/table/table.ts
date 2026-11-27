@@ -1919,7 +1919,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   function commandBar(b: CommandBar | null): string {
     if (!b) return '';
     const stars = b.pips ? `<span class="cmd-pips" aria-hidden="true">${Array.from({ length: b.pips }, () => icon('pip')).join('')}</span>` : '';
-    const close = b.close ? button('deselect', '', { cls: 'icon x cmd-x', title: t('btn.cancel'), html: icon('close') }) : '';
+    const close = b.close ? button('deselect', '', { cls: 'icon x cmd-x', title: t('btn.putBack'), html: icon('close') }) : '';
     const help = b.rules?.length ? ruleHelp(b.rules) : '';
     const head = b.title || close || help ? `<div class="cmd-head">${b.title ? `<span class="cmd-title">${esc(b.title)}</span>` : ''}${stars}${help}${close}</div>` : '';
     const main = `<div class="cmd-main" style="--n:${Math.max(3, b.main.length)}">${b.main.join('')}</div>`;
@@ -1928,17 +1928,20 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     return `${head}${b.body ? `<div class="cmd-body">${b.body}</div>` : ''}<div class="cmd-row">${main}${powers}${turn}</div>`;
   }
 
-  /** The turn's left button: Cancel while a step is open, else Undo. */
+  /**
+   * The turn's left button: "Cancel this step" while a step is open, else Undo. The three ways back have three
+   * names (critique 2026-11-27): Undo takes back the last move, this leaves the step, the card's X puts it back in hand.
+   */
   function undoOrCancel(step: boolean): string {
     return step
-      ? button('cancel', t('btn.cancel'), { cls: 'cmd-btn', title: t('btn.cancel'), html: `${icon('close')}<span>${esc(t('btn.cancel'))}</span>` })
+      ? button('cancel', t('btn.cancelStep'), { cls: 'cmd-btn', title: t('btn.cancelStep'), html: `${icon('close')}<span>${esc(t('btn.cancelStep'))}</span>` })
       : button('undo', t('btn.undo'), { cls: 'cmd-btn', title: t('btn.undoKey'), html: `${icon('undo')}<span>${esc(t('btn.undo'))}</span>`, disabled: history.length === 0 });
   }
 
-  /** End turn, lit when no action is left; off while a step is open. */
+  /** End turn, lit when no action is left; off while a step is open, and its tooltip says why. */
   function endTurnButton(v: TableView, step: boolean): string {
     const left = v.budget?.remaining ?? 0;
-    return button('end-turn', t('play.endTurn'), { cls: `cmd-btn primary${left === 0 && !step ? ' ready' : ''}`, disabled: step || !can({ type: 'endTurn', player: local() }) });
+    return button('end-turn', t('play.endTurn'), { cls: `cmd-btn primary${left === 0 && !step ? ' ready' : ''}`, disabled: step || !can({ type: 'endTurn', player: local() }), ...(step ? { title: t('play.endTurnStep') } : {}) });
   }
 
   /**

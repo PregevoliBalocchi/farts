@@ -610,5 +610,8 @@
   "decide.word.number": "the number die",
   "decide.word.both": "both dice",
   "menu.port.fresh": "hit the fresh one",
-  "menu.port.damaged": "hit the damaged one (it is destroyed)"
+  "menu.port.damaged": "hit the damaged one (it is destroyed)",
+  "btn.cancelStep": "Cancel this step",
+  "btn.putBack": "Put back in hand",
+  "play.endTurnStep": "Finish or cancel the current step first"
 }
