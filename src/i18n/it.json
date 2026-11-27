@@ -604,5 +604,11 @@
   "map.litMany": "{n} sistemi selezionabili: {names}. Le frecce passano dall'uno all'altro, Ctrl+frecce tra tutti i sistemi.",
   "settings.palette": "Colori dei giocatori",
   "settings.palette.official": "Ufficiali",
-  "settings.palette.clear": "Più distinguibili (daltonismo)"
+  "settings.palette.clear": "Più distinguibili (daltonismo)",
+  "decide.effect.event:reroll": "ritirare i dadi evento",
+  "decide.word.event": "il dado evento",
+  "decide.word.number": "il dado numero",
+  "decide.word.both": "entrambi i dadi",
+  "menu.port.fresh": "colpisci quello integro",
+  "menu.port.damaged": "colpisci quello danneggiato (si distrugge)"
 }

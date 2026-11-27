@@ -604,5 +604,11 @@
   "map.litMany": "{n} systems can be picked: {names}. Arrow keys move between them, Ctrl+arrows between all systems.",
   "settings.palette": "Player colours",
   "settings.palette.official": "Official",
-  "settings.palette.clear": "Easier to tell apart (colour blindness)"
+  "settings.palette.clear": "Easier to tell apart (colour blindness)",
+  "decide.effect.event:reroll": "reroll the event dice",
+  "decide.word.event": "the event die",
+  "decide.word.number": "the number die",
+  "decide.word.both": "both dice",
+  "menu.port.fresh": "hit the fresh one",
+  "menu.port.damaged": "hit the damaged one (it is destroyed)"
 }

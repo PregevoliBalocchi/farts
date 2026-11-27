@@ -530,5 +530,13 @@
   "{0}: once per turn": "{0}: una volta per turno",
   "{0}: only before any other actions this turn": "{0}: solo prima di ogni altra azione del turno",
   "{0}: only while {1} is declared": "{0}: solo mentre {1} è dichiarata",
-  "{1} Guild cards shuffled back into the Court deck": "{1} carte Gilda rimescolate nel mazzo Corte"
+  "{1} Guild cards shuffled back into the Court deck": "{1} carte Gilda rimescolate nel mazzo Corte",
+  "No event dice to reroll": "Nessun dado evento da ritirare",
+  "No such starport of yours there": "Non hai quello spazioporto lì",
+  "Reroll the event die, the number die or both": "Ritira il dado evento, il dado numero o entrambi",
+  "keeps the event dice": "tiene i dadi evento",
+  "rerolls the event and number dice with {0}: {1}": "ritira il dado evento e il dado numero con {0}: {1}",
+  "rerolls the event die with {0}: {1}": "ritira il dado evento con {0}: {1}",
+  "rerolls the number die with {0}: {1}": "ritira il dado numero con {0}: {1}",
+  "{0} {1}, number {2}": "{0} {1}, numero {2}"
 }

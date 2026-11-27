@@ -73,6 +73,11 @@ export interface RerollAbility {
   /** How many dice at most. */
   limit: 'weaponIcons' | 'freshAttackers' | 'resourceTypes' | 'any';
   whileDeclared?: AmbitionId;
+  /**
+   * Any roll of the owner, not only a battle's: a roll "like in a battle" and the campaign's event dice
+   * (lore-19, "if you roll any dice (even outside battle)"). Every roll outside battle asks `anyRollRerolls`.
+   */
+  anyRoll?: boolean;
 }
 
 /** Everything a card can do. Every field is optional. */

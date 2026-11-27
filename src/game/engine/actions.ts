@@ -29,8 +29,8 @@ export type ActionPayload =
    */
   /** Campaign: `cityOwner` 'free' taxes a Free city in a system you control (p. 15), capturing no agent. */
   | { kind: 'tax'; system: string; cityOwner?: Owner; city?: number; emptySlot?: boolean; resource?: Resource; shape?: number | { cartel: Resource }; again?: { ransack?: number } }
-  /** Card options: `outside` builds a city outside the slots paying the resource on slot `pay`; `again` hits the starport to build another ship. */
-  | { kind: 'build'; system: string; what: 'ship' | 'city' | 'starport'; outside?: boolean; pay?: number; again?: { ransack?: number } }
+  /** Card options: `outside` builds a city outside the slots paying the resource on slot `pay`; `again` hits a starport to build another ship, the one at index `port` of the Loyal starports there (the first by default). */
+  | { kind: 'build'; system: string; what: 'ship' | 'city' | 'starport'; outside?: boolean; pay?: number; again?: { ransack?: number }; port?: number }
   /** Campaign: `whose` repairs an Imperial ship you Command (p. 10) or a Free building you control (p. 15). */
   | { kind: 'repair'; system: string; target: 'ship' | 'building'; whose?: 'imperial' | 'free' }
   /**
@@ -241,7 +241,9 @@ export const HANDLERS: { [K in ActionKind]: (ix: ContentIndex, s: GameState, p: 
       place();
       if (turn) (turn.shipBuilds ??= {})[a.system] = built + 1;
       if (a.again) {
-        text = hitAndRepeat(ix, s, p, sys, ports[0], a.again.ransack, fx);
+        // "Hit the building to take that action again with it": the starport the player picks (first by default).
+        const port = ports[a.port ?? 0] ?? err('No such starport of yours there');
+        text = hitAndRepeat(ix, s, p, sys, port, a.again.ransack, fx);
         place();
         text += '; builds again';
       }
@@ -533,6 +535,12 @@ export function collectAndRoll(ix: ContentIndex, s: GameState, bt: { attacker: P
  */
 export function finalizeBattle(ix: ContentIndex, s: GameState, b: PendingBattle): void {
   if (b.faces) b.totals = totalFaces(b.faces.map((f) => f.face));
+  if (b.like) {
+    // "Like in a battle": only the hits are dealt, with no battle modifiers (base.ts lore-02).
+    b.totals = { hit: b.totals.hit, selfHit: 0, buildingHit: 0, key: 0, intercept: 0 };
+    b.interceptHits = 0;
+    return;
+  }
   const t = b.totals;
   const atk = b.like ? [] : ownedEffects(ix, s, b.attacker).map((f) => f.effect);
   const target = b.target;
@@ -564,10 +572,10 @@ function rerollLimit(ix: ContentIndex, s: GameState, b: PendingBattle, limit: Re
  * ability once per battle, all its dice together (card-effects.md rulings).
  */
 export function rerollDice(ix: ContentIndex, s: GameState, b: PendingBattle, player: PlayerId, card: string, dice: number[]): string {
-  if (b.like) err('Not a battle: battle rerolls do not apply');
   if (player !== b.attacker) err('Only the attacker rerolls');
   if (!ownedEffects(ix, s, player).some((o) => o.card === card)) err(`You do not have ${card}`);
   const ab = effectOf(ix, card)?.reroll ?? err(`${card} has no reroll`);
+  if (b.like && !ab.anyRoll) err('Not a battle: battle rerolls do not apply');
   if (ab.whileDeclared && !isDeclared(s, ab.whileDeclared)) err(`${card}: only while ${ab.whileDeclared} is declared`);
   if (b.rerolls?.includes(card)) err(`${card} was already used in this battle`);
   const faces = b.faces ?? err('No dice to reroll');
@@ -585,6 +593,18 @@ export function rerollDice(ix: ContentIndex, s: GameState, b: PendingBattle, pla
   (b.rerolls ??= []).push(card);
   finalizeBattle(ix, s, b);
   return `P${player} rerolls ${dice.length} dice with ${card}`;
+}
+
+/**
+ * The cards of `player` that may reroll a roll made outside a battle now (lore-19: "if you roll any dice
+ * (even outside battle)"), in the order they are held. Every roll that is not a battle's offers these
+ * before its dice resolve: a roll "like in a battle" (through `rerollDice`), the campaign's event dice
+ * (events.ts), and any later roll of the campaign.
+ */
+export function anyRollRerolls(ix: ContentIndex, s: GameState, player: PlayerId): string[] {
+  return ownedEffects(ix, s, player)
+    .filter((o) => o.effect.reroll?.anyRoll && (!o.effect.reroll.whileDeclared || isDeclared(s, o.effect.reroll.whileDeclared)))
+    .map((o) => o.card);
 }
 
 /** After the allocation of a real battle: repairs, intercept costs, reactions (card-effects.md "Battle"). */

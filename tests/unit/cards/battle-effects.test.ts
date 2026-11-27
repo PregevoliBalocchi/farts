@@ -243,6 +243,27 @@ describe('like in a battle', () => {
     s = dispatch(ix, s, { type: 'allocate', player: 0, allocation: { selfHits: [], hits: ['fresh', 'fresh'], buildingHits: [] } });
     expect(s.map['c1-p1'].ships[1]).toEqual({ fresh: 0, damaged: 2 });
   });
+
+  // lore-19 "if you roll any dice (even outside battle), you may reroll any number of them once"; a battle
+  // reroll (lore-14) applies to battles only.
+  it('the dice of a lore action can be rerolled by a card that rerolls any dice, not by a battle reroll', () => {
+    const ix = fixedDice({ skirmish: { hit: 1 } });
+    let s = start(ix, [['suitB-2'], ['suitB-4']]);
+    s.players[0].lore = ['l:lore-02', 'l:lore-19', 'l:lore-14'];
+    s.ambitions.declared.psionics = ['m'];
+    s.map['c1-gate'].ships = { 0: { fresh: 2, damaged: 0 } };
+    s.map['c1-p1'].ships = { 1: { fresh: 2, damaged: 0 } };
+    s = runAll(ix, s, [
+      { type: 'lead', player: 0, card: 'suitB-2' },
+      { type: 'action', player: 0, action: { kind: 'card', card: 'l:lore-02', name: 'rifles', args: { system: 'c1-gate', at: 'c1-p1', target: 1 } } },
+    ]);
+    expect(s.phase).toMatchObject({ type: 'allocate', battle: { like: true, faces: [{ type: 'skirmish' }, { type: 'skirmish' }] } });
+    expect(() => dispatch(ix, s, { type: 'reroll', player: 0, card: 'l:lore-14', dice: [0] })).toThrow(/Not a battle/);
+    s = dispatch(ix, s, { type: 'reroll', player: 0, card: 'l:lore-19', dice: [0, 1] });
+    // Still a roll "like in a battle": only its hits count.
+    expect(s.phase).toMatchObject({ type: 'allocate', battle: { rerolls: ['l:lore-19'], totals: { hit: 2, selfHit: 0, buildingHit: 0, key: 0, intercept: 0 } } });
+    expect(() => dispatch(ix, s, { type: 'reroll', player: 0, card: 'l:lore-19', dice: [0] })).toThrow(/already used/);
+  });
 });
 
 describe('building with cards', () => {

@@ -16,8 +16,8 @@ export type VariantPart =
   | { key: 'city'; n: number }
   | { key: 'resource'; resource: Resource }
   | { key: 'shape'; resource: Resource }
-  | { key: 'again' }
-  | { key: 'ransack'; slot: number }
+  | { key: 'again'; port?: 'fresh' | 'damaged' }
+  | { key: 'ransack'; slot: number; port?: 'fresh' | 'damaged' }
   | { key: 'outside'; resource: Resource }
   | { key: 'twice'; slot: number }
   | { key: 'influence'; slot: number; when: 'before' | 'after' };
@@ -52,7 +52,13 @@ function dimensions(s: GameState, me: PlayerId, a: ActionPayload): Value[][] {
       a.emptySlot ? [] : again,
     ];
   }
-  if (a.kind === 'build' && a.what === 'ship') return [again];
+  if (a.kind === 'build' && a.what === 'ship') {
+    // The starport hit to build again (leader-10): it matters only when one is fresh and another damaged
+    // (the damaged one is destroyed). Then each option names the one it hits.
+    const ports = s.map[a.system]?.buildings.filter((b) => b.type === 'starport' && b.owner === me) ?? [];
+    if (ports.every((b) => b.damaged === ports[0].damaged)) return [again];
+    return [ports.flatMap((b, i) => again.map((v): Value => ({ extra: { ...v.extra, port: i }, part: { ...v.part, port: b.damaged ? 'damaged' : 'fresh' } as VariantPart })))];
+  }
   if (a.kind === 'build' && a.what === 'city') return [held.map(({ r, i }): Value => ({ extra: { outside: true, pay: i }, part: { key: 'outside', resource: r } }))];
   if (a.kind === 'influence') return [court.map((i): Value => ({ extra: { twice: i }, part: { key: 'twice', slot: i } }))];
   if (a.kind === 'secure') {

@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { dispatch, eventCardIds, indexContent, newCampaignGame, openSlots, runEvent } from '../../../src/game/engine';
 import type { ContentIndex, EventStep, GameContent, GameState } from '../../../src/game/engine';
+import { BASE_EFFECTS } from '../../../src/game/cards/base';
 import { decisionOptions } from '../../../src/ui/table/decide';
 
 const PATH = 'data/content.json';
@@ -64,6 +65,32 @@ describe.skipIf(!existsSync(PATH))('campaign event phase', () => {
       for (let k = 0; s.phase.type === 'decide' && k < 20; k++) s = dispatch(ix, s, { type: 'decide', player: s.phase.decision.player });
       expect(s.phase).toEqual({ type: 'lead' });
       expect(s.campaign!.eventSteps).toBeUndefined();
+    });
+
+    // lore-19 "if you roll any dice (even outside battle), you may reroll any number of them once": the event
+    // and number dice, rolled by the player with initiative (p. 13).
+    it('offers the roller a card that rerolls any dice before the event dice resolve, and only then', () => {
+      // This test needs the cards' effects, which the other tests here leave out.
+      const fx = indexContent(JSON.parse(readFileSync(PATH, 'utf8')) as GameContent, BASE_EFFECTS);
+      const roll = (s: GameState, steps: EventStep[]) => {
+        let done = false;
+        s.campaign!.eventSteps = steps;
+        runEvent(fx, s, () => (done = true));
+        return done;
+      };
+      let s = game();
+      s.pendingDecisions = [];
+      s.players[s.initiative].lore = ['lore-19'];
+      expect(roll(s, [{ kind: 'roll' }])).toBe(true);
+      s.ambitions.declared.psionics = [s.ambitions.available.shift()!];
+      expect(roll(s, [{ kind: 'roll' }, { kind: 'eventDie' }])).toBe(false);
+      expect(s.pendingDecisions).toEqual([{ player: s.initiative, card: 'lore-19', effect: 'event:reroll' }]);
+      const decision = s.pendingDecisions!.shift()!;
+      s.phase = { type: 'decide', decision, resume: { type: 'lead' } };
+      s = dispatch(fx, s, { type: 'decide', player: decision.player, args: { dice: 'both' } });
+      expect(s.log.some((l) => l.text.includes('rerolls the event and number dice with lore-19'))).toBe(true);
+      // The rerolled dice are the ones that resolve: the Crises or the Edicts come next.
+      expect(s.log.some((l) => l.text.startsWith('Crises') || l.text.startsWith('Edicts'))).toBe(true);
     });
 
     it('makes a Regent who secured the Council the First Regent, then asks Crises or Edicts', () => {

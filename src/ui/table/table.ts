@@ -1083,9 +1083,9 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       case 'shape':
         return t('menu.shape', { res: res(p.resource) });
       case 'again':
-        return kind === 'tax' ? t('menu.taxAgain') : t('menu.buildAgain');
+        return `${kind === 'tax' ? t('menu.taxAgain') : t('menu.buildAgain')}${p.port ? ` · ${t(`menu.port.${p.port}`)}` : ''}`;
       case 'ransack':
-        return `${kind === 'tax' ? t('menu.taxAgain') : t('menu.buildAgain')} · ${t('menu.ransack', { card: card(p.slot) })}`;
+        return `${kind === 'tax' ? t('menu.taxAgain') : t('menu.buildAgain')}${p.port ? ` · ${t(`menu.port.${p.port}`)}` : ''} · ${t('menu.ransack', { card: card(p.slot) })}`;
       case 'outside':
         return t('menu.outside', { res: res(p.resource) });
       case 'twice':
