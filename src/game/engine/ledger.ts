@@ -75,6 +75,8 @@ export function pieceLedger(s: GameState): Ledger {
   let resources = Object.values(s.resourceSupply).reduce((a, b) => a + b, 0);
   for (const pl of s.players) resources += pl.resources.filter(Boolean).length + (pl.overflow?.length ?? 0);
   for (const box of Object.values(s.ambitionBoxes ?? {})) resources += box?.length ?? 0;
+  // A resource placed over a planet's icon (the Shaper, leader-14) stays there for good.
+  resources += Object.keys(s.planetTypes ?? {}).length;
   for (const p of phases(s.phase)) resources += (p as { budget?: { spentInPrelude?: unknown[] } }).budget?.spentInPrelude?.length ?? 0;
   return { pieces, resources };
 }
