@@ -65,8 +65,8 @@ type Drop = 'log' | 'help' | 'piles';
 const LOG_LINES = 14;
 /** How long the "My pieces" button lights the own pieces. */
 const FIND_MINE_MS = 6000;
-/** The prompt line's height, under the hand (production/base-fixes.md #17). */
-const PROMPT_H = 34;
+/** The gap between the prompt's bottom and the hand region's bottom edge: the prompt grows upward from there (base-fixes #17). */
+const PROMPT_GAP = 8;
 /** How long a system's card, opened by a click, stays open. */
 const SYSTEM_TIP_MS = 4500;
 /** How long a hover card waits before closing once the mouse leaves what it is about (time to reach the card). */
@@ -937,18 +937,26 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
    * the map under it cannot be clicked, so a dark veil says so; only cards and tokens are used there.
    */
   /**
-   * The turn instruction under the hand stays whole on its line: when it is too long for it, its text
-   * shrinks a step at a time, down to 75% of its size (base-fixes #44); the tooltip keeps the whole text.
+   * The turn instruction under the hand stays whole: it has the width of the hand, under the turn banner.
+   * When one line is too short, its text shrinks a step at a time, down to 75% of its size (base-fixes #44);
+   * when that is still too long, it keeps its size and wraps to a second line (critique 2026-11-27). The
+   * tooltip keeps the whole text.
    */
   function fitPrompt(): void {
     const line = stage.querySelector<HTMLElement>('.hd.prompt .pr-text');
     if (!line) return;
     line.style.fontSize = '';
-    let size = parseFloat(getComputedStyle(line).fontSize);
-    const min = size * 0.75;
+    line.classList.remove('wrap');
+    const full = parseFloat(getComputedStyle(line).fontSize);
+    const min = full * 0.75;
+    let size = full;
     while (line.scrollWidth > line.clientWidth + 1 && size > min) {
       size -= 1;
       line.style.fontSize = `${size}px`;
+    }
+    if (line.scrollWidth > line.clientWidth + 1) {
+      line.style.fontSize = '';
+      line.classList.add('wrap');
     }
   }
 
@@ -2567,7 +2575,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
     patchChildren(stage, [
       `<div class="tbl-stars"></div>`,
       skipLinks(!!(bar || ctx)),
-      `<div class="region header" data-region="header" style="${place(REGIONS.header)};--pr-x:${REGIONS.hand.x + REGIONS.hand.w / 2}px;--pr-w:${REGIONS.hand.w - 20}px;--pr-y:${REGIONS.hand.y + REGIONS.hand.h - PROMPT_H}px">${header(v, t, source === 'example', barNow?.text ?? prompt(v), board3d?.hasInfoLayer ? controlLayer : null, drop, board3d?.hasFlatPlanets ? flatPlanets : null)}</div>`,
+      `<div class="region header" data-region="header" style="${place(REGIONS.header)};--pr-x:${REGIONS.hand.x + REGIONS.hand.w / 2}px;--pr-w:${REGIONS.hand.w - 20}px;--pr-y:${REGIONS.hand.y + REGIONS.hand.h - PROMPT_GAP}px">${header(v, t, source === 'example', barNow?.text ?? prompt(v), board3d?.hasInfoLayer ? controlLayer : null, drop, board3d?.hasFlatPlanets ? flatPlanets : null)}</div>`,
       `<div class="map-area${board3d ? '' : ' glass'}" data-region="map"${zone('map')} style="${place(REGIONS.map)}">${board3d ? map3dOverlay(v, valid) : mapSvg(ix, v, valid, chosen, t)}</div>`,
       `<div class="region rivals" data-region="rivals"${zone('rivals')} style="${place(REGIONS.rivals)}">${rivals}</div>`,
       `<div class="region court" data-region="court"${zone('court')} style="${place(REGIONS.court)}">${courtPanel(v, t, courtPickable(intent), ix)}</div>`,

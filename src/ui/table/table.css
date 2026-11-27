@@ -699,7 +699,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .board .cover.bonus { display: grid; grid-template-rows: calc(15 * var(--u)) calc(42 * var(--u)); gap: calc(2 * var(--u)); justify-items: center; }
 .board .cover.bonus .tri-cell { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
 .board .cover.bonus .tri { bottom: calc(-3 * var(--u)); }
-.board .cover.bonus .plus { position: relative; top: calc(5 * var(--u)); font: 800 max(var(--fs-card, 11px), calc(12 * var(--u))) var(--font-num); color: #140f08; text-shadow: 0 0 2px #fffc, 0 0 1px #fff; } /* A10: dark ink on the seat colour (light text read at 1.5:1 on yellow) */
+.board .cover.bonus .plus { position: relative; top: calc(5 * var(--u)); font: 800 max(var(--fs-label), calc(12 * var(--u))) var(--font-num); color: #140f08; text-shadow: 0 0 2px #fffc, 0 0 1px #fff; } /* A10: dark ink on the seat colour (light text read at 1.5:1 on yellow) */
 .board .spoils { grid-row: 2; grid-column: 1; display: grid; align-content: center; justify-content: center; 
   border-radius: calc(6 * var(--u)); font-size: calc(14 * var(--u)); }
 .board .spoils .ic { width: calc(20 * var(--u)); height: calc(20 * var(--u)); color: var(--gold); }
@@ -768,8 +768,9 @@ button.supply:hover { border-color: var(--rule-hi); }
   border: 2px solid var(--dg-gold-dim); border-radius: 6px; color: var(--dg-text); }
 .tbl-stage .hd.supply span { display: inline-flex; align-items: center; gap: 5px; font-size: 18px; }
 .tbl-stage .hd.supply .ic { width: 24px; height: 24px; }
-.tbl-stage .hd.prompt { position: absolute; transform: translateX(-50%); display: grid; justify-items: center; pointer-events: none; text-align: center; }
+.tbl-stage .hd.prompt { position: absolute; transform: translate(-50%, -100%); display: grid; justify-items: center; pointer-events: none; text-align: center; }
 .tbl-stage .hd.prompt .pr-text { color: var(--dg-text); white-space: nowrap; }
+.tbl-stage .hd.prompt .pr-text.wrap { white-space: normal; text-wrap: balance; }
 .tbl-stage .hd.prompt::after { content: ""; width: 460px; background: linear-gradient(90deg, transparent, var(--dg-gold) 20%, var(--dg-gold) 80%, transparent); order: 1; }
 .tbl-stage .hd.prompt .pr-notes { order: 2; color: var(--vellum-muted); text-shadow: 0 1px 3px #000; white-space: nowrap; }
 .tbl-stage .hd.tools { margin-left: auto; display: flex; flex-direction: row; align-items: center; gap: 6px; }
@@ -981,7 +982,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .draft-win .dr-turn .ic { width: 16px; height: 16px; }
 .tbl-stage .draft-win .dr-turn.now { opacity: 1; width: 38px; height: 38px; box-shadow: 0 0 14px var(--seat); }
 .tbl-stage .draft-win .dr-hint { margin: 0; color: var(--vellum-muted); font-size: 16px; }
-.tbl-stage .draft-win .dr-label { font: 800 13px var(--font-ui); letter-spacing: .12em; text-transform: uppercase; color: var(--dg-gold); border-bottom: 1px solid var(--bronze-rule); padding-bottom: 3px; }
+.tbl-stage .draft-win .dr-label { font: 800 var(--fs-label) var(--font-ui); letter-spacing: .12em; text-transform: uppercase; color: var(--dg-gold); border-bottom: 1px solid var(--bronze-rule); padding-bottom: 3px; }
 .tbl-stage .draft-win .dr-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 .tbl-stage .draft-win .dr-card { width: 150px; height: 210px; padding: 0; border: 0; border-radius: 9px; overflow: hidden; background: var(--void-black); display: grid; place-items: center;
   box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--dg-gold-dim), 0 8px 18px #000c; transition: transform .15s, box-shadow .15s; }
@@ -997,7 +998,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .draft-win .dr-mini img { width: 100%; height: 100%; object-fit: cover; }
 .tbl-stage .draft-win .dr-mini .cface, .tbl-stage .draft-win .dr-mini .cf-plain { width: 100%; height: 100%; }
 .tbl-stage .draft-win .dr-mini .cf-text, .tbl-stage .draft-win .dr-mini .cf-bar, .tbl-stage .draft-win .dr-mini .cf-foot { visibility: hidden; }
-.tbl-stage .draft-win .dr-none { font-weight: 400; font-size: 13px; color: #8f8370; }
+.tbl-stage .draft-win .dr-none { font-weight: 400; font-size: var(--fs-label); color: #8f8370; }
 
 /* ==== Court cards drawn from the development kit (cardface.ts) ====
    The card is 372x519 kit pixels (63x88 mm); the kit pictures carry a 3 mm bleed
@@ -1299,7 +1300,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .mine-card { width: var(--w, 70px); aspect-ratio: 372 / 519; border-radius: 6px; overflow: hidden; background: var(--void-black); box-shadow: 0 2px 6px #000c; cursor: zoom-in; transition: transform .12s, box-shadow .12s; }
 .tbl-stage .mine-card:hover, .tbl-stage .mine-card:focus-visible { box-shadow: 0 0 0 1px #000, 0 0 12px var(--dg-glow, rgba(255, 196, 100, .7)); }
 .tbl-stage .mine-card .cface, .tbl-stage .mine-card .cf-plain { width: 100%; height: 100%; }
-.tbl-stage .mine-empty { align-self: center; margin: auto; color: var(--vellum-faint); font-size: 14px; }
+.tbl-stage .mine-empty { align-self: center; margin: auto; color: var(--vellum-faint); font-size: var(--fs-label); }
 
 /* The local board in the bar: no guild cards (they are in the panel above), spoils beside the reserve. */
 .tbl-stage .board.local.slim { --u: 1.2px; }
@@ -1454,7 +1455,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .rival-wrap.band { height: 116px; gap: 8px; align-items: stretch; }
 .tbl-stage .board.rband { --u: .66px; flex: 1; min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 5px; padding: 6px 8px 6px; cursor: pointer; }
 .tbl-stage .board.rband .name-bar { grid-row: 1; border-radius: 4px; padding-top: 3px; padding-bottom: 3px; font-size: var(--fs-label); padding-right: 34px; }
-.tbl-stage .board.rband .name-bar .pow { width: 28px; height: 28px; font-size: 14px; right: -4px; }
+.tbl-stage .board.rband .name-bar .pow { width: 28px; height: 28px; font-size: var(--fs-label); right: -4px; }
 .tbl-stage .board.rband .rb-body { grid-row: 2; display: flex; gap: 8px; align-items: center; min-width: 0; }
 .tbl-stage .board.rband .slots { flex: none; padding: 2px 6px 5px; }
 .tbl-stage .board.rband .rb-side { display: grid; gap: 5px; min-width: 0; }
@@ -1504,7 +1505,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .cp-face .cface, .tbl-stage .cp-face .cf-plain { width: 100%; height: 100%; }
 .tbl-stage .cp-face .cf-text, .tbl-stage .cp-face .cf-body, .tbl-stage .cp-face .cf-foot { visibility: hidden; }
 .tbl-stage .cp-n { font-size: var(--fs-caption); line-height: 1.15; text-transform: uppercase; letter-spacing: .04em; color: var(--vellum-muted); text-align: center; }
-.tbl-stage .cp-n b { color: var(--gilt-highlight); font-size: 14px; }
+.tbl-stage .cp-n b { color: var(--gilt-highlight); font-size: var(--fs-label); }
 .tbl-stage .cpile:hover .cp-stack, .tbl-stage .cpile:focus-visible .cp-stack { filter: brightness(1.25); }
 
 /* The ambitions as printed on the board: title, the markers still to take, one bracketed box per ambition */
@@ -2040,7 +2041,7 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .hd.prompt { gap: 3px; }
 .tbl-stage .hd.prompt .pr-text { font-weight: 600; color: var(--vellum-title); text-shadow: 0 0 14px rgba(255, 196, 100, .8), 0 0 4px rgba(255, 196, 100, .5), 0 2px 6px #000; }
 .tbl-stage.tbl-stage .hd.prompt::after { display: block; width: 520px; height: 2px; box-shadow: 0 0 10px rgba(255, 196, 100, .8); }
-.tbl-stage.tbl-stage .hd.prompt .pr-text { font-size: var(--fs-title); max-width: var(--pr-w); overflow: hidden; text-overflow: ellipsis; }
+.tbl-stage.tbl-stage .hd.prompt .pr-text { font-size: var(--fs-title); max-width: var(--pr-w); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 
 /* ---- Owner's notes of 2026-11-25, second round (base-fixes #36) ---- */
 /* The slots keep their row: the two spare cities (no key tab) sit level with the others. */
@@ -2175,8 +2176,8 @@ button.supply:hover { border-color: var(--rule-hi); }
 .tbl-stage .hd.prompt .tb-seat .tb-ic { width: 16px; height: 16px; color: var(--seat); }
 .tbl-stage .hd.prompt .tb-phase { color: var(--dg-text); }
 /* The banner and the instruction share the prompt's line: the instruction shrinks (fitPrompt) to leave it room. */
-.tbl-stage .hd.prompt .pr-line { display: flex; align-items: center; justify-content: center; gap: 12px; max-width: var(--pr-w); min-width: 0; }
-.tbl-stage.tbl-stage .hd.prompt .pr-line .pr-text { flex: 0 1 auto; min-width: 0; max-width: none; }
+.tbl-stage .hd.prompt .pr-line { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; max-width: var(--pr-w); min-width: 0; }
+.tbl-stage.tbl-stage .hd.prompt .pr-line .pr-text { flex: 0 1 auto; min-width: 0; max-width: 100%; }
 .tbl-stage .hd.prompt .pr-line .turn-banner { flex: none; margin: 0; }
 /* "While you were waiting": what rivals took or destroyed since the seat's last turn (piano PR 6). */
 .tbl-stage .away-note { width: 340px; padding: 10px 14px 12px; border-radius: 8px; border: 1px solid var(--gilt-highlight); font-size: var(--fs-label); color: var(--dg-text); pointer-events: auto; }
