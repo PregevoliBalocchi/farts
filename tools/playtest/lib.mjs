@@ -272,10 +272,12 @@ export async function scan(page, lang) {
 
 /**
  * Plays one game. `ledger(state)` counts the pieces (src/game/engine/ledger.ts); `onFinding(page,
- * finding)` is told of each new observation (to save a screenshot). Returns the findings, the moves
- * and the final state.
+ * finding)` is told of each new observation (to save a screenshot). `query` is added to every
+ * window's address (the test lab: `&lab=<id>`); `prefer(clickables, state, rand)` may pick a click
+ * before the usual choice (the lab sweep: the item's own power or card). Returns the findings, the
+ * moves and the final state.
  */
-export async function runGame({ browser, players, variant = 'base', seed = 7, steps = 500, w = 1920, h = 1080, lang = 'it', ledger, rules, onFinding = async () => {}, log: say = () => {} }) {
+export async function runGame({ browser, players, variant = 'base', seed = 7, steps = 500, w = 1920, h = 1080, lang = 'it', query = '', prefer = null, ledger, rules, onFinding = async () => {}, log: say = () => {} }) {
   const rand = mulberry32(seed * 9973 + players * 31 + (variant === 'leaders' ? 7 : 0));
   const findings = new Map();
   const moves = [];
@@ -304,7 +306,7 @@ export async function runGame({ browser, players, variant = 'base', seed = 7, st
     page.on('console', (m) => {
       if (m.type() === 'error') note(page, 'console', m.text().slice(0, 80), m.text());
     });
-    await page.goto(`${base}?view=table&lang=${lang}&motion=off&debug=perf&players=${players}&seed=${seed}&seat=${seat}${variant === 'leaders' ? '&variant=leaders' : ''}`);
+    await page.goto(`${base}?view=table&lang=${lang}&motion=off&debug=perf&players=${players}&seed=${seed}&seat=${seat}${variant === 'leaders' ? '&variant=leaders' : ''}${query}`);
     await page.waitForFunction(() => typeof window.game?.send === 'function' && !!window.board3d, null, { timeout: 60000 });
     pages.push(page);
   }
@@ -389,7 +391,8 @@ export async function runGame({ browser, players, variant = 'base', seed = 7, st
     let moved = false;
     for (const seat of order) {
       const page = pages[seat];
-      let c = choose(await live(page), s, rand);
+      const pickOf = (cs) => prefer?.(cs, s, rand) ?? choose(cs, s, rand);
+      let c = pickOf(await live(page));
       if (!c) continue;
       const first = `${c.act} ${c.label}`;
       // A move may take several clicks on the same screen (a card, then Lead; an action, a system, a menu).
@@ -402,7 +405,7 @@ export async function runGame({ browser, players, variant = 'base', seed = 7, st
         }
         const now = await live(page);
         if (opened && !now.some((x) => ['decide-pick', 'keep-toggle', 'swap-take', 'swap-give'].includes(x.act))) await note(page, 'empty', `${s.phase.decision?.card}:${s.phase.decision?.effect}`, 'Scegli apre una scelta senza opzioni');
-        c = choose(now, s, rand);
+        c = pickOf(now);
       }
       if (moved) break;
       // The clicks went nowhere: a person backs out (Cancel, or the menu's ×), so the next try starts clean.

@@ -17,9 +17,10 @@ export const BATTLE_SCENARIO = {
  * in hand (the one with most actions), and in a planet system where it has
  * ships, its fleet facing a rival's fleet, city and starport (taken from their
  * supplies). Returns `s` unchanged outside the lead phase or when no system fits.
+ * `seat` sets it up for that seat in any phase (the test lab, before a leader's setup choice).
  */
-export function battleScenario(ix: ContentIndex, s: GameState): GameState {
-  const who = s.phase.type === 'lead' ? activePlayer(s) : null;
+export function battleScenario(ix: ContentIndex, s: GameState, seat?: number): GameState {
+  const who = seat ?? (s.phase.type === 'lead' ? activePlayer(s) : null);
   if (who === null) return s;
   const next = structuredClone(s);
   const me = next.players[who];

@@ -20,6 +20,8 @@ import { addHit, battleAfter, battleForces, defaultAllocation, emptyAllocation, 
 import type { BattlePick } from './battle';
 import { BATTLE_VIEW, BattleView3D } from './battleview3d';
 import { battleScenario } from './scenario';
+import { labGame, labItem, labItems } from './lab';
+import { mountLabPanel, type LabPanel } from './labpanel';
 import { createBoard3D } from './board3d';
 import { gpu } from './gpu';
 import type { Graphics, PickWhat, RoutePreview, ShipGlow } from './board3d';
@@ -183,7 +185,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       /* no storage or a broken copy: a new game */
     }
   }
-  let state: GameState = online ? online.state : (resumed ?? newGame(ix, { playerCount: players, seed, variant }));
+  /** The test lab (?lab=<id>, local only): the item whose ready-made game is on the table (labpanel.ts lists them). */
+  const labParam = online ? null : params.get('lab');
+  let labId: string | null = labParam === null ? null : labItem(ix, labParam) ? labParam : (labItems(ix)[0]?.id ?? null);
+  /** A new game: the lab's for its item, else a regular one. */
+  const freshGame = (): GameState => (labId ? labGame(ix, labId, seed) : newGame(ix, { playerCount: players, seed, variant }));
+  let state: GameState = online ? online.state : (resumed ?? freshGame());
+  if (labId) players = state.players.length as PlayerCount;
   /** Locally, ?scenario=battle sets up a battle for the first seat to lead (applied once per game). */
   const scenario = online ? null : params.get('scenario');
   let scenarioDone = resumed !== null;
@@ -313,6 +321,35 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   }
   shell.appendChild(stage);
   root.appendChild(shell);
+  /** The test lab's panel on the right (null outside the lab). */
+  let labPanel: LabPanel | null = null;
+  if (labId !== null) {
+    /** The printed name of a lab item in the table's language. */
+    const labName = (id: string): string => {
+      const a = actionCardView(ix, id);
+      return a ? cardLabel(t, a) : faceOf(ix, id, lang).name || id;
+    };
+    labPanel = mountLabPanel(shell, {
+      items: labItems(ix),
+      nameOf: labName,
+      t: (k, v) => t(k, v),
+      current: labId,
+      onPick: (id) => {
+        labId = id;
+        const u = new URL(location.href);
+        u.searchParams.set('lab', id);
+        window.history.replaceState(null, '', u);
+        restart();
+        render();
+        labPanel?.setCurrent(id);
+      },
+      onRestart: () => {
+        restart();
+        render();
+      },
+      onToggle: () => fit(),
+    });
+  }
 
   // Card faces keep their text inside the paper: refit whenever cards are drawn or shown, and once the card fonts are in.
   let fitQueued = false;
@@ -332,11 +369,13 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   /** Stretches the stage to the window's shape (panels follow the edges) and scales it to fit. */
   function fit(): void {
     const before = `${STAGE.w}x${STAGE.h}`;
-    const s = setStage(window.innerWidth, window.innerHeight);
+    // The open lab panel keeps the right edge: the stage fits in what is left.
+    const width = window.innerWidth - (labPanel?.width() ?? 0);
+    const s = setStage(width, window.innerHeight);
     scale = s;
     stage.style.width = `${STAGE.w}px`;
     stage.style.height = `${STAGE.h}px`;
-    const x = (window.innerWidth - STAGE.w * s) / 2;
+    const x = (width - STAGE.w * s) / 2;
     const y = (window.innerHeight - STAGE.h * s) / 2;
     stage.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
     applyTextSize();
@@ -484,7 +523,8 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
   }
 
   function restart(): void {
-    state = newGame(ix, { playerCount: players, seed, variant });
+    state = freshGame();
+    if (labId) players = state.players.length as PlayerCount;
     scenarioDone = false;
     history = [];
     resetChoices();
