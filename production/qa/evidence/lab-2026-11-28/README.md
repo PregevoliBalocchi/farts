@@ -67,3 +67,18 @@ manual check.
   game, and both are fixed:
   - it clicked the item's card behind the Pass window;
   - it clicked the item's picked card again, which put it back.
+
+## The admins' way in (base-fixes #64)
+
+- The entrance page (online/index.html) has a "Laboratorio" section with "Apri il laboratorio". It is shown
+  only to the master and the admins.
+- `play.html?lab=1` on the site now works:
+  - It checks the role again and tells everyone else the lab is for admins.
+  - It reads the cards from the database, as online games do.
+  - It opens the lab as a local game: nothing is saved or shared.
+  - The panel has an "Esci" link back to the entrance.
+- Before this, the lab ran only in the local build: online, `play.html?lab=1` answered "Nessuna partita indicata".
+- `home-lab-admin-1366.png`: the entrance with the admin sections shown. The shot was taken without
+  signing in, by showing the sections in the page; signed out, the section stays hidden, as checked.
+- Not checked here: the signed-in admin's way into the lab on the site. Signing in with Google is for the
+  owner to do once it is published.

@@ -18,6 +18,8 @@ import { BASE_EFFECTS } from '../game/cards/base';
 import { indexContent, newGame } from '../game/engine';
 import type { GameContent, GameState, PlayerCount } from '../game/engine';
 import { firebaseConfig } from './firebase-config';
+import { roleOf } from '../online/roles';
+import type { Member, Role } from '../online/roles';
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
@@ -38,6 +40,24 @@ export interface OnlineGame {
   status: 'playing' | 'over';
   version: number;
   state: GameState;
+}
+
+/**
+ * The caller's role (docs/online-access.md): master by config/access, else its
+ * members/{email} document, else none. Throws when config/access has no master.
+ */
+export async function accessOf(email: string): Promise<{ role: Role | null; master: string }> {
+  const config = await getDoc(doc(db, 'config', 'access'));
+  const master = String(config.data()?.master ?? '').trim().toLowerCase();
+  if (!master) throw new Error('manca l’amministratore principale (config/access) nel database');
+  let mine: Member | undefined;
+  try {
+    const snap = await getDoc(doc(db, 'members', email));
+    mine = snap.exists() ? (snap.data() as Member) : undefined;
+  } catch {
+    mine = undefined;
+  }
+  return { role: roleOf(email, master, mine), master };
 }
 
 /** Loads the game content from the database (members only). */

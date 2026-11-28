@@ -5,10 +5,10 @@
 
 import { onAuthStateChanged } from 'firebase/auth';
 import { seatLabel } from '../online/newgame';
-import { normalizeEmail } from '../online/roles';
+import { isAdmin, normalizeEmail } from '../online/roles';
 import { mountTable } from '../ui/table/table';
 import type { GameState } from '../game/engine';
-import { auth, loadContent, saveMove, watchGame } from './games';
+import { accessOf, auth, loadContent, saveMove, watchGame } from './games';
 import { loadHotseat, saveHotseat } from './hotseat';
 
 const status = document.getElementById('play-status')!;
@@ -17,6 +17,8 @@ const params = new URLSearchParams(location.search);
 const id = params.get('id') ?? '';
 /** ?hotseat=1: the game saved in this browser, every seat played here in turn. */
 const hotseat = params.get('hotseat') === '1';
+/** ?lab=1 or ?lab=<id>: the test lab (admins only), a local game on the database's content. */
+const lab = params.get('lab') !== null;
 
 /** The latest line about this game: shown on the page before the table, then in the table's settings window. */
 let about = '';
@@ -32,6 +34,10 @@ let started = false;
 onAuthStateChanged(auth, async (user) => {
   if (started) return;
   if (!user) return say('Accedi prima dalla pagina d’ingresso.');
+  if (lab) {
+    started = true;
+    return void playLab(normalizeEmail(user.email));
+  }
   if (hotseat) {
     started = true;
     return void playHotseat();
@@ -79,6 +85,22 @@ onAuthStateChanged(auth, async (user) => {
     say(`Errore: ${(e as Error).message}`);
   }
 });
+
+/**
+ * The test lab (src/ui/table/lab.ts) for an admin: a local table on the database's content, where each
+ * leader, lore and card can be tried; nothing is saved or shared. Others are told it is for admins.
+ */
+async function playLab(email: string): Promise<void> {
+  try {
+    const { role } = await accessOf(email);
+    if (!isAdmin(role)) return say('Il laboratorio è riservato agli amministratori.');
+    const content = await loadContent();
+    mountTable(root, undefined, { content, exit: { href: './' } });
+    status.hidden = true;
+  } catch (e) {
+    say(`Errore: ${(e as Error).message}`);
+  }
+}
 
 /** Plays the hotseat game saved in this browser: every move is saved here, nothing is shared. */
 async function playHotseat(): Promise<void> {

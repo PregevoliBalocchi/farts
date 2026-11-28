@@ -2239,3 +2239,5 @@ button.supply:hover { border-color: var(--rule-hi); }
 }
 .tbl .lab-tab.shut { font-size: 14px; top: 50%; right: 0; border-radius: 4px 0 0 4px; }
 .tbl .lab-panel :focus-visible, .tbl .lab-tab:focus-visible { outline: 2px solid #ffd27a; outline-offset: 2px; }
+.tbl .lab-exit { color: var(--lab-gilt); font-size: 13px; text-decoration: underline; text-underline-offset: 2px; }
+.tbl .lab-exit:hover { color: #fff3d0; }
