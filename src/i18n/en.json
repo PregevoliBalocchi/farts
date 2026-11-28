@@ -635,5 +635,6 @@
   "lab.col.name": "Name",
   "lab.col.set": "Set",
   "lab.col.mark": "Result",
-  "lab.col.note": "Note"
+  "lab.col.note": "Note",
+  "lab.exit": "Leave"
 }

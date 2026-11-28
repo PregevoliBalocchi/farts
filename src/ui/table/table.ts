@@ -123,14 +123,25 @@ type TextSize = 'auto' | 'normal' | 'large';
 /** In automatic text size, the stage scale below which the larger text is used (1366×768 shows at 0.71). */
 const AUTO_LARGE_BELOW = 0.85;
 
+/**
+ * A local table on given content (the online site's test lab, play.html?lab=1: the content comes from the
+ * database, nothing is saved or shared). Without it a local table loads the bundled content.
+ */
+export interface TableLocal {
+  content: GameContent;
+  /** Where the lab panel's way out goes (the site's entrance). */
+  exit?: { href: string };
+}
+
 /** Mounts the table into `root`. */
-export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle {
+export function mountTable(root: HTMLElement, online?: TableOnline, localGame?: TableLocal): TableHandle {
   const params = new URLSearchParams(location.search);
   // Motion (piano A7): off with ?motion=off or when the system asks to reduce motion, for the 3D views too.
   const motionOn = params.get('motion') !== 'off' && !(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
   let lang: Lang = pickLang(location.search, navigator.language);
   let t = translator(lang);
-  const { content, source } = online ? { content: online.content, source: 'owner' as const } : loadContent();
+  const given = online?.content ?? localGame?.content;
+  const { content, source } = given ? { content: given, source: 'owner' as const } : loadContent();
   const ix = indexContent(content, BASE_EFFECTS);
   // Every panel draws a card by id the same way: from the kit, in the table's language.
   setFaceSource((id) => faceOf(ix, id, lang));
@@ -334,6 +345,7 @@ export function mountTable(root: HTMLElement, online?: TableOnline): TableHandle
       nameOf: labName,
       t: (k, v) => t(k, v),
       current: labId,
+      exit: localGame?.exit?.href,
       onPick: (id) => {
         labId = id;
         const u = new URL(location.href);

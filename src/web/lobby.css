@@ -150,3 +150,6 @@ body.lobby-page { margin: 0; min-height: 100vh; color-scheme: dark;
   .lobby .g-actions { grid-row: auto; grid-column: 1; }
 }
 @media (prefers-reduced-motion: reduce) { .lobby .btn.big { animation: none; } }
+/* A link drawn as a button (the test lab's entrance). */
+.lobby a.btn { display: inline-flex; align-items: center; text-decoration: none; color: inherit; }
+.lobby a.btn.primary { color: #2a1806; }

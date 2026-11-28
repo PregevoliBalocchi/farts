@@ -17,6 +17,8 @@ export interface LabPanelOptions {
   nameOf: (id: string) => string;
   t: Translate;
   current: string;
+  /** Where "Esci" goes (the online site's entrance); no link when absent. */
+  exit?: string;
   /** Sets up the lab game for this item. */
   onPick: (id: string) => void;
   /** Sets up the current item's game again. */
@@ -133,6 +135,13 @@ export function mountLabPanel(parent: HTMLElement, o: LabPanelOptions): LabPanel
     count.className = 'lab-count';
     count.textContent = t('lab.progress', { n: done, total: o.items.length });
     head.append(h, count);
+    if (o.exit) {
+      const out = document.createElement('a');
+      out.className = 'lab-exit';
+      out.href = o.exit;
+      out.textContent = t('lab.exit');
+      head.appendChild(out);
+    }
 
     // The current item: its name, its mark and note, a fresh start and the export.
     const cur = document.createElement('div');

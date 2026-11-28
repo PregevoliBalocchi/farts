@@ -4,12 +4,12 @@
 // The game itself (and the owner's content) is not part of this page.
 
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
 import { isAdmin, normalizeEmail, removeRefusal, roleOf, setRoleRefusal } from '../online/roles';
 import type { Member, MemberRole, Role } from '../online/roles';
 import { seatLabel } from '../online/newgame';
 import type { GameSetup } from '../online/newgame';
-import { auth, createGame, db, deleteGame, loadContent, myGames, uploadContent } from './games';
+import { accessOf, auth, createGame, db, deleteGame, loadContent, myGames, uploadContent } from './games';
 import { clearHotseat, loadHotseat, startHotseat } from './hotseat';
 import { mountNewGame, renderGames } from './lobby';
 import type { GameItem } from './lobby';
@@ -33,6 +33,7 @@ $('sign-out').addEventListener('click', () => signOut(auth));
 
 onAuthStateChanged(auth, async (user) => {
   $('admin').hidden = true;
+  $('lab-admin').hidden = true;
   $('lobby').hidden = true;
   $('content-admin').hidden = true;
   if (!user) {
@@ -46,17 +47,7 @@ onAuthStateChanged(auth, async (user) => {
   show(status, 'Controllo l’invito…', 'muted');
   try {
     const email = normalizeEmail(user.email);
-    const config = await getDoc(doc(db, 'config', 'access'));
-    const master = String(config.data()?.master ?? '').trim().toLowerCase();
-    if (!master) throw new Error('manca l’amministratore principale (config/access) nel database');
-    let mine: Member | undefined;
-    try {
-      const snap = await getDoc(doc(db, 'members', email));
-      mine = snap.exists() ? (snap.data() as Member) : undefined;
-    } catch {
-      mine = undefined;
-    }
-    me = { email, role: roleOf(email, master, mine), master };
+    me = { email, ...(await accessOf(email)) };
     if (!me.role) {
       $('who').textContent = email;
       show(status, `Questo indirizzo non è invitato. Chiedi a un amministratore di aggiungere ${email}.`, 'err');
@@ -66,6 +57,8 @@ onAuthStateChanged(auth, async (user) => {
     show(status, 'Accesso consentito.', 'ok');
     $('lobby').hidden = false;
     $('content-admin').hidden = !isAdmin(me.role);
+    // The test lab (play.html?lab=1): admins only; the game page checks the role again.
+    $('lab-admin').hidden = !isAdmin(me.role);
     await refreshGames();
     if (isAdmin(me.role)) {
       // Only the master appoints admins.
